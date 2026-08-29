@@ -138,7 +138,7 @@ struct HojaSesionViva: View {
             // sin envolver el toggle en NINGÚN `withAnimation` con animación real.
             if focusMode { HojaFoco(vivo: self) }
         }
-        .background(sheet.theme.paper.ignoresSafeArea())
+        .entrenarHojaFondo(tono: .indigo)
         .instrumentoTheme(sheet.theme)
         .preferredColorScheme(.light)
         // B17: el gesto de borde minimiza — NUNCA termina la sesión (mismo modificador que
@@ -419,7 +419,7 @@ struct HojaSesionViva: View {
         }
         .padding(.horizontal, CenitMetrics.screenPadding)
         .padding(.vertical, 10)
-        .background(sheet.theme.paper)
+        .background(EntrenarTono.indigo.base.opacity(EntrenarVidrioMetrics.intensidadDefault))
         .overlay(alignment: .bottom) { Rectangle().fill(sheet.theme.hairline).frame(height: 1) }
     }
 

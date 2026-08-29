@@ -617,15 +617,13 @@ struct WorkoutHistoryScreen: View {
         let peak: Double = max(peakRaw, 1.0)
         let selectedId: Int = selectedWeek ?? 7
         let sel: WeekVolume = weeks.first { (w: WeekVolume) in w.id == selectedId } ?? weeks[7]
-        VStack(alignment: .leading, spacing: 10) {
-            tuMesVolumeHeader
-            tuMesWeeklyBars(weeks: weeks, peak: peak, selectedId: selectedId)
-            tuMesSelectedWeekStrip(sel: sel)
+        EntrenarModulo(tono: .neutro) {
+            VStack(alignment: .leading, spacing: 10) {
+                tuMesVolumeHeader
+                tuMesWeeklyBars(weeks: weeks, peak: peak, selectedId: selectedId)
+                tuMesSelectedWeekStrip(sel: sel)
+            }
         }
-        .padding(CenitMetrics.cardPadding)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-            .strokeBorder(theme.hairline, lineWidth: 1))
     }
 
     @ViewBuilder
@@ -1072,31 +1070,28 @@ struct WorkoutHistoryScreen: View {
         VStack(alignment: .leading, spacing: 12) {
             InstrumentoSectionBand("My saved tickets")
             NavigationLink(value: SavedTicketsRoute()) {
-                HStack(spacing: 12) {
-                    RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
-                        .fill(theme.hairline)
-                        .frame(width: 38, height: 38)
-                        .overlay(
-                            Image(systemName: "doc.plaintext")
-                                .font(StrandFont.glyph(.inline, weight: .semibold))
-                                .foregroundStyle(theme.ink)
-                        )
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("My saved tickets").font(InstrumentoType.groteskHeadline(20)).foregroundStyle(theme.ink)
-                        Text("\(sessions.count) receipts · today's on top")
-                            .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                EntrenarModulo(tono: .neutro) {
+                    HStack(spacing: 12) {
+                        RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
+                            .fill(theme.hairline)
+                            .frame(width: 38, height: 38)
+                            .overlay(
+                                Image(systemName: "doc.plaintext")
+                                    .font(StrandFont.glyph(.inline, weight: .semibold))
+                                    .foregroundStyle(theme.ink)
+                            )
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("My saved tickets").font(InstrumentoType.groteskHeadline(20)).foregroundStyle(theme.ink)
+                            Text("\(sessions.count) receipts · today's on top")
+                                .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                        }
+                        Spacer(minLength: 8)
+                        StrandIcon.disclosure.image
+                            .font(StrandFont.glyph(.chevron, weight: .semibold))
+                            .foregroundStyle(theme.inkTertiary)
+                            .accessibilityHidden(true)
                     }
-                    Spacer(minLength: 8)
-                    StrandIcon.disclosure.image
-                        .font(StrandFont.glyph(.chevron, weight: .semibold))
-                        .foregroundStyle(theme.inkTertiary)
-                        .accessibilityHidden(true)
                 }
-                .padding(CenitMetrics.cardPadding)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-                    .strokeBorder(theme.hairline, lineWidth: 1))
             }
             .buttonStyle(.plain)
             // Revisión final (g4-a11y): sin agrupamiento, VoiceOver exponía ícono/título/subtítulo/

@@ -123,7 +123,7 @@ enum HojaCabeceraSesion {
         .padding(.horizontal, CenitMetrics.screenPadding)
         .padding(.top, 8)
         .padding(.bottom, 8)
-        .background(vivo.sheet.theme.paper)
+        .background(EntrenarTono.indigo.base.opacity(EntrenarVidrioMetrics.intensidadDefault))
     }
 }
 #endif

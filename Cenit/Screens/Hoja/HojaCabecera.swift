@@ -120,7 +120,7 @@ enum HojaCabecera {
         .padding(.horizontal, CenitMetrics.screenPadding)
         .padding(.top, 8)
         .padding(.bottom, 8)
-        .background(sheet.theme.paper)
+        .background(CenitColor.pantalla)
     }
 }
 #endif
