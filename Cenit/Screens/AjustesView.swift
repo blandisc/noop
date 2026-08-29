@@ -130,7 +130,7 @@ private struct AjustesLanding: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .scrollIndicators(.hidden)
-        .background { LiquidSheetFondo().ignoresSafeArea() }
+        .pantallaFondo()
         .task { await sincronizarPermisosDeAviso() }
         // Volver de Ajustes de iOS es EXACTAMENTE cuando estos dos permisos pudieron cambiar (mismo
         // contrato que `AvisoMatutinoSection`): sin esto, conceder allá y regresar aquí encontraba
@@ -777,7 +777,7 @@ private struct ProfileWheelSheet: View {
         }
         .padding(LiquidSpace.s600)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background { LiquidSheetFondo().ignoresSafeArea() }
+        .pantallaFondo()
         .fittedSheet()
     }
 
@@ -932,7 +932,7 @@ private struct MaxHRSheet: View {
         }
         .padding(LiquidSpace.s600)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background { LiquidSheetFondo().ignoresSafeArea() }
+        .pantallaFondo()
         .fittedSheet()
     }
 }
@@ -998,7 +998,7 @@ private struct UnidadesSheet: View {
         }
         .padding(LiquidSpace.s600)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background { LiquidSheetFondo().ignoresSafeArea() }
+        .pantallaFondo()
         .fittedSheet()
     }
 }

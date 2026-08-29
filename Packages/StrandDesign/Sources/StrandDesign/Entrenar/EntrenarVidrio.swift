@@ -124,7 +124,7 @@ public enum EntrenarVidrioMetrics {
     /// SwiftUI es el blur CSS ÷ 2, igual convención que `LiquidElevation`), solo cambia el alfa.
     public static let contactoY: CGFloat = 2
     public static let contactoRadius: CGFloat = 1.5
-    public static let contactoAlfaNeutro: Double = 0.05
+    public static let contactoAlfaNeutro: Double = 0.06
     public static let contactoAlfaTeñido: Double = 0.04
 
     /// Sombra ambiente — neutro (mock `.mod`/`.tDes`: `0 7px 14px rgba(tinta,.07)`) vs teñido
@@ -134,7 +134,7 @@ public enum EntrenarVidrioMetrics {
     /// que ese realce extra específico del héroe no se reproduce aquí.
     public static let ambienteYNeutro: CGFloat = 7
     public static let ambienteRadiusNeutro: CGFloat = 7
-    public static let ambienteAlfaNeutro: Double = 0.07
+    public static let ambienteAlfaNeutro: Double = 0.10
     public static let ambienteYTeñido: CGFloat = 10
     public static let ambienteRadiusTeñido: CGFloat = 10
     public static let ambienteAlfaTeñido: Double = 0.14
@@ -162,7 +162,14 @@ private struct EntrenarVidrioReceta: ViewModifier {
                 }
             }
             .overlay { shape.stroke(canto, lineWidth: 0.5) }
-            .liquidShadow([contacto, ambiente], silhouette: shape)
+            .liquidShadow(sombrasTarjeta, silhouette: shape)
+    }
+
+    /// La sombra del tile/módulo: el tono neutro usa el token ÚNICO compartido (`LiquidElevation.tarjeta`),
+    /// el mismo que las tarjetas de Tendencias — así el espacio entre tarjetas se lee igual en toda la
+    /// app. Los tonos teñidos conservan su sombra del color de su propio dato (contacto + ambiente).
+    private var sombrasTarjeta: [LiquidShadowLayer] {
+        tono == .neutro ? LiquidElevation.tarjeta : [contacto, ambiente]
     }
 
     /// Mismo patrón que `LiquidModulo.glass`: vidrio nativo en iOS 26, material + backdrop
@@ -191,7 +198,7 @@ private struct EntrenarVidrioReceta: ViewModifier {
     }
 
     private var canto: Color {
-        tono == .neutro ? LiquidColor.vidrioCanto : tono.base.opacity(EntrenarVidrioMetrics.cantoAlfaTeñido)
+        tono == .neutro ? LiquidColor.tinta900.opacity(0.16) : tono.base.opacity(EntrenarVidrioMetrics.cantoAlfaTeñido)
     }
 
     private var contacto: LiquidShadowLayer {
@@ -260,7 +267,8 @@ public struct EntrenarTile<Content: View>: View {
     public var body: some View {
         content
             .padding(EntrenarVidrioMetrics.tileInsets)
-            .frame(maxWidth: .infinity, minHeight: EntrenarVidrioMetrics.tileMinHeight, alignment: .topLeading)
+            .frame(maxWidth: .infinity, minHeight: EntrenarVidrioMetrics.tileMinHeight,
+                   maxHeight: .infinity, alignment: .topLeading)
             .modifier(EntrenarVidrioReceta(tono: tono, intensidad: EntrenarVidrioMetrics.intensidadDefault))
     }
 }

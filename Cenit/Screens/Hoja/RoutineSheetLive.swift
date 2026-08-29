@@ -30,6 +30,10 @@ struct HojaSesionViva: View {
 
     // MARK: Captura por teclado — mismos tipos que `LiveStrengthSheet` (cero duplicado de contrato)
     @State var activeCell: LiveStrengthSheet.CellRef?
+    /// FER-inject 2026-08-29 (orden del dueño): revierte parcialmente FER-167 R19 — la consola de la
+    /// sesión viva ahora SÍ se puede ocultar (tecla ⌄) para ver la tabla completa; se reabre al tocar
+    /// cualquier celda de peso/reps (`beginEditing`). `true` = oculta aunque haya celda activa.
+    @State var keypadHidden = false
     @State var buffer: String = ""
     @State var bufferTyped = false
     @State var selectedRIR: Int?

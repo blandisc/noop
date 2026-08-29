@@ -38,7 +38,7 @@ extension HojaSesionViva {
     /// R3/R10: abre la consola sobre una celda concreta — el tap-zone de una fila activa/fantasma
     /// (peso o reps) llama esto, igual que tocar una celda en F1.
     func beginEditing(_ cell: LiveStrengthSheet.CellRef) {
-        withAnimation(reduceMotion ? nil : .snappy(duration: 0.22)) { activeCell = cell }
+        withAnimation(reduceMotion ? nil : .snappy(duration: 0.22)) { activeCell = cell; keypadHidden = false }
         syncBufferFromModel(cell)
     }
 
@@ -50,7 +50,7 @@ extension HojaSesionViva {
     }
 
     @ViewBuilder var keypadInset: some View {
-        if session.summary == nil, !isZombie, let cell = effectiveCell {
+        if !keypadHidden, session.summary == nil, !isZombie, let cell = effectiveCell {
             if session.phase == .resting {
                 // O-r2b (ronda 3): un `TimelineView` propio para que la tecla vuelva a preguntar
                 // «¿estamos en el tope?» cada segundo, igual que la banda — sin esto, la consola se
@@ -93,6 +93,7 @@ extension HojaSesionViva {
                 : String(localized: "✓ Serie"),
             confirmSetAccessibilityLabel: resting
                 ? (ceiling ? Text("Continue") : Text("Skip rest")) : Text("Mark set as done"),
+            onHide: { withAnimation(reduceMotion ? nil : .snappy(duration: 0.22)) { keypadHidden = true } },
             onPause: alternarPausa,
             isPaused: session.paused,
             // QUEDABAN se calla durante el descanso (mock P4: `.pad` sin `.qrow`).

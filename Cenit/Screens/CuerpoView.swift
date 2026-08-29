@@ -60,12 +60,6 @@ private enum CuerpoScreen: Hashable { case dataSources }
 /// Full-screen detail chrome (handoff v2 Chrome, FER-828): a «‹ Tendencias · {date}» top bar over a
 /// pushed-looking detail. Presented via `fullScreenCover`, so it reads as a full screen with a back
 /// chevron WITHOUT any `NavigationStack` — deliberately avoiding the nested-stack crash (FER-171).
-private enum DetailChromeDate {
-    static let fmt: DateFormatter = {
-        let f = DateFormatter(); f.locale = .current; f.dateFormat = "EEE d MMM"; return f
-    }()
-    static var label: String { fmt.string(from: Date()) }
-}
 
 /// Edge-swipe-back (FER-837): a drag that STARTS in the left `edgeZone` and runs horizontally pulls the
 /// panel right, revealing Tendencias behind it, and past `dismissThreshold` (or a flick) pops — so you
@@ -127,25 +121,22 @@ private struct DetailChrome<Content: View>: View {
                 Button { onClose() } label: {
                     HStack(spacing: 4) {
                         StrandIcon.back.image.font(StrandFont.glyph(.inline, weight: .semibold))
-                        Text("Tendencias").font(StrandFont.body)
+                        Text("Trends").font(StrandFont.body)
                     }
                     .foregroundStyle(theme.ink)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 Spacer(minLength: 8)
-                Text(DetailChromeDate.label)
-                    .font(StrandFont.number(11, weight: .regular)).textCase(.uppercase)
-                    .foregroundStyle(theme.inkTertiary)
             }
-            .padding(.horizontal, 20).padding(.top, 10).padding(.bottom, 4)
+            .padding(.horizontal, 20).padding(.top, 10).padding(.bottom, 14)
             content
         }
         // One unified, fully-opaque paper panel. It's stacked OVER the Tendencias landing (same view
         // hierarchy), so as it slides right it reveals the real Tendencias underneath — no blank platter,
         // no shadow, no separate layers. At rest it covers the landing completely.
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(theme.paper.ignoresSafeArea())
+        .pantallaFondo()
         .instrumentoTheme(theme)
         // No `NavigationStack` → no FER-171 risk. The edge owns the back-swipe outright.
         .modifier(EdgeSwipeBack(enabled: true, onClose: onClose))
@@ -288,7 +279,7 @@ private struct CuerpoLanding: View {
     var body: some View {
         ZStack {
         ScrollView {
-            VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            VStack(alignment: .leading, spacing: CenitMetrics.cardGap) {
                 titleBlock
                 periodSelector
                 // §8.7 landing micro-legend: today's values vs last month's trends (period selector above).
@@ -411,7 +402,7 @@ private struct CuerpoLanding: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(theme.paper.ignoresSafeArea())
+        .pantallaFondo()
         .instrumentoTheme(theme)
         .environmentObject(repo)
         .environment(model)

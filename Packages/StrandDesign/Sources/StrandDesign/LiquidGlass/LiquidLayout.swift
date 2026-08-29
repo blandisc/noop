@@ -174,6 +174,15 @@ public enum LiquidElevation {
             .init(color: tintaSombra.opacity(0.07), radius: 14, y: 9 + CGFloat(index) * 1.5),
         ]
     }
+
+    /// `e/tarjeta` — LA sombra ÚNICA de cualquier elemento tipo tarjeta neutra en la app (dueño
+    /// 2026-08-29): un punto medio entre `modulo` (Tendencias, difusa) y la de `EntrenarTile` (Entrenar,
+    /// compacta), para que el ESPACIO entre tarjetas se lea igual en las dos superficies. Contacto corto
+    /// + ambiente medio. Las tarjetas teñidas (Marcas/Volumen) siguen con su sombra del color de su dato.
+    public static let tarjeta: [LiquidShadowLayer] = [
+        .init(color: tintaSombra.opacity(0.055), radius: 2, y: 2),
+        .init(color: tintaSombra.opacity(0.09), radius: 10, y: 7),
+    ]
 }
 
 public extension View {
