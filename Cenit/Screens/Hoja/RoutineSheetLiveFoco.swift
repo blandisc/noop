@@ -305,6 +305,7 @@ struct HojaFoco: View {
     private func ctaSerieHecha(ei: Int) -> some View {
         LiquidGlassButton("✓ " + String(localized: "Set done"), variant: .primary, expands: true) {
             withAnimation(vivo.reduceMotion ? nil : StrandMotion.gentle) { vivo.registerFromFoco() }
+            EntrenarHaptic.serieCompletada.play()   // FER-223: el Foco no tenía háptico propio.
         }
         .accessibilityLabel(Text(String(localized: "Set done")))
     }

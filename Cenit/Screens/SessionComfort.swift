@@ -62,8 +62,10 @@ enum SessionComfort {
         }
     }
 
-    /// El aviso del fin de descanso. La háptica la sigue dando la vista (`sensoryFeedback`); esto
-    /// solo añade el sonido, y solo si el usuario lo encendió.
+    /// El aviso del fin de descanso. La háptica la da la Hoja viva por separado (FER-223:
+    /// `HojaSesionViva.skipRest()` con `EntrenarHaptic.descansoTerminado` para el cierre manual; el
+    /// auto-skip del descanso fijo sigue con `AppModel.buzz` en `RestAutoSkipModifier`) — esto solo
+    /// añade el sonido, y solo si el usuario lo encendió.
     static func playRestChime(defaults: UserDefaults = .standard) {
         guard isEnabled(restSoundKey, defaults: defaults) else { return }
         AudioServicesPlaySystemSound(restSoundID)

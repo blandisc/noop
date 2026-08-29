@@ -297,6 +297,9 @@ struct HojaTarjetaEjercicioSesion: View {
             }
         }
         .animation(vivo.reduceMotion ? nil : .easeOut(duration: 0.4), value: vivo.prFlash)
+        // FER-223: el destello visual de PR no tenía háptico — el patrón de éxito ascendente,
+        // reservado para esto y para el cierre de sesión, nunca para una serie más.
+        .entrenarHaptic(.prNuevo, trigger: vivo.prFlash)
     }
 
     /// B12 (FER-169): el cronómetro compacto de la fila ACTIVA de tiempo/distancia (mapa: nombre ·

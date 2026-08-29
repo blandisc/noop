@@ -417,8 +417,17 @@ extension HojaSesionViva {
     }
 
     /// SALTAR (B2/B3 consola, mock P4): el mismo `skipRest()` que el botón «SALTAR ›» de la banda.
+    ///
+    /// FER-223: el fin de descanso MANUAL (este botón, «SALTAR ›»/«Continuar ›», FC lista) no tenía
+    /// ningún háptico en el iPhone — solo el auto-skip del descanso fijo lo tenía, vía
+    /// `AppModel.buzz` en `RestAutoSkipModifier` (fuera de alcance de este catálogo, intacto). Los
+    /// dos caminos son mutuamente excluyentes (uno es "el reloj terminó solo", el otro "tú lo
+    /// cerraste"), así que esto no duplica esa señal. Si el Watch está conectado, la muñeca ya suena
+    /// su propio `WatchHaptic.restEnded` de forma independiente — eso queda tal cual: son dos
+    /// ubicaciones físicas distintas (muñeca vs. bolsillo/mano), no el mismo háptico repetido.
     func skipRest() {
         withAnimation(reduceMotion ? nil : StrandMotion.gentle) { session.skipRest() }
+        EntrenarHaptic.descansoTerminado.play()
     }
 
     // MARK: - R16 · destello de récord (detección VIGENTE — `PRMetric`, sin redefinir tipos, F4/B11 intacto)
@@ -732,6 +741,7 @@ extension HojaSesionViva {
         if session.runs.count > 1 {
             rows.append(.init(String(localized: "Remove from session"), systemImage: "trash", isDestructive: true) {
                 withAnimation(reduceMotion ? nil : .snappy) { session.removeExercise(at: ei) }
+                EntrenarHaptic.borrado.play()   // FER-223: borrar no tenía háptico propio.
             })
         }
         return rows
