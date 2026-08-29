@@ -136,6 +136,7 @@ public struct RestBand<Next: View>: View {
                             Text(verbatim: trailing)
                                 .font(InstrumentoType.groteskNumber(13, weight: .bold, relativeTo: .caption))
                                 .foregroundStyle(theme.inkSecondary)
+                                .numeroVivo(value: trailing)
                         }
                     }
                 }
@@ -242,6 +243,9 @@ public struct RestBand<Next: View>: View {
                         .foregroundStyle(theme.inkSecondary))
                         .multilineTextAlignment(large ? .center : .leading)
                         .fixedSize(horizontal: false, vertical: true)
+                        // El BPM que más cambia de todo Entrenar (FER-222) — el dato vivo por
+                        // excelencia del descanso.
+                        .numeroVivo(value: current)
                 }
             } else {
                 // Sin Watch / sin lectura: no inventar un numeral de pulso.
@@ -256,6 +260,7 @@ public struct RestBand<Next: View>: View {
              + Text("of \(target)").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary))
                 .multilineTextAlignment(large ? .center : .leading)
                 .fixedSize(horizontal: false, vertical: true)
+                .numeroVivo(value: elapsed)
         }
     }
 

@@ -159,7 +159,7 @@ public struct FocoCabecera: View {
                 } else if reduceMotion {
                     arrastreY = 0
                 } else {
-                    withAnimation(.spring(response: 0.28, dampingFraction: 0.86)) {
+                    withAnimation(StrandMotion.interactive) {
                         arrastreY = 0
                     }
                 }

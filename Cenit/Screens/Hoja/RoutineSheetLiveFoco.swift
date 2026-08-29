@@ -223,9 +223,11 @@ struct HojaFoco: View {
             )
             if running {
                 TimelineView(.periodic(from: Date(), by: 1)) { ctx in
-                    Text(Self.clock(vivo.session.timerElapsed(now: ctx.date)))
+                    let texto = Self.clock(vivo.session.timerElapsed(now: ctx.date))
+                    Text(texto)
                         .font(InstrumentoType.groteskNumber(FocoMetrics.runningClockSize, weight: .bold))
-                        .foregroundStyle(LiquidColor.tinta900).monospacedDigit()
+                        .foregroundStyle(LiquidColor.tinta900)
+                        .numeroVivo(value: texto)
                         .padding(.top, FocoMetrics.capcionTop)
                 }
             }
@@ -256,14 +258,16 @@ struct HojaFoco: View {
             Group {
                 if running {
                     TimelineView(.periodic(from: Date(), by: 1)) { ctx in
-                        Text(Self.clock(vivo.session.timerElapsed(now: ctx.date)))
+                        let texto = Self.clock(vivo.session.timerElapsed(now: ctx.date))
+                        Text(texto).numeroVivo(value: texto)
                     }
                 } else {
-                    Text(Self.clock(vivo.session.currentSet?.timeS ?? 0))
+                    let texto = Self.clock(vivo.session.currentSet?.timeS ?? 0)
+                    Text(texto).numeroVivo(value: texto)
                 }
             }
             .font(InstrumentoType.groteskNumber(FocoMetrics.runningClockSize, weight: .bold))
-            .foregroundStyle(LiquidColor.tinta900).monospacedDigit()
+            .foregroundStyle(LiquidColor.tinta900)
             .padding(.top, FocoMetrics.capcionTop)
             if let bpm = vivo.sheet.model.watchBpm { zonaBadge(bpm).padding(.top, FocoMetrics.capcionTop) }
             // R3 (ronda 2 del gate, bloqueante): el MISMO patrón que `.time` arriba — Start/Stop-and-

@@ -33,7 +33,7 @@ public struct EntrenarStepperSegundos: View {
             Text(valor)
                 .font(InstrumentoType.groteskNumber(17, weight: .bold))
                 .foregroundStyle(tono == .neutro ? LiquidColor.tinta900 : tono.rotulo)
-                .monospacedDigit()
+                .numeroVivo(value: valor)
                 .frame(minWidth: EntrenarStepperSegundosMetrics.valorAncho)
                 .accessibilityHidden(true)
             boton("plus", habilitado: puedeSubir, action: onSubir,

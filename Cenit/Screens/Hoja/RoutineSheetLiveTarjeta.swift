@@ -317,13 +317,15 @@ struct HojaTarjetaEjercicioSesion: View {
                 Group {
                     if running {
                         TimelineView(.periodic(from: Date(), by: 1)) { ctx in
-                            Text(SessionClock.format(vivo.session.timerElapsed(now: ctx.date)))
+                            let texto = SessionClock.format(vivo.session.timerElapsed(now: ctx.date))
+                            Text(texto).numeroVivo(value: texto)
                         }
                     } else {
-                        Text(SessionClock.format(set.timeS ?? 0))
+                        let texto = SessionClock.format(set.timeS ?? 0)
+                        Text(texto).numeroVivo(value: texto)
                     }
                 }
-                .font(InstrumentoType.groteskNumber(20, weight: .bold)).monospacedDigit().foregroundStyle(vivo.sheet.theme.ink)
+                .font(InstrumentoType.groteskNumber(20, weight: .bold)).foregroundStyle(vivo.sheet.theme.ink)
                 if let metaS, metaS > 0 {
                     Text("goal \(SessionClock.format(metaS))").font(StrandFont.caption).foregroundStyle(vivo.sheet.theme.inkTertiary)
                 }

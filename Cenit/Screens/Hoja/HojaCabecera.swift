@@ -78,11 +78,14 @@ enum HojaCabecera {
                 Text(sheet.groupTitle).font(StrandFont.caption).foregroundStyle(sheet.theme.inkTertiary)
             }
             Text(String(localized: "\(sheet.items.count) exercises")).font(StrandFont.caption).foregroundStyle(sheet.theme.inkTertiary)
-            Text(String(localized: "\(sheet.totalSets) sets")).font(StrandFont.caption).monospacedDigit().foregroundStyle(sheet.theme.inkTertiary)
-            Text(String(localized: "~\(sheet.estimatedMinutes) min")).font(StrandFont.caption).monospacedDigit().foregroundStyle(sheet.theme.inkTertiary)
+            Text(String(localized: "\(sheet.totalSets) sets")).font(StrandFont.caption).foregroundStyle(sheet.theme.inkTertiary)
+                .numeroVivo(value: sheet.totalSets)
+            Text(String(localized: "~\(sheet.estimatedMinutes) min")).font(StrandFont.caption).foregroundStyle(sheet.theme.inkTertiary)
+                .numeroVivo(value: sheet.estimatedMinutes)
             if let kg = sheet.estimatedTonnageKg {
                 Text(String(localized: "~\(StrengthDisplay.weightNumber(kg, system: sheet.system)) \(StrengthDisplay.weightUnit(sheet.system).lowercased())"))
-                    .font(StrandFont.caption).monospacedDigit().foregroundStyle(sheet.theme.inkTertiary)
+                    .font(StrandFont.caption).foregroundStyle(sheet.theme.inkTertiary)
+                    .numeroVivo(value: kg)
             }
         }
         .padding(.top, 2)

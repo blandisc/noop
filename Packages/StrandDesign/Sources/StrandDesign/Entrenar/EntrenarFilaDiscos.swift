@@ -67,8 +67,8 @@ public struct EntrenarFilaDiscos: View {
             .overlay {
                 Text(disco.etiqueta)
                     .font(.system(size: 9, weight: .medium))   // token-exempt: microtexto <10pt
-                    .monospacedDigit()
                     .foregroundStyle(LiquidColor.papelTarjeta)
+                    .numeroVivo(value: disco.etiqueta)
                     .rotationEffect(.degrees(-90))
                     .fixedSize()
             }

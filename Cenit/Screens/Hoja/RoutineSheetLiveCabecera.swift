@@ -41,9 +41,11 @@ enum HojaCabeceraSesion {
             heartRate(vivo: vivo)
 
             TimelineView(.periodic(from: Date(), by: 1)) { ctx in
-                Text(SessionClock.format(vivo.session.elapsedSeconds(now: ctx.date)))
-                    .font(InstrumentoType.groteskNumber(15)).monospacedDigit()
+                let texto = SessionClock.format(vivo.session.elapsedSeconds(now: ctx.date))
+                Text(texto)
+                    .font(InstrumentoType.groteskNumber(15))
                     .foregroundStyle(vivo.sheet.theme.inkSecondary)
+                    .numeroVivo(value: texto)
             }
             .accessibilityHidden(true)
 
