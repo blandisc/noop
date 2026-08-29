@@ -611,9 +611,9 @@ extension HojaSesionViva {
                 // pulso bajando (ninguno de los dos avanza mientras `paused`); una línea honesta en
                 // vez, con el mismo tiempo restante que ya estaba (`restBandCore` congela el número —
                 // aquí solo se apaga el color/kicker para que no MIENTA que sigue corriendo).
-                HStack(spacing: 8) {
+                HStack(spacing: CenitMetrics.space2) {
                     Text("REST · PAUSED").instrumentoOverline().foregroundStyle(sheet.theme.inkTertiary)
-                    Spacer(minLength: 6)
+                    Spacer(minLength: LiquidSpace.s150)
                     Text("waits with you").font(StrandFont.caption).foregroundStyle(sheet.theme.inkTertiary)
                 }
                 restBandCore(esRonda: esRonda, large: large, forzarTiempo: forzarTiempo)
@@ -628,7 +628,7 @@ extension HojaSesionViva {
             if let ei = restOwnerExerciseIndex, !session.paused {
                 Button { openRestEditor(ei: ei) } label: {
                     Label("Change rest", systemImage: "pencil").font(StrandFont.caption).foregroundStyle(sheet.theme.ink)
-                        .padding(.horizontal, 13).padding(.vertical, 6)
+                        .padding(.horizontal, 13).padding(.vertical, LiquidSpace.s150)
                         .overlay(Capsule().strokeBorder(sheet.theme.hairlineStrong, lineWidth: 1))
                 }
                 .buttonStyle(.plain)

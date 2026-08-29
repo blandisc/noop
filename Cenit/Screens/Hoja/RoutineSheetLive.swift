@@ -339,7 +339,7 @@ struct HojaSesionViva: View {
                         }
                     }
                     .padding(.horizontal, CenitMetrics.screenPadding)
-                    .padding(.top, 14)
+                    .padding(.top, CenitMetrics.receiptPadding)
                     .padding(.bottom, CenitMetrics.screenPadding)
                 }
                 .onChange(of: accordionIndex) { _, newIndex in
@@ -400,25 +400,25 @@ struct HojaSesionViva: View {
     // MARK: - B14 — fallo de guardado
 
     private var saveErrorBanner: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
+        HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space2) {
             Image(systemName: "exclamationmark.triangle")
                 .font(StrandFont.glyph(.chevron)).foregroundStyle(sheet.theme.critical)
                 .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 1) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s025) {
                 Text("Couldn't save the workout. Try again.")
                     .font(StrandFont.caption).fontWeight(.medium).foregroundStyle(sheet.theme.ink)
                 Text("Your sets are safe on this phone.")
                     .font(StrandFont.caption).foregroundStyle(sheet.theme.inkSecondary)
             }
             .accessibilityElement(children: .combine)
-            Spacer(minLength: 8)
+            Spacer(minLength: CenitMetrics.space2)
             Button { sheet.model.retryStrengthSave() } label: {
                 Text("Retry").font(StrandFont.caption).fontWeight(.medium).foregroundStyle(sheet.theme.ink)
             }
             .buttonStyle(.plain)
         }
         .padding(.horizontal, CenitMetrics.screenPadding)
-        .padding(.vertical, 10)
+        .padding(.vertical, CenitMetrics.rowVPad)
         .entrenarHojaBarraFondo(tono: .indigo)
         .overlay(alignment: .bottom) { Rectangle().fill(sheet.theme.hairline).frame(height: 1) }
     }
@@ -432,17 +432,17 @@ struct HojaSesionViva: View {
              + Text("You left a session open yesterday · \(session.routineName), \(serieSubtitle)"))
                 .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(sheet.theme.ink)
                 .multilineTextAlignment(.center).padding(.horizontal, CenitMetrics.screenPadding)
-            HStack(spacing: 10) {
+            HStack(spacing: LiquidSpace.s250) {
                 Button { archivarZombie() } label: {
                     Text("Archive").font(StrandFont.subhead.weight(.semibold)).foregroundStyle(sheet.theme.ink)
-                        .padding(.horizontal, 16).padding(.vertical, 10)
+                        .padding(.horizontal, CenitMetrics.cardPadding).padding(.vertical, CenitMetrics.rowVPad)
                         .overlay(Capsule().strokeBorder(sheet.theme.hairlineStrong, lineWidth: 1))
                 }
                 .buttonStyle(.plain)
                 Button { zombieAcknowledged = true } label: {
                     (Text("Keep going") + Text(verbatim: " ›"))
                         .font(StrandFont.subhead.weight(.bold)).foregroundStyle(sheet.theme.paper)
-                        .padding(.horizontal, 16).padding(.vertical, 10)
+                        .padding(.horizontal, CenitMetrics.cardPadding).padding(.vertical, CenitMetrics.rowVPad)
                         .background(LiquidColor.verdePrimario, in: Capsule())
                 }
                 .buttonStyle(.plain)

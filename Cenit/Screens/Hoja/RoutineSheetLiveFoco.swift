@@ -239,7 +239,7 @@ struct HojaFoco: View {
             } label: {
                 Text(running ? String(localized: "Stop and save") : String(localized: "Start"))
                     .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(LiquidColor.tinta900)
-                    .padding(.horizontal, 16).padding(.vertical, 8)
+                    .padding(.horizontal, CenitMetrics.cardPadding).padding(.vertical, CenitMetrics.space2)
                     .overlay(Capsule().strokeBorder(LiquidColor.tinta10, lineWidth: 1))
             }
             .buttonStyle(.plain)
@@ -283,7 +283,7 @@ struct HojaFoco: View {
             } label: {
                 Text(running ? String(localized: "Stop and save") : String(localized: "Start"))
                     .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(LiquidColor.tinta900)
-                    .padding(.horizontal, 16).padding(.vertical, 8)
+                    .padding(.horizontal, CenitMetrics.cardPadding).padding(.vertical, CenitMetrics.space2)
                     .overlay(Capsule().strokeBorder(LiquidColor.tinta10, lineWidth: 1))
             }
             .buttonStyle(.plain)
@@ -295,7 +295,7 @@ struct HojaFoco: View {
     /// Q↔RPE vive en la hoja 6-10 que esta puerta abre). SIN puerta de descanso manual — la banda
     /// cae sola al palomear (D2).
     private func capsulas(run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: CenitMetrics.space2) {
             EntrenarCapsulaPuerta(String(localized: "RPE"), mostrarFlecha: false) {
                 vivo.openRPE(ei: ei, si: run.currentSet)
             }
@@ -388,11 +388,11 @@ struct HojaFoco: View {
     /// ajeno): misma receta (padding 3, cápsula, segmento activo en tinta), en `InstrumentoTheme`
     /// (el ambiente de esta pantalla, igual que `RestBand`).
     private var combustibleToggle: some View {
-        HStack(spacing: 3) {
+        HStack(spacing: LiquidSpace.s075) {
             combustibleSegmento(String(localized: "Time"), activo: forzarVistaTiempo) { forzarVistaTiempo = true }
             combustibleSegmento(String(localized: "HR"), activo: !forzarVistaTiempo) { forzarVistaTiempo = false }
         }
-        .padding(3)
+        .padding(LiquidSpace.s075)
         .background(vivo.sheet.theme.surface, in: Capsule())
     }
 
@@ -400,7 +400,7 @@ struct HojaFoco: View {
         Text(verbatim: label)
             .font(InstrumentoType.grotesk(10, weight: .semibold)).tracking(0.6).textCase(.uppercase)
             .foregroundStyle(activo ? vivo.sheet.theme.paper : vivo.sheet.theme.inkTertiary)
-            .padding(.horizontal, 11).padding(.vertical, 5).frame(minHeight: 34)
+            .padding(.horizontal, CenitMetrics.gap).padding(.vertical, LiquidSpace.s125).frame(minHeight: EntrenarMetrics.secondaryButton)
             .background { if activo { Capsule().fill(vivo.sheet.theme.ink) } }
             .contentShape(Capsule())
             .onTapGesture { withAnimation(vivo.reduceMotion ? nil : StrandMotion.interactive) { action() } }
@@ -436,7 +436,7 @@ struct HojaFoco: View {
             VStack(spacing: 0) {
                 Spacer(minLength: 0)
                 Circle().fill(LiquidColor.verdePrimario)
-                    .frame(width: 44, height: 44)
+                    .frame(width: CenitMetrics.touchTarget, height: CenitMetrics.touchTarget)
                     .overlay { Image(systemName: "checkmark").font(StrandFont.glyph(.lead, weight: .bold)).foregroundStyle(LiquidColor.tintaSobreVerde) }
                     .accessibilityHidden(true)
                 // «Hecho · {nombre}» — NO «{nombre}, hecha» (el mapa lo dibuja así, pero esa
@@ -497,7 +497,7 @@ struct HojaFoco: View {
         let zone = max(1, min(5, Int((pct * 5).rounded(.up))))
         return Text("ZONE \(zone) · \(bpm)")
             .font(StrandFont.caption.weight(.bold)).foregroundStyle(LiquidColor.tinta500)
-            .padding(.horizontal, 8).padding(.vertical, 3)
+            .padding(.horizontal, CenitMetrics.space2).padding(.vertical, LiquidSpace.s075)
             .overlay(Capsule().strokeBorder(LiquidColor.tinta10, lineWidth: 1))
     }
 

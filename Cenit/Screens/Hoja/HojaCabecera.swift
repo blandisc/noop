@@ -15,7 +15,7 @@ enum HojaCabecera {
 
     /// Fila superior: ✕ (cierra) + Deshacer/Guardado.
     static func header(sheet: RoutineSheet) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: CenitMetrics.space2) {
             BackButton(role: .close, theme: sheet.theme) { sheet.back() }
                 .padding(.leading, -2)
             Spacer()
@@ -24,7 +24,7 @@ enum HojaCabecera {
             if sheet.dirty, !sheet.locked {
                 Button { sheet.undo() } label: {
                     Text(String(localized: "Undo")).font(StrandFont.body).foregroundStyle(sheet.theme.ink)
-                        .frame(minHeight: 44).contentShape(Rectangle())
+                        .frame(minHeight: CenitMetrics.touchTarget).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text(String(localized: "Undo")))
@@ -39,13 +39,13 @@ enum HojaCabecera {
 
     /// Overline por origen, el nombre EDITABLE (TextField, ✎ decorativo al lado) y la meta punteada.
     static func titleBlock(sheet: RoutineSheet) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
             HStack(alignment: .firstTextBaseline) {
                 Text(sheet.overline).groteskOverline().foregroundStyle(sheet.theme.inkTertiary)
-                Spacer(minLength: 8)
+                Spacer(minLength: CenitMetrics.space2)
                 if sheet.isPlanDay { dayMenu(sheet: sheet) }
             }
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space2) {
                 TextField("Routine name", text: Binding(
                     get: { sheet.routine?.name ?? "" },
                     set: { sheet.routine?.name = $0; sheet.dirty = true }
@@ -60,7 +60,7 @@ enum HojaCabecera {
             if sheet.locked {
                 Text("Session in progress · finish it to edit")
                     .font(StrandFont.caption).foregroundStyle(sheet.theme.inkTertiary)
-                    .padding(.top, 2)
+                    .padding(.top, LiquidSpace.s050)
             }
             // R13 (QA D11, mapa A1): la meta calla con MENOS de 2 ejercicios — un solo ejercicio
             // recién agregado no tiene nada útil que resumir todavía («1 ejercicio · 3 series ·
@@ -72,8 +72,8 @@ enum HojaCabecera {
     /// El dot de familia + «{grupo} · N ejercicios · M series · ~T min · ~T,TTT kg» (R15: el
     /// tonelaje se omite cuando ningún ejercicio tiene peso — nunca un «~0 kg» inventado).
     private static func metaLine(sheet: RoutineSheet) -> some View {
-        HStack(spacing: 10) {
-            HStack(spacing: 6) {
+        HStack(spacing: LiquidSpace.s250) {
+            HStack(spacing: LiquidSpace.s150) {
                 EntrenarFamilyDot(sheet.routineTint)
                 Text(sheet.groupTitle).font(StrandFont.caption).foregroundStyle(sheet.theme.inkTertiary)
             }
@@ -88,14 +88,14 @@ enum HojaCabecera {
                     .numeroVivo(value: kg)
             }
         }
-        .padding(.top, 2)
+        .padding(.top, LiquidSpace.s050)
     }
 
     /// .planDay «···»: cambiar rutina / marcar descanso (A6/A7).
     private static func dayMenu(sheet: RoutineSheet) -> some View {
         Button { sheet.showDayMenu = true } label: {
             Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
-                .foregroundStyle(sheet.theme.inkTertiary).frame(width: 44, height: 44).contentShape(Rectangle())
+                .foregroundStyle(sheet.theme.inkTertiary).frame(width: CenitMetrics.touchTarget, height: CenitMetrics.touchTarget).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("Day options"))
@@ -112,17 +112,17 @@ enum HojaCabecera {
     /// El CTA fijo — «Empezar sesión»/«Resume», la ÚNICA puerta al ejercicio guiado (F2 lo sustituye).
     static func ctaBar(sheet: RoutineSheet) -> some View {
         Button { sheet.start() } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: CenitMetrics.space2) {
                 Image(systemName: "play.fill").font(.system(size: 13, weight: .bold))  // token-exempt: glifo del CTA
                 Text(sheet.ctaTitle).font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
             }
-            .foregroundStyle(sheet.theme.paper).frame(maxWidth: .infinity).padding(.vertical, 15)
+            .foregroundStyle(sheet.theme.paper).frame(maxWidth: .infinity, minHeight: EntrenarMetrics.primaryButton)
             .background(sheet.theme.dataStrain, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
         }
         .buttonStyle(.plain)
         .padding(.horizontal, CenitMetrics.screenPadding)
-        .padding(.top, 8)
-        .padding(.bottom, 8)
+        .padding(.top, CenitMetrics.space2)
+        .padding(.bottom, CenitMetrics.space2)
         .background(CenitColor.pantalla)
     }
 }
