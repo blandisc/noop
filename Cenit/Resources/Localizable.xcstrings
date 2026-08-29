@@ -16963,7 +16963,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Start"
+            "value" : "Empezar"
           }
         },
         "es" : {
@@ -18192,7 +18192,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminar el entrenamiento"
+            "value" : "Terminar entrenamiento"
           }
         }
       }
@@ -34351,7 +34351,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Día de descanso"
+            "value" : "Hoy descansas"
           }
         }
       }
@@ -38373,7 +38373,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Iniciar"
+            "value" : "Empezar"
           }
         }
       }

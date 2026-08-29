@@ -83,8 +83,27 @@ public enum WidgetMetrics {
     public static let barTopGap: CGFloat = 8
     public static let actionsTopGap: CGFloat = 8
     public static let pillGap: CGFloat = 8
-    public static let pillRadius: CGFloat = 11
+    /// El ÚNICO radio de esquina para cualquier control-slab rectangular de la tarjeta (`PrimaryButton`,
+    /// `PillButton`, `GlyphButton`) — FER-225: antes convivían 13 (`controlRadius`) y 11 (`pillRadius`)
+    /// en la misma tarjeta de 12pt de padding sin razón visual. Regla escrita: un track que deba llegar
+    /// a pastilla TOTALMENTE redonda (p. ej. `BarSlot`) SIEMPRE deriva su radio de su propia altura
+    /// (`altura / 2`), nunca de una constante independiente — así el sistema solo tiene DOS radios: este
+    /// token, y esa fórmula derivada.
     public static let controlRadius: CGFloat = 13
+    /// Aire fino entre nombre y overline (`IdentityRow`) y entre el glifo de pulso y el número
+    /// (`PulseChip`) — FER-225, antes un `spacing: 3` crudo en cada call site.
+    public static let captionGap: CGFloat = 3
+    /// Aire mínimo entre dos líneas de una pila muy compacta («Tope»+reloj en `IdentityRow.trailing`,
+    /// etiqueta+valor en `ReturnBlock`) — FER-225, antes un `spacing: 2` crudo repetido en ambos sitios.
+    public static let microGap: CGFloat = 2
+    /// Aire entre el glifo de corazón y el número en `PulseHero` — FER-225, antes un `spacing: 6` crudo.
+    public static let pulseIconGap: CGFloat = 6
+    /// `Text(timerInterval:)` es GREEDY: reclama todo el ancho que se le ofrezca, lo que estiraba la
+    /// isla compacta a lo ancho del recorte entero. Este multiplicador (× el tamaño de punto) topa el
+    /// ancho a ~«10:00» — 5 dígitos/dos-puntos monoespaciados a la fuente redondeada cubren el peor caso
+    /// de un descanso de hasta 99:59 — para que la píldora vuelva a abrazar su contenido. FER-225: antes
+    /// un `size * 3` sin nombre en `RestTimerText`.
+    public static let timerWidthMultiplier: CGFloat = 3
     public static let disabledOpacity: CGFloat = 0.4
 }
 
@@ -106,6 +125,43 @@ public enum HomeWidgetMetrics {
     public static let dayLabel: CGFloat = 10
     public static let rowGap: CGFloat = 6
     public static let weekGap: CGFloat = 10
+    /// Aire fino entre la overline «Today» y el título, y entre el veredicto y el CTA (`headerRow`) —
+    /// FER-225, antes un `spacing: 2` crudo que no calzaba con `rowGap` (6pt, demasiado para esta pila).
+    public static let microGap: CGFloat = 2
+    /// Aire entre el token del día y su letra en `WeekStrip` — FER-225, antes un `spacing: 4` crudo.
+    public static let dayTokenGap: CGFloat = 4
+    /// Grosor del anillo «hoy» en `WeekStrip.token` — FER-225, antes un `lineWidth: 2` crudo.
+    public static let ringToday: CGFloat = 2
+    /// Grosor del anillo «próximo» — FER-225, antes un `lineWidth: 1.5` crudo.
+    public static let ringUpcoming: CGFloat = 1.5
+    /// Grosor del anillo punteado «descanso» — FER-225, antes un `lineWidth: 1` crudo.
+    public static let ringRest: CGFloat = 1
+    /// Patrón de punteado del anillo «descanso» — FER-225, antes un `dash: [2, 3]` crudo.
+    public static let ringRestDash: [CGFloat] = [2, 3]
+}
+
+// MARK: - Watch geometry (FER-225)
+//
+// `WatchLiveFaceView`/`WatchSummaryView` had NO shared geometry token before this — every touch height
+// and hero size was a raw literal, independently invented per screen. This enum only NAMES what the
+// audit found; it does NOT unify the values, since collapsing them (e.g. 38→44) is a real layout change
+// past this issue's ≤2pt geometry-snap budget. The finding stands as a reported inconsistency, not a
+// silent fix: FOUR different heights exist for equivalent buttons — `ctaHeight` (the wrist «Registrar
+// serie»), `pillHeight` (±30/Saltar), `controlHeight` (the control-page's Saltar/Registrar/Terminar),
+// `summarySecondaryHeight`/`summaryPrimaryHeight` (the end-of-session sheet) — alongside
+// `CenitMetrics.touchTarget` (44pt), which `WatchSessionRootView` already uses on its own primary CTA.
+public enum WatchMetrics {
+    public static let ctaHeight: CGFloat = 38
+    public static let pillHeight: CGFloat = 30
+    public static let controlHeight: CGFloat = 40
+    public static let summarySecondaryHeight: CGFloat = 40
+    public static let summaryPrimaryHeight: CGFloat = 44
+
+    // Hero numerals — four raw sizes with no shared scale before this.
+    public static let heroPulse: CGFloat = 52
+    public static let heroRestCountdown: CGFloat = 44
+    public static let heroReadiness: CGFloat = 36
+    public static let heroSummaryDuration: CGFloat = 40
 }
 
 // MARK: - Range control (the ONE segmented pill control, used everywhere)

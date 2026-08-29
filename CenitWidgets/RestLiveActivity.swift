@@ -119,7 +119,7 @@ private struct IdentityRow: View {
     var body: some View {
         HStack(spacing: M.headerGap) {
             thumb
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: M.captionGap) {
                 Text(state.exerciseName)
                     .font(.system(size: M.name, weight: .semibold))
                     .foregroundStyle(stale ? theme.inkTertiary : theme.ink)
@@ -159,7 +159,7 @@ private struct IdentityRow: View {
         if stale {
             EmptyView()
         } else if state.isHRRest {
-            VStack(alignment: .trailing, spacing: 2) {
+            VStack(alignment: .trailing, spacing: M.microGap) {
                 Overline(String(localized: "Cap"), theme: theme, stale: false)
                 RestTimerText(state: state, size: M.pillLabel + 1, weight: .semibold, alignment: .trailing)
                     .foregroundStyle(theme.inkSecondary)
@@ -264,7 +264,7 @@ private struct PulseHero: View {
     private typealias M = LiveActivityMetrics
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 6) {
+        HStack(alignment: .firstTextBaseline, spacing: M.pulseIconGap) {
             Image(systemName: "heart.fill").font(.system(size: M.hero * 0.45))
             Text("\(state.bpm ?? 0)")
                 .font(.system(size: M.hero, weight: .semibold, design: .rounded))
@@ -297,7 +297,7 @@ private struct ReturnBlock: View {
     private typealias M = LiveActivityMetrics
 
     var body: some View {
-        VStack(alignment: .trailing, spacing: 2) {
+        VStack(alignment: .trailing, spacing: M.microGap) {
             Overline(label, theme: theme, stale: stale)
             Text(value)
                 .font(.system(size: M.returnValue, weight: .semibold))
@@ -356,7 +356,9 @@ private struct BarSlot: View {
         .accessibilityHidden(true)
     }
 
-    // Per-set progress: one segment per planned set, lit up to the current set.
+    // Per-set progress: one segment per planned set, lit up to the current set. `M.bar / 2` is the
+    // system's SECOND radius (FER-225): a track that must reach a fully-rounded pill/capsule ALWAYS
+    // derives its radius from its own height, never a hard-coded independent constant.
     private var segments: some View {
         HStack(spacing: M.segmentGap) {
             ForEach(0..<max(state.setTotal, 1), id: \.self) { i in
@@ -422,7 +424,9 @@ private struct ActionsRow: View {
     // routine's last set adds the «Terminar entreno» flag.
     @ViewBuilder private var restActions: some View {
         if state.isHRMode {
-            PillButton(title: Text("Skip"), intent: RestSkipIntent(), theme: theme)
+            // FER-225 — «Saltar descanso» canon, same words as the iPhone/Watch band (was the bare
+            // «Skip», the only place on this card that dropped the noun).
+            PillButton(title: Text("Skip rest"), intent: RestSkipIntent(), theme: theme)
                 .accessibilityLabel(Text("Skip rest"))
         } else {
             HStack(spacing: M.pillGap) {
@@ -432,6 +436,11 @@ private struct ActionsRow: View {
                     .accessibilityLabel(Text("Remove 30 seconds"))
                 PillButton(title: Text("+30 s"), intent: RestAddThirtyIntent(), theme: theme)
                     .accessibilityLabel(Text("Add 30 seconds"))
+                // FER-225 — visible label STAYS «Skip» (not «Skip rest»/«Saltar descanso»): this pill
+                // shares a 3-4-up row with «−30 s»/«+30 s»(/the finish flag) at a fixed Live Activity
+                // width; «Saltar descanso» doesn't fit without wrapping or shrinking its siblings — a
+                // canon/context conflict, flagged rather than solved by inventing another word. The
+                // a11y label already says the full «Skip rest» for VoiceOver.
                 PillButton(title: Text("Skip"), intent: RestSkipIntent(), theme: theme)
                     .accessibilityLabel(Text("Skip rest"))
                 if state.isFinish {
@@ -477,6 +486,8 @@ private struct PrimaryButton<Title: View, I: AppIntent>: View {
 }
 
 /// A quiet rest control — surface fill, hairline border, ink-secondary label. Never a data hue (§8.4.2).
+/// FER-225 — shares `M.controlRadius` with `PrimaryButton`/`GlyphButton` (the retired `pillRadius`
+/// (11pt) sat 2pt off `controlRadius` (13pt) for no visual reason, in the same 12pt-padded card).
 private struct PillButton<Title: View, I: AppIntent>: View {
     let title: Title
     let intent: I
@@ -490,8 +501,8 @@ private struct PillButton<Title: View, I: AppIntent>: View {
                 .foregroundStyle(theme.inkSecondary)
                 .frame(maxWidth: .infinity, minHeight: M.control)
                 .background(theme.surface)
-                .overlay(RoundedRectangle(cornerRadius: M.pillRadius).strokeBorder(theme.hairline, lineWidth: 1))
-                .clipShape(RoundedRectangle(cornerRadius: M.pillRadius))
+                .overlay(RoundedRectangle(cornerRadius: M.controlRadius).strokeBorder(theme.hairline, lineWidth: 1))
+                .clipShape(RoundedRectangle(cornerRadius: M.controlRadius))
         }
         .buttonStyle(.plain)
     }
@@ -553,7 +564,7 @@ private struct RestTimerText: View {
         Text(timerInterval: state.restStartedAt...state.restEndsAt, countsDown: true)
             .font(.system(size: size, weight: weight, design: .rounded))
             .monospacedDigit()
-            .frame(maxWidth: size * 3, alignment: alignment)
+            .frame(maxWidth: size * WidgetMetrics.timerWidthMultiplier, alignment: alignment)
     }
 }
 
@@ -564,7 +575,7 @@ private struct PulseChip: View {
     var size: CGFloat
     var body: some View {
         if let bpm = state.bpm {
-            HStack(spacing: 3) {
+            HStack(spacing: WidgetMetrics.captionGap) {
                 Image(systemName: "heart.fill").font(.system(size: size * 0.8))
                 Text("\(bpm)").font(.system(size: size, weight: .semibold, design: .rounded)).monospacedDigit()
             }

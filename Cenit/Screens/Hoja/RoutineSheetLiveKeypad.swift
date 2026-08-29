@@ -90,7 +90,9 @@ extension HojaSesionViva {
             // acción de fondo no cambia: `skipRest()` sigue siendo lo que suelta el descanso).
             confirmSetLabel: resting
                 ? (ceiling ? String(localized: "Continue") + " ›" : String(localized: "Skip") + " ›")
-                : String(localized: "✓ Serie"),
+                // FER-225 — reuses Foco's «Set done» key (→ «Serie hecha») instead of the ad hoc
+                // «✓ Serie», so the register-a-set CTA reads the same canon copy everywhere.
+                : "✓ " + String(localized: "Set done"),
             confirmSetAccessibilityLabel: resting
                 ? (ceiling ? Text("Continue") : Text("Skip rest")) : Text("Mark set as done"),
             onHide: { withAnimation(reduceMotion ? nil : .snappy(duration: 0.22)) { keypadHidden = true } },

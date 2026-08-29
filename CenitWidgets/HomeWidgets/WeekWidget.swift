@@ -115,7 +115,7 @@ struct WeekWidgetView: View {
 
     private func headerRow(title: Text, verdict: TrainWidgetSnapshot.Verdict?, cta: LocalizedStringKey?) -> some View {
         HStack(alignment: .firstTextBaseline) {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: M.microGap) {
                 Text("Today")
                     .font(.system(size: M.overline, weight: .semibold))
                     .tracking(M.overlineTracking)
@@ -127,7 +127,7 @@ struct WeekWidgetView: View {
                     .minimumScaleFactor(0.8)
             }
             Spacer(minLength: 8)
-            VStack(alignment: .trailing, spacing: 2) {
+            VStack(alignment: .trailing, spacing: M.microGap) {
                 if let verdict {
                     Text(verbatim: verdict.word)
                         .font(.system(size: M.verdict, weight: .medium))
@@ -154,7 +154,7 @@ private struct WeekStrip: View {
     var body: some View {
         HStack(spacing: 0) {
             ForEach(Array(days.enumerated()), id: \.offset) { _, day in
-                VStack(spacing: 4) {
+                VStack(spacing: M.dayTokenGap) {
                     token(day.state)
                     Text(verbatim: day.label)
                         .font(.system(size: M.dayLabel, weight: .medium))
@@ -173,11 +173,11 @@ private struct WeekStrip: View {
         case .done:
             Circle().fill(theme.ink).frame(width: side, height: side)
         case .today:
-            Circle().strokeBorder(theme.ink, lineWidth: 2).frame(width: side, height: side)
+            Circle().strokeBorder(theme.ink, lineWidth: M.ringToday).frame(width: side, height: side)
         case .upcoming:
-            Circle().strokeBorder(theme.hairlineStrong, lineWidth: 1.5).frame(width: side, height: side)
+            Circle().strokeBorder(theme.hairlineStrong, lineWidth: M.ringUpcoming).frame(width: side, height: side)
         case .rest:
-            Circle().strokeBorder(theme.inkTertiary, style: StrokeStyle(lineWidth: 1, dash: [2, 3]))
+            Circle().strokeBorder(theme.inkTertiary, style: StrokeStyle(lineWidth: M.ringRest, dash: M.ringRestDash))
                 .frame(width: side, height: side)
         }
     }

@@ -88,7 +88,7 @@ private struct WatchFaceMetrics: View {
                 else { Text("Log set") }
             }
             .font(StrandFont.caption)
-            .frame(maxWidth: .infinity, minHeight: 38)
+            .frame(maxWidth: .infinity, minHeight: WatchMetrics.ctaHeight)
         }
         .buttonStyle(.borderedProminent)
         .tint(t.ink)
@@ -113,7 +113,7 @@ private struct WatchFaceMetrics: View {
             if rest.isHRMode { hrRestHeadline(rest) }
             else {
                 Text(timerInterval: rest.restStartedAt...rest.restEndsAt, countsDown: true)
-                    .instrumentoHero(44)
+                    .instrumentoHero(WatchMetrics.heroRestCountdown)
                     .foregroundStyle(t.dataStrain)
                     .minimumScaleFactor(0.5)
                     .lineLimit(1)
@@ -155,7 +155,7 @@ private struct WatchFaceMetrics: View {
             let gap = max(0, manager.heartRate - target)
             if gap == 0 {
                 Text("Ready")
-                    .instrumentoHero(36)
+                    .instrumentoHero(WatchMetrics.heroReadiness)
                     .foregroundStyle(t.positiveText)
                     .minimumScaleFactor(0.5)
                     .lineLimit(1)
@@ -163,14 +163,14 @@ private struct WatchFaceMetrics: View {
                 // The engine's honesty band (`RestReadinessRule.defaultBandBPM` = 5): close enough that
                 // beat-level precision would be fake.
                 Text("Almost")
-                    .instrumentoHero(36)
+                    .instrumentoHero(WatchMetrics.heroReadiness)
                     .foregroundStyle(t.dataHeart)
                     .minimumScaleFactor(0.5)
                     .lineLimit(1)
             } else {
                 (Text("you need").font(StrandFont.subhead).foregroundStyle(t.inkSecondary)
                  + Text(verbatim: " ")
-                 + Text(verbatim: "\(gap)").instrumentoHero(36).foregroundStyle(t.dataHeart)
+                 + Text(verbatim: "\(gap)").instrumentoHero(WatchMetrics.heroReadiness).foregroundStyle(t.dataHeart)
                  + Text(verbatim: " ")
                  + Text("bpm").font(StrandFont.subhead).foregroundStyle(t.inkSecondary))
                     .minimumScaleFactor(0.5)
@@ -203,7 +203,7 @@ private struct WatchFaceMetrics: View {
             WatchHaptic.actionTapped.play()
             action()
         } label: {
-            Text(title).font(StrandFont.footnote).frame(maxWidth: .infinity, minHeight: 30)
+            Text(title).font(StrandFont.footnote).frame(maxWidth: .infinity, minHeight: WatchMetrics.pillHeight)
         }
         .buttonStyle(.bordered)
         .tint(t.inkSecondary)
@@ -222,7 +222,7 @@ private struct WatchFaceMetrics: View {
     private var pulseHero: some View {
         HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space1) {
             pulseValue
-                .instrumentoHero(52)
+                .instrumentoHero(WatchMetrics.heroPulse)
                 .foregroundStyle(pulseDashed ? t.inkDim : t.dataHeart)
                 .minimumScaleFactor(0.5)
                 .lineLimit(1)
@@ -253,7 +253,7 @@ private struct WatchFaceMetrics: View {
                 .font(StrandFont.footnote)
                 .foregroundStyle(t.inkSecondary)
                 .padding(.horizontal, CenitMetrics.space1)
-                .padding(.vertical, 1)
+                .padding(.vertical, LiquidSpace.s025)
                 .overlay(RoundedRectangle(cornerRadius: 4).stroke(t.inkTertiary, lineWidth: 1))  // token-exempt: watch face geometry (fixed 4pt inset stroke)
                 .accessibilityLabel(Text("Effort zone \(z)"))
         }
@@ -316,17 +316,17 @@ private struct WatchControlPage: View {
             Text("Session").instrumentoOverline().foregroundStyle(t.inkTertiary)
             if manager.rest != nil {
                 Button { WatchHaptic.actionTapped.play(); manager.skipRestFromWrist() } label: {
-                    Text("Skip rest").frame(maxWidth: .infinity, minHeight: 40)
+                    Text("Skip rest").frame(maxWidth: .infinity, minHeight: WatchMetrics.controlHeight)
                 }
                 .buttonStyle(.bordered).tint(t.inkSecondary)
             } else {
                 Button { WatchHaptic.actionTapped.play(); manager.completeSetFromWrist() } label: {
-                    Text("Log set").frame(maxWidth: .infinity, minHeight: 40)
+                    Text("Log set").frame(maxWidth: .infinity, minHeight: WatchMetrics.controlHeight)
                 }
                 .buttonStyle(.borderedProminent).tint(t.ink)
             }
             Button(role: .destructive) { confirming = true } label: {
-                Text("End").frame(maxWidth: .infinity, minHeight: 40)
+                Text("End").frame(maxWidth: .infinity, minHeight: WatchMetrics.controlHeight)
             }
             .buttonStyle(.bordered).tint(t.critical)
             Spacer()
