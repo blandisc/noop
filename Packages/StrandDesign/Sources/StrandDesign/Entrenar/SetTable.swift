@@ -356,6 +356,7 @@ public struct SetTable: View {
         return Text(verbatim: row.badge)
             .font(InstrumentoType.groteskNumber(12, weight: .bold, relativeTo: .caption))
             .foregroundStyle(ring)
+            .numeroVivo(value: row.badge)
             .frame(width: EntrenarMetrics.badge, height: EntrenarMetrics.badge)
             .background {
                 if row.isWarmup {
@@ -396,6 +397,7 @@ public struct SetTable: View {
                 .foregroundStyle(ink)
                 .minimumScaleFactor(0.75)
                 .lineLimit(1)
+                .numeroVivo(value: shown)
             if role == .editing {
                 Rectangle().fill(theme.ink)
                     .frame(width: EntrenarMetrics.caretWidth, height: EntrenarMetrics.caretHeight)
@@ -465,6 +467,7 @@ public struct SetTable: View {
                     .foregroundStyle(row.done ? theme.inkSecondary : theme.ink)
                     .minimumScaleFactor(0.75)
                     .lineLimit(1)
+                    .numeroVivo(value: text)
             } else {
                 Image(systemName: "play.circle")
                     .font(StrandFont.glyph(.lead))
@@ -501,7 +504,7 @@ public struct SetTable: View {
         }
         .buttonStyle(EntrenarPressStyle())
         .disabled(onToggle == nil)
-        .sensoryFeedback(.success, trigger: row.done)
+        .entrenarHaptic(.serieCompletada, trigger: row.done)   // FER-223: catálogo de Entrenar, no un `.success` suelto.
         .accessibilityLabel(row.done ? Text("Done") : Text("Mark set done"))
     }
 

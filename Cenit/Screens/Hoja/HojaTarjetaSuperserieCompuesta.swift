@@ -94,7 +94,7 @@ struct HojaTarjetaSuperserieCompuesta: View {
                 if sheet.showsWeight(type) {
                     Text(verbatim: StrengthDisplay.weightUnit(sheet.system).lowercased())
                         .font(InstrumentoType.grotesk(10, weight: .semibold, relativeTo: .caption2)).foregroundStyle(LiquidColor.tinta500)
-                        .padding(.leading, 2)
+                        .padding(.leading, LiquidSpace.s050)
                 }
             }
             .frame(width: HojaMetrics.colPesoEdicion, alignment: .leading)
@@ -149,7 +149,7 @@ struct HojaTarjetaSuperserieCompuesta: View {
             .allowsHitTesting(action != nil)
             .overlay(alignment: .bottom) {
                 if active {
-                    Rectangle().fill(LiquidColor.tinta900).frame(height: 2).padding(.bottom, 6)
+                    Rectangle().fill(LiquidColor.tinta900).frame(height: EntrenarMetrics.currentEdge).padding(.bottom, LiquidSpace.s150)
                 }
             }
     }

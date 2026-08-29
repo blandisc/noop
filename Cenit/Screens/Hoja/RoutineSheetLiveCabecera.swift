@@ -24,14 +24,14 @@ enum HojaCabeceraSesion {
                 Image(systemName: "chevron.left")
                     .font(StrandFont.glyph(.chevron, weight: .semibold))
                     .foregroundStyle(vivo.sheet.theme.inkSecondary)
-                    .frame(width: 34, height: 34).contentShape(Rectangle().inset(by: -5))
+                    .frame(width: 34, height: EntrenarMetrics.secondaryButton).contentShape(Rectangle().inset(by: -LiquidSpace.s125))
             }
             .buttonStyle(.plain)
             .accessibilityLabel(Text("Minimize session"))
 
             EntrenarFamilyDot(vivo.familyTint, size: EntrenarMetrics.familyDotCompact)
 
-            VStack(alignment: .leading, spacing: 1) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s025) {
                 Text(vivo.session.routineName).font(StrandFont.headline).foregroundStyle(vivo.sheet.theme.ink).lineLimit(1)
                 Text(vivo.session.paused ? String(localized: "Paused") : vivo.serieSubtitle)
                     .instrumentoOverline().foregroundStyle(vivo.sheet.theme.inkTertiary).lineLimit(1)
@@ -41,9 +41,11 @@ enum HojaCabeceraSesion {
             heartRate(vivo: vivo)
 
             TimelineView(.periodic(from: Date(), by: 1)) { ctx in
-                Text(SessionClock.format(vivo.session.elapsedSeconds(now: ctx.date)))
-                    .font(InstrumentoType.groteskNumber(15)).monospacedDigit()
+                let texto = SessionClock.format(vivo.session.elapsedSeconds(now: ctx.date))
+                Text(texto)
+                    .font(InstrumentoType.groteskNumber(15))
                     .foregroundStyle(vivo.sheet.theme.inkSecondary)
+                    .numeroVivo(value: texto)
             }
             .accessibilityHidden(true)
 
@@ -53,7 +55,7 @@ enum HojaCabeceraSesion {
                     Image(systemName: "arrow.up.left.and.arrow.down.right")
                         .font(StrandFont.glyph(.inline, weight: .semibold))
                         .foregroundStyle(vivo.sheet.theme.inkSecondary)
-                        .frame(width: 34, height: 34).contentShape(Rectangle().inset(by: -5))
+                        .frame(width: 34, height: EntrenarMetrics.secondaryButton).contentShape(Rectangle().inset(by: -LiquidSpace.s125))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Focus"))
@@ -64,14 +66,14 @@ enum HojaCabeceraSesion {
                     Image(systemName: vivo.session.paused ? "play.fill" : "pause.fill")
                         .font(StrandFont.glyph(.inline, weight: .semibold))
                         .foregroundStyle(vivo.sheet.theme.inkSecondary)
-                        .frame(width: 34, height: 34).contentShape(Rectangle().inset(by: -5))
+                        .frame(width: 34, height: EntrenarMetrics.secondaryButton).contentShape(Rectangle().inset(by: -LiquidSpace.s125))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(vivo.session.paused ? Text("Resume session") : Text("Pause session"))
             }
         }
         .padding(.horizontal, CenitMetrics.screenPadding)
-        .padding(.top, 6)
+        .padding(.top, LiquidSpace.s150)
     }
 
     /// ♥ 118 — SOLO con FC viva (R14, paridad `LiveStrengthSheet.sessionHeaderHeartRate`). Sin punto
@@ -98,22 +100,22 @@ enum HojaCabeceraSesion {
                     .frame(width: geo.size.width * vivo.fraccionAvance)
             }
         }
-        .frame(height: 3)
+        .frame(height: EntrenarMetrics.progressBar)
         .padding(.horizontal, CenitMetrics.screenPadding)
-        .padding(.top, 10)
+        .padding(.top, CenitMetrics.rowVPad)
         .accessibilityHidden(true)
     }
 
     /// B16 — sesión llena: CTA prominente «Terminar y guardar», la ÚNICA acción que queda una vez
     /// que ya no hay ninguna fila activa que capturar (mapa B16).
     static func ctaTerminar(vivo: HojaSesionViva) -> some View {
-        VStack(spacing: 6) {
+        VStack(spacing: LiquidSpace.s150) {
             Button {
                 vivo.confirmFinish = true
             } label: {
                 Text("Finish and save")
                     .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
-                    .foregroundStyle(vivo.sheet.theme.paper).frame(maxWidth: .infinity).padding(.vertical, 15)
+                    .foregroundStyle(vivo.sheet.theme.paper).frame(maxWidth: .infinity).padding(.vertical, LiquidSpace.s400)
                     .background(LiquidColor.verdePrimario, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
             }
             .buttonStyle(.plain)
@@ -121,9 +123,9 @@ enum HojaCabeceraSesion {
                 .font(StrandFont.caption).foregroundStyle(vivo.sheet.theme.inkTertiary)
         }
         .padding(.horizontal, CenitMetrics.screenPadding)
-        .padding(.top, 8)
-        .padding(.bottom, 8)
-        .background(vivo.sheet.theme.paper)
+        .padding(.top, CenitMetrics.space2)
+        .padding(.bottom, CenitMetrics.space2)
+        .entrenarHojaBarraFondo(tono: .indigo)
     }
 }
 #endif

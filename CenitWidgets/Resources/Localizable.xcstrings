@@ -230,7 +230,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Completar serie"
+            "value" : "Serie hecha"
           }
         }
       }
@@ -658,7 +658,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "serie %1$lld de %2$lld"
+            "value" : "Serie %1$lld de %2$lld"
           }
         }
       }

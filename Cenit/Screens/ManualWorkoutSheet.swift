@@ -145,13 +145,25 @@ struct ManualWorkoutSheet: View {
     private var saveButton: some View {
         let enabled = builtRow != nil
         return Button { save() } label: {
-            Text(editing == nil ? "Add" : "Save")
-                .font(StrandFont.headline)
-                .foregroundStyle(enabled ? theme.paper : theme.inkTertiary)
-                .padding(.horizontal, 20).padding(.vertical, 9)
-                .background(enabled ? theme.verdict : theme.surface, in: Capsule(style: .continuous))
-                .overlay(Capsule(style: .continuous)
-                    .strokeBorder(enabled ? Color.clear : theme.hairlineStrong, lineWidth: 1))
+            Group {
+                if enabled {
+                    Text(editing == nil ? "Add" : "Save")
+                        .font(StrandFont.headline)
+                        .foregroundStyle(theme.paper)
+                        .padding(.horizontal, 20).padding(.vertical, 9)
+                        .background(theme.verdict, in: Capsule(style: .continuous))
+                } else {
+                    // FER-220: la cápsula deshabilitada ya no es `theme.surface` a mano — el
+                    // mismo recorte opaco (`.liquidGlass(.pastillaSolida)`) que el resto de
+                    // chips legacy del app; el verdict verde de arriba se queda intacto (es
+                    // color semántico, no la receta de tarjeta que este issue retira).
+                    Text(editing == nil ? "Add" : "Save")
+                        .font(StrandFont.headline)
+                        .foregroundStyle(theme.inkTertiary)
+                        .padding(.horizontal, 20).padding(.vertical, 9)
+                        .liquidGlass(.pastillaSolida)
+                }
+            }
         }
         .buttonStyle(.plain)
         .disabled(!enabled)

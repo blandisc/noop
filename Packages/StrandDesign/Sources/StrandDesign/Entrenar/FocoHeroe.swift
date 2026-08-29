@@ -83,6 +83,7 @@ public struct FocoHeroe: View {
                         relativeTo: .largeTitle))
                     .tracking(FocoHeroeMetrics.valorTracking)
                     .foregroundStyle(LiquidColor.tinta900)
+                    .numeroVivo(value: valor)
                 Text(verbatim: unidad)
                     .font(InstrumentoType.grotesk(
                         FocoHeroeMetrics.unidadSize,

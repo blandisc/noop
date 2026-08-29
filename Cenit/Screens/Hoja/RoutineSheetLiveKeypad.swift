@@ -85,12 +85,18 @@ extension HojaSesionViva {
             onStep: { keypadStep(cell, sign: 1) },
             onStepDown: { keypadStep(cell, sign: -1) },
             onPlates: { openPlates(ei: ei, si: si) },
+            // FER-223: SIN háptico propio aquí — `confirmOrToggleSet` llega a `registerActiveSet`
+            // (el único funnel de «serie registrada») cuando de verdad palomea una serie; poner otro
+            // aquí duplicaba el golpe. El des-palomear (toggle a no-hecho) tampoco lleva háptico,
+            // igual que antes.
             onConfirmSet: { resting ? skipRest() : confirmOrToggleSet(ei: ei, si: si) },
             // O-r2b: en el tope, MISMA palabra que la banda — «Continuar ›», no «Saltar ›» (la
             // acción de fondo no cambia: `skipRest()` sigue siendo lo que suelta el descanso).
             confirmSetLabel: resting
                 ? (ceiling ? String(localized: "Continue") + " ›" : String(localized: "Skip") + " ›")
-                : String(localized: "✓ Serie"),
+                // FER-225 — reuses Foco's «Set done» key (→ «Serie hecha») instead of the ad hoc
+                // «✓ Serie», so the register-a-set CTA reads the same canon copy everywhere.
+                : "✓ " + String(localized: "Set done"),
             confirmSetAccessibilityLabel: resting
                 ? (ceiling ? Text("Continue") : Text("Skip rest")) : Text("Mark set as done"),
             onHide: { withAnimation(reduceMotion ? nil : .snappy(duration: 0.22)) { keypadHidden = true } },

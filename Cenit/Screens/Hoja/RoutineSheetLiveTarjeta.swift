@@ -28,11 +28,11 @@ struct HojaTarjetaEjercicioSesion: View {
         EntrenarModulo(tono: .indigo) {
             VStack(alignment: .leading, spacing: 0) {
                 chead
-                notaF.padding(.top, 4)   // R11(b): ✎ Nota, adjudicado — misma hoja que F1
-                if vivo.session.canTakeHeldRaise(at: ei) { raisePill.padding(.top, 4) }
-                if let deload = run.deloadDisplay { deloadPill(deload).padding(.top, 4) }   // B7 (FER-169)
-                tabla.padding(.top, 6)
-                footer.padding(.top, 8)
+                notaF.padding(.top, CenitMetrics.space1)   // R11(b): ✎ Nota, adjudicado — misma hoja que F1
+                if vivo.session.canTakeHeldRaise(at: ei) { raisePill.padding(.top, CenitMetrics.space1) }
+                if let deload = run.deloadDisplay { deloadPill(deload).padding(.top, CenitMetrics.space1) }   // B7 (FER-169)
+                tabla.padding(.top, LiquidSpace.s150)
+                footer.padding(.top, CenitMetrics.space2)
             }
         }
         .liquidEntrada()
@@ -44,7 +44,7 @@ struct HojaTarjetaEjercicioSesion: View {
     }
 
     private var chead: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: LiquidSpace.s250) {
             // FER-187 · colisión 1: tap-para-foco SOLO en el cromo sin celdas (thumb + nombre).
             // Las filas `HojaFilaSerie` / `TapZonesSesion` NO se tocan — peso/reps siguen editando.
             // Esta vista (`HojaTarjetaEjercicioSesion`) solo se monta cuando `ei == accordionIndex`
@@ -57,14 +57,14 @@ struct HojaTarjetaEjercicioSesion: View {
                 Button { vivo.enterFoco() } label: {
                     Image(systemName: "arrow.up.left.and.arrow.down.right")
                         .font(StrandFont.glyph(.inline, weight: .semibold))
-                        .foregroundStyle(vivo.sheet.theme.inkTertiary).frame(width: 30, height: 44).contentShape(Rectangle())
+                        .foregroundStyle(vivo.sheet.theme.inkTertiary).frame(width: 30, height: CenitMetrics.touchTarget).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityHidden(true)   // la acción vive en `.accessibilityAction` del cuerpo — sin botón duplicado en el rotor
             }
             Button { vivo.menuExerciseIndex = ei } label: {
                 Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
-                    .foregroundStyle(vivo.sheet.theme.inkTertiary).frame(width: 30, height: 44).contentShape(Rectangle())
+                    .foregroundStyle(vivo.sheet.theme.inkTertiary).frame(width: 30, height: CenitMetrics.touchTarget).contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(Text("More options for \(run.name)"))
@@ -82,7 +82,7 @@ struct HojaTarjetaEjercicioSesion: View {
         let nombre = Text(run.name).font(StrandFont.headline).foregroundStyle(vivo.sheet.theme.ink)
             .frame(maxWidth: .infinity, alignment: .leading).lineLimit(1)
         if vivo.puedeEnfocar {
-            HStack(spacing: 10) {
+            HStack(spacing: LiquidSpace.s250) {
                 thumb
                 nombre
             }
@@ -102,7 +102,7 @@ struct HojaTarjetaEjercicioSesion: View {
     /// R11(b): ✎ Nota — paridad `HojaTarjetaEjercicio.notaF` (F1), misma `NoteSheet` (capa 3).
     private var notaF: some View {
         Button { vivo.openNote(ei: ei) } label: {
-            HStack(alignment: .top, spacing: 4) {
+            HStack(alignment: .top, spacing: CenitMetrics.space1) {
                 Text(verbatim: "✎").font(StrandFont.footnote)
                 let note = run.note?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
                 Text(note.isEmpty ? String(localized: "Add note") : note)
@@ -120,14 +120,14 @@ struct HojaTarjetaEjercicioSesion: View {
         Button {
             withAnimation(vivo.reduceMotion ? nil : .snappy) { _ = vivo.session.takeHeldRaise(at: ei) }
         } label: {
-            HStack(spacing: 6) {
+            HStack(spacing: LiquidSpace.s150) {
                 Text(verbatim: "▲").foregroundStyle(LiquidColor.verdeProfundo)
                 if let raise = run.proposedRaise {
                     Text(String(localized: "Take the raise to \(vivo.plateNumber(vivo.displayWeight(raise.toKg))) \(vivo.weightUnit())"))
                 }
             }
             .font(StrandFont.caption.weight(.semibold)).foregroundStyle(vivo.sheet.theme.ink)
-            .padding(.horizontal, 10).padding(.vertical, 6)
+            .padding(.horizontal, LiquidSpace.s250).padding(.vertical, LiquidSpace.s150)
             .overlay(Capsule().strokeBorder(vivo.sheet.theme.hairlineStrong, lineWidth: 1))
         }
         .buttonStyle(.plain)
@@ -136,13 +136,13 @@ struct HojaTarjetaEjercicioSesion: View {
     /// B7 (FER-169): la bajada propuesta — «↓ 3 sesiones igual · propone 76» con BAJAR/SEGUIR (mapa),
     /// o, con la política «solo avisar», la misma línea sin botones (nada que aplicar, solo el aviso).
     private func deloadPill(_ display: StrengthSessionModel.ExerciseRun.DeloadDisplay) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: CenitMetrics.space2) {
             Text(verbatim: "↓").foregroundStyle(vivo.sheet.theme.inkSecondary)
             switch display {
             case .propose(let fromKg, let toKg):
                 Text(String(localized: "\(ProgressionMath.deloadStallThreshold) sessions unmoved · proposes \(vivo.plateNumber(vivo.displayWeight(toKg))) \(vivo.weightUnit())"))
                     .font(StrandFont.caption.weight(.semibold)).foregroundStyle(vivo.sheet.theme.ink)
-                Spacer(minLength: 6)
+                Spacer(minLength: LiquidSpace.s150)
                 Button { vivo.applyDeload(ei: ei, toKg: toKg) } label: {
                     Text("Drop to \(vivo.plateNumber(vivo.displayWeight(toKg)))")
                         .font(StrandFont.caption.weight(.bold)).foregroundStyle(LiquidColor.verdeProfundo)
@@ -156,7 +156,7 @@ struct HojaTarjetaEjercicioSesion: View {
             case .warnOnly(let sessions):
                 Text(String(localized: "\(sessions) sessions unmoved · goal not met"))
                     .font(StrandFont.caption.weight(.semibold)).foregroundStyle(vivo.sheet.theme.inkSecondary)
-                Spacer(minLength: 6)
+                Spacer(minLength: LiquidSpace.s150)
                 Button { vivo.dismissDeload(ei: ei) } label: {
                     Image(systemName: "xmark").font(StrandFont.glyph(.chevron)).foregroundStyle(vivo.sheet.theme.inkTertiary)
                 }
@@ -164,7 +164,7 @@ struct HojaTarjetaEjercicioSesion: View {
                 .accessibilityLabel(Text("Dismiss"))
             }
         }
-        .padding(.horizontal, 10).padding(.vertical, 6)
+        .padding(.horizontal, LiquidSpace.s250).padding(.vertical, LiquidSpace.s150)
         .accessibilityElement(children: .combine)
     }
 
@@ -172,7 +172,7 @@ struct HojaTarjetaEjercicioSesion: View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(run.sets, id: \.id) { set in
                 let si = run.sets.firstIndex { $0.id == set.id } ?? 0
-                if vivo.restSlotIndex(ei: ei) == si { vivo.restBand().padding(.vertical, 6) }
+                if vivo.restSlotIndex(ei: ei) == si { vivo.restBand().padding(.vertical, LiquidSpace.s150) }
                 // B12 (FER-169): la fila ACTIVA de tiempo/distancia es su propio cronómetro compacto
                 // (piel de La Hoja sobre el flujo vigente `startSetTimer`/`stopSetTimer`/`timerElapsed`
                 // de `LiveStrengthSheet` — arranca/detiene, zona de FC solo con Watch) — las demás
@@ -187,11 +187,11 @@ struct HojaTarjetaEjercicioSesion: View {
                 // B10 (FER-169): el aviso vive justo bajo la fila que lo disparó — una pregunta a la vez.
                 // Por identidad (regla dura), no por índice: B8 puede reordenar mientras el aviso sigue abierto.
                 if vivo.absurdCapture?.runId == run.id, vivo.absurdCapture?.setId == set.id, let target = vivo.absurdCapture {
-                    absurdCaptureBanner(target).padding(.vertical, 6)
+                    absurdCaptureBanner(target).padding(.vertical, LiquidSpace.s150)
                 }
                 // B11 (FER-169): el destello de récord trae su copy justo bajo la fila que lo bate.
                 if vivo.prFlash?.setId == set.id, let flash = vivo.prFlash {
-                    prFlashBanner(flash).padding(.vertical, 6)
+                    prFlashBanner(flash).padding(.vertical, LiquidSpace.s150)
                 }
             }
             // El descanso puede no tener dónde anclar (el ejercicio ya cerró todas sus filas visibles) —
@@ -199,11 +199,11 @@ struct HojaTarjetaEjercicioSesion: View {
             // (O-r2a), no `accordionIndex`: si el usuario espía otra tarjeta, esta banda no reaparece
             // aquí — la tarjeta dueña puede estar plegada en ese momento.
             if vivo.session.phase == .resting, ei == vivo.restOwnerExerciseIndex, vivo.restSlotIndex(ei: ei) == nil {
-                vivo.restBand().padding(.vertical, 6)
+                vivo.restBand().padding(.vertical, LiquidSpace.s150)
             }
             // B6b (FER-169): la tarjeta «Volver a X» de esta tarjeta, si el tap en el ▲ la abrió.
             if vivo.raiseRevertOpenRunId == run.id, let raise = run.proposedRaise {
-                raiseRevertCard(raise).padding(.vertical, 6)
+                raiseRevertCard(raise).padding(.vertical, LiquidSpace.s150)
             }
         }
     }
@@ -212,7 +212,7 @@ struct HojaTarjetaEjercicioSesion: View {
     /// {toKg}» solo cierra la tarjeta — ni acierto ni fallo, la aritmética lo respeta (mapa B6b).
     private func raiseRevertCard(_ raise: ProgressionPlanner.Raise) -> some View {
         NoteStrip(style: .info, theme: vivo.sheet.theme) {
-            HStack(spacing: 18) {
+            HStack(spacing: LiquidSpace.s400) {
                 Button {
                     withAnimation(vivo.reduceMotion ? nil : .snappy) { vivo.raiseRevertOpenRunId = nil }
                 } label: {
@@ -297,6 +297,9 @@ struct HojaTarjetaEjercicioSesion: View {
             }
         }
         .animation(vivo.reduceMotion ? nil : .easeOut(duration: 0.4), value: vivo.prFlash)
+        // FER-223: el destello visual de PR no tenía háptico — el patrón de éxito ascendente,
+        // reservado para esto y para el cierre de sesión, nunca para una serie más.
+        .entrenarHaptic(.prNuevo, trigger: vivo.prFlash)
     }
 
     /// B12 (FER-169): el cronómetro compacto de la fila ACTIVA de tiempo/distancia (mapa: nombre ·
@@ -307,20 +310,22 @@ struct HojaTarjetaEjercicioSesion: View {
         let running = vivo.session.timerStart != nil
         let metaS = run.type == .time ? (set.timeS ?? 0) : nil   // «meta» solo tiene sentido con time
         EntrenarModulo(tono: .indigo) {
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s250) {
                 Text(run.name).font(StrandFont.subhead.weight(.semibold)).foregroundStyle(vivo.sheet.theme.ink).lineLimit(1)
                 if let bpm = vivo.sheet.model.watchBpm { zonaBadge(bpm) }
-                Spacer(minLength: 8)
+                Spacer(minLength: CenitMetrics.space2)
                 Group {
                     if running {
                         TimelineView(.periodic(from: Date(), by: 1)) { ctx in
-                            Text(SessionClock.format(vivo.session.timerElapsed(now: ctx.date)))
+                            let texto = SessionClock.format(vivo.session.timerElapsed(now: ctx.date))
+                            Text(texto).numeroVivo(value: texto)
                         }
                     } else {
-                        Text(SessionClock.format(set.timeS ?? 0))
+                        let texto = SessionClock.format(set.timeS ?? 0)
+                        Text(texto).numeroVivo(value: texto)
                     }
                 }
-                .font(InstrumentoType.groteskNumber(20, weight: .bold)).monospacedDigit().foregroundStyle(vivo.sheet.theme.ink)
+                .font(InstrumentoType.groteskNumber(20, weight: .bold)).foregroundStyle(vivo.sheet.theme.ink)
                 if let metaS, metaS > 0 {
                     Text("goal \(SessionClock.format(metaS))").font(StrandFont.caption).foregroundStyle(vivo.sheet.theme.inkTertiary)
                 }
@@ -333,7 +338,7 @@ struct HojaTarjetaEjercicioSesion: View {
                 } label: {
                     Text(running ? "Stop" : "Start")
                         .font(StrandFont.caption.weight(.bold)).foregroundStyle(vivo.sheet.theme.ink)
-                        .padding(.horizontal, 10).padding(.vertical, 6)
+                        .padding(.horizontal, LiquidSpace.s250).padding(.vertical, LiquidSpace.s150)
                         .overlay(Capsule().strokeBorder(vivo.sheet.theme.hairlineStrong, lineWidth: 1))
                 }
                 .buttonStyle(.plain)
@@ -350,7 +355,7 @@ struct HojaTarjetaEjercicioSesion: View {
         let zone = max(1, min(5, Int((pct * 5).rounded(.up))))
         return Text("ZONE \(zone) · \(bpm)")
             .font(StrandFont.caption.weight(.bold)).foregroundStyle(vivo.sheet.theme.inkSecondary)
-            .padding(.horizontal, 8).padding(.vertical, 3)
+            .padding(.horizontal, CenitMetrics.space2).padding(.vertical, LiquidSpace.s075)
             .overlay(Capsule().strokeBorder(vivo.sheet.theme.hairlineStrong, lineWidth: 1))
     }
 
@@ -359,7 +364,7 @@ struct HojaTarjetaEjercicioSesion: View {
     /// rosa en `NoteStrip`, que solo trae `.warning`/`.info`, así que este banner queda propio con las
     /// mismas anotaciones `token-exempt` que ya usa el destello de arriba y `HojaLiveMetrics` abajo).
     @ViewBuilder private func prFlashBanner(_ flash: PRFlash) -> some View {
-        HStack(spacing: 6) {
+        HStack(spacing: LiquidSpace.s150) {
             Text("RECORD").font(StrandFont.caption.weight(.bold)).foregroundStyle(LiquidColor.rosa)
             Text(recordMetricLabel(flash.metric)).font(StrandFont.caption).foregroundStyle(vivo.sheet.theme.inkSecondary)
             if let prior = flash.priorText {
@@ -367,7 +372,7 @@ struct HojaTarjetaEjercicioSesion: View {
             }
         }
         .font(StrandFont.caption).foregroundStyle(vivo.sheet.theme.inkSecondary)
-        .padding(.horizontal, 12).padding(.vertical, 8)
+        .padding(.horizontal, CenitMetrics.gap).padding(.vertical, CenitMetrics.space2)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             LiquidColor.rosa.opacity(0.10),   // token-exempt: mismo molde rosa transitorio que el destello R16, arriba
@@ -394,17 +399,17 @@ struct HojaTarjetaEjercicioSesion: View {
     /// corrige y vuelve a pasar por el guard; SÍ guarda tal cual.
     @ViewBuilder private func absurdCaptureBanner(_ target: AbsurdCaptureTarget) -> some View {
         NoteStrip(style: .warning, theme: vivo.sheet.theme) {
-            VStack(alignment: .leading, spacing: 7) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s150) {
                 (Text("\(vivo.plateNumber(vivo.displayWeight(target.weightKg))) \(vivo.weightUnit().uppercased())?")
                     .font(StrandFont.caption.weight(.bold))
                  + Text(verbatim: " ")
                  + Text("is 8× your record").font(StrandFont.caption))
                     .foregroundStyle(vivo.sheet.theme.ink)
-                HStack(spacing: 10) {
+                HStack(spacing: LiquidSpace.s250) {
                     Button { vivo.correctAbsurdCapture() } label: {
                         Text("It was \(vivo.plateNumber(vivo.displayWeight(target.weightKg / 10)))")
                             .font(StrandFont.caption.weight(.semibold)).foregroundStyle(vivo.sheet.theme.ink)
-                            .padding(.horizontal, 12).padding(.vertical, 6)
+                            .padding(.horizontal, CenitMetrics.gap).padding(.vertical, LiquidSpace.s150)
                             .overlay(Capsule().strokeBorder(vivo.sheet.theme.hairlineStrong, lineWidth: 1))
                     }
                     .buttonStyle(.plain)
@@ -428,7 +433,7 @@ struct HojaTarjetaEjercicioSesion: View {
                     Text(verbatim: "＋ \(String(localized: "SET"))")
                         .font(InstrumentoType.grotesk(9.5, weight: .bold, relativeTo: .caption2)).tracking(1)
                         .foregroundStyle(LiquidColor.tinta900)
-                        .padding(.horizontal, 11).padding(.vertical, 6)
+                        .padding(.horizontal, CenitMetrics.gap).padding(.vertical, LiquidSpace.s150)
                         .background(Capsule().fill(HojaLiveMetrics.capsulaFondo))
                         .overlay(Capsule().strokeBorder(HojaLiveMetrics.capsulaBorde, lineWidth: 1))
                 }
@@ -506,16 +511,16 @@ struct HojaPlegadaSesion: View {
             }
         } label: {
             EntrenarModulo(tono: .neutro) {
-                HStack(spacing: 11) {
+                HStack(spacing: CenitMetrics.gap) {
                     if allDone {
                         ZStack {
                             Circle().fill(LiquidColor.verdePrimario)
                             Text(verbatim: "✓").font(StrandFont.caption.weight(.bold)).foregroundStyle(Color.white)
                         }
-                        .frame(width: 22, height: 22)
+                        .frame(width: HojaMetrics.marcaDiametro, height: HojaMetrics.marcaDiametro)
                     }
                     Text(run.name).font(StrandFont.subhead.weight(.semibold)).foregroundStyle(vivo.sheet.theme.ink).lineLimit(1)
-                    Spacer(minLength: 8)
+                    Spacer(minLength: CenitMetrics.space2)
                     if sigue {
                         Text("continues").font(StrandFont.caption).foregroundStyle(vivo.sheet.theme.inkTertiary)
                     } else {

@@ -1008,12 +1008,12 @@ private struct EntrenarLanding: View {
             otraFormaAbierta = false   // cierra SIEMPRE, en las cuatro: una regla, no cuatro casos
             puerta.action()
         } label: {
-            HStack(alignment: .firstTextBaseline, spacing: 9) {
+            HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s225) {
                 Image(systemName: puerta.icon)
                     .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
-                    .frame(minWidth: 22, alignment: .leading)
+                    .frame(minWidth: HojaMetrics.marcaDiametro, alignment: .leading)
                     .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: LiquidSpace.s050) {
                     Text(puerta.label).font(StrandFont.body).foregroundStyle(theme.ink)
                     Text(puerta.subtitle)
                         .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
@@ -1033,20 +1033,20 @@ private struct EntrenarLanding: View {
     /// One quiet full-width foot row (history / diet): leading glyph, label, trailing disclosure chevron.
     private func utilityRow(icon: String, label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 9) {
+            HStack(spacing: LiquidSpace.s225) {
                 Image(systemName: icon)
                     .font(StrandFont.glyph(.lead))
                     .foregroundStyle(theme.inkSecondary)
                 Text(label)
                     .font(StrandFont.subhead)
                     .foregroundStyle(theme.inkSecondary)
-                Spacer(minLength: 8)
+                Spacer(minLength: CenitMetrics.space2)
                 StrandIcon.disclosure.image.font(StrandFont.glyph(.inline, weight: .semibold))
                     .foregroundStyle(theme.inkDim)
                     .accessibilityHidden(true)
             }
             .padding(.vertical, CenitMetrics.gap)
-            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)   // HIG tap target (FER-944)
+            .frame(maxWidth: .infinity, minHeight: CenitMetrics.touchTarget, alignment: .leading)   // HIG tap target (FER-944)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -1198,8 +1198,7 @@ private struct EntrenarLanding: View {
                     // tap target de HIG — misma regla que el resto de filas de esta pantalla
                     // (sesionMetrics). Deviation documentada ronda 3 (quisquilloso).
                     .frame(minHeight: EntrenarMetrics.row, alignment: .leading)
-                    .background(theme.surface, in: Capsule())
-                    .overlay(Capsule().strokeBorder(theme.hairline, lineWidth: 1))
+                    .liquidGlass(.pastillaSolida)
                 }
                 .buttonStyle(EntrenarPressStyle())
                 .accessibilityLabel(Text(LocalizedStringKey(name)) + Text(verbatim: ", ") + Text("Ready to edit"))
@@ -1219,7 +1218,7 @@ private struct EntrenarLanding: View {
     // open. Showing the onboarding empty state here would wrongly push them to rebuild their week, so we
     // surface a plain error with a retry that re-runs `load()`.
     private var loadErrorState: some View {
-        card {
+        EntrenarModulo(tono: .neutro) {
             VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 Text("I couldn't read your plan").font(InstrumentoType.groteskHeadline(20)).foregroundStyle(theme.ink)
                 Text("Something failed opening your routines · your data is intact")
@@ -1228,16 +1227,6 @@ private struct EntrenarLanding: View {
                 StrandCTAButton("Retry", kind: .outline) { Task { await load() } }
             }
         }
-    }
-
-    // MARK: - Card shell + bits
-
-    private func card<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 0, content: content)
-            .padding(CenitMetrics.cardPadding)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
     }
 
     /// Localized short weekday letter (respects locale), single character. Solo para la TIRA de 7 celdas:

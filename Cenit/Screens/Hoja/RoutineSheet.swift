@@ -170,7 +170,7 @@ struct RoutineSheet: View {
                 Spacer()
             }
         }
-        .background(theme.paper.ignoresSafeArea())
+        .pantallaFondo()
         .onDisappear { if dirty, !isOrphan { persist() } }
         .saveErrorToast(isPresented: $saveError)
         .instrumentoConfirm(
@@ -321,7 +321,7 @@ struct RoutineSheet: View {
     // MARK: - Empty fallback (no routine resolved for this origin)
 
     private var emptyFallback: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: LiquidSpace.s250) {
             StrandIcon.sleep.image.font(StrandFont.glyph(.empty)).foregroundStyle(theme.inkTertiary)
             Text(isPlanDay ? "Rest day" : "No routine").font(StrandFont.title2).foregroundStyle(theme.ink)
             Text(isPlanDay ? "This day has no routine. Assign one from the weekly plan."
@@ -332,10 +332,10 @@ struct RoutineSheet: View {
             // regresa a Tu Plan, de donde SIEMPRE se llega a un `.planDay` vacío, para asignar.
             if isPlanDay {
                 EntrenarCapsulaPuerta(String(localized: "ASSIGN")) { dismiss() }
-                    .padding(.top, 6)
+                    .padding(.top, LiquidSpace.s150)
             }
         }
-        .padding(.horizontal, 32)
+        .padding(.horizontal, LiquidSpace.s800)
     }
 
     // MARK: - Origin chrome
@@ -400,7 +400,7 @@ struct RoutineSheet: View {
         ForEach(reorderBlocks) { block in
             compactBlock(block)
                 .padding(.horizontal, CenitMetrics.screenPadding)
-                .padding(.vertical, 5)
+                .padding(.vertical, LiquidSpace.s125)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(theme.paper)
                 .listRowInsets(EdgeInsets())
@@ -410,7 +410,7 @@ struct RoutineSheet: View {
         .onMove(perform: moveBlocks)
         Button { withAnimation(.snappy) { reordering = false } } label: {
             Text("Done reordering").font(StrandFont.subhead).foregroundStyle(theme.ink)
-                .frame(maxWidth: .infinity, alignment: .center).frame(minHeight: 44).contentShape(Rectangle())
+                .frame(maxWidth: .infinity, alignment: .center).frame(minHeight: CenitMetrics.touchTarget).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .hojaRow(top: CenitMetrics.gap, bottom: 2)
@@ -421,25 +421,25 @@ struct RoutineSheet: View {
     }
 
     private func compactBlock(_ block: ReorderBlock) -> some View {
-        HStack(spacing: 10) {
+        HStack(spacing: LiquidSpace.s250) {
             if block.isSuperset {
                 Capsule().fill(theme.dataHrv).frame(width: 2.5)
             }
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: CenitMetrics.space2) {
                 if block.isSuperset { SupersetTag() }
                 ForEach(block.items) { item in
-                    HStack(spacing: 10) {
+                    HStack(spacing: LiquidSpace.s250) {
                         ExerciseThumbView(exercise: item.exercise, side: 28)
                         Text(StrengthDisplay.name(item.exercise))
                             .font(StrandFont.subhead).foregroundStyle(theme.ink).lineLimit(1)
-                        Spacer(minLength: 8)
+                        Spacer(minLength: CenitMetrics.space2)
                         Text(compactSummary(item.re))
                             .font(InstrumentoType.groteskNumber(12, weight: .regular)).foregroundStyle(theme.inkTertiary)
                     }
                 }
             }
         }
-        .padding(.horizontal, 12).padding(.vertical, 10)
+        .padding(.horizontal, CenitMetrics.gap).padding(.vertical, CenitMetrics.rowVPad)
         .background(theme.paper, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous).strokeBorder(theme.hairlineStrong))
     }
