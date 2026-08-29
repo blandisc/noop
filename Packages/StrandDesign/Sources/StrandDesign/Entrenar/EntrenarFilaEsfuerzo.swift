@@ -11,14 +11,14 @@ import SwiftUI
 public struct EntrenarFilaEsfuerzo: View {
     private let opciones: [String]
     private let seleccion: Int?
-    private let tono: EntrenarTono
+    private let tono: LiquidTono
     private let onSelect: (Int) -> Void
 
     /// - Parameters:
     ///   - opciones: rótulos ya formateados, en orden de dibujo («6», «7», «8», «9», «9,5», «10»).
     ///   - seleccion: el índice elegido; `nil` = ninguna celda marcada.
     ///   - tono: rellena la celda seleccionada (ámbar de esfuerzo por default).
-    public init(opciones: [String], seleccion: Int?, tono: EntrenarTono = .ambar,
+    public init(opciones: [String], seleccion: Int?, tono: LiquidTono = .ambar,
                 onSelect: @escaping (Int) -> Void) {
         self.opciones = opciones
         self.seleccion = seleccion

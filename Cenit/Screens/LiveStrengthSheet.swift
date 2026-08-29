@@ -1047,7 +1047,7 @@ struct LiveStrengthSheet: View {
     }
 
     // MARK: Empty ad-hoc state (mock B13 `hoja-mapa.html`, FER-191 reskin of FER-762 — same freshness
-    // + search logic below, only the piel changes to La Hoja's liquid glass: `EntrenarModulo`/`EntrenarTono`)
+    // + search logic below, only the piel changes to La Hoja's liquid glass: `EntrenarModulo`/`LiquidTono`)
 
     private var emptyAdHocSession: some View {
         ScrollView {
@@ -1123,7 +1123,7 @@ struct LiveStrengthSheet: View {
 
     /// Un ejercicio fresco como cápsula de vidrio de La Hoja (FER-191): el mismo dato que
     /// `loadFreshSuggestions` calculaba antes (ejercicio + músculo + última marca), ahora en el
-    /// idioma de `EntrenarModulo`, teñido por la familia de su músculo (`EntrenarTono`) — la cápsula
+    /// idioma de `EntrenarModulo`, teñido por la familia de su músculo (`LiquidTono`) — la cápsula
     /// entera es el toque de «agregar», sin un pill «Add» aparte.
     private func freshSuggestionChip(_ s: QuickSuggestion) -> some View {
         let tono = chipTono(for: s.muscle)
@@ -1155,10 +1155,10 @@ struct LiveStrengthSheet: View {
 
     /// El tono de vidrio de la cápsula (FER-191): el músculo de la sugerencia → su región de
     /// entrenamiento (`RoutineClassifier`, el MISMO clasificador que tiñe rutinas y sesiones) →
-    /// la familia de diseño → su `EntrenarTono`. Músculos neutros (abdominales, cuello, lumbar) no
+    /// la familia de diseño → su `LiquidTono`. Músculos neutros (abdominales, cuello, lumbar) no
     /// clasifican a ninguna región — caen a `.neutro`, el mismo vidrio blanco de las tarjetas de
     /// ejercicio ya en curso, en vez de inventar un color.
-    private func chipTono(for muscle: String) -> EntrenarTono {
+    private func chipTono(for muscle: String) -> LiquidTono {
         RoutineClassifier.region(for: muscle)?.family.tono ?? .neutro
     }
 

@@ -10,9 +10,9 @@ import SwiftUI
 public struct EntrenarNotaCampo: View {
     @Binding private var texto: String
     private let placeholder: String
-    private let tono: EntrenarTono
+    private let tono: LiquidTono
 
-    public init(texto: Binding<String>, placeholder: String, tono: EntrenarTono = .ambar) {
+    public init(texto: Binding<String>, placeholder: String, tono: LiquidTono = .ambar) {
         self._texto = texto
         self.placeholder = placeholder
         self.tono = tono

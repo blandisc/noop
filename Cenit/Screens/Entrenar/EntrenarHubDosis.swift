@@ -36,7 +36,7 @@ struct EntrenarHubDosis: View {
         if !rows.isEmpty {
             EntrenarModulo(tono: .cian) {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("Sets per muscle · 7 days").liquidRegla().foregroundStyle(EntrenarTono.cian.rotulo)
+                    Text("Sets per muscle · 7 days").liquidRegla().foregroundStyle(LiquidTono.cian.rotulo)
                     ForEach(rows) { fila in
                         drow(fila).padding(.top, EntrenarHubMetrics.dosisRowTop)
                     }

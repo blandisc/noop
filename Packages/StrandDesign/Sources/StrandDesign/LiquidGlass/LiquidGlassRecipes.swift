@@ -41,6 +41,13 @@ public enum LiquidGlassRecipe: Sendable {
     case superficieAtmosfera
 }
 
+/// Régimen del vidrio teñido unificado (FER-234 · épico FER-229 «Un solo vidrio»).
+/// `.mosaico` = relleno del tono (hub Entrenar); `.sobrio` = superficie neutra, el tono solo
+/// viaja al numeral (Hoy/detalles). Default de la sobrecarga `liquidGlass(tono:)` = `.sobrio`.
+public enum LiquidRegimen: Sendable {
+    case mosaico, sobrio
+}
+
 public extension View {
     /// Aplica una receta de vidrio completa (blur + fondo + borde + inner-highlight +
     /// especular + sombra) o su variante opaca. La única puerta al vidrio: las pantallas
@@ -118,6 +125,14 @@ public extension View {
                 // sobre el fondo blanco de la atmósfera desaparece.
                 bordeSobreNativo: true))
         }
+    }
+
+    /// Vidrio teñido por identidad. `.mosaico` = relleno del tono (Entrenar);
+    /// `.sobrio` = superficie neutra, el tono solo viaja al numeral (Hoy/detalles).
+    func liquidGlass(tono: LiquidTono,
+                     regimen: LiquidRegimen = .sobrio,
+                     intensidad: Double = LiquidTono.intensidadDefault) -> some View {
+        modifier(LiquidTonoReceta(tono: tono, regimen: regimen, intensidad: intensidad))
     }
 }
 

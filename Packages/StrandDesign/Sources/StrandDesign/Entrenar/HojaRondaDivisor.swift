@@ -20,8 +20,8 @@ private enum HojaRondaDivisorMetrics {
     static var filGrosor: CGFloat { 1 }
     /// `.ronda .fil` `rgba(20,124,140,.25)` (= `LiquidColor.cian` al 25 %).
     static var filAlfa: Double { 0.25 }
-    /// = EntrenarTono.cian rotulo — hex #136A78 del mock `.ronda` / `.ssL`.
-    static var cianRotulo: Color { Color(hex: "#136A78") }
+    /// Rótulo cian canónico del vidrio teñido (mock `.ronda` / `.ssL`).
+    static var cianRotulo: Color { LiquidTono.cian.rotulo }
 }
 
 /// Divisor de ronda dentro de la tarjeta de superserie viva: rótulo + línea cian.

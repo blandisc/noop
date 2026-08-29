@@ -57,7 +57,7 @@ struct EntrenarHubPar: View {
         Button(action: onOpenRaises) {
             EntrenarTile(tono: .verde) {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("Ready raises").liquidRegla().foregroundStyle(EntrenarTono.verde.rotulo)
+                    Text("Ready raises").liquidRegla().foregroundStyle(LiquidTono.verde.rotulo)
                     HStack(alignment: .firstTextBaseline, spacing: EntrenarHubMetrics.numRowGap) {
                         Text(verbatim: "\(raises.count)")
                             .font(LiquidType.valorTileM).tracking(LiquidType.valorTileTracking)

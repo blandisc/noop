@@ -18,8 +18,8 @@ import SwiftUI
 // `LiquidModulo.glass` / `LiquidTabBar` (`#available(iOS 26…, *) + !liquidMotionDisabled`),
 // aplicado EDGE-TO-EDGE (sin forma acotada — es el fondo de TODA la hoja, no una tarjeta
 // flotando encima de otra cosa) sobre el papel de «El Tablero» (`LiquidColor.fondoGradient`),
-// teñido por `EntrenarTono` a la MISMA intensidad que `EntrenarVidrio` usa para sus módulos
-// (`EntrenarVidrioMetrics.intensidadDefault`) — hub y hojas-herramienta leen como el mismo
+// teñido por `LiquidTono` a la MISMA intensidad que `EntrenarVidrio` usa para sus módulos
+// (`LiquidTonoMetrics.intensidadDefault`) — hub y hojas-herramienta leen como el mismo
 // material.
 //
 // ## Menú de presentación — las 11 superficies de la Ola 2 (FER-195), verificado en código
@@ -52,7 +52,7 @@ public extension View {
     /// al contenido RAÍZ de la hoja (el `NavigationStack`, el `ScrollView`, o el `VStack` de
     /// siempre) EN VEZ de su `.background(theme.paper.ignoresSafeArea())` de hoy — nunca lo
     /// envuelvas en otro contenedor, es un `.background`, no un cascarón.
-    func entrenarHojaFondo(tono: EntrenarTono) -> some View {
+    func entrenarHojaFondo(tono: LiquidTono) -> some View {
         modifier(EntrenarHojaFondoModifier(tono: tono))
     }
 }
@@ -66,13 +66,13 @@ public extension View {
 /// `LiquidColor.fondoGradient` — opaco, sin alfa — como piso, así que la barra oculta aunque el
 /// material por sí solo no bastara.
 public extension View {
-    func entrenarHojaBarraFondo(tono: EntrenarTono) -> some View {
+    func entrenarHojaBarraFondo(tono: LiquidTono) -> some View {
         modifier(EntrenarHojaBarraFondoModifier(tono: tono))
     }
 }
 
 private struct EntrenarHojaBarraFondoModifier: ViewModifier {
-    let tono: EntrenarTono
+    let tono: LiquidTono
     @Environment(\.liquidMotionDisabled) private var motionDisabled
 
     /// SIN `.ignoresSafeArea()`: a diferencia de `.entrenarHojaFondo` (fondo de TODA la hoja),
@@ -104,12 +104,12 @@ private struct EntrenarHojaBarraFondoModifier: ViewModifier {
     }
 
     private var tinte: Color {
-        tono == .neutro ? .clear : tono.base.opacity(EntrenarVidrioMetrics.intensidadDefault)
+        tono == .neutro ? .clear : tono.base.opacity(LiquidTonoMetrics.intensidadDefault)
     }
 }
 
 private struct EntrenarHojaFondoModifier: ViewModifier {
-    let tono: EntrenarTono
+    let tono: LiquidTono
     @Environment(\.liquidMotionDisabled) private var motionDisabled
 
     func body(content: Content) -> some View {
@@ -145,10 +145,10 @@ private struct EntrenarHojaFondoModifier: ViewModifier {
     }
 
     /// El suspiro del tono — misma intensidad que un módulo teñido del hub
-    /// (`EntrenarVidrioMetrics.intensidadDefault`), para que hub y hojas-herramienta lean como
+    /// (`LiquidTonoMetrics.intensidadDefault`), para que hub y hojas-herramienta lean como
     /// el mismo material. `neutro` no tiñe: la hoja se queda en el papel puro de «El Tablero».
     private var tinte: Color {
-        tono == .neutro ? .clear : tono.base.opacity(EntrenarVidrioMetrics.intensidadDefault)
+        tono == .neutro ? .clear : tono.base.opacity(LiquidTonoMetrics.intensidadDefault)
     }
 
     /// El filo de cristal en el canto superior — el gesto que delata al vidrio de verdad (misma
@@ -172,7 +172,7 @@ private struct EntrenarHojaFondoModifier: ViewModifier {
 #Preview("EntrenarHojaFondo · los 6 tonos") {
     ScrollView {
         VStack(spacing: 14) {
-            ForEach(EntrenarTono.allCases, id: \.self) { tono in
+            ForEach(LiquidTono.allCases, id: \.self) { tono in
                 Text(verbatim: String(describing: tono))
                     .font(LiquidType.tituloFila)
                     .foregroundStyle(LiquidColor.tinta900)
