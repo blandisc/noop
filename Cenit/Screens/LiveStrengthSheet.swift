@@ -1507,12 +1507,14 @@ struct LiveStrengthSheet: View {
     }
 
     /// The data-origin row on the receipt (FER-716): where this session's energy figure came from — the
-    /// strap (Keytel) or an estimate (MET fallback).
+    /// watch (Keytel, revived FER-226) or an estimate (MET fallback). `.bandCalculated`'s RAW VALUE stays
+    /// `"band_calculated"` (persisted, `Training.swift`) — only the human-facing copy changed; the app has
+    /// no strap any more (F7 "la banda nunca existió").
     private func originRow(_ src: EnergySource) -> some View {
         HStack(spacing: 5) {
             Circle().fill(src == .bandCalculated ? theme.originBand : theme.originComputed)
                 .frame(width: 6, height: 6)
-            Text(src == .bandCalculated ? "Band + calculated" : "Estimated")
+            Text(src == .bandCalculated ? "Watch + calculated" : "Estimated")
                 .font(.system(size: 10)).foregroundStyle(theme.inkTertiary) // token-exempt: microtexto <11pt
         }
         .accessibilityElement(children: .combine)
@@ -1542,15 +1544,21 @@ struct LiveStrengthSheet: View {
     /// The receipt's dominant numeral (FER-87): promotes Effort/21 to a hero — same
     /// `MetricFormat.forMetric(.strain)` grammar as the Hoy hero/sheet (never a bespoke
     /// `String(format:)`), colored `theme.dataStrain` — never the RPE hue (a different datum; see
-    /// the enfoque's RPE door in `RoutineSheetLiveFoco.swift` for that one). Without cardiac data (`s.strain == nil`: no Watch,
-    /// no HR permission, or a session too short) it falls back to the session's duration in plain
-    /// `theme.ink` — never invents a strain. `SessionRecoveryCost.cost(sessionStrain:)` (unchanged,
+    /// the enfoque's RPE door in `RoutineSheetLiveFoco.swift` for that one). Without cardiac data
+    /// (no Watch, no HR permission, or a session too short) it falls back to the session's duration in
+    /// plain `theme.ink` — never invents a strain. `SessionRecoveryCost.cost(sessionStrain:)` (unchanged,
     /// called with no `meanHRRPct` fallback in `AppModel+Strength.swift`) already guarantees
     /// `s.costBand == nil` whenever `s.strain == nil`, so the COST block below stays correctly
     /// hidden with no extra guard.
+    ///
+    /// FER-226 round 2 (D1): the effort-vs-duration CHOICE is `SessionEffortDisplay.resolve` — this view
+    /// only renders whichever case it returns, never re-derives the precedence with its own `if let
+    /// strain`. `.durationWithHR`'s avgHr isn't shown IN the hero (it already has its own home in
+    /// `receiptStatsThirdSlot`/`receiptStats` below); both duration cases render identically here.
     private func receiptHero(_ s: StrengthSummary) -> some View {
         Group {
-            if let strain = s.strain {
+            switch SessionEffortDisplay.resolve(strain: s.strain, avgHr: s.avgHr) {
+            case .effort(let strain):
                 let format = MetricFormat.forMetric(.strain)
                 let value = format.numeral(strain)
                 let zero = format.numeral(0)
@@ -1575,7 +1583,7 @@ struct LiveStrengthSheet: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(Text("Effort"))
                 .accessibilityValue(Text(Self.strainAccessibilityValue(value, scaleSuffix: format.scaleSuffix)))
-            } else {
+            case .durationWithHR, .durationOnly:
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Duration").groteskOverline(small: true).foregroundStyle(theme.inkTertiary)
                     Text(receiptCountUp ? Self.clock(s.durationS) : "0:00")
@@ -1603,9 +1611,13 @@ struct LiveStrengthSheet: View {
 
     /// Which datum fills `receiptStats`' third slot (FER-87) — mutually exclusive with the Effort
     /// hero above, which already shows strain: a session WITH strain never repeats it here (`.sets`
-    /// instead); a session withOUT strain but with captured HR still proves the strap was read
-    /// (`.avgHr`, FER-498); neither → nothing invented (`.none`). Pure and `static` so the exclusivity
-    /// itself — not just today's happy path — is what the test locks down.
+    /// instead); a session withOUT strain but with captured HR still proves the watch was read
+    /// (`.avgHr`, FER-498/FER-226); neither → nothing invented (`.none`). Pure and `static` so the
+    /// exclusivity itself — not just today's happy path — is what the test locks down.
+    ///
+    /// FER-226 round 2 (D1): delegates the actual precedence to `SessionEffortDisplay.resolve` (the
+    /// SAME call `receiptHero` above makes) instead of re-deriving it — a session's hero and its third
+    /// stat slot must never be able to disagree about whether strain, avgHr, or neither applies.
     enum ReceiptStatsThirdSlot: Equatable {
         case sets(Int)
         case avgHr(Int)
@@ -1613,9 +1625,11 @@ struct LiveStrengthSheet: View {
     }
 
     static func receiptStatsThirdSlot(strain: Double?, setCount: Int, avgHr: Int?) -> ReceiptStatsThirdSlot {
-        if strain != nil { return .sets(setCount) }
-        if let avgHr { return .avgHr(avgHr) }
-        return .none
+        switch SessionEffortDisplay.resolve(strain: strain, avgHr: avgHr) {
+        case .effort: return .sets(setCount)
+        case .durationWithHR(let bpm): return .avgHr(bpm)
+        case .durationOnly: return .none
+        }
     }
 
     /// The receipt's secondary metrics (FER-87: duración · volumen · series-o-FC-promedio). Strain

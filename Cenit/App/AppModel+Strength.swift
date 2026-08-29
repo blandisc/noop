@@ -17,6 +17,8 @@ extension AppModel {
     func startStrengthSession(routineId: String?, routineName: String,
                               slots: [StrengthSessionModel.PlanSlot]) {
         guard strengthSession == nil else { strengthSheetPresented = true; return }
+        pendingHrFlush.removeAll()
+        lastAcceptedHrTs = nil
         strengthSession = StrengthSessionModel.make(routineId: routineId, routineName: routineName,
                                                     slots: slots, startTs: Int(Date().timeIntervalSince1970))
         // r22 (owner): un ejercicio con calentamiento ACTIVADO nace con su rampa «C» puesta — la de
@@ -68,6 +70,47 @@ extension AppModel {
 
     /// Re-show the sheet for the in-progress session (the hub's «Resume»).
     func resumeStrengthSession() { if strengthSession != nil { strengthSheetPresented = true } }
+
+    /// The single sink for a raw watch pulse (FER-226 — revives the capturer killed by FER-1003's band
+    /// amputation). Always publishes `watchBpm` for the live-reading views; ALSO admits the sample into
+    /// the live session's HR buffer (via `StrengthHRIntake`'s pure rule) so `avgHr`/`strain`/`energySource`
+    /// aren't stuck nil forever. Flushes to the store every 30 accepted samples — fire-and-forget, so this
+    /// function itself never awaits (the mirroring bridge's callback is synchronous).
+    func ingestWatchPulse(bpm: Int) {
+        watchBpm = bpm
+        guard let session = strengthSession, session.summary == nil else { return }
+        guard let accepted = StrengthHRIntake.accept(bpm: bpm, ts: Date(), lastTs: lastAcceptedHrTs,
+                                                     paused: session.paused) else { return }
+        lastAcceptedHrTs = accepted.ts   // second-truncated — same precision `accept` compares next time
+        let sample = HRSample(ts: Int(accepted.ts.timeIntervalSince1970), bpm: accepted.bpm)
+        session.hrSamples.append(sample)
+        pendingHrFlush.append(sample)
+        // FER-226 round 2 (D3): only fire a new flush while none is already in flight — two overlapping
+        // flushes each doing `removeFirst(batch.count)` against a buffer the OTHER one already trimmed
+        // silently drops samples neither of them ever wrote.
+        guard !isFlushingHR, pendingHrFlush.count >= 30 else { return }
+        flushPendingHR(sessionId: session.id)
+    }
+
+    /// Drains `pendingHrFlush` to the store. On failure the batch is left in place — the (sessionId, ts)
+    /// primary key makes a retry idempotent for whatever already landed. Guarded by `isFlushingHR` so a
+    /// second flush can never start while this one is still trimming the buffer it read (D3).
+    private func flushPendingHR(sessionId: String) {
+        let batch = pendingHrFlush
+        guard !batch.isEmpty else { return }
+        isFlushingHR = true
+        Task { [weak self] in
+            guard let self else { return }
+            defer { self.isFlushingHR = false }
+            guard let store = await self.repo.storeHandle() else { return }
+            do {
+                try await store.appendStrengthHR(sessionId: sessionId, samples: batch)
+                self.pendingHrFlush.removeFirst(min(batch.count, self.pendingHrFlush.count))
+            } catch {
+                // Left in place — the next flush (30 more samples, or the save-time drain) retries it.
+            }
+        }
+    }
 
     /// Pause the guided session (FER-823): freezes the clock and any rest, persists the paused state, and
     /// updates the Live Activity (the rest card ends while paused; the full-session card is FER-806).
@@ -132,6 +175,9 @@ extension AppModel {
             RestEndNotifier.cancel()   // el aviso no puede sobrevivir a la sesión que lo pidió
             releaseRealtimeHR("strength")
             clearInProgressSession()   // FER-798: nothing to recover once discarded
+            pendingHrFlush.removeAll()
+            lastAcceptedHrTs = nil
+            Task { [weak self] in try? await self?.repo.storeHandle()?.deleteStrengthHR(sessionId: session.id) }
             return
         }
         // Order the watch to end + save its real recording. Its `watchDidSaveWorkout` ack (awaited below)
@@ -202,6 +248,13 @@ extension AppModel {
         pendingStrengthSave = nil
         // Prior PRs (BEFORE save) so the receipt can tell which records are NEW this session.
         let prior = await priorStrengthPRs(store: store, ids: Set(pending.sets.map(\.exerciseId)))
+        // FER-226: flush whatever the 30-sample threshold hasn't drained yet — the last partial batch
+        // must not be lost just because the session is ending. Best-effort: a failure here just means
+        // the tail of the HR series is missing, not that the save itself should be blocked.
+        if !pendingHrFlush.isEmpty {
+            try? await store.appendStrengthHR(sessionId: session.id, samples: pendingHrFlush)
+            pendingHrFlush.removeAll()
+        }
         let saved = await Self.saveThenClearSnapshot(
             save: { try await store.saveSession(pending.record, sets: pending.sets,
                                                 progressionOptOuts: pending.progressionOptOuts,

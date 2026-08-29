@@ -1,6 +1,7 @@
 import XCTest
 @testable import CenitStore
 import StrandTraining
+import BiometricStreams
 
 final class StrengthStoreTests: XCTestCase {
 
@@ -1128,5 +1129,66 @@ final class StrengthStoreTests: XCTestCase {
             try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM progressionOptOut") ?? 0
         }
         XCTAssertEqual(orphans, 0, "deleteSession removes the session's opt-out rows")
+    }
+
+    // MARK: - Live-session HR capture (FER-226)
+
+    /// `appendStrengthHR` is idempotent by its (sessionId, ts) primary key: a fresh batch of three
+    /// distinct timestamps all insert (returns 3); re-flushing the SAME batch (e.g. a retry after a
+    /// write that actually succeeded but whose caller didn't know) inserts nothing (returns 0), and the
+    /// stored row count stays at 3 — not 6.
+    ///
+    /// Note: the spec's illustrative example re-used ts=10 twice in ONE batch, which would collide with
+    /// itself against the real (sessionId, ts) PK rather than demonstrate cross-flush idempotency. This
+    /// test uses three distinct timestamps in the first flush (so all three land) and repeats that exact
+    /// batch in the second flush (so all three collide) — the behavior the criterion is actually after.
+    func testAppendStrengthHRIsIdempotentByPrimaryKey() async throws {
+        let store = try await CenitStore.inMemory()
+        let samples = [HRSample(ts: 10, bpm: 120), HRSample(ts: 11, bpm: 121), HRSample(ts: 12, bpm: 122)]
+        let firstInsert = try await store.appendStrengthHR(sessionId: "s1", samples: samples)
+        XCTAssertEqual(firstInsert, 3, "all three distinct timestamps insert on the first flush")
+
+        let retryInsert = try await store.appendStrengthHR(sessionId: "s1", samples: samples)
+        XCTAssertEqual(retryInsert, 0, "re-flushing the identical batch collides on the PK — no dupes")
+
+        let stored = try await store.strengthHRSamples(sessionId: "s1")
+        XCTAssertEqual(stored, samples, "exactly 3 rows stored, in ts order — not 6")
+    }
+
+    func testStrengthHRSamplesOrderedByTsAscending() async throws {
+        let store = try await CenitStore.inMemory()
+        try await store.appendStrengthHR(sessionId: "s1", samples: [
+            HRSample(ts: 30, bpm: 140), HRSample(ts: 10, bpm: 120), HRSample(ts: 20, bpm: 130),
+        ])
+        let stored = try await store.strengthHRSamples(sessionId: "s1")
+        XCTAssertEqual(stored.map(\.ts), [10, 20, 30])
+    }
+
+    func testDeleteStrengthHRRemovesOnlyThatSession() async throws {
+        let store = try await CenitStore.inMemory()
+        try await store.appendStrengthHR(sessionId: "s1", samples: [HRSample(ts: 1, bpm: 100)])
+        try await store.appendStrengthHR(sessionId: "s2", samples: [HRSample(ts: 1, bpm: 110)])
+        try await store.deleteStrengthHR(sessionId: "s1")
+        let s1 = try await store.strengthHRSamples(sessionId: "s1")
+        let s2 = try await store.strengthHRSamples(sessionId: "s2")
+        XCTAssertTrue(s1.isEmpty)
+        XCTAssertEqual(s2, [HRSample(ts: 1, bpm: 110)], "another session's samples are untouched")
+    }
+
+    /// `deleteSession` (the full session-discard path) also clears `strengthHrSample` for that session,
+    /// leaving another session's HR rows intact — same contract as its other per-session cascades.
+    func testDeleteSessionCascadesHRSamples() async throws {
+        let store = try await CenitStore.inMemory()
+        try await store.saveSession(StrengthSession(id: "s1", startTs: 1000), sets: [])
+        try await store.saveSession(StrengthSession(id: "s2", startTs: 2000), sets: [])
+        try await store.appendStrengthHR(sessionId: "s1", samples: [HRSample(ts: 1, bpm: 100)])
+        try await store.appendStrengthHR(sessionId: "s2", samples: [HRSample(ts: 1, bpm: 110)])
+
+        try await store.deleteSession(id: "s1")
+
+        let s1 = try await store.strengthHRSamples(sessionId: "s1")
+        let s2 = try await store.strengthHRSamples(sessionId: "s2")
+        XCTAssertTrue(s1.isEmpty, "deleteSession must cascade-delete its HR samples")
+        XCTAssertEqual(s2, [HRSample(ts: 1, bpm: 110)], "another session's HR samples survive")
     }
 }

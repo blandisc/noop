@@ -875,6 +875,19 @@ extension CenitStore {
                 $0.add(column: "restTakenS", .integer)
             }
         }
+        // v41 (FER-226): revives the strength-session HR capturer killed by FER-1003's band amputation.
+        // Raw watch-pulse samples land here during a live session (`AppModel.ingestWatchPulse`), keyed
+        // by (sessionId, ts) so a retried flush after a failed write is a no-op, not a duplicate. No FK
+        // (rows are pruned explicitly by `StrengthStore.deleteStrengthHR` on discard/deleteSession — the
+        // session row itself never disappears out from under a live capture).
+        migrator.registerMigration("v41") { db in
+            try db.create(table: "strengthHrSample") { t in
+                t.column("sessionId", .text).notNull()
+                t.column("ts", .integer).notNull()
+                t.column("bpm", .integer).notNull()
+                t.primaryKey(["sessionId", "ts"])
+            }
+        }
         return migrator
     }
 

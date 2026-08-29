@@ -113,6 +113,11 @@ extension AppModel {
         // y si el interruptor está encendido.
         RestEndNotifier.cancel()
         let restaurada = StrengthSessionModel.restore(from: snap)
+        // FER-226: `hrSamples` is memory-only (`StrengthSessionSnapshot` omits it) — rehydrate from
+        // whatever already flushed to `strengthHrSample` so a crash mid-session doesn't lose the avgHr.
+        restaurada.hrSamples = (try? await store.strengthHRSamples(sessionId: restaurada.id)) ?? []
+        pendingHrFlush.removeAll()
+        lastAcceptedHrTs = nil
         strengthSession = restaurada                                 // didSet binds the Live Activity
         restaurada.reprogramarAviso()
         strengthSheetPresented = false                               // the hub offers «Resume»; no auto-present

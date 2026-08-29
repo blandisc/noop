@@ -1,6 +1,7 @@
 import Foundation
 import GRDB
 import StrandTraining
+import BiometricStreams
 
 // MARK: - v13 strength tracker persistence (FER-345)
 //
@@ -559,8 +560,52 @@ extension CenitStore {
             try db.execute(sql: "DELETE FROM setEntry WHERE sessionId = ?", arguments: [id])
             try db.execute(sql: "DELETE FROM progressionOptOut WHERE sessionId = ?", arguments: [id])
             try db.execute(sql: "DELETE FROM strengthExerciseNote WHERE sessionId = ?", arguments: [id])
+            try db.execute(sql: "DELETE FROM strengthHrSample WHERE sessionId = ?", arguments: [id])
             try db.execute(sql: "DELETE FROM strengthSession WHERE id = ?", arguments: [id])
             for exerciseId in affected { try Self.recomputePR(db, exerciseId: exerciseId) }
+        }
+    }
+
+    // MARK: - Live-session HR capture (FER-226)
+    //
+    // Revives the FC capturer killed by FER-1003's band amputation: raw watch-pulse samples land here
+    // during a live strength session (`AppModel.ingestWatchPulse`), keyed by (sessionId, ts) so a
+    // retried flush after a failed write is a no-op, not a duplicate.
+
+    /// Idempotent insert of raw HR samples captured during a live session. Returns the number of rows
+    /// ACTUALLY inserted (0 for samples that already existed — same ts already flushed).
+    @discardableResult
+    public func appendStrengthHR(sessionId: String, samples: [HRSample]) async throws -> Int {
+        guard !samples.isEmpty else { return 0 }
+        return try syncWrite { db in
+            let stmt = try db.cachedStatement(sql: """
+                INSERT INTO strengthHrSample (sessionId, ts, bpm) VALUES (?, ?, ?)
+                ON CONFLICT(sessionId, ts) DO NOTHING
+                """)
+            var inserted = 0
+            for s in samples {
+                try stmt.execute(arguments: [sessionId, s.ts, s.bpm])
+                inserted += db.changesCount
+            }
+            return inserted
+        }
+    }
+
+    /// All HR samples captured for a session, oldest first.
+    public func strengthHRSamples(sessionId: String) async throws -> [HRSample] {
+        try syncRead { db in
+            try Row.fetchAll(db, sql:
+                "SELECT ts, bpm FROM strengthHrSample WHERE sessionId = ? ORDER BY ts ASC",
+                arguments: [sessionId]
+            ).map { HRSample(ts: $0["ts"], bpm: $0["bpm"]) }
+        }
+    }
+
+    /// Deletes all HR samples for a session (discard path — the session row itself is dropped
+    /// separately, or by `deleteSession`, which also clears this table).
+    public func deleteStrengthHR(sessionId: String) async throws {
+        try syncWrite { db in
+            try db.execute(sql: "DELETE FROM strengthHrSample WHERE sessionId = ?", arguments: [sessionId])
         }
     }
 
