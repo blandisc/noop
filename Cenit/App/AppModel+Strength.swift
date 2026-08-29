@@ -79,24 +79,30 @@ extension AppModel {
     func ingestWatchPulse(bpm: Int) {
         watchBpm = bpm
         guard let session = strengthSession, session.summary == nil else { return }
-        let ts = Date()
-        guard let accepted = StrengthHRIntake.accept(bpm: bpm, ts: ts, lastTs: lastAcceptedHrTs,
+        guard let accepted = StrengthHRIntake.accept(bpm: bpm, ts: Date(), lastTs: lastAcceptedHrTs,
                                                      paused: session.paused) else { return }
-        lastAcceptedHrTs = ts
+        lastAcceptedHrTs = accepted.ts   // second-truncated — same precision `accept` compares next time
         let sample = HRSample(ts: Int(accepted.ts.timeIntervalSince1970), bpm: accepted.bpm)
         session.hrSamples.append(sample)
         pendingHrFlush.append(sample)
-        guard pendingHrFlush.count >= 30 else { return }
+        // FER-226 round 2 (D3): only fire a new flush while none is already in flight — two overlapping
+        // flushes each doing `removeFirst(batch.count)` against a buffer the OTHER one already trimmed
+        // silently drops samples neither of them ever wrote.
+        guard !isFlushingHR, pendingHrFlush.count >= 30 else { return }
         flushPendingHR(sessionId: session.id)
     }
 
-    /// Drains `pendingHrFlush` to the store. On failure the buffer is left untouched — the (sessionId, ts)
-    /// primary key makes a retry idempotent for whatever already landed.
+    /// Drains `pendingHrFlush` to the store. On failure the batch is left in place — the (sessionId, ts)
+    /// primary key makes a retry idempotent for whatever already landed. Guarded by `isFlushingHR` so a
+    /// second flush can never start while this one is still trimming the buffer it read (D3).
     private func flushPendingHR(sessionId: String) {
         let batch = pendingHrFlush
         guard !batch.isEmpty else { return }
+        isFlushingHR = true
         Task { [weak self] in
-            guard let self, let store = await self.repo.storeHandle() else { return }
+            guard let self else { return }
+            defer { self.isFlushingHR = false }
+            guard let store = await self.repo.storeHandle() else { return }
             do {
                 try await store.appendStrengthHR(sessionId: sessionId, samples: batch)
                 self.pendingHrFlush.removeFirst(min(batch.count, self.pendingHrFlush.count))
