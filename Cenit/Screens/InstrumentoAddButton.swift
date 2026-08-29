@@ -13,9 +13,9 @@ import StrandDesign
 //
 // · **Superficie con borde, no `patternBlock`.** La anatomía ganadora es la del botón flotante, no la
 //   del hub, y el motivo es medible: `patternBlock` (#EFEAE0) sobre papel (#F4F1E8) da **1.06:1** — la
-//   forma prácticamente no existe. Es el mismo hallazgo que sacó ese relleno de `AddExerciseNode`. Con
-//   `surface` + `hairlineStrong` (1.36:1 de borde) el control se lee, y un botón que flota sobre una
-//   lista en scroll NECESITA leerse. El hub hereda la corrección de paso.
+//   forma prácticamente no existe. Con `surface` + `hairlineStrong` (1.36:1 de borde) el control se
+//   lee, y un botón que flota sobre una lista en scroll NECESITA leerse. El hub hereda la corrección
+//   de paso.
 //
 // · **`prominent` para la salida de un flujo.** En el flujo de CREACIÓN el botón no agrega a algo que
 //   ya existe: es la SALIDA («Crear rutina con 3»). Ahí se llena de `dataStrain` como cualquier CTA

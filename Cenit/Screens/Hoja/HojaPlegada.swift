@@ -46,17 +46,15 @@ enum HojaPlegada {
         .accessibilityHint(Text("Opens the exercise"))
     }
 
-    /// «＋ Agregar ejercicio» — troquel punteado centrado (mock `.agregar`). Distinto de
-    /// `AddExerciseNode`: aquel carga el hilo/dot del riel de «recibo» que La Hoja ya no usa (todo
-    /// vidrio independiente, sin hilo) — se hace a mano en vez de ensanchar ese componente para un
-    /// caller que ya no comparte su lenguaje visual.
+    /// «＋ Agregar ejercicio» — troquel punteado centrado (mock `.agregar`). La Hoja es vidrio
+    /// independiente (sin hilo/dot de riel de «recibo»), así que el control se arma a mano aquí.
     static func addExercise(sheet: RoutineSheet) -> some View {
         Button {
             sheet.replaceIndex = nil
             sheet.showLibrary = true
         } label: {
             HStack(spacing: 8) {
-                Image(systemName: "plus").font(.system(size: 12, weight: .semibold))  // token-exempt: glifo del troquel, mismo criterio que AddExerciseNode
+                Image(systemName: "plus").font(.system(size: 12, weight: .semibold))  // token-exempt: glifo del troquel
                 Text("Add exercise").font(InstrumentoType.grotesk(13, weight: .semibold))
             }
             .foregroundStyle(sheet.theme.inkSecondary)
