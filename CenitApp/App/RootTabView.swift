@@ -143,6 +143,16 @@ struct RootTabView: View {
             .navigationDestination(for: SavedTicketsRoute.self) { _ in
                 trainChrome(SavedTicketsScreen())
             }
+            // FER-202 (fusión «Historial unificado»): el detalle de una fila de ACTIVIDAD (cardio/manual,
+            // `WorkoutRow`) — `WorkoutHistoryScreen.openCardio` lo empuja aquí. Antes lo registraba
+            // `WorkoutsView` (retirada); ahora vive en el trainStack como una ruta más (path heterogéneo,
+            // no un stack anidado: sin riesgo FER-171).
+            .navigationDestination(for: WorkoutRow.self) { row in
+                // `onChange` bumpea el coordinador para que la lista unificada se recargue al volver de
+                // una edición/borrado (paridad con lo que hacía `WorkoutsView.reload`).
+                trainChrome(WorkoutDetailScreen(theme: .base, row: row,
+                                                onChange: { workoutHistory.bumpReload() }))
+            }
         }
         .environmentObject(workoutHistory)
         .toolbar(.hidden, for: .tabBar)
@@ -484,7 +494,12 @@ struct RootTabView: View {
         // `AppMap.swift` (el arnés de desarrollo) y no aquí, que es la navegación real: en la app
         // el día se habría podido tocar y no habría pasado nada. `WorkoutSessionRoute` ya tiene su
         // `navigationDestination` registrado arriba, así que basta empujarla a la pila.
-        case .workoutHistory: WorkoutHistoryScreen(openWorkoutSession: { trainStack.append($0) })
+        // FER-202: la puerta de Entrenar abre el «Historial unificado» filtrado a Fuerza (la bitácora
+        // rica); una fila de actividad de la línea mixta empuja su detalle Apple (`openCardio`).
+        case .workoutHistory: WorkoutHistoryScreen(
+            initialFilter: .strength,
+            openWorkoutSession: { trainStack.append($0) },
+            openCardio: { trainStack.append($0) })
         case .breathe:      BreathingView()
         case .intervals:    IntervalTimerView()
         // FER-890: «Tu Plan» is one unified screen (week + routines). Both routes resolve to it — the old
@@ -497,7 +512,12 @@ struct RootTabView: View {
         case .routineToday: RoutineSheet(origin: .today(routineId: nil), mode: .editing)
         case .explore:      MetricExplorerView()
         case .compare:      CompareView()
-        case .workouts:     WorkoutsView()
+        // FER-202: `WorkoutsView` se retiró (fusionada en `WorkoutHistoryScreen`). Esta clave solo la
+        // alcanza la navegación de screenshots DEBUG (`ScreenshotNav`, rawValue «workouts»), así que
+        // apunta al historial unificado en «Todo» con su propio coordinador (no cuelga de un stack que
+        // lo inyecte). Sin clausuras: no necesita navegar en ese camino de captura.
+        case .workouts:     WorkoutHistoryScreen(initialFilter: .all)
+                                .environmentObject(WorkoutHistoryCoordinator())
         case .applehealth:  AppleHealthView()
         case .datasources:  DataSourcesView()
         case .support:      SupportView()

@@ -215,8 +215,13 @@ private struct CuerpoLanding: View {
     @State private var showWorkouts = false
     /// The Entrenamientos stack's path, held here (not implicit inside `NavigationStack`) so the layer can
     /// tell root from pushed: the edge-swipe-back only arms at the root, where the system's own pop isn't
-    /// already listening to that edge.
-    @State private var workoutsPath: [WorkoutRow] = []
+    /// already listening to that edge. FER-202: `NavigationPath` (no `[WorkoutRow]`) — la línea mixta
+    /// empuja DOS tipos de detalle (`WorkoutSessionRoute` de fuerza + `WorkoutRow` de actividad).
+    @State private var workoutsPath = NavigationPath()
+    /// FER-202: el coordinador de la puerta de Cuerpo — instancia PROPIA y estable (`@StateObject`), no la
+    /// del trainStack (las dos puertas nunca son visibles a la vez). Sin él, abrir el detalle rico de una
+    /// sesión CRASHEA (`WorkoutSessionDetailScreen` lo exige como `@EnvironmentObject`).
+    @StateObject private var workoutsCoordinator = WorkoutHistoryCoordinator()
     /// Light «Instrumento» Detalle de Sueño (FER-212) — the «Sueño» row now opens this superset of the
     /// old dark sleep screen (built fresh on tap from the in-memory dashboard), theme passed explicitly.
     @State private var sleepDetail: SleepDetailItem? = nil
@@ -382,16 +387,28 @@ private struct CuerpoLanding: View {
         showActivityCost = false; showFitnessAge = false; showBodyAge = false
         // The path outlives the layer (it's state here, not inside the stack), so closing from a pushed
         // session and reopening would land back on that session instead of the list.
-        showWorkouts = false; workoutsPath = []
+        showWorkouts = false; workoutsPath = NavigationPath()
     }
 
-    /// Entrenamientos as a screen (not a card): its own `NavigationStack`, so a session row still PUSHES
-    /// `WorkoutDetailScreen` with a plain «‹» back. `WorkoutsView` wears the «‹ Tendencias» back in place
-    /// of the old sheet's «Done» — the layer has no `dismiss()` to call. The env objects are re-supplied
-    /// for symmetry with the other layers; the theme is injected at the root (FER-162).
+    /// Historial (fusión FER-202) como pantalla-capa: su propio `NavigationStack`, abierto en «Todo» (toda
+    /// la actividad). Una fila de fuerza empuja `WorkoutSessionDetailScreen`; una de actividad,
+    /// `WorkoutDetailScreen` — ambos destinos registrados aquí. `WorkoutHistoryScreen` viste la «‹
+    /// Tendencias» vía `onClose` (la capa no tiene `dismiss()`). El coordinador PROPIO se inyecta (sin él,
+    /// abrir el detalle rico crashea). Theme al raíz (FER-162); env objects re-suministrados.
     private var workoutsLayer: some View {
         NavigationStack(path: $workoutsPath) {
-            WorkoutsView(onClose: dismissDetail)
+            WorkoutHistoryScreen(
+                initialFilter: .all,
+                openWorkoutSession: { workoutsPath.append($0) },
+                openCardio: { workoutsPath.append($0) },
+                onClose: dismissDetail)
+            .navigationDestination(for: WorkoutSessionRoute.self) { route in
+                WorkoutSessionDetailScreen(route: route)
+            }
+            .navigationDestination(for: WorkoutRow.self) { row in
+                WorkoutDetailScreen(theme: theme, row: row,
+                                    onChange: { workoutsCoordinator.bumpReload() })
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(theme.paper.ignoresSafeArea())
@@ -399,6 +416,7 @@ private struct CuerpoLanding: View {
         .environmentObject(repo)
         .environment(model)
         .environmentObject(health)
+        .environmentObject(workoutsCoordinator)
         .modifier(EdgeSwipeBack(enabled: workoutsPath.isEmpty, onClose: dismissDetail))
     }
 
