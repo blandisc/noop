@@ -19,6 +19,11 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 // borders. The theme is passed EXPLICITLY (it doesn't propagate through `.sheet`, FER-162) by the two
 // callers (the workouts list's Add, the detail's Edit/Duplicate). The old fixed `frame(width: 420)`
 // (a macOS-era width) is gone — the form fills the sheet's width on iPhone.
+//
+// FER-202 (anillo 3, épico FER-195): el papel plano cede al cristal El Eje
+// (`.entrenarHojaFondo(tono: .neutro)` + `EntrenarHojaCabecera(.cancelar)`). Las DOS salidas se
+// conservan — Cancelar sube a la cabecera, Guardar/Añadir sigue siendo el CTA del footer (mismo
+// patrón que `RestEditorScreen` Ola 2). Cero cambio de comportamiento.
 
 struct ManualWorkoutSheet: View {
     /// The row being edited, or nil for a new manual workout.
@@ -101,33 +106,34 @@ struct ManualWorkoutSheet: View {
             .padding(24)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.paper.ignoresSafeArea())
+        // FER-202: cristal El Eje. Se retira `.sheetPaper` (papel opaco de presentación) — taparía
+        // el vidrio; el fondo lo pinta `.entrenarHojaFondo`. ScrollView intacto (no-sheet-glass).
+        .entrenarHojaFondo(tono: .neutro)
         .presentationDragIndicator(.visible)
-        .sheetPaper(theme)
         .enableInjection()   // Inject: recarga en caliente (no-op en Release)
     }
 
     // MARK: - Sections
 
+    /// FER-202: `EntrenarHojaCabecera(.cancelar)` absorbe el título+subtítulo a mano Y el «Cancel»
+    /// del footer — mismas cadenas ya localizadas, misma acción (`dismiss()`). El CTA de
+    /// Guardar/Añadir sigue abajo (no cabe en la Salida única de la cabecera junto a Cancelar).
     private var header: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(editing == nil ? "Add Workout" : "Edit Workout")
-                .font(StrandFont.title2)
-                .foregroundStyle(theme.ink)
-            Text(editing == nil
-                 ? "Log a session you tracked elsewhere."
-                 : "Adjust this session's details.")
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.inkSecondary)
-        }
+        EntrenarHojaCabecera(
+            titulo: editing == nil
+                ? String(localized: "Add Workout")
+                : String(localized: "Edit Workout"),
+            subtitulo: editing == nil
+                ? String(localized: "Log a session you tracked elsewhere.")
+                : String(localized: "Adjust this session's details."),
+            tono: .neutro,
+            salida: .cancelar(String(localized: "Cancel")),
+            onSalir: { dismiss() }
+        )
     }
 
     private var footer: some View {
         HStack {
-            Button("Cancel") { dismiss() }
-                .buttonStyle(.plain)
-                .font(StrandFont.body)
-                .foregroundStyle(theme.inkSecondary)
             Spacer()
             saveButton
         }
