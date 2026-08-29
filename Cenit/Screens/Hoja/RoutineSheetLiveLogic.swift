@@ -347,6 +347,12 @@ extension HojaSesionViva {
     /// el RIR de la celda, revisa PR (R16) y da la háptica. `ei`/`si` son la celda que se ESTABA
     /// mirando ANTES de registrar (para el RIR/PR de ESA serie) — el modelo puede haber avanzado el
     /// foco a otra ya para cuando este método termina.
+    ///
+    /// FER-223 (corrección post-QA): este es el ÚNICO funnel de «serie registrada» — lo llaman tanto
+    /// el «✓ Serie» del keypad como el «Set done» del Foco (`registerFromFoco`). Antes cada uno de
+    /// esos dos call sites ADEMÁS disparaba su propio háptico, así que una serie palomeada sonaba dos
+    /// veces; el evento vive solo aquí ahora. `sheet.model.buzz(loops: 1)` (AppModel.buzz, el cuarto
+    /// sistema háptico del repo) queda reemplazado por el catálogo de Entrenar.
     func registerActiveSet(ei: Int, si: Int) {
         session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR)
         let rirForThisSet = LiveStrengthSheet.rirScoped(
@@ -361,7 +367,7 @@ extension HojaSesionViva {
         }
         selectedRIR = nil
         selectedRIRTarget = nil
-        sheet.model.buzz(loops: 1)   // háptica al palomear (contrato F1/F2: hápticas en palomear/fin de descanso/arranque)
+        EntrenarHaptic.serieCompletada.play()
     }
 
     // MARK: - D3 · HECHO (FER-170 · F5)
@@ -418,16 +424,16 @@ extension HojaSesionViva {
 
     /// SALTAR (B2/B3 consola, mock P4): el mismo `skipRest()` que el botón «SALTAR ›» de la banda.
     ///
-    /// FER-223: el fin de descanso MANUAL (este botón, «SALTAR ›»/«Continuar ›», FC lista) no tenía
-    /// ningún háptico en el iPhone — solo el auto-skip del descanso fijo lo tenía, vía
-    /// `AppModel.buzz` en `RestAutoSkipModifier` (fuera de alcance de este catálogo, intacto). Los
-    /// dos caminos son mutuamente excluyentes (uno es "el reloj terminó solo", el otro "tú lo
-    /// cerraste"), así que esto no duplica esa señal. Si el Watch está conectado, la muñeca ya suena
-    /// su propio `WatchHaptic.restEnded` de forma independiente — eso queda tal cual: son dos
-    /// ubicaciones físicas distintas (muñeca vs. bolsillo/mano), no el mismo háptico repetido.
+    /// FER-223 (corrección post-QA): este mismo `skipRest()` lo llama TAMBIÉN `RestAutoSkipModifier`
+    /// cuando el descanso se acaba SOLO — así que un háptico puesto aquí sonaría dos veces en ese
+    /// camino (el automático + este). El golpe pesado de `descansoTerminado` vive únicamente en
+    /// `RestAutoSkipModifier` (el sitio donde de verdad hace falta llamar la atención de alguien que
+    /// no está mirando el teléfono). Aquí, en el toque MANUAL, decidí no poner ningún háptico: quien
+    /// presiona «Saltar ›»/«Continuar ›» ya sabe lo que acaba de hacer — la confirmación visual de la
+    /// banda es suficiente, y un golpe adicional al tacto que originó la acción es redundante, no
+    /// informativo (mismo principio de `SetTable`: el check ya tiene su propio feedback al tocarlo).
     func skipRest() {
         withAnimation(reduceMotion ? nil : StrandMotion.gentle) { session.skipRest() }
-        EntrenarHaptic.descansoTerminado.play()
     }
 
     // MARK: - R16 · destello de récord (detección VIGENTE — `PRMetric`, sin redefinir tipos, F4/B11 intacto)
@@ -900,6 +906,12 @@ extension HojaSesionViva {
 /// poder colgarlo de `HojaSesionViva.body` (ronda 3 · O-r2a: a nivel de la vista raíz, no de una
 /// tarjeta que puede plegarse — ver `restAutoSkipModifier()` arriba) sin ensanchar su firma. No
 /// `private`: `RoutineSheetLive.swift` lo monta directo.
+///
+/// FER-223: este es el sitio LEGÍTIMO del golpe pesado — el descanso se acabó SOLO, sin que nadie lo
+/// tocara, así que hace falta llamar la atención de alguien que probablemente no está mirando el
+/// teléfono (antes esto delegaba al Watch por completo; en el iPhone no sonaba nada). Reemplaza el
+/// `vivo.sheet.model.buzz(loops: 1)` genérico (`AppModel.buzz`, el cuarto sistema háptico del repo)
+/// por `EntrenarHaptic.descansoTerminado`, el evento correcto del catálogo de Entrenar.
 struct RestAutoSkipModifier: ViewModifier {
     let vivo: HojaSesionViva
     @Environment(\.scenePhase) private var scenePhase
@@ -912,7 +924,7 @@ struct RestAutoSkipModifier: ViewModifier {
             guard !Task.isCancelled, vivo.session.phase == .resting, !vivo.session.paused else { return }
             let fresco = abs(end.timeIntervalSinceNow) < 2 && scenePhase == .active
             if fresco {
-                vivo.sheet.model.buzz(loops: 1)
+                EntrenarHaptic.descansoTerminado.play()
                 SessionComfort.playRestChime()
             }
             withAnimation(vivo.reduceMotion ? nil : StrandMotion.gentle) { vivo.session.skipRest() }
