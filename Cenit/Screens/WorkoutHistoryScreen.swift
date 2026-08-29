@@ -52,14 +52,49 @@ struct WorkoutHistoryScreen: View {
     /// Push a completed session's detail from a tapped calendar day (Alcance punto 2, FER-90) — the
     /// list rows still navigate via `NavigationLink(value:)`, which doesn't need this. Same pattern as
     /// `WorkoutSessionDetailScreen.openRoutine`: default nil so no other call site breaks.
-    var openWorkoutSession: ((WorkoutSessionRoute) -> Void)? = nil
+    var openWorkoutSession: ((WorkoutSessionRoute) -> Void)?
+    /// FER-202 (fusión «Historial unificado»): empuja el detalle de una fila de ACTIVIDAD (`WorkoutRow`
+    /// — cardio de Apple / manual). La puerta lo cablea a su stack (que registra `WorkoutRow` como
+    /// destino); nil = no navega (previews / puertas que solo muestran fuerza).
+    var openCardio: ((WorkoutRow) -> Void)?
+    /// FER-202: cierra la CAPA cuando esta pantalla ES la raíz del `workoutsLayer` de Cuerpo (no llega
+    /// empujada, así que no hay «‹» del sistema; el toolbar dibuja «‹ Tendencias»). nil en la puerta de
+    /// Entrenar, donde llega empujada al trainStack.
+    var onClose: (() -> Void)?
+    /// FER-202: el filtro con el que ABRE cada puerta — Entrenar `.strength` (bitácora de fuerza rica),
+    /// Cuerpo `.all` (toda la actividad). Siembra `filtro`.
+    let initialFilter: HistoryFilter
+
+    /// El único inicializador (FER-202): además de las clausuras/puerta, siembra el `@State filtro` con
+    /// `initialFilter`. Sustituye al memberwise para poder sembrar el estado desde el argumento.
+    init(initialFilter: HistoryFilter = .strength,
+         openWorkoutSession: ((WorkoutSessionRoute) -> Void)? = nil,
+         openCardio: ((WorkoutRow) -> Void)? = nil,
+         onClose: (() -> Void)? = nil) {
+        self.initialFilter = initialFilter
+        self.openWorkoutSession = openWorkoutSession
+        self.openCardio = openCardio
+        self.onClose = onClose
+        _filtro = State(initialValue: initialFilter)
+    }
 
     @Environment(\.instrumentoTheme) private var theme
     @EnvironmentObject private var repo: Repository
+    @EnvironmentObject private var health: HealthKitBridge
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var system: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
 
     @EnvironmentObject private var coordinator: WorkoutHistoryCoordinator
+    /// FER-202: el filtro-dialecto activo (sembrado desde `initialFilter` en `init`). `.strength` →
+    /// dialecto bitácora de fuerza; `.all`/`.sport` → dialecto actividad («Todo»).
+    @State private var filtro: HistoryFilter
+    /// FER-202: la actividad de Apple Health / manual (`WorkoutRow`) que alimenta el dialecto «Todo».
+    @State private var workoutRows: [WorkoutRow] = []
+    /// FER-202: el rango del dialecto «Todo» (Fuerza usa ventanas nativas de 90 días, sin control de rango).
+    @State private var range: ExploreRange = .all
+    /// FER-202: el rango se siembra al rango más estrecho con datos UNA sola vez, no en cada recarga
+    /// (`load()` corre en cada bump del coordinador), para no pisar la elección del usuario.
+    @State private var didSeedRange = false
     @State private var sessions: [StrengthSession] = []
     @State private var routineNames: [String: String] = [:]
     @State private var volumes: [String: (volumeKg: Double, setCount: Int)] = [:]
@@ -93,26 +128,17 @@ struct WorkoutHistoryScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 header
+                // FER-202: el interruptor de dialecto [Todo · Fuerza] — constante en toda la pantalla,
+                // debajo del título. `.sport(...)` cuenta como «Todo» (el chip removible vive dentro).
+                filterSegment
                 if loaded {
-                    // The calendar (inside `sessionsSection`, as its header) draws every time — even
-                    // with zero sessions or a read error — so «no data» and «couldn't load» never look
-                    // like the same 91 empty cells with no explanation (Alcance punto 2, Estados).
-                    // `tuMes`/`progressionBlock`/`muscleVolumeInline` stay hidden without sessions:
-                    // they have nothing honest to show.
-                    if !sessions.isEmpty {
-                        // Handoff v2: TU MES (card) → progression → muscle → sessions → tickets.
-                        tuMes
-                        progressionBlock
-                        muscleVolumeInline
-                    }
-                    sessionsSection
-                    if readError {
-                        readErrorBanner
-                    } else if sessions.isEmpty {
-                        emptyState
+                    if showsFuerzaDialect {
+                        // Degradación honesta: bajo «Todo»/deporte sin permiso de Apple Salud y sin
+                        // actividad, caemos al dialecto de Fuerza (on-device, no necesita permiso) + aviso.
+                        if !isStrengthFilter { appleAviso }
+                        fuerzaDialect
                     } else {
-                        progressSection
-                        savedTicketsEntry
+                        todoDialect
                     }
                     manualEntryRow
                 }
@@ -122,7 +148,25 @@ struct WorkoutHistoryScreen: View {
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.paper.ignoresSafeArea())
+        // FER-202 (épico «Entrenar en vidrio»): suelo de cristal El Eje en vez del papel plano — la
+        // misma receta de la familia que las hojas ya migradas (v1). El héroe/tiles se posan encima.
+        .entrenarHojaFondo(tono: .neutro)
+        // FER-202: cuando esta pantalla es la RAÍZ de la capa de Cuerpo (no llega empujada), el toolbar
+        // dibuja «‹ Tendencias» — no hay «‹» del sistema que la cierre. En la puerta de Entrenar `onClose`
+        // es nil y este item no aparece (el stack ya trae su propio back).
+        .toolbar {
+            if let onClose {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button { onClose() } label: {
+                        HStack(spacing: 4) {
+                            StrandIcon.back.image.font(StrandFont.glyph(.inline, weight: .semibold))
+                            Text("Tendencias").font(StrandFont.body)
+                        }
+                    }
+                    .foregroundStyle(theme.ink)
+                }
+            }
+        }
         // The detail push (`WorkoutSessionRoute`) is registered once on the Entrenar NavigationStack in
         // RootTabView (alongside the other train routes), so it isn't re-declared here.
         // «Undo» toast after a delete (FER-527), now seeded by the list OR the detail via the coordinator.
@@ -170,6 +214,9 @@ struct WorkoutHistoryScreen: View {
                     do {
                         try await repo.saveManualWorkout(row, replacing: replacing)
                         coordinator.bumpReload()
+                        // El registro a mano guarda un `WorkoutRow` (aparece bajo «Todo»): si estás en
+                        // «Fuerza» al guardar, salta a «Todo» para que la entrada nunca «desaparezca».
+                        withAnimation(StrandMotion.fade) { filtro = .all }
                     } catch {
                         saveError = true
                     }
@@ -182,16 +229,344 @@ struct WorkoutHistoryScreen: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
-            // FER-136 · V7: la Bitácora del handoff — kicker «Bitácora · 90 días» + título «Historial
-            // y progreso», por el slot `overline:` de `InstrumentoFlowTitle` (mismo helper canónico
-            // que usa `WorkoutSessionDetailScreen.heading` más abajo, no un `groteskOverline` suelto).
-            // El subtítulo cuenta la MISMA ventana de 90 días que la landing anuncia («N sesiones ·
-            // 90 días»), no el mes en curso.
-            InstrumentoFlowTitle(overline: Text("Log · 90 days"), Text("History and progress"))
-            Text(historialSubtitle)
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
+            // FER-202: título CONSTANTE «Historial» + overline «REGISTRO» en las dos puertas y los dos
+            // dialectos (el filtro debajo cambia el dialecto, no el título). El subtítulo «N sesiones ·
+            // 90 días · marcas» es del dialecto de Fuerza (ventana nativa de 90 días); el dialecto «Todo»
+            // lleva su propio héroe con el conteo del rango.
+            InstrumentoFlowTitle(overline: Text("Log"), Text("History"))
+            if showsFuerzaDialect {
+                Text(historialSubtitle)
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
+    }
+
+    /// El dialecto BITÁCORA (filtro «Fuerza», o la degradación honesta sin permiso de Apple Salud): el
+    /// layout de fuerza rica ya aprobado — Tu mes → Ciclos de subida → Volumen por músculo → Sesiones
+    /// (calendario 13sem + línea solo-fuerza) → Progreso → Mis tickets. Ventanas nativas de 90 días.
+    @ViewBuilder private var fuerzaDialect: some View {
+        // El calendario (dentro de `sessionsSection`, como su cabecera) dibuja siempre — aun con cero
+        // sesiones o error de lectura — para que «sin datos» y «no se pudo leer» nunca se lean como las
+        // mismas 91 celdas vacías (Alcance punto 2, Estados). `tuMes`/`progressionBlock`/`muscleVolumeInline`
+        // se ocultan sin sesiones: no tienen nada honesto que mostrar.
+        if !sessions.isEmpty {
+            tuMes
+            progressionBlock
+            muscleVolumeInline
+        }
+        sessionsSection
+        if readError {
+            readErrorBanner
+        } else if sessions.isEmpty {
+            emptyState
+        } else {
+            progressSection
+            savedTicketsEntry
+        }
+    }
+
+    // MARK: - FER-202 · interruptor de dialecto [Todo · Fuerza] + estados de puerta
+
+    /// Los dos segmentos visibles: `.sport(...)` cuenta como «Todo» (el chip removible vive dentro).
+    private enum SegTab: Hashable { case todo, fuerza }
+
+    private var isStrengthFilter: Bool { if case .strength = filtro { return true }; return false }
+
+    /// El binding del segmento: `.fuerza` ⇔ `filtro == .strength`; `.all`/`.sport` se leen como «Todo».
+    /// Tocar «Fuerza» pone `.strength`; «Todo» limpia a `.all` (suelta cualquier deporte estrechado).
+    private var segSelection: Binding<SegTab> {
+        Binding(
+            get: { isStrengthFilter ? .fuerza : .todo },
+            set: { tab in withAnimation(StrandMotion.fade) { filtro = (tab == .fuerza) ? .strength : .all } }
+        )
+    }
+
+    private var filterSegment: some View {
+        SegmentedPillControl([SegTab.todo, SegTab.fuerza], selection: segSelection, theme: theme) { tab in
+            tab == .todo ? String(localized: "All") : String(localized: "Strength")
+        }
+        .accessibilityLabel(Text("Filter"))
+    }
+
+    /// ¿Permiso de Apple Salud? `.unavailable` (sin HealthKit, p. ej. iPad) cuenta como «no bloquea»:
+    /// no hay nada que conectar, así que no degradamos ni mostramos el aviso.
+    private var appleAuthorized: Bool { health.auth == .authorized || health.auth == .unavailable }
+
+    /// Rinde el dialecto de Fuerza cuando el filtro es `.strength`, O cuando estamos en «Todo»/deporte
+    /// SIN permiso de Apple Salud y sin ninguna actividad importada — degradación honesta: la fuerza es
+    /// on-device y no necesita permiso.
+    private var showsFuerzaDialect: Bool {
+        if isStrengthFilter { return true }
+        return !appleAuthorized && workoutRows.isEmpty
+    }
+
+    /// El aviso azul-Apple sobre el dialecto degradado: honesto, no interactivo (Fuentes de datos vive
+    /// en Ajustes). No promete lo que no puede hacer aquí: dice dónde conectar.
+    private var appleAviso: some View {
+        TodayBanner(dot: theme.originApple,
+                    title: "Connect Apple Health",
+                    subtitle: "Turn it on in Settings to see your workouts from there.")
+    }
+
+    // MARK: - FER-202 · dialecto ACTIVIDAD («Todo» / deporte)
+
+    /// La línea de tiempo FUNDIDA (fuerza rica + actividad, con el eco de Apple de-duplicado). Base de
+    /// todo el dialecto; el rango y el filtro se aplican encima. Pura (`UnifiedWorkoutHistory`).
+    private var mergedEntries: [HistoryEntry] {
+        UnifiedWorkoutHistory.merge(sessions: sessions, rows: workoutRows)
+    }
+
+    /// Cutoff NOW-anclado (inicio de hoy − (días−1)); nil para `.all`. Mismo ancla que la teja de
+    /// «Entrenamientos» en Tendencias, para que los conteos coincidan.
+    private func cutoffTs(for r: ExploreRange) -> Int? {
+        guard let days = r.days else { return nil }
+        let start = Calendar.current.startOfDay(
+            for: Calendar.current.date(byAdding: .day, value: -(days - 1), to: Date()) ?? Date())
+        return Int(start.timeIntervalSince1970)
+    }
+
+    private func entriesInRange(_ entries: [HistoryEntry], _ r: ExploreRange) -> [HistoryEntry] {
+        guard let cut = cutoffTs(for: r) else { return entries }
+        return entries.filter { $0.startTs >= cut }
+    }
+
+    /// El rango seleccionado si tiene ≥1 entrada, si no el menor rango mayor que sí (auto-ampliación).
+    private var effectiveTodoRange: ExploreRange {
+        let base = mergedEntries
+        guard !base.isEmpty else { return range }
+        for r in range.widening where !entriesInRange(base, r).isEmpty { return r }
+        return .all
+    }
+
+    /// Las entradas visibles bajo «Todo»/deporte: fundidas → ventana efectiva → filtro (`.all`/`.sport`).
+    private var todoVisibleEntries: [HistoryEntry] {
+        UnifiedWorkoutHistory.filter(entriesInRange(mergedEntries, effectiveTodoRange), filtro)
+    }
+
+    /// El rango por defecto: el más estrecho que aún guarda ≥2 entradas; si no, «Todo». Se siembra UNA vez.
+    private func defaultTodoRange(_ base: [HistoryEntry]) -> ExploreRange {
+        guard !base.isEmpty else { return .all }
+        for r in ExploreRange.allCases where r.days != nil {
+            guard let cut = cutoffTs(for: r) else { continue }
+            if base.filter({ $0.startTs >= cut }).count >= 2 { return r }
+        }
+        return .all
+    }
+
+    @ViewBuilder private var todoDialect: some View {
+        let eff = effectiveTodoRange
+        let visible = todoVisibleEntries
+        SegmentedPillControl(ExploreRange.allCases, selection: $range, theme: theme, tall: true) { $0.label }
+        todoHero(count: visible.count, eff: eff, fellBack: eff != range)
+        if case .sport(let name) = filtro { sportChip(name) }
+        todoTiles(entries: visible)
+        porDeporteSection(base: entriesInRange(mergedEntries, eff))
+        todoTimeline(entries: visible)
+        todoMetodo
+    }
+
+    /// Héroe del dialecto: el conteo del periodo en un módulo neutro de cristal (numeral Grotesk), NO
+    /// una losa oscura. El sufijo «sesiones» y el pie de rango (o la nota de auto-ampliación) debajo.
+    private func todoHero(count: Int, eff: ExploreRange, fellBack: Bool) -> some View {
+        EntrenarModulo(tono: .neutro) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(verbatim: "\(count)")
+                        .font(InstrumentoType.groteskNumber(48)).foregroundStyle(theme.ink)
+                        .monospacedDigit()
+                    Text(count == 1 ? "session" : "sessions")
+                        .font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
+                }
+                Text(rangeCaptionText(eff: eff, fellBack: fellBack))
+                    .font(StrandFont.subhead)
+                    .foregroundStyle(fellBack ? theme.warning : theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private func rangeCaptionText(eff: ExploreRange, fellBack: Bool) -> String {
+        if fellBack { return String(format: String(localized: "Sparse · widened to %@"), eff.phrase) }
+        return eff.phrase
+    }
+
+    /// El chip removible del deporte estrechado — tocarlo suelta el filtro de vuelta a «Todo».
+    private func sportChip(_ name: String) -> some View {
+        Button { withAnimation(StrandMotion.fade) { filtro = .all } } label: {
+            HStack(spacing: 6) {
+                Text(verbatim: WorkoutSource.displaySport(name))
+                    .font(StrandFont.caption).foregroundStyle(theme.ink)
+                Image(systemName: "xmark")
+                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            }
+            .padding(.horizontal, 10).padding(.vertical, 5)
+            .background(theme.patternBlock, in: Capsule(style: .continuous))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("Showing \(WorkoutSource.displaySport(name)) · tap to clear"))
+    }
+
+    /// «Este periodo» = Horas · Kcal (2 tiles). El conteo ya vive en el héroe, no se repite; «Volumen»
+    /// se retira (mentía sobre cardio). Sobre las entradas visibles, honesto con lo que la lista muestra.
+    private func todoTiles(entries: [HistoryEntry]) -> some View {
+        let totals = periodTotals(entries)
+        return HStack(spacing: CenitMetrics.gap) {
+            EntrenarTile(tono: .neutro) { tileBody("Hours", totals.hours) }
+            EntrenarTile(tono: .neutro) { tileBody("Energy", totals.kcal) }
+        }
+    }
+
+    private func tileBody(_ label: LocalizedStringKey, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text(verbatim: value).font(InstrumentoType.groteskNumber(22)).foregroundStyle(theme.ink)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// Horas + kcal sobre las entradas visibles (fuerza: endTs−startTs / energyKcal; cardio: durationS /
+    /// energyKcal). «—» cuando no hay dato — nunca un cero fabricado.
+    private func periodTotals(_ entries: [HistoryEntry]) -> (hours: String, kcal: String) {
+        var seconds = 0
+        var kcal = 0.0
+        var hasKcal = false
+        for e in entries {
+            switch e {
+            case .strength(let s):
+                if let end = s.endTs, end > s.startTs { seconds += end - s.startTs }
+                if let k = s.energyKcal { kcal += k; hasKcal = true }
+            case .cardio(let r):
+                seconds += Int(r.durationS ?? Double(max(0, r.endTs - r.startTs)))
+                if let k = r.energyKcal { kcal += k; hasKcal = true }
+            }
+        }
+        let hours = seconds > 0 ? String(format: "%.1f h", Double(seconds) / 3600) : "—"
+        let kcalStr = hasKcal ? "\(StrandFormat.groupedInt(kcal)) kcal" : "—"
+        return (hours, kcalStr)
+    }
+
+    /// «Por deporte»: los deportes de la actividad en la ventana (tocar estrecha a `.sport`) + una fila
+    /// «Fuerza» que salta al dialecto de fuerza (`.strength`, NO `.sport("Fuerza")` — daría 0 sesiones).
+    @ViewBuilder private func porDeporteSection(base: [HistoryEntry]) -> some View {
+        let sports = UnifiedWorkoutHistory.sports(base)
+        let strengthCount = base.filter(\.isStrength).count
+        if !sports.isEmpty || strengthCount > 0 {
+            VStack(alignment: .leading, spacing: 4) {
+                InstrumentoSectionBand("By sport")
+                if strengthCount > 0 {
+                    porDeporteRow(symbol: "dumbbell.fill", name: String(localized: "Strength"),
+                                  count: strengthCount) {
+                        withAnimation(StrandMotion.fade) { filtro = .strength }
+                    }
+                }
+                ForEach(sports, id: \.self) { sport in
+                    let n = base.filter { if case .cardio(let r) = $0 { return r.sport == sport }; return false }.count
+                    porDeporteRow(symbol: WorkoutSource.sfSymbol(for: sport),
+                                  name: WorkoutSource.displaySport(sport), count: n) {
+                        withAnimation(StrandMotion.fade) { filtro = .sport(sport) }
+                    }
+                }
+            }
+        }
+    }
+
+    private func porDeporteRow(symbol: String, name: String, count: Int,
+                               tap: @escaping () -> Void) -> some View {
+        Button(action: tap) {
+            HStack(spacing: 12) {
+                Image(systemName: symbol)
+                    .font(StrandFont.glyph(.inline, weight: .medium)).foregroundStyle(theme.inkSecondary)
+                    .frame(width: 22)
+                Text(verbatim: name).font(StrandFont.body).foregroundStyle(theme.ink).lineLimit(1)
+                Spacer(minLength: 8)
+                Text(verbatim: "\(count)").font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
+                StrandIcon.disclosure.image
+                    .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    .accessibilityHidden(true)
+            }
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(verbatim: name))
+        .accessibilityHint(Text("Narrows the list to this sport"))
+    }
+
+    /// La línea de tiempo MIXTA: cada entrada como fila rica de fuerza o fila de actividad, en el
+    /// contenedor `EntrenarHistorialLista` (separadores tinta7). El vacío dice que el periodo está vacío.
+    private func todoTimeline(entries: [HistoryEntry]) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            InstrumentoSectionBand("Sessions") {
+                Text(verbatim: "\(entries.count)").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            }
+            if entries.isEmpty {
+                EntrenarHistorialLista(vacio: String(localized: "No sessions in this period yet."), filas: [AnyView]())
+            } else {
+                EntrenarHistorialLista(filas: entries.map { AnyView(entryRow($0)) })
+            }
+        }
+    }
+
+    @ViewBuilder private func entryRow(_ entry: HistoryEntry) -> some View {
+        switch entry {
+        case .strength(let s): fuerzaRow(s)
+        case .cardio(let r):   cardioRow(r)
+        }
+    }
+
+    /// Una `StrengthSession` como `EntrenarFilaFuerza` (glifo de familia + marca + esfuerzo). Reusa los
+    /// MISMOS derivados que `sessionRow` (nombre, meta, familia, marcas): kill-the-class, una sola fila.
+    private func fuerzaRow(_ s: StrengthSession) -> some View {
+        let family: EntrenarFamily = s.routineId.flatMap { routineRegions[$0] }?.family ?? .fullBody
+        return EntrenarFilaFuerza(
+            family: family,
+            nombre: name(for: s),
+            meta: sessionMeta(s),
+            marcas: marksBySession[s.id] ?? 0,
+            esfuerzo: s.strain.map { StrengthHistoryFormat.strain($0) }
+        ) { openWorkoutSession?(route(for: s)) }
+    }
+
+    /// Un `WorkoutRow` de actividad como `EntrenarFilaCardio` (SF Symbol neutro + origen + FC/duración).
+    /// `detected`/`whoop` (raros en la práctica) caen a `.apple` — el componente solo tiene Apple/Manual;
+    /// extender su `Origen` es refinamiento de v2.
+    private func cardioRow(_ r: WorkoutRow) -> some View {
+        let origen: EntrenarFilaCardio.Origen = WorkoutSource.classify(r.source) == .manual ? .manual : .apple
+        return EntrenarFilaCardio(
+            sfSymbol: WorkoutSource.sfSymbol(for: r.sport),
+            deporte: WorkoutSource.displaySport(r.sport),
+            origen: origen,
+            meta: cardioMeta(r),
+            dato: cardioDato(r)
+        ) { openCardio?(r) }
+    }
+
+    private func cardioMeta(_ r: WorkoutRow) -> String {
+        let date = Date(timeIntervalSince1970: TimeInterval(r.startTs))
+            .formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)).lowercased()
+        let mins = Int((r.durationS ?? Double(max(0, r.endTs - r.startTs))) / 60)
+        return mins > 0 ? "\(date) · \(StrengthHistoryFormat.durationText(mins))" : date
+    }
+
+    /// FC media (rosa oscurecida AA) si la trae; si no, la duración en tinta. NUNCA esfuerzo/21: la
+    /// escala de strain de cardio puede no ser la misma que la de fuerza (decisión del diseño).
+    private func cardioDato(_ r: WorkoutRow) -> EntrenarFilaCardio.Dato {
+        if let hr = r.avgHr {
+            return .init(valor: "\(hr)", unidad: "bpm",
+                         tono: OKLab.darkened(theme.dataHeart, toContrast: 4.5, against: theme.paper))
+        }
+        let mins = Int((r.durationS ?? Double(max(0, r.endTs - r.startTs))) / 60)
+        return .init(valor: "\(mins)", unidad: String(localized: "min"), tono: theme.inkSecondary)
+    }
+
+    /// El pie honesto del dialecto: de dónde sale cada sesión y que el conteo sigue el rango de arriba.
+    private var todoMetodo: some View {
+        BarraAncla(String(localized: "Each session is a workout from Apple Health, an on-device capture, or one you logged by hand. Counts follow the range above."),
+                   color: theme.inkTertiary, theme: theme)
     }
 
     /// «11 sesiones · 90 días · 3 marcas nuevas» — sin marcas nuevas en la ventana, la cláusula de
@@ -984,11 +1359,19 @@ struct WorkoutHistoryScreen: View {
             return Int(d.timeIntervalSince1970)
         }()
         async let muscle = repo.muscleSetEvents(sinceTs: muscleSinceTs)
+        // FER-202: la actividad de Apple/manual del dialecto «Todo», en paralelo con lo de fuerza.
+        async let w = repo.workoutRows()
         let (sessions, routines, volumes, muscleEvents) = await (s, r, v, muscle)
         self.sessions = sessions
         self.routineNames = Dictionary(routines.map { ($0.id, $0.name) }, uniquingKeysWith: { a, _ in a })
         self.volumes = volumes
         self.muscleEvents = muscleEvents
+        self.workoutRows = await w
+        // Siembra el rango del dialecto «Todo» al más estrecho con ≥2 entradas, una sola vez.
+        if !didSeedRange {
+            self.range = defaultTodoRange(UnifiedWorkoutHistory.merge(sessions: sessions, rows: self.workoutRows))
+            didSeedRange = true
+        }
         self.loaded = true
         // Classify each routine's movement family for the session rows AND the calendar (same
         // resolution as the hub).
