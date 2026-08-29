@@ -57,6 +57,57 @@ public extension View {
     }
 }
 
+/// Viste una BARRA FIJA anclada dentro de una hoja vestida con `.entrenarHojaFondo(tono:)`
+/// (un CTA inferior, un banner de error) cuyo contenido hace scroll POR DEBAJO — a diferencia
+/// de `.entrenarHojaFondo`, que es puramente decorativo sobre lo que ya está fijo, esta barra
+/// necesita OCLUIR: un tinte con alpha solo, sin base opaca detrás, deja transparentarse el
+/// contenido que pasa debajo mientras el usuario hace scroll (hallazgo FER-220, ronda 2). Misma
+/// receta de cristal (`glassEffect` nativo / `.ultraThinMaterial` antes de iOS 26) pero con
+/// `LiquidColor.fondoGradient` — opaco, sin alfa — como piso, así que la barra oculta aunque el
+/// material por sí solo no bastara.
+public extension View {
+    func entrenarHojaBarraFondo(tono: EntrenarTono) -> some View {
+        modifier(EntrenarHojaBarraFondoModifier(tono: tono))
+    }
+}
+
+private struct EntrenarHojaBarraFondoModifier: ViewModifier {
+    let tono: EntrenarTono
+    @Environment(\.liquidMotionDisabled) private var motionDisabled
+
+    /// SIN `.ignoresSafeArea()`: a diferencia de `.entrenarHojaFondo` (fondo de TODA la hoja),
+    /// esta es una barra ya acotada por el padding/`VStack` del caller — extenderla a la safe
+    /// area la haría bailar del marco que le da su vecino (el CTA/banner de arriba).
+    func body(content: Content) -> some View {
+        content.background { fondo }
+    }
+
+    private var fondo: some View {
+        ZStack {
+            LiquidColor.fondoGradient   // piso OPACO — la barra oculta el scroll de debajo
+            glass
+        }
+    }
+
+    @ViewBuilder
+    private var glass: some View {
+        if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *), !motionDisabled {
+            Color.clear
+                .background { tinte }
+                .glassEffect(.regular, in: Rectangle())
+        } else {
+            ZStack {
+                Rectangle().fill(.ultraThinMaterial)
+                tinte
+            }
+        }
+    }
+
+    private var tinte: Color {
+        tono == .neutro ? .clear : tono.base.opacity(EntrenarVidrioMetrics.intensidadDefault)
+    }
+}
+
 private struct EntrenarHojaFondoModifier: ViewModifier {
     let tono: EntrenarTono
     @Environment(\.liquidMotionDisabled) private var motionDisabled

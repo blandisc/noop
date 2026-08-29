@@ -262,7 +262,7 @@ struct DeleteSetPill: View {
             }
             .foregroundStyle(theme.critical)
             .padding(.horizontal, 9).padding(.vertical, 5)
-            .background(theme.surface, in: Capsule())
+            .liquidGlass(.pastillaSolida)
             .overlay(Capsule().strokeBorder(theme.critical.opacity(StrandOpacity.dim), lineWidth: 1))
             .contentShape(Capsule())
         }

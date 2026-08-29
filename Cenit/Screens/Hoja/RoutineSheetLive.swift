@@ -419,7 +419,7 @@ struct HojaSesionViva: View {
         }
         .padding(.horizontal, CenitMetrics.screenPadding)
         .padding(.vertical, 10)
-        .background(EntrenarTono.indigo.base.opacity(EntrenarVidrioMetrics.intensidadDefault))
+        .entrenarHojaBarraFondo(tono: .indigo)
         .overlay(alignment: .bottom) { Rectangle().fill(sheet.theme.hairline).frame(height: 1) }
     }
 

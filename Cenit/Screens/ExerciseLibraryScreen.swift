@@ -398,7 +398,7 @@ struct ExerciseLibraryScreen: View {
                 }
                 .padding(.horizontal, CenitMetrics.gap)
                 .frame(height: EntrenarMetrics.row)
-                .background(theme.surface, in: Capsule(style: .continuous))
+                .liquidGlass(.pastillaSolida)
                 .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
             }
             .buttonStyle(EntrenarPressStyle())
@@ -602,7 +602,7 @@ struct CreateExerciseSheet: View {
                         .font(InstrumentoType.grotesk(15, weight: .bold))
                         .foregroundStyle(canCreate ? theme.ink : theme.inkTertiary)
                         .frame(maxWidth: .infinity).padding(.vertical, CenitMetrics.gap)
-                        .background(theme.surface, in: Capsule(style: .continuous))
+                        .liquidGlass(.pastillaSolida)
                         .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
                 }
                 .buttonStyle(EntrenarPressStyle()).disabled(!canCreate)
