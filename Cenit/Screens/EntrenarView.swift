@@ -1008,12 +1008,12 @@ private struct EntrenarLanding: View {
             otraFormaAbierta = false   // cierra SIEMPRE, en las cuatro: una regla, no cuatro casos
             puerta.action()
         } label: {
-            HStack(alignment: .firstTextBaseline, spacing: 9) {
+            HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s225) {
                 Image(systemName: puerta.icon)
                     .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
-                    .frame(minWidth: 22, alignment: .leading)
+                    .frame(minWidth: HojaMetrics.marcaDiametro, alignment: .leading)
                     .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: LiquidSpace.s050) {
                     Text(puerta.label).font(StrandFont.body).foregroundStyle(theme.ink)
                     Text(puerta.subtitle)
                         .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
@@ -1033,20 +1033,20 @@ private struct EntrenarLanding: View {
     /// One quiet full-width foot row (history / diet): leading glyph, label, trailing disclosure chevron.
     private func utilityRow(icon: String, label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 9) {
+            HStack(spacing: LiquidSpace.s225) {
                 Image(systemName: icon)
                     .font(StrandFont.glyph(.lead))
                     .foregroundStyle(theme.inkSecondary)
                 Text(label)
                     .font(StrandFont.subhead)
                     .foregroundStyle(theme.inkSecondary)
-                Spacer(minLength: 8)
+                Spacer(minLength: CenitMetrics.space2)
                 StrandIcon.disclosure.image.font(StrandFont.glyph(.inline, weight: .semibold))
                     .foregroundStyle(theme.inkDim)
                     .accessibilityHidden(true)
             }
             .padding(.vertical, CenitMetrics.gap)
-            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)   // HIG tap target (FER-944)
+            .frame(maxWidth: .infinity, minHeight: CenitMetrics.touchTarget, alignment: .leading)   // HIG tap target (FER-944)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
