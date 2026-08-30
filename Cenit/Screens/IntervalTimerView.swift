@@ -11,11 +11,10 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 /// long 5-loop buzz when the whole session finishes. On macOS (no UIKit haptics)
 /// it still works as a big glanceable visual timer.
 ///
-/// «Instrumento diurno» (FER-342) + cristal El Eje (FER-201 · Anillo 4): el fondo es
-/// `.entrenarHojaFondo(tono: .neutro)`; las tarjetas/píldoras internas son papel opaco
-/// (`.superficieSolida`/`.pastillaSolida`, regla no-sheet-glass). La cuenta regresiva
-/// sigue siendo el numeral dominante en tinta; fase y anillo llevan el hue. Toda la
-/// lógica del temporizador y los haptics, intacta.
+/// Liquid Glass · El Eje · régimen sobrio (FER-243): fondo `.entrenarHojaFondo(.neutro)`;
+/// tarjetas/píldoras `.superficieSolida` / `.pastillaSolida`. El countdown manda en
+/// tinta; el hue de fase vive solo en label + anillo + barras. CTAs = `LiquidGlassButton`
+/// (nunca hue de dato en fill). Lógica del temporizador y haptics, intacta.
 struct IntervalTimerView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.instrumentoTheme) private var theme
@@ -75,7 +74,8 @@ struct IntervalTimerView: View {
     }
 
     /// The one hue for the current phase — work = ember effort, rest = calm cyan,
-    /// done = recovery green. Rides the phase label and the ring (a state datum).
+    /// done = recovery green. Rides the phase label and the ring (a state datum) —
+    /// never button chrome (H-022).
     private var phaseColor: Color {
         switch phase {
         case .work: return theme.dataStrain
@@ -85,6 +85,12 @@ struct IntervalTimerView: View {
     }
 
     private var isFinished: Bool { phase == .done }
+
+    private var primaryControlLabel: String {
+        if running { return String(localized: "Pause") }
+        if isFinished { return String(localized: "Restart") }
+        return String(localized: "Start")
+    }
 
     // MARK: Body
 
@@ -101,7 +107,7 @@ struct IntervalTimerView: View {
                 }
             }
             .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.top, 18)
+            .padding(.top, LiquidSpace.s550)
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -124,9 +130,10 @@ struct IntervalTimerView: View {
     // MARK: Header
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s050) {
             Text("Interval Timer")
-                .font(InstrumentoType.grotesk(28, weight: .bold, relativeTo: .title))
+                .font(LiquidType.displayL)
+                .tracking(LiquidType.displayLTracking)
                 .foregroundStyle(theme.ink)
             Text("Silent haptic HIIT: your phone buzzes the transitions")
                 .font(StrandFont.subhead)
@@ -138,15 +145,15 @@ struct IntervalTimerView: View {
 
     private var configureScreen: some View {
         VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("INTERVALS").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+                Text("INTERVALS").liquidRegla().foregroundStyle(theme.inkTertiary)
                 Text("Build your HIIT")
-                    .font(InstrumentoType.grotesk(28, weight: .bold, relativeTo: .title))
+                    .font(LiquidType.displayL)
+                    .tracking(LiquidType.displayLTracking)
                     .foregroundStyle(theme.ink)
             }
 
-            // FER-201: tarjeta interna OPACA (no-sheet-glass) — sustituye `EntrenarToolCard` (papel).
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s400) {
                 configStepper(title: "Work", unit: "sec", value: $workSeconds,
                               range: 5...600, step: 5, tint: theme.dataStrain)
                 Divider().overlay(theme.hairline)
@@ -162,29 +169,21 @@ struct IntervalTimerView: View {
 
             HStack {
                 Text("Total \(timeString(totalPlanned))")
-                    .font(InstrumentoType.groteskNumber(16))
+                    .font(LiquidType.valorM)
                     .foregroundStyle(theme.ink)
                 Spacer()
             }
 
-            Button {
+            LiquidGlassButton(String(localized: "Start"), variant: .primary, expands: true) {
                 startFromConfigure()
-            } label: {
-                Text("Start")
-                    .font(InstrumentoType.groteskHeadline(17))
-                    .foregroundStyle(theme.paper)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 13)
-                    .background(theme.dataStrain, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
             }
-            .buttonStyle(EntrenarPressStyle())
         }
     }
 
     // MARK: Status row
 
     private var statusRow: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: LiquidSpace.s250) {
             Spacer()
             if running {
                 statusPill("Running", dotColor: theme.dataStrain)
@@ -196,7 +195,7 @@ struct IntervalTimerView: View {
         }
     }
 
-    /// Píldora de estado opaca El Eje (FER-201) — sustituye `EntrenarStatusPill` (papel) sobre el cristal.
+    /// Píldora de estado opaca El Eje — sustituye `EntrenarStatusPill` (papel) sobre el cristal.
     private func statusPill(_ text: LocalizedStringKey, dotColor: Color? = nil) -> some View {
         HStack(spacing: LiquidSpace.s150) {
             if let dotColor {
@@ -214,22 +213,21 @@ struct IntervalTimerView: View {
     // MARK: Stage card — the big glanceable face
 
     private var stageCard: some View {
-        // FER-201: tarjeta interna OPACA — el anillo/cuenta regresiva no cambian, solo el chrome.
-        VStack(spacing: 18) {
+        VStack(spacing: LiquidSpace.s400) {
             // Phase + round line
             HStack(alignment: .firstTextBaseline) {
                 Text(phase.label)
-                    .font(InstrumentoType.grotesk(34, weight: .bold))
-                    .tracking(2)
+                    .font(LiquidType.displayM)
+                    .tracking(LiquidType.reglaTracking)
                     .foregroundStyle(phaseColor)
                 Spacer()
-                HStack(spacing: 6) {
-                    Text("ROUND").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                HStack(spacing: LiquidSpace.s150) {
+                    Text("ROUND").liquidRegla().foregroundStyle(theme.inkTertiary)
                     Text("\(min(currentRound, rounds))")
-                        .font(InstrumentoType.groteskNumber(20))
+                        .font(LiquidType.valorL)
                         .foregroundStyle(theme.ink)
                     Text("/ \(rounds)")
-                        .font(InstrumentoType.groteskNumber(20))
+                        .font(LiquidType.valorL)
                         .foregroundStyle(theme.inkTertiary)
                 }
             }
@@ -240,16 +238,15 @@ struct IntervalTimerView: View {
             // The ring + countdown
             ZStack {
                 intervalRing
-                VStack(spacing: 2) {
-                    // La cuenta regresiva ES el numeral protagonista de esta pantalla, así que habla
-                    // en la voz Grotesk como el resto de la app (FER-900) y no en la SF vieja.
+                VStack(spacing: LiquidSpace.s050) {
+                    // Countdown = dominante sobrio: Grotesk tabular en tinta (nunca hue de fase).
                     Text(isFinished ? "✓" : "\(remaining)")
                         .instrumentoHero(96)
-                        .foregroundStyle(isFinished ? theme.dataRecovery : theme.ink)
-                        .contentTransition(.numericText())
+                        .foregroundStyle(theme.ink)
+                        .contentTransition(reduceMotion ? .identity : .numericText())
                         .strandAnimation(.snappy, value: remaining)
                     Text(isFinished ? "SESSION DONE" : "SECONDS")
-                        .instrumentoOverline()
+                        .liquidRegla()
                         .foregroundStyle(theme.inkTertiary)
                 }
             }
@@ -267,14 +264,13 @@ struct IntervalTimerView: View {
     /// `stageCard`, cover the same ground in text — the ring is redundant motion, not information.
     private var intervalRing: some View {
         ZStack {
-            // Flat track — a faint warm rule, no glow (Instrumento drops the dark
-            // system's gradient + shadow).
             Circle()
-                .stroke(theme.hairline, lineWidth: 16)
+                .stroke(theme.hairline, lineWidth: LiquidSpace.s400)
             Circle()
                 .trim(from: 0, to: isFinished ? 1 : intervalProgress)
-                .stroke(phaseColor, style: StrokeStyle(lineWidth: 16, lineCap: .round))
+                .stroke(phaseColor, style: StrokeStyle(lineWidth: LiquidSpace.s400, lineCap: .round))
                 .rotationEffect(.degrees(-90))
+                // Reduce Motion: strandAnimation se anula → anillo congelado (sin lerp).
                 .strandAnimation(.linear(duration: 0.9), value: intervalProgress)
         }
         .frame(width: 240, height: 240)
@@ -283,11 +279,11 @@ struct IntervalTimerView: View {
 
     /// Compact round progress bars above the ring (one capsule per planned round).
     private var roundIndicators: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: LiquidSpace.s100) {
             ForEach(1...max(1, rounds), id: \.self) { index in
                 Capsule()
                     .fill(roundIndicatorFill(index))
-                    .frame(height: 6)
+                    .frame(height: LiquidSpace.s150)
                     .frame(maxWidth: .infinity)
                     .overlay {
                         if index > currentRound && phase != .done {
@@ -311,34 +307,15 @@ struct IntervalTimerView: View {
     }
 
     private var controls: some View {
-        HStack(spacing: 12) {
-            Button {
+        HStack(spacing: LiquidSpace.s300) {
+            LiquidGlassButton(primaryControlLabel, variant: .primary, expands: true) {
                 if isFinished { resetToStart() }
                 toggleRunning()
-            } label: {
-                Label(running ? "Pause" : (isFinished ? "Restart" : "Start"),
-                      systemImage: running ? "pause.fill" : "play.fill")
-                    .font(InstrumentoType.groteskHeadline(17))
-                    .foregroundStyle(theme.paper)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 13)
-                    .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
             }
-            .buttonStyle(EntrenarPressStyle())
 
-            Button {
+            LiquidGlassButton(String(localized: "Reset"), variant: .glass, expands: true) {
                 stopAndReset()
-            } label: {
-                Label("Reset", systemImage: "arrow.counterclockwise")
-                    .font(InstrumentoType.groteskHeadline(17))
-                    .foregroundStyle(theme.ink)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 13)
-                    .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
-                        .strokeBorder(theme.hairlineStrong, lineWidth: 1))
             }
-            .buttonStyle(EntrenarPressStyle())
             .disabled(!running && remaining == phaseDuration && currentRound == 1 && phase == .work && elapsed == 0)
         }
     }
@@ -346,12 +323,12 @@ struct IntervalTimerView: View {
     // MARK: Overview card — elapsed / planned
 
     private var overviewCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
             HStack(alignment: .firstTextBaseline) {
-                Text("Session").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("Session").liquidRegla().foregroundStyle(theme.inkTertiary)
                 Spacer()
                 Text("\(timeString(elapsed)) / \(timeString(totalPlanned))")
-                    .font(InstrumentoType.groteskNumber(15, weight: .semibold))
+                    .font(LiquidType.datoMenor)
                     .foregroundStyle(theme.ink)
             }
 
@@ -366,7 +343,7 @@ struct IntervalTimerView: View {
                         .strandAnimation(.linear(duration: 0.9), value: sessionProgress)
                 }
             }
-            .frame(height: 8)
+            .frame(height: LiquidSpace.s200)
 
             HStack(spacing: 0) {
                 overviewStat("Work", "\(workSeconds)s", theme.dataStrain)
@@ -386,9 +363,9 @@ struct IntervalTimerView: View {
     }
 
     private func overviewStat(_ label: LocalizedStringKey, _ value: String, _ color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text(value).font(InstrumentoType.groteskNumber(18)).foregroundStyle(color)
+        VStack(alignment: .leading, spacing: LiquidSpace.s075) {
+            Text(label).liquidRegla().foregroundStyle(theme.inkTertiary)
+            Text(value).font(LiquidType.valorM).foregroundStyle(color)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -400,19 +377,21 @@ struct IntervalTimerView: View {
         // El literal inglés ES la clave del catálogo; VoiceOver necesita el String ya resuelto.
         let accessibilityName = String(localized: String.LocalizationValue(title))
         return HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(LocalizedStringKey(title)).font(InstrumentoType.grotesk(16, weight: .semibold)).foregroundStyle(theme.ink)
+            VStack(alignment: .leading, spacing: LiquidSpace.s050) {
+                Text(LocalizedStringKey(title))
+                    .font(LiquidType.tituloGemela)
+                    .foregroundStyle(theme.ink)
                 Text("\(range.lowerBound)–\(range.upperBound)\(unit.map { " \($0)" } ?? "") · step \(step)")
                     .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
             }
             Spacer()
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
+            HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s100) {
                 Text("\(value.wrappedValue)")
-                    .font(InstrumentoType.groteskNumber(24))
+                    .font(LiquidType.valorTileM)
                     .foregroundStyle(tint)
                     .frame(minWidth: 44, alignment: .trailing)
                 if let unit {
-                    Text(unit).font(InstrumentoType.grotesk(12, weight: .medium)).foregroundStyle(theme.inkTertiary)
+                    Text(unit).font(LiquidType.unidad).foregroundStyle(theme.inkTertiary)
                 }
             }
             PaperStepper(value: value, in: range, step: step,
@@ -524,7 +503,7 @@ struct IntervalTimerView: View {
 }
 
 #if DEBUG
-#Preview("Interval Timer · Instrumento") {
+#Preview("Interval Timer · Liquid Glass") {
     IntervalTimerView()
         .environment(AppModel.preview)
         .frame(width: 720, height: 900)
