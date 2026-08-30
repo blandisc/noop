@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **El aviso de malestar en Hoy pasa a Liquid Glass · El Eje / Today’s illness heads-up moves to Liquid Glass · El Eje** (FER-245).
+  **ES** — El banner de alerta temprana deja la card Instrumento (triángulo + relleno ámbar) y queda como aviso Liquid: tarjeta sólida con barra lateral de juicio (ámbar «Atención» / rojo «Alerta») y el mismo cuerpo de texto de siempre. Solo cambia la piel; qué lo dispara no.
+  **EN** — The early-illness banner leaves the Instrumento card (triangle + amber wash) for a Liquid notice: solid card with a judgment side bar (amber “Heads up” / red “Alert”) and the same body copy as before. Skin only; what fires it is unchanged.
+  ([HealthAlertBanner.swift](Cenit/Screens/HealthAlertBanner.swift))
+
 - **Respira pasa a Liquid Glass · El Eje (sobrio) / Breathe moves to Liquid Glass · El Eje (sober)** (FER-242).
   **ES** — La herramienta de respiración deja el tipografía/chrome Instrumento legacy: orbe en azul de respiración (`LiquidColor.azul`, no el cian de VFC), CTAs con `LiquidGlassButton`, tipografía y espaciado Liquid. El subtítulo ya no promete biofeedback de HRV («Ritmo con háptica · sigue el orbe»); las fases dicen «Inhala…» / «Exhala…». El pacer y la háptica se conservan; con Reduce Motion el orbe se congela y el timer pausa en segundo plano.
   **EN** — The breathing tool leaves legacy Instrumento type/chrome: orb in breath blue (`LiquidColor.azul`, not HRV cyan), CTAs via `LiquidGlassButton`, Liquid type and spacing. The subtitle no longer promises HRV biofeedback ("Haptic-paced rhythm · follow the orb"); phases read "Inhale…" / "Exhale…". The pacer and haptics stay; Reduce Motion freezes the orb and the timer pauses in the background.
