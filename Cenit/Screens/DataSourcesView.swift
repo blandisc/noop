@@ -739,7 +739,7 @@ struct DataSourcesView: View {
     private var strengthCSVBlock: some View {
         blockCard(
             String(localized: "Export strength history (CSV)"),
-            subtitle: String(localized: "Save every logged set — date, routine, exercise, weight, reps and notes — to a spreadsheet file you can open outside Cénit.")) {
+            subtitle: String(localized: "Save every logged set: date, routine, exercise, weight, reps and notes, in a spreadsheet file you can open outside Cénit.")) {
             VStack(alignment: .leading, spacing: LiquidSpace.s300) {
                 HStack(spacing: LiquidSpace.s300) {
                     LiquidGlassButton(strengthCSVBusy ? String(localized: "Exporting…") : String(localized: "Export CSV…"),
