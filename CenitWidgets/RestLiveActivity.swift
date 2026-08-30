@@ -225,7 +225,7 @@ private struct HeroZone: View {
                     .foregroundColor(theme.inkTertiary))
                 .monospacedDigit()
                 .contentTransition(.numericText())
-                .accessibilityLabel(Text("set \(state.setNumber) of \(state.setTotal)"))
+                .accessibilityLabel(Text(String(localized: "set \(state.setNumber) of \(state.setTotal)")))
         case .resting where state.isHRMode:
             PulseHero(state: state, theme: theme, stale: stale)
         case .resting:
@@ -266,7 +266,8 @@ private struct PulseHero: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: M.pulseIconGap) {
             Image(systemName: "heart.fill").font(.system(size: M.hero * 0.45))
-            Text("\(state.bpm ?? 0)")
+            // FER-246 — nunca inventar 0 lpm; Watch usa «--» / «sin lectura».
+            (state.bpm.map { Text("\($0)") } ?? Text(verbatim: "--"))
                 .font(.system(size: M.hero, weight: .semibold, design: .rounded))
                 .monospacedDigit()
                 .contentTransition(.numericText())
@@ -277,15 +278,16 @@ private struct PulseHero: View {
                     .monospacedDigit()
             }
         }
-        .foregroundStyle(stale ? theme.inkDim : theme.dataHeart)
+        .foregroundStyle(stale || state.bpm == nil ? theme.inkDim : theme.dataHeart)
         .accessibilityLabel(pulseLabel)
     }
 
     private var pulseLabel: Text {
+        guard let bpm = state.bpm else { return Text("no reading") }
         if let target = state.hrTarget {
-            return Text("\(state.bpm ?? 0) beats per minute, recovering toward \(target)")
+            return Text("\(bpm) beats per minute, recovering toward \(target)")
         }
-        return Text("\(state.bpm ?? 0) beats per minute")
+        return Text("\(bpm) beats per minute")
     }
 }
 
@@ -424,8 +426,7 @@ private struct ActionsRow: View {
     // routine's last set adds the «Terminar entreno» flag.
     @ViewBuilder private var restActions: some View {
         if state.isHRMode {
-            // FER-225 — «Saltar descanso» canon, same words as the iPhone/Watch band (was the bare
-            // «Skip», the only place on this card that dropped the noun).
+            // FER-225/246 — «Saltar descanso» en todas las superficies.
             PillButton(title: Text("Skip rest"), intent: RestSkipIntent(), theme: theme)
                 .accessibilityLabel(Text("Skip rest"))
         } else {
@@ -436,16 +437,12 @@ private struct ActionsRow: View {
                     .accessibilityLabel(Text("Remove 30 seconds"))
                 PillButton(title: Text("+30 s"), intent: RestAddThirtyIntent(), theme: theme)
                     .accessibilityLabel(Text("Add 30 seconds"))
-                // FER-225 — visible label STAYS «Skip» (not «Skip rest»/«Saltar descanso»): this pill
-                // shares a 3-4-up row with «−30 s»/«+30 s»(/the finish flag) at a fixed Live Activity
-                // width; «Saltar descanso» doesn't fit without wrapping or shrinking its siblings — a
-                // canon/context conflict, flagged rather than solved by inventing another word. The
-                // a11y label already says the full «Skip rest» for VoiceOver.
-                PillButton(title: Text("Skip"), intent: RestSkipIntent(), theme: theme)
+                // FER-246 — visible «Saltar descanso» (antes «Skip» por ancho de fila; el canon gana).
+                PillButton(title: Text("Skip rest"), intent: RestSkipIntent(), theme: theme)
                     .accessibilityLabel(Text("Skip rest"))
                 if state.isFinish {
                     GlyphButton(systemImage: "flag.fill", intent: RestFinishWorkoutIntent(), theme: theme)
-                        .accessibilityLabel(Text("Finish workout"))
+                        .accessibilityLabel(Text("Finish"))
                         .accessibilityHint(Text("Logs the last set and ends the workout"))
                 }
             }
@@ -619,8 +616,9 @@ private enum SessionDynamicIsland {
         case .resting where s.isHRMode:
             HStack(spacing: 2) {
                 Image(systemName: "heart.fill").font(.system(size: 10))  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
-                Text("\(s.bpm ?? 0)").font(.system(size: 13, weight: .semibold)).monospacedDigit()  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
-            }.foregroundStyle(theme.dataHeart)
+                (s.bpm.map { Text("\($0)") } ?? Text(verbatim: "--"))
+                    .font(.system(size: 13, weight: .semibold)).monospacedDigit()  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
+            }.foregroundStyle(s.bpm == nil ? theme.inkDim : theme.dataHeart)
         case .resting:
             RestTimerText(state: s, size: 15).foregroundStyle(theme.dataStrain)
         }
@@ -647,8 +645,9 @@ private enum SessionDynamicIsland {
         case .paused:
             Image(systemName: "pause.fill").font(.system(size: 11)).foregroundStyle(theme.inkSecondary)  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
         case .resting where s.isHRMode:
-            Text("\(s.bpm ?? 0)").font(.system(size: 12, weight: .semibold)).monospacedDigit()  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
-                .foregroundStyle(theme.dataHeart)
+            (s.bpm.map { Text("\($0)") } ?? Text(verbatim: "--"))
+                .font(.system(size: 12, weight: .semibold)).monospacedDigit()  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
+                .foregroundStyle(s.bpm == nil ? theme.inkDim : theme.dataHeart)
         case .resting:
             RestTimerText(state: s, size: 12).foregroundStyle(theme.dataStrain)
         }
@@ -669,11 +668,12 @@ private enum SessionDynamicIsland {
         case .resting where s.isHRMode:
             HStack(spacing: 4) {
                 Image(systemName: "heart.fill").font(.system(size: 14))  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
-                Text("\(s.bpm ?? 0)").font(.system(size: 26, weight: .semibold, design: .rounded)).monospacedDigit()  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
+                (s.bpm.map { Text("\($0)") } ?? Text(verbatim: "--"))
+                    .font(.system(size: 26, weight: .semibold, design: .rounded)).monospacedDigit()  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
                 if let target = s.hrTarget {
                     Text("→ \(target)").font(.system(size: 15, weight: .medium)).foregroundStyle(theme.inkTertiary).monospacedDigit()  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
                 }
-            }.foregroundStyle(theme.dataHeart)
+            }.foregroundStyle(s.bpm == nil ? theme.inkDim : theme.dataHeart)
         case .resting:
             HStack(spacing: 6) {
                 Image(systemName: "timer").font(.system(size: 13, weight: .semibold))  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)

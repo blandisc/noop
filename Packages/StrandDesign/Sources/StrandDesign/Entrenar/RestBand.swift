@@ -161,7 +161,7 @@ public struct RestBand<Next: View>: View {
                 Button(action: onSkip) {
                     // R13: el tope honesto ofrece SEGUIR (no «Saltar» — no hay nada que saltar,
                     // el motor ya soltó el descanso solo).
-                    Text(isCeilingRelease ? "Continue" : "Skip")
+                    Text(isCeilingRelease ? "Continue" : "Skip rest")
                         .font(StrandFont.caption.weight(.semibold))
                         .foregroundStyle(theme.inkSecondary)
                         .padding(.horizontal, CenitMetrics.gap)

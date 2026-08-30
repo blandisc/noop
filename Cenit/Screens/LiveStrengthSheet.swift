@@ -749,17 +749,12 @@ struct LiveStrengthSheet: View {
         }
     }
 
-    /// «ejercicio 2 de 6 · en curso» / «pausada» (copy.md «Sesión en vivo»). Solo con ejercicios reales.
+    /// «Serie N de M · en curso» / «pausada» (FER-246 — misma unidad que la Hoja viva).
     private var sessionHeaderSubtitle: Text {
-        session.paused
-            ? Text("paused")
-            : Text("exercise \(activeExercisePosition) of \(session.activeExercises.count) · in progress")
-    }
-
-    /// La posición (base 1) del ejercicio activo entre los NO saltados — mismo criterio que
-    /// `session.activeExercises`, la fuente que ya usa el navegador de plan.
-    private var activeExercisePosition: Int {
-        (session.activeExercises.firstIndex { $0.index == accordionIndex } ?? 0) + 1
+        if session.paused { return Text("paused") }
+        let total = session.doneCount + session.pendingCount
+        let current = session.isComplete ? total : session.doneCount + 1
+        return Text("Set \(current) of \(total) · in progress")
     }
 
     /// ♥ 118 — SOLO con FC viva (Apple Watch conectado). SIN punto animado a propósito (decisión del
@@ -827,7 +822,7 @@ struct LiveStrengthSheet: View {
                 discardEmptySession()
             }
         } else {
-            sessionHeaderPill(Text("Finish"), accessibilityLabel: Text("Finish workout")) {
+            sessionHeaderPill(Text("Finish"), accessibilityLabel: Text("Finish")) {
                 finishTapped()
             }
         }

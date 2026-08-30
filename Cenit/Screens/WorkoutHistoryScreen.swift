@@ -229,11 +229,10 @@ struct WorkoutHistoryScreen: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
-            // FER-202: título CONSTANTE «Historial» + overline «REGISTRO» en las dos puertas y los dos
-            // dialectos (el filtro debajo cambia el dialecto, no el título). El subtítulo «N sesiones ·
-            // 90 días · marcas» es del dialecto de Fuerza (ventana nativa de 90 días); el dialecto «Todo»
-            // lleva su propio héroe con el conteo del rango.
-            InstrumentoFlowTitle(overline: Text("Log"), Text("History"))
+            // FER-246: título CONSTANTE «Historial» (sin overline «Registro»/«Bitácora»). El subtítulo
+            // «N sesiones · 90 días · marcas» es del dialecto de Fuerza; el dialecto «Todo» lleva su
+            // propio héroe con el conteo del rango.
+            InstrumentoFlowTitle(Text("History"))
             if showsFuerzaDialect {
                 Text(historialSubtitle)
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)

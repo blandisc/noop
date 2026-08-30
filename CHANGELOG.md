@@ -24,6 +24,10 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
   **ES** — El banner de alerta temprana deja la card Instrumento (triángulo + relleno ámbar) y queda como aviso Liquid: tarjeta sólida con barra lateral de juicio (ámbar «Atención» / rojo «Alerta») y el mismo cuerpo de texto de siempre. Solo cambia la piel; qué lo dispara no.
   **EN** — The early-illness banner leaves the Instrumento card (triangle + amber wash) for a Liquid notice: solid card with a judgment side bar (amber “Heads up” / red “Alert”) and the same body copy as before. Skin only; what fires it is unchanged.
   ([HealthAlertBanner.swift](Cenit/Screens/HealthAlertBanner.swift))
+- **Entrenar habla con una sola voz / Train speaks with one voice** (FER-246).
+  **ES** — Misma palabra en iPhone, Watch y widgets: Empuje / Jalón, Historial, Empezar, Saltar descanso, Terminar (y Terminar y guardar solo al guardar), Serie N de M, Rápido de fuerza. Se corrigen tres mentiras de copy: Constancia · 13 sem (no 12), pulso sin lectura como «--» (no 0 lpm), y «Para editar» sin forzar género.
+  **EN** — Same words on iPhone, Watch and widgets: Push/Pull families, History, Start, Skip rest, Finish (and Finish and save only when saving), Set N of M, Quick strength. Three lying copy bugs are fixed: Consistency · 13 weeks (not 12), no-pulse reads as "--" (not 0 bpm), and "Ready to edit" no longer forces gender in Spanish.
+  ([EntrenarTokens.swift](Packages/StrandDesign/Sources/StrandDesign/Entrenar/EntrenarTokens.swift), [Localizable.xcstrings](Cenit/Resources/Localizable.xcstrings))
 
 - **Respira pasa a Liquid Glass · El Eje (sobrio) / Breathe moves to Liquid Glass · El Eje (sober)** (FER-242).
   **ES** — La herramienta de respiración deja el tipografía/chrome Instrumento legacy: orbe en azul de respiración (`LiquidColor.azul`, no el cian de VFC), CTAs con `LiquidGlassButton`, tipografía y espaciado Liquid. El subtítulo ya no promete biofeedback de HRV («Ritmo con háptica · sigue el orbe»); las fases dicen «Inhala…» / «Exhala…». El pacer y la háptica se conservan; con Reduce Motion el orbe se congela y el timer pausa en segundo plano.

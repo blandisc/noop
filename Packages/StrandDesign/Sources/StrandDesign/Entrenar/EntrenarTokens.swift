@@ -40,13 +40,14 @@ public enum EntrenarFamily: String, Sendable, CaseIterable, Hashable {
         OKLab.darkened(tint(theme), toContrast: 4.5, against: theme.paper)
     }
 
-    /// Nombre visible de la familia (es-MX vía catálogo).
+    /// Nombre visible de la familia (vía catálogo). Claves `muscleGroup.*` — un «Push» suelto
+    /// colisiona con el verbo del recovery band («Sube»).
     public var label: LocalizedStringKey {
         switch self {
-        case .push:     return "Push"
-        case .pull:     return "Pull"
-        case .legs:     return "Legs"
-        case .fullBody: return "Full body"
+        case .push:     return "muscleGroup.push"
+        case .pull:     return "muscleGroup.pull"
+        case .legs:     return "muscleGroup.legs"
+        case .fullBody: return "muscleGroup.fullBody"
         }
     }
 

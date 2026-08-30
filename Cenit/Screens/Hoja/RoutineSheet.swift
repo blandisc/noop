@@ -19,7 +19,7 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 /// Pushed onto the Entrenar stack to open «La Hoja» with su origin chrome. Mismo tipo que
 /// `RoutineEditorRoute` traía (FER-839/FER-171): un solo `Hashable` para los tres orígenes.
 enum RoutineEditorRoute: Hashable {
-    /// Today's routine (nil id = resolve today's pick) — CTA «Empezar sesión».
+    /// Today's routine (nil id = resolve today's pick) — CTA «Empezar».
     case today(routineId: String?)
     /// One weekday of the plan (Calendar convention, 1 = Sun … 7 = Sat) — autosave on exit.
     case planDay(weekday: Int)
@@ -349,11 +349,11 @@ struct RoutineSheet: View {
     }
 
     var ctaTitle: String {
-        locked ? String(localized: "Resume") : String(localized: "Start session")
+        locked ? String(localized: "Resume") : String(localized: "Start")
     }
 
     /// R3 (QA D3, adjudicado por el director — ronda 2): `.planDay` NO tiene CTA de empezar (mapa
-    /// A6). El editor de un día del plan es de PRESCRIPCIÓN, no de captura — «Empezar sesión» desde
+    /// A6). El editor de un día del plan es de PRESCRIPCIÓN, no de captura — «Empezar» desde
     /// ahí competía con el punto de entrada real (Tu Plan / Rutina de hoy). `.today`/`.routine`
     /// conservan el CTA (FER-952 sigue vigente para ellos).
     var startsSession: Bool { routine != nil && !items.isEmpty && !isPlanDay }

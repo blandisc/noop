@@ -6,7 +6,7 @@ import StrandTraining
 // MARK: - HojaCabecera — cabecera + título + CTA de «La Hoja» (FER-166)
 //
 // Mock `hoja-pantallas.html` P1/P2: `.headE` (kick + ✕) · `.titulo` (nombre editable + ✎) ·
-// `.metaLn` (dot de familia + conteos) · `.ctaV` («Empezar sesión»). Funciones estáticas (no un
+// `.metaLn` (dot de familia + conteos) · `.ctaV` («Empezar»). Funciones estáticas (no un
 // `View` propio): no llevan estado — leen/mutan el de `RoutineSheet` vía `sheet` (el `nonmutating
 // set` de `@State` deja escribir sobre una copia por valor, mismo patrón que las closures de
 // `body`).
@@ -109,7 +109,7 @@ enum HojaCabecera {
         ])
     }
 
-    /// El CTA fijo — «Empezar sesión»/«Resume», la ÚNICA puerta al ejercicio guiado (F2 lo sustituye).
+    /// El CTA fijo — «Empezar»/«Resume», la ÚNICA puerta al ejercicio guiado (F2 lo sustituye).
     static func ctaBar(sheet: RoutineSheet) -> some View {
         Button { sheet.start() } label: {
             HStack(spacing: CenitMetrics.space2) {
