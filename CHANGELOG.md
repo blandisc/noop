@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Respira pasa a Liquid Glass · El Eje (sobrio) / Breathe moves to Liquid Glass · El Eje (sober)** (FER-242).
+  **ES** — La herramienta de respiración deja el tipografía/chrome Instrumento legacy: orbe en azul de respiración (`LiquidColor.azul`, no el cian de VFC), CTAs con `LiquidGlassButton`, tipografía y espaciado Liquid. El subtítulo ya no promete biofeedback de HRV («Ritmo con háptica · sigue el orbe»); las fases dicen «Inhala…» / «Exhala…». El pacer y la háptica se conservan; con Reduce Motion el orbe se congela y el timer pausa en segundo plano.
+  **EN** — The breathing tool leaves legacy Instrumento type/chrome: orb in breath blue (`LiquidColor.azul`, not HRV cyan), CTAs via `LiquidGlassButton`, Liquid type and spacing. The subtitle no longer promises HRV biofeedback ("Haptic-paced rhythm · follow the orb"); phases read "Inhale…" / "Exhale…". The pacer and haptics stay; Reduce Motion freezes the orb and the timer pauses in the background.
+  ([BreathingView.swift](Cenit/Screens/BreathingView.swift))
+
 - **TermsGate pasa a Liquid Glass · El Eje / TermsGate moves to Liquid Glass · El Eje** (FER-241).
   **ES** — La primera pantalla (aceptación de términos) deja el papel Instrumento legacy y reutiliza el shell del onboarding (`OnbShell`, tipografía Liquid, `LiquidGlassButton`). El interruptor sigue sin premarcarse y sigue gateando el CTA; el verde saturado solo aparece con el switch ON y el botón habilitado.
   **EN** — The first-run terms gate leaves legacy Instrumento paper and reuses the onboarding shell (`OnbShell`, Liquid type, `LiquidGlassButton`). The switch stays un-prechecked and still gates the CTA; saturated green appears only when the switch is ON and the button is enabled.
