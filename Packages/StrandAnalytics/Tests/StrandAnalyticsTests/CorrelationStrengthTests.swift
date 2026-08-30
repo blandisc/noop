@@ -4,7 +4,7 @@ import XCTest
 /// Guarda del contrato de fuerza de correlación (FER-104 / TND-29, foco 1): existe UNA sola escalera
 /// que nombra un |r|, con cortes únicos y una banda por rango. La clase de defecto que mata: dos
 /// escaleras rivales para «la misma cosa» con cortes distintos (la que produjo P1 en gemelas y en el
-/// detalle de vital). El efecto (d de Cohen, `BucleFormat.magnitudeWord`) NO se fija aquí a propósito:
+/// detalle de vital). El efecto (d de Cohen / magnitude word) NO se fija aquí a propósito:
 /// es una escala legítimamente distinta y vive en el app con su propia palabra («medium»).
 final class CorrelationStrengthTests: XCTestCase {
 

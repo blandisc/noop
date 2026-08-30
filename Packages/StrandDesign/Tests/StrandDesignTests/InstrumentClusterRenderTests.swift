@@ -5,9 +5,9 @@ import AppKit
 @testable import StrandDesign
 
 /// FER-292 v2 — developer render harness for the Coach «instrument cluster» pieces (zone gauge,
-/// dumbbell, finding glyphs) and the composed decision hero, so they can be eyeballed on paper before
-/// wiring into BucleView. Not a CI assertion. Run: swift test --filter InstrumentClusterRenderTests
-/// PNGs land in /tmp/noop-fer292/.
+/// dumbbell, finding glyphs) and the composed decision hero (eyeball on paper). Not a CI assertion.
+/// Run: swift test --filter InstrumentClusterRenderTests. PNGs land in /tmp/noop-fer292/.
+/// FER-240: the Patrones screen that once consumed these pieces was archived.
 final class InstrumentClusterRenderTests: XCTestCase {
 
     private let t = InstrumentoTheme.base

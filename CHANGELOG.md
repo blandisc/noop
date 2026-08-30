@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Se archiva Patrones / Patterns screen archived** (FER-240).
+  **ES** — La pestaña Patrones (ya fuera del dock desde FER-992) se borra del código: la pantalla, sus hojas y los deep-links que aún la apuntaban (`openInsightKey`, ruteo `.coach`). El dock sigue en Hoy · Tendencias · Entrenar · Ajustes; un deep-link viejo a Patrones ya no navega a nada muerto.
+  **EN** — The Patterns tab (off the dock since FER-992) is deleted from the codebase: the screen, its sheets, and the deep-links that still pointed at it (`openInsightKey`, `.coach` routing). The dock stays Today · Trends · Train · Settings; a stale Patterns deep-link no longer navigates to a dead destination.
+  ([TabRouter.swift](CenitApp/App/TabRouter.swift), [RootTabView.swift](CenitApp/App/RootTabView.swift), [ScreenshotNav.swift](CenitApp/App/ScreenshotNav.swift))
+
 - **Exportar historial de fuerza a CSV / Export your strength-training history to CSV** (FER-224).
   **ES** — Ajustes → Fuentes de datos → Respaldo gana un botón «Exportar CSV…» que guarda todo tu historial de entrenamientos de fuerza (una fila por serie: fecha, rutina, ejercicio por nombre, tipo de serie, peso, repeticiones, tiempo, distancia, RPE, descanso y notas) en un archivo que abres en Excel, Numbers o Sheets, fuera de Cénit. Es aparte del respaldo completo, que es solo para restaurar dentro de la app.
   **EN** — Data Sources → Backup gets an "Export CSV…" button that saves your whole strength-training history (one row per set: date, routine, exercise by name, set kind, weight, reps, time, distance, RPE, rest and notes) to a file you can open in Excel, Numbers or Sheets, outside Cénit. This is separate from the full backup, which is restore-only inside the app.

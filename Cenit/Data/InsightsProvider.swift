@@ -2,13 +2,13 @@ import Foundation
 import StrandAnalytics
 import CenitStore
 
-/// La lista rankeada de `Insight` — UNA sola fuente para Patrones (BucleView) y «La conexión de hoy» del
-/// Daily Brief (FER-614), para que la correlación que muestra el brief sea EXACTAMENTE la misma (misma
-/// familia FDR, misma significancia) que la de Patrones. Vive en la capa de app porque arma los insumos
-/// desde `Repository`; la matemática (correlación, FDR, ranking) vive en `InsightEngine`.
+/// La lista rankeada de `Insight` — fuente única para «La conexión de hoy» del Daily Brief (FER-614).
+/// Vive en la capa de app porque arma los insumos desde `Repository`; la matemática (correlación, FDR,
+/// ranking) vive en `InsightEngine`.
 ///
-/// Reproduce el armado de insumos de `BucleView.load()` (comportamientos del diario + dieta), SIN sus efectos
-/// secundarios (no cierra experimentos, no toca frescura): solo produce los hallazgos rankeados.
+/// Arma los insumos del diario + dieta sin efectos secundarios (no cierra experimentos, no toca
+/// frescura): solo produce los hallazgos rankeados. (FER-240: la pantalla Patrones que también
+/// consumía esta lista fue archivada.)
 @MainActor
 enum InsightsProvider {
 
