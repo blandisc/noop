@@ -368,8 +368,6 @@ Around the four tabs, a few whole-app surfaces:
   accept: Cénit reads from Apple Health on your device (**no separate hardware pairing required**);
   it's offline and local (no account, server or telemetry); it's general wellness, not a medical
   device; and there's no warranty.
-- **What's New** (`WhatsNewView.swift`) — the in-app changelog, shown automatically after an update
-  and reachable from Ajustes: a "What to expect" section, then each release.
 - **Restore offer** (`ContentView.swift`, FER-116) — shortly after onboarding, *only* if Apple
   Health is authorized but no data landed, Cénit offers to restore from a **backup file you exported
   yourself** (it has no cloud of its own). "Choose a backup file…" / "Not now".

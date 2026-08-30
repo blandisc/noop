@@ -17,9 +17,7 @@ import StrandDesign
 
 struct SupportView: View {
     /// Single source of truth for the version pill: the app bundle's marketing version, same value
-    /// `AjustesView`'s footer shows. `AppChangelog.currentVersion` tracks a DIFFERENT thing (the last
-    /// changelog entry shown in What's New) and drifts from the bundle version on every release that
-    /// doesn't touch the changelog — it must never be shown to the user as "the app version".
+    /// `AjustesView`'s footer shows.
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
     }

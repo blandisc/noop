@@ -57,8 +57,8 @@ final class CenitScreenshotTests: XCTestCase {
         return dir
     }()
 
-    /// Launch arguments shared by every capture: skip onboarding / terms / What's New / the restore
-    /// nudge, and PIN the language so the captured UI is identical on every machine (see rule 2).
+    /// Launch arguments shared by every capture: skip onboarding / terms / the restore nudge, and
+    /// PIN the language so the captured UI is identical on every machine (see rule 2).
     private static let baseArgs = [
         "-AppleLanguages",               "(es)",
         "-AppleLocale",                  "es_MX",
@@ -66,7 +66,6 @@ final class CenitScreenshotTests: XCTestCase {
         // Debe igualar `Terms.currentVersion` (Cenit/App/Terms.swift): con "1.0" desde FER-1003 el
         // arnés capturaba la puerta de Términos en vez de la pantalla (FER-118 · F lo cazó).
         "-noop.acceptedTermsVersion",    "2.0",
-        "-noop.lastSeenChangelogVersion","1.80",
         "-noop.didOfferRestore",         "YES",
     ]
 
