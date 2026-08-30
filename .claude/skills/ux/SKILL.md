@@ -6,7 +6,7 @@ description: >-
   (vacío, cargando, con datos, error, sin permiso HealthKit, offline/sin
   strap), arquitectura de información, dónde vive en RootView, edge cases, copy
   es-MX y accesibilidad iOS-real (Dynamic Type, VoiceOver). Trabaja contra el
-  DNA «Instrumento diurno» (DESIGN.md). Produce criterios de aceptación de UX
+  DNA «Liquid Glass · El Eje» (DESIGN.md). Produce criterios de aceptación de UX
   verificables que /implement luego chequea. Dos carriles por riesgo. Se integra
   dentro de /pm y también solo con /ux. Usa lazyweb (flujos reales + brainstorm),
   impeccable (heurísticas/critique) y, opcional, layers-skills (capa-cuello-de-botella).
@@ -69,8 +69,8 @@ navegación raíz en `Cenit/App/ContentView.swift`) para partir del estado actua
 no de cero.
 
 ### 2. Ánclate en el DNA — lee DESIGN.md
-Abre **`docs/design-system/DESIGN.md`** §8 («Instrumento diurno», el lenguaje
-canónico): un foco/número dominante, calma, el dato como protagonista, jerarquía
+Abre **`docs/design-system/DESIGN.md`** (manifiesto de apertura, «Liquid Glass · El Eje», el lenguaje
+canónico; §8 es la generación anterior en migración): un foco/número dominante, calma, el dato como protagonista, jerarquía
 por espacio. La experiencia que diseñes debe **encajar** con esa voz — no propongas
 flujos densos, ruidosos o multi-foco que la rompan.
 
@@ -164,7 +164,7 @@ requerimiento (secciones "Estados" y "Criterios de aceptación"). Cuando corres
 
 ## Reglas no negociables de NOOP (recuérdalas)
 
-- **DNA:** la experiencia encaja con «Instrumento diurno» (un foco, calma, el dato
+- **DNA:** la experiencia encaja con «Liquid Glass · El Eje» (un foco, calma, el dato
   protagonista). No diseñes flujos que la rompan.
 - **Offline y on-device.** Sin nube, cuenta ni red. Cualquier flujo que lo requiera
   está **fuera de alcance** — dilo y regrésalo a `/pm`.
