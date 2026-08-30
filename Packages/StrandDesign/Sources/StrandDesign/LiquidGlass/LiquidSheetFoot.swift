@@ -5,7 +5,8 @@ import SwiftUI
 // Los remates del pie, como componentes independientes (la hoja los compone en orden):
 //   · `LiquidMetodo` — «Cómo se calcula» plegable (prosa + cita), transparencia matemática.
 //   · `LiquidOrigenChip` — pastilla de procedencia DENTRO del plegable (FER-33 · F0.4a).
-//   · `LiquidNotaLine` — nota corta / línea de conectar Apple Salud.
+//   · `LiquidNotaLine` — nota corta / línea de conectar Apple Salud (y, en su otra voz,
+//     la fila de acuerdo de fusión; vive en `LiquidNotaLine.swift`).
 //   · `LiquidVerMas` — el enlace al detalle rico; ancho completo con el glifo de Tendencias
 //     cuando la métrica vive en niveles, compacto a la derecha si no.
 // Strings YA localizados; el DS no conoce locales.
@@ -134,30 +135,6 @@ public struct LiquidOrigenChip: View {
         .background(LiquidColor.papelAlto.opacity(0.65), in: Capsule(style: .continuous))
         .overlay(Capsule(style: .continuous).strokeBorder(LiquidColor.tinta10, lineWidth: 1))
         .accessibilityElement(children: .combine)
-    }
-}
-
-/// Nota corta del pie (nota de método, o la línea de conectar Apple Salud).
-///
-/// El `tono` es tinta quieta por defecto — la nota acompaña, no llama. El caller solo lo
-/// sube (a `LiquidColor.atencionTexto`) cuando la nota AVISA algo que cambia la lectura de
-/// lo que está viendo: p. ej. «se muestran los últimos N días» cuando la ventana se
-/// ensanchó sola. Recolorear el componente entero teñiría todas las notas de todas las
-/// hojas, que es justo lo que no queremos.
-public struct LiquidNotaLine: View {
-    private let text: String
-    private let tono: Color
-
-    public init(_ text: String, tono: Color = LiquidColor.tinta500) {
-        self.text = text
-        self.tono = tono
-    }
-
-    public var body: some View {
-        Text(verbatim: text)
-            .font(LiquidType.captionLectura)
-            .foregroundStyle(tono)
-            .fixedSize(horizontal: false, vertical: true)
     }
 }
 

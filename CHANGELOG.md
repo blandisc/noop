@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **El acuerdo entre fuentes pasa a Liquid Glass · El Eje / Source-agreement row moves to Liquid Glass · El Eje** (FER-254).
+  **ES** — La nota bajo pasos / sueño total / kcal activas (cuando hay ≥2 fuentes) deja tipografía y colores Instrumento y se dibuja con `LiquidNotaLine`: veredicto + ambos valores (nunca un promedio), regla lateral de 2 pt; en conflicto la regla y el veredicto pasan a atención.
+  **EN** — The note under steps / sleep total / active kcal (when ≥2 sources report) leaves Instrumento type and colors for `LiquidNotaLine`: verdict + both values (never an average), 2 pt side rule; on conflict the rule and verdict shift to attention.
+  ([LiquidNotaLine.swift](Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/LiquidNotaLine.swift), [FusionAgreementRow.swift](Cenit/Screens/FusionAgreementRow.swift))
+
 - **El aviso de malestar en Hoy pasa a Liquid Glass · El Eje / Today’s illness heads-up moves to Liquid Glass · El Eje** (FER-245).
   **ES** — El banner de alerta temprana deja la card Instrumento (triángulo + relleno ámbar) y queda como aviso Liquid: tarjeta sólida con barra lateral de juicio (ámbar «Atención» / rojo «Alerta») y el mismo cuerpo de texto de siempre. Solo cambia la piel; qué lo dispara no.
   **EN** — The early-illness banner leaves the Instrumento card (triangle + amber wash) for a Liquid notice: solid card with a judgment side bar (amber “Heads up” / red “Alert”) and the same body copy as before. Skin only; what fires it is unchanged.
