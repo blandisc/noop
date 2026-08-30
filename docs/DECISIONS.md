@@ -90,3 +90,13 @@ el mismo PR** que la implementa (una línea basta: fecha, decisión, por qué).
 
 Se puede — son decisiones, no leyes físicas. El camino: el dueño lo pide explícitamente,
 se anota aquí la reversión con fecha y razón, y recién entonces se implementa.
+
+## 2026-08-29 · Entrenar — terminar a medias y descanso sin reloj (FER-250, lote E)
+
+Tres decisiones del dueño para el rediseño del cierre de sesión y el descanso sin Apple Watch:
+
+1. **Sesión parcial = entrenamiento normal.** Si el usuario termina a la mitad y elige «guardar lo hecho», el entrenamiento parcial **cuenta igual** que uno completo: entra al historial, suma volumen y mantiene la racha/constancia. Lo que hiciste es trabajo real (paridad con Hevy). No se marca como «incompleto».
+2. **Avisos de sesión ON por defecto durante un entrenamiento activo.** Sin reloj, al terminar el descanso la app **avisa (sonido + vibración) y mantiene la pantalla encendida**, aunque hoy ambos vienen apagados de fábrica. Fuera de una sesión activa, nada cambia. El Watch es una mejora, no un requisito.
+3. **Descanso de respaldo = el de la rutina.** Cuando una rutina pide «descanso por pulso» pero no hay reloj, se cae al **tiempo objetivo que ya define la rutina**; si no define ninguno, a un default sensato (90 s). No un fijo global.
+
+Contexto: la 2.ª auditoría de Entrenar (revisión Grok UX) encontró que hoy no hay salida honesta a media sesión (la única es minimizar, que descarta todo) y que el descanso sin reloj castiga al caso más común. Carril pesado: toca `StrengthSessionModel`, la Hoja, la píldora de minimizar y el Watch.

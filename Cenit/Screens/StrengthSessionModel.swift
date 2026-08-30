@@ -528,7 +528,11 @@ final class StrengthSessionModel: ObservableObject {
     /// A running stopwatch is captured first, so «register» on a time/distance set logs its elapsed time.
     /// `restingHR`/`maxHR` come from the sheet (the user's nightly baseline + profile HR-max) so the rest
     /// target can be resolved without the model importing CoreBluetooth/HealthKit (FER-506).
-    func registerCurrentSet(now: Date = Date(), restingHR: Double? = nil, maxHR: Double? = nil) {
+    /// `hasLivePulse` (FER-250): ¿hay pulso del Apple Watch transmitiendo AHORA? Default `true` para no
+    /// alterar los call sites viejos (snapshot/restore, tests). Sin reloj vivo, un descanso por FC se
+    /// degrada a temporizador fijo (ver `computeRestTarget`) — el reloj es mejora, no requisito.
+    func registerCurrentSet(now: Date = Date(), restingHR: Double? = nil, maxHR: Double? = nil,
+                            hasLivePulse: Bool = true) {
         guard runs.indices.contains(currentIndex) else { return }
         // FER-167: palomear la siguiente serie mientras el descanso anterior sigue corriendo lo cierra
         // aquí mismo — ANTES de cualquier otra cosa, incluido el salto de ronda de superserie de abajo.
@@ -572,8 +576,13 @@ final class StrengthSessionModel: ObservableObject {
             advanceToNextPending()
             return
         }
-        computeRestTarget(rest: rest, doneTs: doneTs, restingHR: restingHR, maxHR: maxHR)
-        startRest(seconds: rest.seconds, now: now)
+        computeRestTarget(rest: rest, doneTs: doneTs, restingHR: restingHR, maxHR: maxHR,
+                          hasLivePulse: hasLivePulse)
+        // FER-250: si el descanso quedó fijo por FALTA de pulso vivo (o de baseline honesto) y la rutina
+        // no fija segundos, cae al respaldo — un descanso de reloj de verdad, no un cronómetro en 0.
+        let restSecs = (currentRestMode == .fixed && rest.seconds <= 0) ? Self.noWatchRestFallbackSeconds
+                                                                        : rest.seconds
+        startRest(seconds: restSecs, now: now)
         restOwnerSetId = runs[currentIndex].sets[i].id   // FER-167: `i` captured before advancing
         advanceToNextPending()
         // r9 (owner): tras el ÚLTIMO set del ÚLTIMO ejercicio no hay nada que descansar.
@@ -611,8 +620,12 @@ final class StrengthSessionModel: ObservableObject {
     /// peak is the max strap sample in the ~90 s up to `doneTs` (the just-finished set's effort).
     /// `restingMargin`/no-target with a baseline → HR mode using FER-348's default; no honest target and no
     /// baseline → degrade to the fixed timer.
-    private func computeRestTarget(rest: RestConfig, doneTs: Int, restingHR: Double?, maxHR: Double?) {
+    private func computeRestTarget(rest: RestConfig, doneTs: Int, restingHR: Double?, maxHR: Double?,
+                                   hasLivePulse: Bool = true) {
         guard rest.mode == .heartRate else { currentRestMode = .fixed; currentRestTarget = nil; return }
+        // FER-250: descanso por FC pedido, pero sin pulso vivo AHORA (el caso más común, sin reloj) →
+        // temporizador fijo. Así el auto-skip corre y no se regaña «sin reloj» en cada descanso.
+        guard hasLivePulse else { currentRestMode = .fixed; currentRestTarget = nil; return }
         let peak = hrSamples.filter { $0.ts >= doneTs - 90 && $0.ts <= doneTs }.map(\.bpm).max()
         let target = RestTarget.resolve(reference: rest.hrReference.restTargetReference,
                                         value: rest.hrValue, peakHR: peak,
@@ -642,6 +655,9 @@ final class StrengthSessionModel: ObservableObject {
     /// fixed countdown — no HR baseline to anchor a heart-rate target to, and the mock's copy promises
     /// «2 min» explicitly. Editable per set via the existing rest editor, same as any routine exercise.
     static let adHocRestSeconds = 120
+    /// FER-250: descanso de respaldo cuando la rutina pide descanso por FC pero no hay reloj vivo y la
+    /// rutina no define segundos. Decisión del dueño (docs/DECISIONS.md): el objetivo de la rutina, o 90 s.
+    static let noWatchRestFallbackSeconds = 90
 
     /// Append an exercise mid-session (FER-762): used by the «Rápido de fuerza» empty state (no routine)
     /// when the user adds a suggested or searched exercise. Seeds one working set from the exercise's last
