@@ -75,28 +75,22 @@ struct HojaTarjetaEjercicioSesion: View {
         }
     }
 
-    /// Thumb + nombre: con `puedeEnfocar`, un tap entra a foco (FER-187); si no, el thumb abre el
-    /// detalle del ejercicio como antes.
+    /// Thumb + nombre: un tap abre el DETALLE del ejercicio (`detailExercise`), no el foco. Orden del
+    /// dueño 2026-08-29: revierte el tap-para-foco del cromo de FER-187 — el foco es SOLO del «⤢»
+    /// (y del «Enfoque» del ···). Tocar el ejercicio lleva a su subpágina; expandir lleva a Focus.
     @ViewBuilder private var cromoSinCeldas: some View {
         let thumb = SessionRunThumb(exerciseId: run.exerciseId, side: 40)
         let nombre = Text(run.name).font(StrandFont.headline).foregroundStyle(vivo.sheet.theme.ink)
             .frame(maxWidth: .infinity, alignment: .leading).lineLimit(1)
-        if vivo.puedeEnfocar {
-            HStack(spacing: LiquidSpace.s250) {
-                thumb
-                nombre
-            }
-            .contentShape(Rectangle())
-            .onTapGesture { vivo.enterFoco() }
-            .accessibilityElement(children: .combine)
-            .accessibilityAddTraits(.isButton)
-            .accessibilityHint(Text("Focus"))
-        } else {
-            Button { vivo.detailExercise = ExerciseCatalog.byID(run.exerciseId) } label: { thumb }
-                .buttonStyle(.plain)
-                .accessibilityHint(Text("Opens the exercise"))
+        HStack(spacing: LiquidSpace.s250) {
+            thumb
             nombre
         }
+        .contentShape(Rectangle())
+        .onTapGesture { vivo.detailExercise = ExerciseCatalog.byID(run.exerciseId) }
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint(Text("Opens the exercise"))
     }
 
     /// R11(b): ✎ Nota — paridad `HojaTarjetaEjercicio.notaF` (F1), misma `NoteSheet` (capa 3).

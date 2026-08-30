@@ -778,6 +778,14 @@ extension HojaSesionViva {
         rows.append(.init(String(localized: "Add exercise"), systemImage: "plus") {
             addExerciseAfterRunId = run.id
         })
+        // Restaurado en el menú (dueño 2026-08-29): «Añadir calentamiento» volvió del calculador de
+        // discos a los ···, donde vivía antes de la reconstrucción de La Hoja (FER-165/168). Abre la
+        // MISMA hoja de discos anclada a su sección de calentamiento (`startAtWarmup`); la rampa se
+        // calcula respecto al peso de la primera serie de trabajo.
+        rows.append(.init(String(localized: "Add warm-up"), systemImage: "flame") {
+            let workKg = run.sets.first(where: { $0.kind == .work })?.weightKg ?? run.sets.first?.weightKg ?? 0
+            platesTarget = LiveStrengthSheet.PlatesTarget(ei: ei, weightKg: workKg, startAtWarmup: true)
+        })
         if incluirEstructura, puedeEnfocar {
             rows.append(.init(String(localized: "Focus"), systemImage: "arrow.up.left.and.arrow.down.right") {
                 enterFoco()
