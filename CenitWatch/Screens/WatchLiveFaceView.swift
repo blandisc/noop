@@ -192,9 +192,9 @@ private struct WatchFaceMetrics: View {
     // «−30» is hidden once the rest has run out (nothing left to trim; `extendRest` also floors at «now»).
     private func restControls(_ rest: RestActivitySnapshot) -> some View {
         HStack(spacing: CenitMetrics.space1) {
-            if secondsLeft(rest) > 0 { pill("−30") { manager.adjustRestFromWrist(by: -30) } }
+            if secondsLeft(rest) > 0 { pill("−30 s") { manager.adjustRestFromWrist(by: -30) } }
             pill("+30 s") { manager.adjustRestFromWrist(by: 30) }
-            pill("Skip") { manager.skipRestFromWrist() }
+            pill("Skip rest") { manager.skipRestFromWrist() }
         }
     }
 
@@ -326,15 +326,15 @@ private struct WatchControlPage: View {
                 .buttonStyle(.borderedProminent).tint(t.ink)
             }
             Button(role: .destructive) { confirming = true } label: {
-                Text("End").frame(maxWidth: .infinity, minHeight: WatchMetrics.controlHeight)
+                Text("Finish").frame(maxWidth: .infinity, minHeight: WatchMetrics.controlHeight)
             }
             .buttonStyle(.bordered).tint(t.critical)
             Spacer()
         }
         .padding(.horizontal, CenitMetrics.gap)
-        .confirmationDialog("End the session?", isPresented: $confirming, titleVisibility: .visible) {
-            Button("End", role: .destructive) { manager.endFromWrist() }
-            Button("Keep going", role: .cancel) { }
+        .confirmationDialog("Finish workout?", isPresented: $confirming, titleVisibility: .visible) {
+            Button("Finish", role: .destructive) { manager.endFromWrist() }
+            Button("Keep training", role: .cancel) { }
         }
     }
 }

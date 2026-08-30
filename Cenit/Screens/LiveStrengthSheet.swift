@@ -253,7 +253,7 @@ struct LiveStrengthSheet: View {
                 summaryPhase(summary)
             }
             .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.top, 18)
+            .padding(.top, EntrenarMetrics.ctaRowTop)
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -703,7 +703,7 @@ struct LiveStrengthSheet: View {
         .padding(.horizontal, EntrenarMetrics.sessionHeaderMarginH)
         .padding(.top, EntrenarMetrics.sessionHeaderPaddingTop)
         .padding(.bottom, EntrenarMetrics.sessionHeaderPaddingBottom)
-        .background(theme.paper)
+        .entrenarHojaBarraFondo(tono: .neutro)
         // Canvas pass 2026-07-15: the bottom hairline under the progress bar is gone — the whitespace
         // and the rail thread separate head from list on their own (owner call, punto 6).
     }
@@ -749,17 +749,12 @@ struct LiveStrengthSheet: View {
         }
     }
 
-    /// «ejercicio 2 de 6 · en curso» / «pausada» (copy.md «Sesión en vivo»). Solo con ejercicios reales.
+    /// «Serie N de M · en curso» / «pausada» (FER-246 — misma unidad que la Hoja viva).
     private var sessionHeaderSubtitle: Text {
-        session.paused
-            ? Text("paused")
-            : Text("exercise \(activeExercisePosition) of \(session.activeExercises.count) · in progress")
-    }
-
-    /// La posición (base 1) del ejercicio activo entre los NO saltados — mismo criterio que
-    /// `session.activeExercises`, la fuente que ya usa el navegador de plan.
-    private var activeExercisePosition: Int {
-        (session.activeExercises.firstIndex { $0.index == accordionIndex } ?? 0) + 1
+        if session.paused { return Text("paused") }
+        let total = session.doneCount + session.pendingCount
+        let current = session.isComplete ? total : session.doneCount + 1
+        return Text("Set \(current) of \(total) · in progress")
     }
 
     /// ♥ 118 — SOLO con FC viva (Apple Watch conectado). SIN punto animado a propósito (decisión del
@@ -827,7 +822,7 @@ struct LiveStrengthSheet: View {
                 discardEmptySession()
             }
         } else {
-            sessionHeaderPill(Text("Finish"), accessibilityLabel: Text("Finish workout")) {
+            sessionHeaderPill(Text("Finish"), accessibilityLabel: Text("Finish")) {
                 finishTapped()
             }
         }
@@ -1083,10 +1078,8 @@ struct LiveStrengthSheet: View {
                         (Text(MuscleAtlas.name(muscle)) + Text(verbatim: " ") + Text("still carries load · suggestions avoid it."))
                             .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                             .fixedSize(horizontal: false, vertical: true)
-                            .padding(.horizontal, 13).padding(.vertical, 11)
-                            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-                                .strokeBorder(theme.hairline, lineWidth: 1))
+                            .padding(.horizontal, CenitMetrics.cardPadding).padding(.vertical, CenitMetrics.gap)
+                            .liquidGlass(.superficieSolida)
                             .padding(.top, 3)
                     }
                 }
@@ -1793,10 +1786,8 @@ struct LiveStrengthSheet: View {
                 .accessibilityElement(children: .combine)
             }
         }
-        .padding(.horizontal, 16).padding(.vertical, 14)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-            .strokeBorder(theme.hairline, lineWidth: 1))
+        .padding(.horizontal, CenitMetrics.cardPadding).padding(.vertical, CenitMetrics.cardPadding)
+        .liquidGlass(.superficieSolida)
     }
 
     /// «Por ejercicio»: one quiet row per exercise — sets · top datum · trend vs «la última vez».

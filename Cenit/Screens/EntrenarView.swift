@@ -911,7 +911,8 @@ private struct EntrenarLanding: View {
     /// session you have open» nunca se alcanzaba.
     private var puertas: [Puerta] {
         [
-            Puerta(icon: "bolt.fill", label: "Quick",
+            // FER-246 — misma etiqueta que la sesión que abre (`Quick strength` / «Rápido de fuerza»).
+            Puerta(icon: "bolt.fill", label: "Quick strength",
                    subtitle: "Starts empty, you log as you go",
                    hint: "Starts a quick strength session, no routine.") { startQuickStrength() },
             Puerta(icon: "timer", label: "Intervals",
@@ -1097,14 +1098,14 @@ private struct EntrenarLanding: View {
                                    strain: session.strain, avgHr: session.avgHr, routineName: name)
     }
 
-    /// «Músculos cargados y Bitácora aparecen después de tu primera sesión. Mientras, silencio.» —
+    /// «Músculos cargados e Historial aparecen después de tu primera sesión. Mientras, silencio.» —
     /// plan armado, cero sesiones registradas todavía (copy.md «Primer uso»).
     private var silencioPrimeraSesion: some View {
         // Mismo filo superior que cualquier otro nivel (`nivelHub`): sin él el corte entre TU SEMANA y
         // este mensaje no se leía igual que el corte entre dos niveles cualesquiera.
         VStack(alignment: .leading, spacing: 0) {
             filoDelPliegue
-            Text("Loaded muscles and Log appear after your first session. Until then, silence.")
+            Text("Loaded muscles and History appear after your first session. Until then, silence.")
                 .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, EntrenarMetrics.levelPadTop)

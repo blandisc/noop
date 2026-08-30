@@ -13730,19 +13730,19 @@
         }
       }
     },
-    "Consistency · 12 weeks" : {
+    "Consistency · 13 weeks" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Consistency · 12 weeks"
+            "value" : "Consistency · 13 weeks"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Constancia · 12 sem"
+            "value" : "Constancia · 13 sem"
           }
         }
       }
@@ -18550,7 +18550,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminar entrenamiento"
+            "value" : "Terminar"
           }
         }
       }
@@ -23001,7 +23001,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Seguir"
+            "value" : "Seguir entrenando"
           }
         }
       }
@@ -24383,7 +24383,24 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Músculos cargados y Bitácora aparecen después de tu primera sesión. Mientras, silencio."
+            "value" : "Músculos cargados e Historial aparecen después de tu primera sesión. Mientras, silencio."
+          }
+        }
+      }
+    },
+    "Loaded muscles and History appear after your first session. Until then, silence." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loaded muscles and History appear after your first session. Until then, silence."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Músculos cargados e Historial aparecen después de tu primera sesión. Mientras, silencio."
           }
         }
       }
@@ -24445,7 +24462,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Registro"
+            "value" : "Historial"
           }
         }
       }
@@ -24593,7 +24610,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bitácora · 90 días"
+            "value" : "Historial · 90 días"
           }
         }
       }
@@ -31087,7 +31104,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "TIRÓN"
+            "value" : "JALÓN"
           }
         }
       }
@@ -32400,7 +32417,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sube"
+            "value" : "Empuje"
           }
         }
       }
@@ -33257,7 +33274,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lista para editar"
+            "value" : "Para editar"
           }
         }
       }
@@ -37114,6 +37131,23 @@
         }
       }
     },
+    "Set %lld of %lld · in progress" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set %lld of %lld · in progress"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Serie %lld de %lld · en curso"
+          }
+        }
+      }
+    },
     "Set %lld · %@ kg × %lld reps" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -40383,7 +40417,21 @@
       }
     },
     "Tendencias" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tendencias"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tendencias"
+          }
+        }
+      }
     },
     "Tends to dip the day after a hard effort." : {
       "extractionState" : "manual",
@@ -43090,7 +43138,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bitácora"
+            "value" : "Historial"
           }
         }
       }
@@ -56033,7 +56081,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tirón"
+            "value" : "Jalón"
           }
         }
       }
@@ -65587,7 +65635,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Empezar sesión"
+            "value" : "Empezar"
           }
         }
       }

@@ -440,7 +440,7 @@ struct HojaSesionViva: View {
                 }
                 .buttonStyle(.plain)
                 Button { zombieAcknowledged = true } label: {
-                    (Text("Keep going") + Text(verbatim: " ›"))
+                    (Text("Keep training") + Text(verbatim: " ›"))
                         .font(StrandFont.subhead.weight(.bold)).foregroundStyle(sheet.theme.paper)
                         .padding(.horizontal, CenitMetrics.cardPadding).padding(.vertical, CenitMetrics.rowVPad)
                         .background(LiquidColor.verdePrimario, in: Capsule())

@@ -155,17 +155,14 @@ struct ExerciseLibraryScreen: View {
                 .autocorrectionDisabled().textInputAutocapitalization(.never)
             if !search.isEmpty {
                 Button { search = "" } label: {
-                    Image(systemName: "xmark.circle.fill").foregroundStyle(theme.inkTertiary)
+                    StrandIcon.close.image.foregroundStyle(theme.inkTertiary)
                 }.buttonStyle(.plain)
                     .accessibilityLabel(Text("Clear search"))
             }
         }
         .padding(.horizontal, CenitMetrics.gap).padding(.vertical, CenitMetrics.rowVPad)
-        // Handoff: the search field sits on the raised paper surface (#FBF9F2) with a 1px control
-        // hairline (#D8D0BD) at radius 12 — a defined field, not a tinted fill.
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
-            .strokeBorder(theme.hairlineStrong, lineWidth: 1))
+        // Campo de búsqueda opaco (anti vidrio-sobre-vidrio) dentro de la hoja El Eje.
+        .liquidGlass(.superficieSolida)
     }
 
     // MARK: - Filters

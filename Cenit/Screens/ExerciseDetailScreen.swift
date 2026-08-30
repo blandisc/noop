@@ -1035,9 +1035,7 @@ private struct TrendAxisChart: View {
             xCaptions
         }
         .padding(.top, CenitMetrics.cardPadding).padding(.horizontal, 14).padding(.bottom, CenitMetrics.gap)  // token-exempt: 14 del handoff
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-            .strokeBorder(theme.hairline, lineWidth: 1))
+        .liquidGlass(.superficieSolida)
     }
 }
 

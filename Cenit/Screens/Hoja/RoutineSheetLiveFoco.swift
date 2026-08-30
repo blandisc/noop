@@ -309,7 +309,7 @@ struct HojaFoco: View {
     private func ctaSerieHecha(ei: Int) -> some View {
         // FER-223: SIN háptico propio aquí — `vivo.registerFromFoco()` llega a `registerActiveSet`,
         // el único funnel que da `EntrenarHaptic.serieCompletada` (poner otro aquí duplicaba el golpe).
-        LiquidGlassButton("✓ " + String(localized: "Set done"), variant: .primary, expands: true) {
+        LiquidGlassButton(String(localized: "Set done"), variant: .primary, expands: true) {
             withAnimation(vivo.reduceMotion ? nil : StrandMotion.gentle) { vivo.registerFromFoco() }
         }
         .accessibilityLabel(Text(String(localized: "Set done")))
@@ -471,7 +471,7 @@ struct HojaFoco: View {
                         if let next = nextRun {
                             Text("Next") + Text(verbatim: ": \(next.name) ›")
                         } else {
-                            Text("Finish workout") + Text(verbatim: " ›")
+                            Text("Finish") + Text(verbatim: " ›")
                         }
                     }
                     .font(InstrumentoType.groteskHeadline(15)).foregroundStyle(LiquidColor.tintaSobreVerde)

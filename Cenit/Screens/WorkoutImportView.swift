@@ -188,9 +188,7 @@ struct WorkoutImportView: View {
                     .lineLimit(4)
                     .padding(CenitMetrics.cardPadding)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-                        .strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                    .liquidGlass(.superficieSolida)
             }
 
             VStack(alignment: .leading, spacing: CenitMetrics.gap) {

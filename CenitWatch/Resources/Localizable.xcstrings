@@ -88,6 +88,23 @@
         }
       }
     },
+    "−30 s" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "−30 s"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "−30 s"
+          }
+        }
+      }
+    },
     "Active" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -271,6 +288,23 @@
         }
       }
     },
+    "Finish" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finish"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terminar"
+          }
+        }
+      }
+    },
     "End the session?" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -288,6 +322,23 @@
         }
       }
     },
+    "Finish workout?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finish workout?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Terminar el entrenamiento?"
+          }
+        }
+      }
+    },
     "Keep going" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -300,7 +351,24 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Seguir"
+            "value" : "Seguir entrenando"
+          }
+        }
+      }
+    },
+    "Keep training" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep training"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seguir entrenando"
           }
         }
       }

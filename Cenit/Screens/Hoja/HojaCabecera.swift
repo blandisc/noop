@@ -6,7 +6,7 @@ import StrandTraining
 // MARK: - HojaCabecera — cabecera + título + CTA de «La Hoja» (FER-166)
 //
 // Mock `hoja-pantallas.html` P1/P2: `.headE` (kick + ✕) · `.titulo` (nombre editable + ✎) ·
-// `.metaLn` (dot de familia + conteos) · `.ctaV` («Empezar sesión»). Funciones estáticas (no un
+// `.metaLn` (dot de familia + conteos) · `.ctaV` («Empezar»). Funciones estáticas (no un
 // `View` propio): no llevan estado — leen/mutan el de `RoutineSheet` vía `sheet` (el `nonmutating
 // set` de `@State` deja escribir sobre una copia por valor, mismo patrón que las closures de
 // `body`).
@@ -94,7 +94,7 @@ enum HojaCabecera {
     /// .planDay «···»: cambiar rutina / marcar descanso (A6/A7).
     private static func dayMenu(sheet: RoutineSheet) -> some View {
         Button { sheet.showDayMenu = true } label: {
-            Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
+            StrandIcon.more.image.font(StrandFont.glyph(.inline, weight: .semibold))
                 .foregroundStyle(sheet.theme.inkTertiary).frame(width: CenitMetrics.touchTarget, height: CenitMetrics.touchTarget).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -105,11 +105,11 @@ enum HojaCabecera {
                   children: sheet.allRoutines.map { r in
                       PaperMenuItem(r.name, systemImage: r.id == sheet.routine?.id ? "checkmark" : nil) { sheet.changeRoutine(to: r) }
                   }),
-            .init(String(localized: "Mark as rest day"), systemImage: "moon.zzz", isDestructive: true) { sheet.markRest() }
+            .init(String(localized: "Mark as rest day"), systemImage: StrandIcon.sleep.systemName, isDestructive: true) { sheet.markRest() }
         ])
     }
 
-    /// El CTA fijo — «Empezar sesión»/«Resume», la ÚNICA puerta al ejercicio guiado (F2 lo sustituye).
+    /// El CTA fijo — «Empezar»/«Resume», la ÚNICA puerta al ejercicio guiado (F2 lo sustituye).
     static func ctaBar(sheet: RoutineSheet) -> some View {
         Button { sheet.start() } label: {
             HStack(spacing: CenitMetrics.space2) {

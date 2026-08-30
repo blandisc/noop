@@ -99,7 +99,7 @@ struct RestResumeIntent: AppIntent {
 
 /// Registers the routine's last set and ends the workout — the primary action on the final rest (FER-789).
 struct RestFinishWorkoutIntent: AppIntent {
-    static var title: LocalizedStringResource = "Finish workout"
+    static var title: LocalizedStringResource = "Finish"
     static var authenticationPolicy: IntentAuthenticationPolicy = .alwaysAllowed
     static var openAppWhenRun = false
     static var description = IntentDescription("Logs the last set and ends the workout.")

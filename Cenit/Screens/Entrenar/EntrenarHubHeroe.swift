@@ -93,9 +93,9 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
 
     private func subPill(_ line: Text) -> some View {
         Button(action: onOpenRaise) {
-            HStack(spacing: EntrenarHubMetrics.subPillPaddingLeading - 1) {
+            HStack(spacing: CenitMetrics.space2) {
                 Circle()
-                    .fill(.white)
+                    .fill(LiquidColor.papelTarjeta)
                     .frame(width: EntrenarHubMetrics.subPillBadge, height: EntrenarHubMetrics.subPillBadge)
                     .overlay {
                         Text(verbatim: "↑")
@@ -113,10 +113,10 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
                 Capsule().fill(LiquidColor.verdePrimario.opacity(EntrenarHubMetrics.subPillFondoAlfa))
             }
             .overlay {
-                Capsule().strokeBorder(Color.white.opacity(EntrenarHubMetrics.subPillHighlightAlfa), lineWidth: 1)
+                Capsule().strokeBorder(LiquidColor.papelTarjeta.opacity(EntrenarHubMetrics.subPillHighlightAlfa), lineWidth: 1)
             }
             .overlay {
-                Capsule().strokeBorder(Color.white.opacity(EntrenarHubMetrics.subPillAroAlfa), lineWidth: 1)
+                Capsule().strokeBorder(LiquidColor.vidrioEspecular.opacity(EntrenarHubMetrics.subPillAroAlfa), lineWidth: 1)
                     .padding(1)
             }
             .overlay {
@@ -169,10 +169,10 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
             .padding(.horizontal, EntrenarHubMetrics.otraFormaPaddingH)
             .frame(minHeight: EntrenarMetrics.row)
             .background {
-                Capsule().fill(Color.white.opacity(EntrenarHubMetrics.otraFormaFondoAlfa))
+                Capsule().fill(LiquidColor.papelTarjeta.opacity(EntrenarHubMetrics.otraFormaFondoAlfa))
             }
             .overlay {
-                Capsule().strokeBorder(Color.white.opacity(EntrenarHubMetrics.otraFormaHighlightAlfa), lineWidth: 1)
+                Capsule().strokeBorder(LiquidColor.vidrioEspecular.opacity(EntrenarHubMetrics.otraFormaHighlightAlfa), lineWidth: 1)
             }
             .overlay {
                 Capsule().stroke(LiquidColor.tinta900.opacity(EntrenarHubMetrics.otraFormaCantoAlfa), lineWidth: 0.5)

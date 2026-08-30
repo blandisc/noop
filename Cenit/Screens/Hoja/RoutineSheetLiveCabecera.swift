@@ -21,7 +21,7 @@ enum HojaCabeceraSesion {
             Button {
                 vivo.sheet.model.strengthSheetPresented = false   // B17: minimizar, nunca termina
             } label: {
-                Image(systemName: "chevron.left")
+                StrandIcon.back.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold))
                     .foregroundStyle(vivo.sheet.theme.inkSecondary)
                     .frame(width: 34, height: EntrenarMetrics.secondaryButton).contentShape(Rectangle().inset(by: -LiquidSpace.s125))
@@ -82,7 +82,7 @@ enum HojaCabeceraSesion {
         if let bpm = vivo.sheet.model.watchBpm {
             let tone = OKLab.darkened(vivo.sheet.theme.dataHeart, toContrast: 4.5, against: vivo.sheet.theme.paper)
             HStack(spacing: CenitMetrics.space1) {
-                Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron))
+                StrandIcon.heart.image.font(StrandFont.glyph(.chevron))
                 Text("\(bpm)").font(StrandFont.subhead.weight(.semibold))
             }
             .foregroundStyle(tone)

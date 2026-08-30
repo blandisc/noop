@@ -314,7 +314,24 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminar entrenamiento"
+            "value" : "Terminar"
+          }
+        }
+      }
+    },
+    "Finish" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finish"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terminar"
           }
         }
       }
@@ -623,8 +640,14 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "set %1$@ of %2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Serie %1$@ de %2$@"
           }
         }
       }
@@ -708,6 +731,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Saltar descanso"
+          }
+        }
+      }
+    },
+    "no reading" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "no reading"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sin lectura"
           }
         }
       }

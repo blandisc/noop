@@ -81,7 +81,7 @@ struct HojaTarjetaEjercicio: View {
 
     private var menuButton: some View {
         Button { sheet.menuExerciseIndex = idx } label: {
-            Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
+            StrandIcon.more.image.font(StrandFont.glyph(.inline, weight: .semibold))
                 .foregroundStyle(sheet.theme.inkTertiary).frame(width: 30, height: CenitMetrics.touchTarget).contentShape(Rectangle())
         }
         .buttonStyle(.plain)

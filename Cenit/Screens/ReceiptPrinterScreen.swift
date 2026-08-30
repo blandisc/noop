@@ -65,9 +65,9 @@ struct ReceiptPrinterScreen: View {
     var body: some View {
         VStack(spacing: 0) {
             printerMouthRow
-                .padding(.top, 4)
+                .padding(.top, LiquidSpace.s100)
 
-            Spacer(minLength: 8)
+            Spacer(minLength: LiquidSpace.s200)
 
             centerContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -102,7 +102,7 @@ struct ReceiptPrinterScreen: View {
         }
         .overlay(alignment: .topTrailing) {
             BackButton(role: .close, theme: theme, action: onClose)
-                .padding(.trailing, 8)
+                .padding(.trailing, LiquidSpace.s200)
         }
     }
 
@@ -119,7 +119,7 @@ struct ReceiptPrinterScreen: View {
                     .padding(.vertical, 12)
             }
         } else if ticketState == .removed {
-            VStack(spacing: 20) {
+            VStack(spacing: LiquidSpace.s400) {
                 ReceiptSavedSeal()
                     .environment(\.instrumentoTheme, theme)
                 StrandCTAButton("REIMPRIMIR", kind: .outline) { reprint() }

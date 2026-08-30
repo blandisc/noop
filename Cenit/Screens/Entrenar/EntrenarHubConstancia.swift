@@ -4,7 +4,7 @@ import StrandDesign
 
 // MARK: - Entrenar · CONSTANCIA del hub v18 (FER-171 · Parte B)
 //
-// «Constancia · 12 sem» + «N este mes» — la rejilla honesta de 13 columnas (semanas, vieja→actual) ×
+// «Constancia · 13 sem» + «N este mes» — la rejilla honesta de 13 columnas (semanas, vieja→actual) ×
 // 3 huecos de sesión. Sesión = color de su familia; hueco vacío = «con cuerpo» (tinta 8 % + canto);
 // HOY = borde de tinta sin fondo. Sin animación de tejido (constancia no teje, spec §3).
 
@@ -37,7 +37,7 @@ struct EntrenarHubConstancia: View {
         EntrenarModulo(tono: .neutro) {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text("Consistency · 12 weeks").liquidRegla().foregroundStyle(LiquidColor.tinta500)
+                    Text("Consistency · 13 weeks").liquidRegla().foregroundStyle(LiquidColor.tinta500)
                     Spacer(minLength: CenitMetrics.space2)
                     // `Text.textCase(_:)` devuelve `some View`, no `Text` — rompe la concatenación `+`.
                     // Mayúsculas sobre el STRING ya resuelto (mismo patrón que `EntrenarHubSemana`).
@@ -74,7 +74,7 @@ struct EntrenarHubConstancia: View {
         }
         .liquidEntrada(index: 6)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("Consistency · 12 weeks"))
+        .accessibilityLabel(Text("Consistency · 13 weeks"))
         // Ronda 2 · G10: el value decía solo el número — VoiceOver perdía el calificativo «este mes»
         // que sí lee quien ve la pantalla.
         .accessibilityValue(Text("\(sessionsThisMonth) this month"))
