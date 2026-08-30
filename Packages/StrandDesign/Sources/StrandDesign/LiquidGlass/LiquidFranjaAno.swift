@@ -127,8 +127,8 @@ public struct LiquidFranjaAno: View {
     /// rejillas se apilan en la misma pantalla (Recuperación y Esfuerzo montan el calendario de
     /// 90 días y, debajo, esta franja). Con pisos distintos —0.20 aquí y 0.26 arriba— el mismo
     /// día se vería de dos tonos según la rejilla que lo dibuje, y el usuario leería una
-    /// diferencia de intensidad que no existe. El heatmap de apego (`DietCaptureView`) usa
-    /// 0.20, pero ese vive solo en su pantalla y no tiene un vecino con el que discrepar.
+    /// diferencia de intensidad que no existe. Un heatmap de apego histórico usaba
+    /// 0.20, pero vivía solo en su pantalla y no tenía un vecino con el que discrepar.
     ///
     /// El rango 0.26…1.00 está pensado para que las dos rejillas de calor
     /// del app tengan la misma rampa.
