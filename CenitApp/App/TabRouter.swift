@@ -8,7 +8,8 @@ import SwiftUI
 /// wiring. (FER-378 — the «Explóralo en el Coach» handoff.)
 @MainActor
 final class TabRouter: ObservableObject {
-    enum Tab: String, Sendable { case today, body, coach, train, settings }
+    // FER-240: `.coach` (Patrones) removed with the archived screen — four live tabs.
+    enum Tab: String, Sendable { case today, body, train, settings }
 
     /// A one-shot tab-switch request. `RootTabView` consumes it (sets it back to nil) on receipt.
     @Published var requested: Tab?
@@ -23,16 +24,6 @@ final class TabRouter: ObservableObject {
     /// Entrenar's own prefetched slots instead of duplicating the load (FER-613).
     @Published var startTodaySession = false
 
-    /// One-shot: after landing on «Patrones», open the detail of a specific insight by its
-    /// `InsightFreshness.key`. Consumed (reset to nil) by `BucleView`. Lets the Daily Brief's «La conexión
-    /// de hoy» line open the matching correlation's detail in Patrones (FER-614).
-    @Published var openInsightKey: String? = nil
-
-    /// One-shot: after landing on «Patrones», open the running experiment's detail sheet (day N · racha ·
-    /// effect · the daily check-in when pending). Consumed (reset to false) by `BucleView`. Lets the Daily
-    /// Brief's «La conexión de hoy» experiment line open the check-in / detail in Patrones (FER-615).
-    @Published var openRunningExperiment = false
-
     func select(_ tab: Tab) { requested = tab }
 
     /// Switch to «Entrenar» and ask it to push the fatigue map (the strength summary's «Ver mapa»).
@@ -40,12 +31,5 @@ final class TabRouter: ObservableObject {
 
     /// Switch to «Entrenar» and ask it to start today's session (the Daily Brief's «Empezar»).
     func startTodayTraining() { startTodaySession = true; requested = .train }
-
-    /// Switch to «Patrones» and ask it to open the insight matching `key` (the Daily Brief's «Ver patrón»).
-    func openInsight(key: String) { openInsightKey = key; requested = .coach }
-
-    /// Switch to «Patrones» and ask it to open the running experiment's detail/check-in (the Daily Brief's
-    /// «Registra check-in» / «Ver experimento»).
-    func openExperiment() { openRunningExperiment = true; requested = .coach }
 }
 #endif

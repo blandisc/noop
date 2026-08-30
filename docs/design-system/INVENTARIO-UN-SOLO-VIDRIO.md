@@ -134,7 +134,7 @@ Base: filas DNA **Instrumento** / «papel muerto» / huérfanas de `AUDIT-FRONTE
 | 14 | `ContentView` / `StoreFailure` papel | `Cenit/App/ContentView.swift:158`, `:307` · audit #1 | **Migrar → sobrio** |
 | 15 | **WhatsNewView** | `Cenit/Screens/WhatsNewView.swift:36`–`:37`; sheet desde `ContentView.swift:133` · audit #37 | **Migrar → sobrio** (sigue alcanzable post-update). *No* archivar mientras el shell la presente. |
 | 16 | ~~Dieta (captura)~~ | Archivada FER-239 — archivo y puerta retirados (FER-92 + audit #38) | **Archivada** (borrada; sin ruta de producto) |
-| 17 | **BucleView / Patrones** + **BucleSheets** | `BucleView.swift:32`–`:36`, `:125`; sheets `BucleSheets.swift:100`, `:247`, `:336`, `:666`, `:732`, `:770`, `:1060`; off-dock (no montada en `RootTabView`) · audit #63–#64 | **Archivar** (código huérfano de producto; reabrir solo con issue propio + régimen sobrio) |
+| 17 | **Patrones** (BucleView + BucleSheets) | Pantalla + sheets borrados en FER-240; deep-links (`openInsightKey` / `.coach`) neutralizados; off-dock desde FER-992 · audit #63–#64 | **Hecho (FER-240)** — reabrir solo con issue propio + régimen sobrio |
 
 ### 2.2 Decisiones explícitas (WhatsNew / Dieta / Patrones)
 
@@ -142,7 +142,7 @@ Base: filas DNA **Instrumento** / «papel muerto» / huérfanas de `AUDIT-FRONTE
 |---|---|---|
 | **WhatsNewView** | No del todo: `ContentView` aún la presenta tras update (`ContentView.swift:133`) | **Migrar a sobrio** en la ola de papel. Archivar solo si el dueño retira el auto-sheet en el mismo PR. |
 | ~~Dieta (captura)~~ | Sí — puerta retirada FER-92; pantalla borrada FER-239 | **Archivada** (borrada; no migrar). |
-| **BucleView / PatronesLanding + BucleSheets** | Sí — tab off-dock; `RootTabView` no la monta (audit H-055) | **Archivar** el cluster Patrones. No migrar Instrumento. Si vuelve el producto, nueva issue + sobrio desde cero. |
+| **Patrones** (BucleView + BucleSheets) | Sí — archivada FER-240; tab off-dock (audit H-055) | **Hecho.** Si vuelve el producto, nueva issue + sobrio desde cero. |
 
 ### 2.3 Fuera de esta lista (no contar como «papel a migrar»)
 

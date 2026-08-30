@@ -5,19 +5,18 @@ import StrandAnalytics
 import CenitStore   // FER-202: `WorkoutRow` — destino de detalle de actividad en el trainStack (fusión de historiales)
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 
-/// iOS navigation shell — the «IA de 3 capas» tab shell (FER-182). Five tabs over the «Barra de
-/// instrumento» (FER-163): **Hoy · Cuerpo · Coach · Entrenar · Ajustes**. Trends and the old "More"
-/// drawer are gone; En vivo is no longer a tab (it opens from Today's "beat by beat" `fullScreenCover`).
+/// iOS navigation shell — the «IA de 3 capas» tab shell (FER-182). Four tabs over the «Barra de
+/// instrumento» (FER-163): **Hoy · Tendencias · Entrenar · Ajustes**. Patrones (Coach) was archived
+/// in FER-240; En vivo is no longer a tab (it opens from Today's "beat by beat" `fullScreenCover`).
 ///
-/// Three of the tabs are interim hub-lists that reconnect screens which don't have a final home yet —
-/// each sibling issue (Cuerpo / Coach / Entrenar / Ajustes) replaces its interim with the real layer:
-///   • **Coach**    → Intelligence · Insights · Coach (seed of the unified Coach layer).
-///   • **Entrenar** → Breathe · Intervals.
+/// Hub tabs reconnect screens which don't have a final home yet:
+///   • **Entrenar** → Breathe · Intervals (+ strength hub).
 ///   • **Ajustes**  → Settings + a temporary «Más» section listing the still-orphan screens
 ///     (Explore · Compare · Workouts · Apple Health · Data Sources · Automations · Support). Sueño /
-///     Health / Stress now live in «Cuerpo». Nothing from the old shell becomes unreachable.
+///     Health / Stress now live in «Tendencias» (Cuerpo). Nothing from the old shell becomes unreachable.
 struct RootTabView: View {
-    private enum Tab: Hashable { case today, body, coach, train, settings }
+    // FER-240: `.coach` (Patrones) removed with the screen.
+    private enum Tab: Hashable { case today, body, train, settings }
 
     /// Every screen reachable by pushing onto a hub tab's stack. Raw values match the `noop.nav.<key>`
     /// debug-navigation keys (`ScreenshotNav.swift`) so screenshot automation still reaches each one.
@@ -52,7 +51,7 @@ struct RootTabView: View {
     /// Tabs whose content has been shown at least once. Only Today is built at launch; the one heavy
     /// lazy tab — Cuerpo (`CuerpoView` runs its own `.task` data load on appear) — is deferred until
     /// first selected, then kept in the set so switching back doesn't rebuild from scratch. The hub
-    /// tabs (Coach/Entrenar/Ajustes) are plain lists whose destinations build on `NavigationLink` tap,
+    /// tabs (Entrenar/Ajustes) are plain lists whose destinations build on `NavigationLink` tap,
     /// so they stay eager (cheap). Avoids widening the launch gap — FER-31.
     @State private var visited: Set<Tab> = [.today]
     /// One type-erased path per hub. `NavigationPath` (not a homogeneous `[SecondaryScreen]`) because
@@ -88,12 +87,7 @@ struct RootTabView: View {
         TabView(selection: $selection) {
             lazyTab(.today, "Today", "circle.hexagongrid.fill") { TodayView() }
             lazyTab(.body,  "Tendencias", "chart.xyaxis.line") { CuerpoView() }
-
-            // FER-992: Patrones off the dock (code + Tab.coach + BucleView stay; re-enable by restoring
-            // the lazyTab below and the barItems row). Was: one «Instrumento diurno» screen fed by
-            // InsightEngine (FER-290/292), light tab (warm paper).
-            // lazyTab(.coach, "Patrones", "sparkles") { BucleView() }
-
+            // FER-240: Patrones (former Coach tab) archived — screen deleted, not just off-dock.
             trainTab
             settingsTab
         }
@@ -318,15 +312,11 @@ struct RootTabView: View {
             isTodayActive = isLightTab(newValue)
         }
         .onAppear { isTodayActive = isLightTab(selection) }
-        // Cross-tab navigation requests (FER-378 «Explóralo en el Coach»). One-shot: apply + clear.
+        // Cross-tab navigation requests (FER-378). One-shot: apply + clear.
         .onReceive(tabRouter.$requested.compactMap { $0 }) { req in
             switch req {
             case .today:    selection = .today
             case .body:     selection = .body
-            // FER-999: «coach» ya no se monta como pestaña (FER-992) — sin `lazyTab` en el TabView, asignar
-            // `selection = .coach` dejaría a SwiftUI en un estado sin tag (pestaña en blanco), igual que en la
-            // ruta DEBUG de abajo. La petición se ignora. Re-enable con la pestaña: case .coach: selection = .coach
-            case .coach:    break
             case .train:    selection = .train
             case .settings: selection = .settings
             }
@@ -361,9 +351,7 @@ struct RootTabView: View {
             // Sueño lost its own screen — it now lives as a row inside «Cuerpo» (FER-186/212), so the
             // screenshot key lands on the Body tab (the screen that owns it) instead of a standalone push.
             case "body", "trends", "sleep": .body
-            // FER-992: «coach» sale del ruteo de screenshots — sin `lazyTab` en el TabView, asignar
-            // `selection = .coach` dejaba a SwiftUI en un estado sin tag (pestaña en blanco). Apagado,
-            // no roto. Re-enable con la pestaña: case "coach": .coach
+            // FER-240: «coach» / Patrones archived — key ignored (falls through to nil via default).
             case "train", "entrenar":  .train
             case "settings", "ajustes", "more": .settings
             default:                   nil
@@ -394,7 +382,7 @@ struct RootTabView: View {
     /// via `isTodayActive` and the instrument bar's `isLight`). Hoy and Cuerpo — the «historia» landing
     /// is warm paper too (FER-186), color only on the datum; every other tab is the dark instrument
     /// panel. (En vivo's light paper lives in a cover over Hoy, not a tab.)
-    private func isLightTab(_ tab: Tab) -> Bool { tab == .today || tab == .body || tab == .coach || tab == .train || tab == .settings }
+    private func isLightTab(_ tab: Tab) -> Bool { tab == .today || tab == .body || tab == .train || tab == .settings }
 
     /// The hub tab that owns a given secondary screen (for debug navigation).
     ///
@@ -454,14 +442,11 @@ struct RootTabView: View {
 
     /// The dock tabs as drawn by `InstrumentTabBar`. Thin-stroke set: the 24h dial for Hoy (the bar's
     /// signature mark), line glyphs for the rest. (Hidden `tabItem` icons use the filled variants from
-    /// the issue spec; only this custom bar is visible.) FER-992: Patrones removed — four tabs.
-    /// Mapeo pestaña del app ↔ dock Liquid (coach está apagado — FER-992 — y cae a Hoy
-    /// por exhaustividad; no es alcanzable desde el dock).
+    /// the issue spec; only this custom bar is visible.) Four tabs (FER-992 / FER-240).
     private func liquidTab(for tab: Tab) -> LiquidTab {
         switch tab {
         case .today: return .hoy
         case .body: return .tendencias
-        case .coach: return .hoy
         case .train: return .entrenar
         case .settings: return .ajustes
         }
@@ -480,7 +465,7 @@ struct RootTabView: View {
         [
             .init(.today,    "Today",   .dial),
             .init(.body,     "Tendencias", .curveNodes),
-            // FER-992: Patrones off — re-enable: .init(.coach, "Patrones", .linkedCircles),
+            // FER-240: Patrones archived — no dock row.
             .init(.train,    "Train",   .system("figure.strengthtraining.functional")),
             .init(.settings, "Ajustes", .system("gearshape")),
         ]

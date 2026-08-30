@@ -8,9 +8,10 @@ import SwiftUI
 ///   1. Darwin notifications (no dialog): notifyutil -p noop.nav.<screen>
 ///   2. URL scheme (backup):              xcrun simctl openurl booted "noopdev://<screen>"
 ///
-/// Supported screen keys (FER-182 — 5-tab shell):
-///   Tabs: today · body (aliases: trends, sleep — Sueño lives inside Cuerpo now) · coach ·
+/// Supported screen keys (FER-182 — 4-tab shell after FER-240):
+///   Tabs: today · body (aliases: trends, sleep — Sueño lives inside Cuerpo now) ·
 ///     train (alias: entrenar) · settings (aliases: ajustes, more)
+///   // FER-240: «coach» (Patrones) archived — key accepted by Darwin list but navigates nowhere.
 ///   Pushed onto a hub: breathe · intervals · routineToday · dieta ·
 ///     library · weeklyplan · misrutinas · workouthistory ·
 ///     explore · compare · workouts ·
@@ -44,6 +45,7 @@ final class DebugNavWatcher {
 
     private static let prefix = "noop.nav."
     private static let screens = [
+        // FER-240: «coach» kept so old screenshot scripts don't error on Darwin notify; RootTabView ignores it.
         "today", "body", "trends", "coach", "train", "entrenar", "settings", "ajustes", "more",
         "breathe", "intervals", "routineToday", "dieta",
         "library", "weeklyplan", "misrutinas", "workouthistory",

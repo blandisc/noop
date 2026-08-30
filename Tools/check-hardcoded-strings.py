@@ -10,13 +10,12 @@ Heuristic: flag a string literal that contains Spanish-only characters (¿¡ñ«
 a user-facing SwiftUI call. Data values (engine metric labels) and the «Patrones» brand are allow-listed.
 
 Usage:  python3 Tools/check-hardcoded-strings.py [file.swift ...]
-Default scope: the localized Patrones screen. Add more files as they're cleaned. Exits non-zero on a hit.
+Default scope: localized app screens. Add more files as they're cleaned. Exits non-zero on a hit.
 """
 import re, sys
 
 DEFAULT_FILES = [
-    "Cenit/Screens/BucleView.swift",
-    "Cenit/Screens/BucleSheets.swift",
+    # FER-240: Patrones screen archived — Bucle*.swift removed from the default scope.
     "Cenit/Screens/TodayView.swift",                                  # FER-744
     "Cenit/Screens/EntrenarView.swift",                               # FER-816 (Formas/formOptions → catalog)
     "Cenit/Screens/Hoy/*.swift",                                      # FER-audit: la lógica de Hoy vive aquí

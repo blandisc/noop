@@ -6,7 +6,7 @@ import Foundation
 //
 //   • CompareView.strengthWord(_:)  — a Pearson |r| ladder:
 //       |r| < 0.10 negligible · < 0.30 weak · < 0.50 moderate · < 0.70 strong · else very strong
-//   • BucleFormat.magnitudeWord(_:) — a Cohen's d EFFECT-SIZE ladder (0.20/0.50/0.80).
+//   • Cohen's d EFFECT-SIZE ladder (0.20/0.50/0.80) — was surfaced in the archived Patrones UI (FER-240).
 //
 // Those two are LEGITIMATELY DIFFERENT scales — one grades a correlation coefficient, the other
 // grades a standardized mean difference — so they are NOT unified here (forcing Cohen's d onto the
