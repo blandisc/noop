@@ -83,7 +83,7 @@ Lee el campo **`Carril`** del issue (lo fija `/pm`); el mismo concepto que
 
 | Herramienta | Para qué | Carril |
 |---|---|---|
-| **`docs/design-system/DESIGN.md`** | El DNA-ley: dirección «Instrumento diurno», reglas de jerarquía §8.4, componente firma. **Léelo primero, siempre.** | ambos |
+| **`docs/design-system/DESIGN.md`** | El DNA-ley: dirección «Liquid Glass · El Eje» (vidrio teñido sobre lienzo blanco, dos regímenes mosaico/sobrio — manifiesto de apertura + `LIQUID-GLASS.md`; §8 es la generación anterior en migración), reglas de jerarquía §8.4, componente firma. **Léelo primero, siempre.** | ambos |
 | **`Packages/StrandDesign`** | Inventario real de tokens/componentes. Diseña con lo que existe. | ambos |
 | **Cupertino MCP** (o URLs HIG) | Autoridad nativa de iOS **offline**: HIG, SF Symbols, APIs/idioms SwiftUI, Dynamic Type. Cita Apple, no adivines. Deferred → cárgalo con `ToolSearch`. Si no está, cita las URLs HIG. | ambos (clave en pesado) |
 | **lazyweb** (`lazyweb_search`, `lazyweb-design-improve`) | Evidencia: screenshots reales de apps de salud/recovery; comparar la pantalla actual contra las mejores. Deferred → `ToolSearch`. | pesado |
@@ -96,7 +96,7 @@ Lee el campo **`Carril`** del issue (lo fija `/pm`); el mismo concepto que
 
 ## Espacio, ritmo y oficio (lo que más se siente "off")
 
-En «Instrumento diurno» **la jerarquía la crea el espacio, no las cajas** — así que
+En «Liquid Glass · El Eje» **la jerarquía la crea el espacio, no las cajas** — así que
 si el espacio está mal, el DNA falla, por más que el color y la tipografía estén
 bien. Es la disciplina que más se nota cuando algo se ve "un poquito off". Reglas
 duras, todas verificables, en **ambos carriles**:
@@ -137,8 +137,8 @@ Flujo + estados + copy + accesibilidad. Si te disparan solo sin spec de UX, corr
 primero `/ux` (o pídelo). Lee el `Carril`.
 
 ### 2. DNA como ley — lee DESIGN.md y StrandDesign (no inventes)
-Abre **`docs/design-system/DESIGN.md`** y trabaja contra «Instrumento diurno» (§8):
-papel cálido, **un número dominante**, **color solo en el dato**, **jerarquía por
+Abre **`docs/design-system/DESIGN.md`** y trabaja contra «Liquid Glass · El Eje» (manifiesto de apertura + `LIQUID-GLASS.md`; §8 es la generación anterior en migración):
+vidrio teñido sobre lienzo blanco, **un número dominante** (régimen sobrio), **color con significado (valor + identidad de señal)**, **jerarquía por
 espacio (no por cajas)**, overline moderada — y el componente firma `RecoveryRing`.
 El sistema oscuro (§1–§7) es **legacy**: se mantiene, no se diseña nuevo ahí.
 Después abre `Packages/StrandDesign`: inventario real de `InstrumentoTheme`,
@@ -251,8 +251,8 @@ verdad que se codifica; los criterios de UI entran al QA.
 
 ## Reglas no negociables (de CLAUDE.md — síguelas, no las repitas)
 
-- **El DNA es ley.** Diseña contra «Instrumento diurno» (DESIGN.md §8). El oscuro es
-  legacy. Respeta §8.4 (un dominante, color solo en el dato, jerarquía por espacio).
+- **El DNA es ley.** Diseña contra «Liquid Glass · El Eje» (DESIGN.md, manifiesto de apertura). El oscuro es
+  legacy (Watch OLED la única excepción). Respeta §8.4 enmendada (un dominante en sobrio; el color vive en el dato en sobrio o tiñe la superficie ~10% en mosaico; jerarquía por espacio).
 - **Solo tokens de StrandDesign.** Cero hex/font/spacing hardcodeado. Token que
   falta → se agrega a StrandDesign con `#Preview` (color nuevo vía el script de
   paleta), no inline.
