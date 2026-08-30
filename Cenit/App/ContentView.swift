@@ -15,13 +15,10 @@ enum EntradaDeArranque {
     static func marcarCorrida() { yaCorrio = true }
 }
 
-/// Root — the sidebar shell, with the first-run onboarding/pairing wizard overlaid until complete,
-/// and a "What's New" changelog sheet shown automatically after an update.
+/// Root — the sidebar shell, with the first-run onboarding/pairing wizard overlaid until complete.
 struct ContentView: View {
     @AppStorage("noop.onboarded") private var onboarded = false
-    @AppStorage("noop.lastSeenChangelogVersion") private var lastSeenChangelog = ""
     @AppStorage("noop.acceptedTermsVersion") private var acceptedTerms = ""
-    @State private var showWhatsNew = false
     /// FER-41: la entrada sigue puesta hasta que su coreografía termina (o el usuario la toca).
     @State private var entradaLista = false
     /// El frame REAL del orbe del héroe en pantalla (para que la entrada aterrice sin costura).
@@ -71,9 +68,6 @@ struct ContentView: View {
                     // vuelve sola, que es cuando por fin hay un veredicto que revelar.
                     EntradaDeArranque.marcarCorrida()
                     onboarded = true
-                    // A brand-new user just saw the expectations in onboarding — don't also pop the
-                    // changelog at them; mark them current.
-                    lastSeenChangelog = AppChangelog.currentVersion
                 })
                 .transition(.opacity)
                 .zIndex(1)
@@ -129,21 +123,6 @@ struct ContentView: View {
         // papel claro (FER-416) → barra en tinta oscura; el onboarding sigue oscuro; ya dentro, Hoy es
         // papel claro y el resto de pestañas oscuras.
         .preferredColorScheme(resolvedColorScheme)
-        .sheet(isPresented: $showWhatsNew) {
-            WhatsNewView(onClose: {
-                lastSeenChangelog = AppChangelog.currentVersion
-                showWhatsNew = false
-            })
-            // La hoja es papel «Instrumento» (FER-415); la fijamos en claro para que la barra de estado
-            // quede en tinta oscura aunque se abra desde una pestaña oscura (p. ej. Support en Ajustes).
-            .preferredColorScheme(.light)
-        }
-        .onAppear {
-            // «What's new» RETIRADO (dueño 2026-08-14): su contenido era de la banda WHOOP
-            // (straps 4.0/5.0/MG), ajeno a un app Apple-only. Marcamos la versión como vista
-            // para que la hoja no se auto-presente; el binding queda inerte (nunca `true`).
-            lastSeenChangelog = AppChangelog.currentVersion
-        }
         #if os(iOS)
         // Check at launch (covers updated users) and again the moment onboarding completes (covers a
         // fresh install / reinstall, where `onboarded` flips false→true after this view appears).
