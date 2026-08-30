@@ -1081,9 +1081,7 @@ struct TodayView: View {
                         trainingLoadItem = makeTrainingLoadItem(trainingLoad)
                     }
                 },
-                // RE-RUTEO del gesto principal de la pantalla (antes: `showAutonomicDetail`
-                // → `AutonomicTrendDetailSheet`, tema PAPEL dentro de una superficie
-                // Liquid). En el Ecosistema (FER-10) el tap del LIENZO separa/une los
+                // En el Ecosistema (FER-10) el tap del LIENZO separa/une los
                 // orbes; la puerta al ACTA vive en la palabra + la pastilla «Cómo llegué
                 // a esto» (este callback).
                 onTapHero: {
