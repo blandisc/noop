@@ -8,18 +8,18 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 /// Pick a pace, hit start, close your eyes, and follow the breath orb: a timer drives
 /// inhale/exhale, one cue on the inhale, two on the exhale. (Live HRV/RMSSD biofeedback
 /// was retired with the band — FER-1003 — since solo breathing has no live R-R source;
-/// the pace readout, driven by the pacer itself, is what remains.)
+/// the pace readout, driven by the pacer itself, is what remains. Copy no longer
+/// promises HRV response — FER-242 / H-020.)
 ///
-/// «Instrumento diurno» (FER-342) + cristal El Eje (FER-201 · Anillo 4): el fondo es
-/// `.entrenarHojaFondo(tono: .neutro)`; las tarjetas/píldoras internas son papel opaco
-/// (`.superficieSolida`/`.pastillaSolida`, regla no-sheet-glass). Tinta en rótulos, color
-/// solo en el dato. El orbe de respiración conserva su movimiento fisiológico; la lógica
-/// del pacer y los haptics, intacta.
+/// Liquid Glass · El Eje, régimen sobrio (FER-242): `.entrenarHojaFondo(.neutro)`;
+/// cards/píldoras internas opacas (`.superficieSolida`/`.pastillaSolida`); orbe =
+/// `LiquidColor.azul` (identidad de respiración); CTAs = `LiquidGlassButton`. El pacer
+/// y los haptics se conservan; Reduce Motion congela el orbe.
 struct BreathingView: View {
 
     @Environment(AppModel.self) private var model
-    @Environment(\.instrumentoTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
 
     // MARK: Pace presets
 
@@ -30,9 +30,12 @@ struct BreathingView: View {
 
         var label: String {
             switch self {
-            case .relax:     return String(localized: "Relax 4-6")
-            case .coherence: return String(localized: "Coherence 5.5")
-            case .box:       return String(localized: "Box 4-4")
+            case .relax:
+                return String(localized: "breath.pace.relax", defaultValue: "Relax 4-6")
+            case .coherence:
+                return String(localized: "breath.pace.coherence", defaultValue: "Coherence 5.5")
+            case .box:
+                return String(localized: "breath.pace.box", defaultValue: "Box 4-4")
             }
         }
 
@@ -59,9 +62,15 @@ struct BreathingView: View {
 
         var tagline: String {
             switch self {
-            case .relax:     return String(localized: "Long exhale · winds down")
-            case .coherence: return String(localized: "Even breathing · ~5.5/min")
-            case .box:       return String(localized: "Square · steady focus")
+            case .relax:
+                return String(localized: "breath.tag.relax",
+                              defaultValue: "Long exhale · winds down")
+            case .coherence:
+                return String(localized: "breath.tag.coherence",
+                              defaultValue: "Even breathing · ~5.5/min")
+            case .box:
+                return String(localized: "breath.tag.box",
+                              defaultValue: "Square · steady focus")
             }
         }
     }
@@ -88,40 +97,41 @@ struct BreathingView: View {
     @ObserveInjection private var inject
 
     /// Phase driver (fast, smooth) and a once-per-second session tick.
+    /// Paused when the scene is inactive so a backgrounded session does not burn 20 Hz.
     private let phaseTimer = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
     private let secondTimer = Timer.publish(every: 1.0, on: .main, in: .common).autoconnect()
+
+    /// Timers only advance while the session is live and the scene is active.
+    private var timersActive: Bool { running && scenePhase == .active }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 header
                 statusRow
-                paceSelector
+                if !running {
+                    paceSelector
+                }
                 orbCard
                 controlRow
                 readoutRow
             }
             .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.top, 18)
+            .padding(.top, LiquidSpace.s550)
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        // FER-201 (Anillo 4, épico FER-195): fondo de cristal El Eje — se CONSERVA el
-        // chrome de título a mano (sin control de salida propio: el pop lo da el
-        // NavigationStack ambiente vía trainChrome). Agregar `EntrenarHojaCabecera(.cerrar)`
-        // AÑADIRÍA un control que hoy no existe (regla suprema: cero cambio de comportamiento).
+        // FER-201 / FER-242: fondo El Eje — chrome de título a mano (sin control de salida
+        // propio: el pop lo da el NavigationStack ambiente vía trainChrome).
         .entrenarHojaFondo(tono: .neutro)
-        // Phase driver: advance the orb toward its target and flip phases.
         .onReceive(phaseTimer) { now in
-            guard running else { return }
+            guard timersActive else { return }
             advance(now: now)
         }
-        // Session clock — only ticks while running.
         .onReceive(secondTimer) { _ in
-            guard running else { return }
+            guard timersActive else { return }
             sessionSeconds += 1
         }
-        // Changing pace mid-session re-arms the current phase cleanly.
         .onChange(of: pace) {
             if running { armPhase(.inhale, from: Date(), buzz: false) }
         }
@@ -132,46 +142,53 @@ struct BreathingView: View {
     // MARK: - Header
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text("Breathe")
-                .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
-                .foregroundStyle(theme.ink)
-            Text("Haptic-paced breathing · watch your HRV respond")
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.inkSecondary)
+        VStack(alignment: .leading, spacing: LiquidSpace.s050) {
+            Text(String(localized: "breath.title", defaultValue: "Breathe"))
+                .font(LiquidType.displayL).tracking(LiquidType.displayLTracking)
+                .foregroundStyle(LiquidColor.tinta900)
+            Text(String(localized: "breath.subtitle",
+                        defaultValue: "Haptic-paced rhythm · follow the orb"))
+                .font(LiquidType.cuerpo)
+                .foregroundStyle(LiquidColor.tinta700)
         }
     }
 
     // MARK: - Status row
 
     private var statusRow: some View {
-        HStack(spacing: 10) {
-            statusPill(running ? "Session live" : "Ready",
-                       dotColor: running ? theme.dataRecovery : nil)
+        HStack(spacing: LiquidSpace.s250) {
+            statusPill(
+                running
+                    ? String(localized: "breath.status.live", defaultValue: "Session live")
+                    : String(localized: "breath.status.ready", defaultValue: "Ready"),
+                showDot: running)
 
             Spacer()
 
-            HStack(spacing: 6) {
+            HStack(spacing: LiquidSpace.s150) {
                 Text(timeString(sessionSeconds))
-                    .font(InstrumentoType.groteskNumber(15))
-                    .foregroundStyle(theme.ink)
-                Text("·").foregroundStyle(theme.inkTertiary)
-                Text("\(breathCount) breaths")
-                    .font(InstrumentoType.groteskNumber(12, weight: .medium))
-                    .foregroundStyle(theme.inkSecondary)
+                    .font(LiquidType.datoMenor)
+                    .foregroundStyle(LiquidColor.tinta900)
+                Text("·").foregroundStyle(LiquidColor.tinta500)
+                Text("\(breathCount) " + String(localized: "breath.breaths",
+                                                 defaultValue: "breaths"))
+                    .font(LiquidType.caption)
+                    .foregroundStyle(LiquidColor.tinta700)
             }
         }
     }
 
-    /// Píldora de estado opaca El Eje (FER-201) — sustituye `EntrenarStatusPill` (papel) sobre el cristal.
-    private func statusPill(_ text: LocalizedStringKey, dotColor: Color? = nil) -> some View {
+    /// Píldora de estado opaca El Eje — `.pastillaSolida` sobre el cristal de hoja.
+    private func statusPill(_ text: String, showDot: Bool) -> some View {
         HStack(spacing: LiquidSpace.s150) {
-            if let dotColor {
-                Circle().fill(dotColor).frame(width: LiquidSpace.s150, height: LiquidSpace.s150)
+            if showDot {
+                Circle()
+                    .fill(LiquidColor.verdePrimario)
+                    .frame(width: LiquidSpace.s150, height: LiquidSpace.s150)
             }
-            Text(text)
-                .font(StrandFont.caption)
-                .foregroundStyle(theme.ink)
+            Text(verbatim: text)
+                .font(LiquidType.captionLectura)
+                .foregroundStyle(LiquidColor.tinta900)
         }
         .padding(.horizontal, LiquidSpace.s300)
         .padding(.vertical, LiquidSpace.s150)
@@ -182,11 +199,14 @@ struct BreathingView: View {
 
     private var paceSelector: some View {
         VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("BREATHE").groteskOverline().foregroundStyle(theme.inkTertiary)
-                Text("Choose a pace")
-                    .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
-                    .foregroundStyle(theme.ink)
+            VStack(alignment: .leading, spacing: LiquidSpace.s050) {
+                Text(String(localized: "breath.kicker", defaultValue: "Breathe"))
+                    .font(LiquidType.regla).tracking(LiquidType.reglaTracking)
+                    .textCase(.uppercase)
+                    .foregroundStyle(LiquidColor.tinta500)
+                Text(String(localized: "breath.choosePace", defaultValue: "Choose a pace"))
+                    .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
+                    .foregroundStyle(LiquidColor.tinta900)
             }
 
             VStack(spacing: CenitMetrics.gap) {
@@ -199,72 +219,79 @@ struct BreathingView: View {
 
     private func paceRow(_ option: Pace) -> some View {
         let selected = pace == option
+        let shape = RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous)
         return Button {
             pace = option
         } label: {
             HStack(alignment: .center, spacing: CenitMetrics.gap) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(option.label)
-                        .font(InstrumentoType.grotesk(16, weight: .semibold))
-                        .foregroundStyle(theme.ink)
-                    Text(option.tagline)
-                        .font(StrandFont.footnote)
-                        .foregroundStyle(theme.inkSecondary)
+                VStack(alignment: .leading, spacing: LiquidSpace.s050) {
+                    Text(verbatim: option.label)
+                        .font(LiquidType.tituloGemela)
+                        .foregroundStyle(LiquidColor.tinta900)
+                    Text(verbatim: option.tagline)
+                        .font(LiquidType.unidad)
+                        .foregroundStyle(LiquidColor.tinta700)
                 }
                 Spacer(minLength: 0)
-                Text(String(format: "%.1f br/min", option.bpm))
-                    .font(InstrumentoType.groteskNumber(12, weight: .medium))
-                    .foregroundStyle(selected ? theme.dataHrv : theme.inkSecondary)
+                Text(bpmString(option.bpm))
+                    .font(LiquidType.caption)
+                    .foregroundStyle(selected ? LiquidColor.azul : LiquidColor.tinta700)
             }
-            .padding(CenitMetrics.cardPadding)
+            .padding(LiquidSpace.s400)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 selected
-                    ? theme.tint(theme.dataHrv)
-                    : theme.surface,
-                in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-            )
+                    ? LiquidColor.tonoCampo(LiquidColor.azul)
+                    : LiquidColor.papelTarjeta,
+                in: shape)
             .overlay(
-                RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-                    .strokeBorder(selected ? theme.softStroke(theme.dataHrv) : theme.hairline, lineWidth: 1)
-            )
+                shape.strokeBorder(
+                    selected
+                        ? LiquidColor.azul.opacity(0.32) // token-exempt: borde de selección (preview)
+                        : LiquidColor.vidrioCanto,
+                    lineWidth: 1))
         }
-        .buttonStyle(EntrenarPressStyle())
+        .buttonStyle(.liquidPress)
         .accessibilityAddTraits(selected ? [.isSelected] : [])
     }
 
     // MARK: - The orb
 
     private var orbCard: some View {
-        // FER-201: tarjeta interna OPACA — el orbe y su TimelineView no cambian, solo el chrome.
-        VStack(spacing: 18) {
+        VStack(spacing: LiquidSpace.s550) {
             HStack {
-                Text(pace.label).groteskOverline().foregroundStyle(theme.inkTertiary)
+                Text(verbatim: pace.label)
+                    .font(LiquidType.regla).tracking(LiquidType.reglaTracking)
+                    .textCase(.uppercase)
+                    .foregroundStyle(LiquidColor.tinta500)
                 Spacer()
-                Text(String(format: "%.1f br/min", pace.bpm))
-                    .font(InstrumentoType.groteskNumber(12, weight: .medium))
-                    .foregroundStyle(theme.inkSecondary)
+                Text(bpmString(pace.bpm))
+                    .font(LiquidType.caption)
+                    .foregroundStyle(LiquidColor.tinta700)
             }
 
             breathingOrb
                 .frame(height: 300)
                 .frame(maxWidth: .infinity)
 
-            Text(running ? phaseWord : pace.tagline)
-                .font(StrandFont.subhead)
-                .foregroundStyle(running ? theme.ink : theme.inkSecondary)
+            Text(verbatim: running ? phaseWord : pace.tagline)
+                .font(LiquidType.cuerpo)
+                .foregroundStyle(running ? LiquidColor.tinta900 : LiquidColor.tinta700)
                 .strandAnimation(.easeInOut(duration: 0.2), value: phaseWord)
                 .strandAnimation(.easeInOut(duration: 0.2), value: running)
         }
         .padding(LiquidSpace.s600)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.modulo, style: .continuous))
         .liquidGlass(.superficieSolida)
     }
 
     private var phaseWord: String {
         switch phase {
-        case .inhale: return String(localized: "Breathe in…")
-        case .exhale: return String(localized: "Breathe out…")
+        case .inhale:
+            return String(localized: "breath.phase.inhale", defaultValue: "Inhale…")
+        case .exhale:
+            return String(localized: "breath.phase.exhale", defaultValue: "Exhale…")
         }
     }
 
@@ -272,7 +299,7 @@ struct BreathingView: View {
     /// does not re-evaluate each animation frame (FER-876). Paused whenever the breath
     /// isn't running OR Reduce Motion is on — frozen at rest, never animated (mismo
     /// patrón que `OrbeVivo`). Hidden from VoiceOver: `phaseWord` already says
-    /// «Breathe in…/out…», so the orb is redundant motion, not information.
+    /// the phase, so the orb is redundant motion, not information.
     private var breathingOrb: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !running || reduceMotion)) { timeline in
             let progress = (running && !reduceMotion) ? easedProgress(at: timeline.date) : 0
@@ -299,44 +326,43 @@ struct BreathingView: View {
             let minScale: CGFloat = 0.42
             let scale = minScale + (1.0 - minScale) * progress
             let diameter = maxDiameter * scale
+            let azul = LiquidColor.azul
 
             ZStack {
                 // Static guide ring at the inhale extent.
                 Circle()
-                    .strokeBorder(theme.hairlineStrong, lineWidth: 1)
+                    .strokeBorder(LiquidColor.tinta900.opacity(0.14), lineWidth: 1) // token-exempt: guide ring
                     .frame(width: maxDiameter, height: maxDiameter)
 
-                // Outer breathing halo — a soft physiological glow (HRV hue), not chrome.
+                // Outer breathing halo — soft physiological glow in breath identity hue.
                 Circle()
                     .fill(
                         RadialGradient(
-                            colors: [theme.dataHrv.opacity(0.18), // token-exempt: rampa decorativa (halo)
-                                     theme.dataHrv.opacity(0.0)], // token-exempt: rampa decorativa (halo)
+                            colors: [azul.opacity(0.18), // token-exempt: rampa decorativa (halo)
+                                     azul.opacity(0.0)], // token-exempt: rampa decorativa (halo)
                             center: .center,
                             startRadius: diameter * 0.20,
                             endRadius: diameter * 0.70
                         )
                     )
                     .frame(width: diameter * 1.35, height: diameter * 1.35)
-                    .blur(radius: 18)
+                    .blur(radius: LiquidSpace.s550)
 
-                // The orb body — a calm HRV-tinted fill on paper.
+                // The orb body — azul fill (breath identity), not dataHrv/cyan.
                 Circle()
                     .fill(
                         RadialGradient(
-                            colors: [theme.dataHrv.opacity(0.32), // token-exempt: rampa decorativa (orbe)
-                                     theme.dataHrv.opacity(0.14)], // token-exempt: rampa decorativa (orbe)
+                            colors: [azul.opacity(0.32), // token-exempt: rampa decorativa (orbe)
+                                     azul.opacity(0.14)], // token-exempt: rampa decorativa (orbe)
                             center: .init(x: 0.4, y: 0.35),
-                            startRadius: 2,
+                            startRadius: LiquidSpace.s050,
                             endRadius: diameter * 0.62
                         )
                     )
                     .overlay(
-                        Circle().strokeBorder(theme.dataHrv.opacity(0.45), lineWidth: 1) // token-exempt: anillo decorativo (orbe)
+                        Circle().strokeBorder(azul.opacity(0.45), lineWidth: 1) // token-exempt: anillo decorativo (orbe)
                     )
                     .frame(width: diameter, height: diameter)
-
-                // Ola 2: no live HR source for solo breathing (band gone; Watch mirror is strength-only).
             }
             .frame(width: geo.size.width, height: geo.size.height)
         }
@@ -346,35 +372,23 @@ struct BreathingView: View {
 
     private var controlRow: some View {
         HStack(spacing: CenitMetrics.gap) {
-            Button {
-                running ? stop() : start()
-            } label: {
-                Label(running ? "Stop session" : "Start · 3 min",
-                      systemImage: running ? "stop.fill" : "play.fill")
-                    .font(InstrumentoType.groteskHeadline(17))
-                    .foregroundStyle(theme.paper)
-                    .lineLimit(1).minimumScaleFactor(0.7)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(running ? theme.critical : theme.ink,
-                                in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+            if running {
+                LiquidGlassButton(
+                    String(localized: "breath.stop", defaultValue: "End session"),
+                    variant: .glass,
+                    expands: true
+                ) { stop() }
+            } else {
+                LiquidGlassButton(
+                    String(localized: "breath.start", defaultValue: "Start · 3 min"),
+                    variant: .primary,
+                    expands: true
+                ) { start() }
+                LiquidGlassButton(
+                    String(localized: "breath.testBuzz", defaultValue: "Test buzz"),
+                    variant: .glass
+                ) { model.buzz(loops: 1) }
             }
-            .buttonStyle(EntrenarPressStyle())
-
-            Button {
-                model.buzz(loops: 1)
-            } label: {
-                Label("Test buzz", systemImage: "waveform.path")
-                    .font(InstrumentoType.groteskHeadline(17))
-                    .foregroundStyle(theme.ink)
-                    .padding(.vertical, 14)
-                    .padding(.horizontal, 14)
-                    .background(theme.surface,
-                                in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
-                        .strokeBorder(theme.hairlineStrong, lineWidth: 1))
-            }
-            .buttonStyle(EntrenarPressStyle())
         }
     }
 
@@ -384,47 +398,45 @@ struct BreathingView: View {
     // solo breathing has no live R-R source (the Watch mirror is strength-only), so both were permanently
     // stuck at "—" / "No data". Only the pace readout, driven by the pacer itself, remains.
     private var readoutRow: some View {
-        readoutTile(label: "Pace",
-                    value: String(format: "%.1f", pace.bpm),
-                    unit: "br/min",
-                    accent: theme.ink,
-                    caption: String(format: "%.0f / %.0fs", pace.inhale, pace.exhale))
+        readoutTile(
+            label: String(localized: "breath.readout.pace", defaultValue: "Pace"),
+            value: String(format: "%.1f", pace.bpm),
+            unit: String(localized: "breath.readout.unit", defaultValue: "br/min"),
+            caption: String(format: "%.0f / %.0fs", pace.inhale, pace.exhale))
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// `label` y `unit` son `LocalizedStringKey`: como `String` planos, `Text(label)` los pintaba tal cual
-    /// y ni «HRV (RMSSD)» ni «Pace» ni las unidades pasaban por el catálogo (auditoría i18n 2026-07-18).
-    /// `caption` se queda `String` a propósito — una de las llamadas interpola un conteo, y un ternario
-    /// con rama interpolada resuelve a `String`, no a `LocalizedStringKey`; los call sites usan
-    /// `String(localized:)` en cada rama.
-    private func readoutTile(label: LocalizedStringKey, value: String, unit: LocalizedStringKey,
-                             accent: Color, caption: String) -> some View {
+    private func readoutTile(label: String, value: String, unit: String,
+                             caption: String) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(label).groteskOverline().foregroundStyle(theme.inkTertiary)
-            Spacer(minLength: 6)
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
+            Text(verbatim: label)
+                .font(LiquidType.regla).tracking(LiquidType.reglaTracking)
+                .textCase(.uppercase)
+                .foregroundStyle(LiquidColor.tinta500)
+            Spacer(minLength: LiquidSpace.s150)
+            HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s100) {
                 Text(value)
-                    .font(InstrumentoType.groteskNumber(26))
-                    .foregroundStyle(accent)
+                    .font(LiquidType.valorTileM).tracking(LiquidType.valorTileTracking)
+                    .foregroundStyle(LiquidColor.tinta900)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
                     .contentTransition(.numericText())
-                Text(unit)
-                    .font(StrandFont.caption)
-                    .foregroundStyle(theme.inkTertiary)
+                Text(verbatim: unit)
+                    .font(LiquidType.captionLectura)
+                    .foregroundStyle(LiquidColor.tinta500)
             }
-            Text(caption)
-                .font(StrandFont.footnote)
-                .foregroundStyle(theme.inkTertiary)
+            Text(verbatim: caption)
+                .font(LiquidType.unidad)
+                .foregroundStyle(LiquidColor.tinta500)
                 .lineLimit(1)
-                .padding(.top, 4)
+                .padding(.top, LiquidSpace.s100)
         }
-        .padding(14)
+        .padding(LiquidSpace.s400)
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: CenitMetrics.tileHeight)
+        .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.modulo, style: .continuous))
         .liquidGlass(.superficieSolida)
     }
-
 
     // MARK: - Session control
 
@@ -473,10 +485,15 @@ struct BreathingView: View {
         let s = total % 60
         return String(format: "%02d:%02d", m, s)
     }
+
+    private func bpmString(_ bpm: Double) -> String {
+        String(format: "%.1f ", bpm)
+            + String(localized: "breath.bpm.unit", defaultValue: "br/min")
+    }
 }
 
 #if DEBUG
-#Preview("Breathe · Instrumento") {
+#Preview("Breathe · El Eje") {
     BreathingView()
         .environment(AppModel.preview)
         .frame(width: 390, height: 900)
