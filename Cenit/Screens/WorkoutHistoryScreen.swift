@@ -397,7 +397,7 @@ struct WorkoutHistoryScreen: View {
             HStack(spacing: 6) {
                 Text(verbatim: WorkoutSource.displaySport(name))
                     .font(StrandFont.caption).foregroundStyle(theme.ink)
-                Image(systemName: "xmark")
+                StrandIcon.close.image
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
             }
             .padding(.horizontal, 10).padding(.vertical, 5)
@@ -724,20 +724,17 @@ struct WorkoutHistoryScreen: View {
 
     private func monthTile(_ label: LocalizedStringKey, _ value: String,
                            unit: LocalizedStringKey? = nil, caption: LocalizedStringKey) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            HStack(alignment: .firstTextBaseline, spacing: 3) {
-                Text(value).font(InstrumentoType.groteskNumber(22)).foregroundStyle(theme.ink)
-                if let unit { Text(unit).font(StrandFont.caption).foregroundStyle(theme.inkTertiary) }
+        EntrenarTile(tono: .neutro) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                HStack(alignment: .firstTextBaseline, spacing: 3) {
+                    Text(value).font(InstrumentoType.groteskNumber(22)).foregroundStyle(theme.ink)
+                    if let unit { Text(unit).font(StrandFont.caption).foregroundStyle(theme.inkTertiary) }
+                }
+                Text(caption).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
             }
-            Text(caption).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            .accessibilityElement(children: .combine)
         }
-        .padding(CenitMetrics.gap)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
-            .strokeBorder(theme.hairline, lineWidth: 1))
-        .accessibilityElement(children: .combine)
     }
 
     /// «18 may» — a week-start date as the axis/strip label.

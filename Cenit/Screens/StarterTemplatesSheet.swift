@@ -42,7 +42,7 @@ struct StarterTemplatesSheet: View {
                 if let t = selected { preview(t) } else { listContent }
             }
             .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.top, 18)
+            .padding(.top, CenitMetrics.gap)
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -93,15 +93,14 @@ struct StarterTemplatesSheet: View {
                 if !templates.isEmpty {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(groupName(group)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                        VStack(alignment: .leading, spacing: 0) {
-                            ForEach(templates) { t in
-                                templateRow(t)
-                                if t.id != templates.last?.id { divider }
+                        EntrenarModulo(tono: .neutro, intensidad: LiquidTonoMetrics.intensidadDefault, insets: EdgeInsets()) {
+                            VStack(alignment: .leading, spacing: 0) {
+                                ForEach(templates) { t in
+                                    templateRow(t)
+                                    if t.id != templates.last?.id { divider }
+                                }
                             }
                         }
-                        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-                            .strokeBorder(theme.hairline, lineWidth: 1))
                     }
                 }
             }
@@ -121,7 +120,7 @@ struct StarterTemplatesSheet: View {
                 StrandIcon.disclosure.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
-            .padding(.horizontal, 14).frame(minHeight: 56).contentShape(Rectangle())
+            .padding(.horizontal, CenitMetrics.cardPadding).frame(minHeight: 56).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityHint(Text("Preview this template"))
@@ -152,15 +151,14 @@ struct StarterTemplatesSheet: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            VStack(alignment: .leading, spacing: 0) {
-                ForEach(Array(t.slots.enumerated()), id: \.offset) { index, slot in
-                    slotRow(slot)
-                    if index != t.slots.count - 1 { divider }
+            EntrenarModulo(tono: .neutro, intensidad: LiquidTonoMetrics.intensidadDefault, insets: EdgeInsets()) {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(t.slots.enumerated()), id: \.offset) { index, slot in
+                        slotRow(slot)
+                        if index != t.slots.count - 1 { divider }
+                    }
                 }
             }
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-                .strokeBorder(theme.hairline, lineWidth: 1))
 
             VStack(spacing: 10) {
                 Button { add(t) } label: {
@@ -198,7 +196,7 @@ struct StarterTemplatesSheet: View {
                 .overlay(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
                     .strokeBorder(theme.hairline, lineWidth: 1))
         }
-        .padding(.horizontal, 14).padding(.vertical, 12)
+        .padding(.horizontal, CenitMetrics.cardPadding).padding(.vertical, CenitMetrics.gap)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text("\(name), \(schemeText(slot)), rest \(restAccessibility(slot.restSeconds))"))
     }

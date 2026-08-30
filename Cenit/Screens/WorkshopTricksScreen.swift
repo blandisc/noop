@@ -86,8 +86,8 @@ struct WorkshopTricksScreen: View {
                 .font(StrandFont.glyph(.inline))
                 .foregroundStyle(theme[keyPath: t.tint])
                 .frame(width: 34, height: 34)
-                .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
+                .liquidGlass(.superficieSolida)
+                .overlay(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous)
                     .strokeBorder(theme[keyPath: t.tint].opacity(StrandOpacity.strokeSoft), lineWidth: 1.5))
             VStack(alignment: .leading, spacing: 2) {
                 Text(t.title).font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)

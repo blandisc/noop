@@ -94,7 +94,7 @@ enum HojaCabecera {
     /// .planDay «···»: cambiar rutina / marcar descanso (A6/A7).
     private static func dayMenu(sheet: RoutineSheet) -> some View {
         Button { sheet.showDayMenu = true } label: {
-            Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
+            StrandIcon.more.image.font(StrandFont.glyph(.inline, weight: .semibold))
                 .foregroundStyle(sheet.theme.inkTertiary).frame(width: CenitMetrics.touchTarget, height: CenitMetrics.touchTarget).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -105,7 +105,7 @@ enum HojaCabecera {
                   children: sheet.allRoutines.map { r in
                       PaperMenuItem(r.name, systemImage: r.id == sheet.routine?.id ? "checkmark" : nil) { sheet.changeRoutine(to: r) }
                   }),
-            .init(String(localized: "Mark as rest day"), systemImage: "moon.zzz", isDestructive: true) { sheet.markRest() }
+            .init(String(localized: "Mark as rest day"), systemImage: StrandIcon.sleep.systemName, isDestructive: true) { sheet.markRest() }
         ])
     }
 

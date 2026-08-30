@@ -63,7 +63,7 @@ struct HojaTarjetaEjercicioSesion: View {
                 .accessibilityHidden(true)   // la acción vive en `.accessibilityAction` del cuerpo — sin botón duplicado en el rotor
             }
             Button { vivo.menuExerciseIndex = ei } label: {
-                Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
+                StrandIcon.more.image.font(StrandFont.glyph(.inline, weight: .semibold))
                     .foregroundStyle(vivo.sheet.theme.inkTertiary).frame(width: 30, height: CenitMetrics.touchTarget).contentShape(Rectangle())
             }
             .buttonStyle(.plain)

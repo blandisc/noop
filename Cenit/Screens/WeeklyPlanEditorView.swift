@@ -106,7 +106,7 @@ struct WeeklyPlanEditorView: View {
                     routinesSection
                 }
             }
-            .padding(.top, 20)
+            .padding(.top, EntrenarMetrics.heroKickerTop)
             .padding(.horizontal, CenitMetrics.screenPadding)
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -322,8 +322,7 @@ struct WeeklyPlanEditorView: View {
             .padding(.horizontal, wd == today ? 10 : 0)
             .background {
                 if wd == today {
-                    RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
-                        .fill(theme.surface)
+                    Color.clear.liquidGlass(.superficieSolida)
                 }
             }
         }
@@ -365,7 +364,7 @@ struct WeeklyPlanEditorView: View {
         .padding(.horizontal, wd == today ? 10 : 0)
         .background {
             if wd == today {
-                RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous).fill(theme.surface)
+                Color.clear.liquidGlass(.superficieSolida)
             }
         }
         .contentShape(Rectangle())
@@ -753,7 +752,7 @@ struct WeeklyPlanEditorView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 18).padding(.vertical, 14)
+        .padding(.horizontal, CenitMetrics.screenPadding).padding(.vertical, CenitMetrics.cardPadding)
         .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
         .padding(.horizontal, CenitMetrics.screenPadding)
         .padding(.bottom, 8)
@@ -876,7 +875,7 @@ struct WeeklyPlanEditorView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 18).padding(.vertical, 14)
+        .padding(.horizontal, CenitMetrics.screenPadding).padding(.vertical, CenitMetrics.cardPadding)
         .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
         .padding(.horizontal, CenitMetrics.screenPadding)
         .padding(.bottom, 8)

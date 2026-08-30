@@ -60,7 +60,7 @@ struct ManualWorkoutSheet: View {
     @ObserveInjection private var inject
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 header
                 VStack(alignment: .leading, spacing: 14) {
                     field("Sport") {
@@ -69,8 +69,7 @@ struct ManualWorkoutSheet: View {
                             .font(StrandFont.body)
                             .foregroundStyle(theme.ink)
                             .padding(.horizontal, 12).padding(.vertical, 10)
-                            .background(theme.surface, in: inputShape)
-                            .overlay(inputShape.strokeBorder(theme.hairline, lineWidth: 1))
+                            .liquidGlass(.superficieSolida)
                             .accessibilityLabel("Sport")
                     }
                     field("Start") {
@@ -188,8 +187,7 @@ struct ManualWorkoutSheet: View {
             Text(unit).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
         }
         .padding(.horizontal, 12).padding(.vertical, 10)
-        .background(theme.surface, in: inputShape)
-        .overlay(inputShape.strokeBorder(theme.hairline, lineWidth: 1))
+        .liquidGlass(.superficieSolida)
     }
 
     private func noteRow(_ text: LocalizedStringKey) -> some View {
@@ -200,8 +198,6 @@ struct ManualWorkoutSheet: View {
     }
 
     // MARK: - Validation / build
-
-    private var inputShape: RoundedRectangle { RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous) }
 
     private var durationLabel: String {
         let h = durationMin / 60, m = durationMin % 60

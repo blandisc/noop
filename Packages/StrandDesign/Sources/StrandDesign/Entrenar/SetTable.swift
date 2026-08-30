@@ -521,7 +521,7 @@ public struct SetTable: View {
             .foregroundStyle(theme.critical)
             .padding(.horizontal, EntrenarMetrics.deletePillPaddingH)
             .padding(.vertical, EntrenarMetrics.deletePillPaddingV)
-            .background(theme.surface, in: Capsule())
+            .liquidGlass(.pastillaSolida)
             .overlay(Capsule().strokeBorder(theme.critical.opacity(StrandOpacity.dim), lineWidth: 1))
             .contentShape(Capsule())
         }

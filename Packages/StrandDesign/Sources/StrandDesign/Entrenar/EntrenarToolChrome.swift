@@ -32,8 +32,7 @@ public struct EntrenarStatusPill: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
-        .background(theme.surface, in: Capsule(style: .continuous))
-        .overlay(Capsule(style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+        .liquidGlass(.pastillaSolida)
     }
 }
 
@@ -44,8 +43,6 @@ public struct EntrenarToolCard<Content: View>: View {
     private let padding: CGFloat
     private let content: Content
 
-    @Environment(\.instrumentoTheme) private var theme
-
     public init(padding: CGFloat = 16, @ViewBuilder content: () -> Content) {
         self.padding = padding
         self.content = content()
@@ -55,9 +52,7 @@ public struct EntrenarToolCard<Content: View>: View {
         content
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-                .strokeBorder(theme.hairline, lineWidth: 1))
+            .liquidGlass(.superficieSolida)
     }
 }
 
