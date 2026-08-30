@@ -105,6 +105,19 @@ max weight · %@ wk
 ms²
 nights in a row · kept %@ of %@
 rest %@ + margin %@ bpm
+terms.consent
+terms.cta
+terms.fine
+terms.intro
+terms.point1.body
+terms.point1.title
+terms.point2.body
+terms.point2.title
+terms.point3.body
+terms.point3.title
+terms.point4.body
+terms.point4.title
+terms.title
 vs your normal · ~%@ bpm · %@ sessions
 your rest + %@ bpm margin
 ~%@%%

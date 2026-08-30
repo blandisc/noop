@@ -59082,6 +59082,149 @@
         }
       }
     },
+    "terms.consent" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I have read and accept these terms, and I'm using Cénit with my own device and my own data, at my own risk."
+          }
+        }
+      }
+    },
+    "terms.cta" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accept & Continue"
+          }
+        }
+      }
+    },
+    "terms.fine" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The full terms are in TERMS.md, shipped with Cénit. This is not legal advice."
+          }
+        }
+      }
+    },
+    "terms.intro" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Please read and accept the points below."
+          }
+        }
+      }
+    },
+    "terms.point1.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit reads your health and fitness data directly from Apple Health, on your iPhone — no separate hardware pairing required."
+          }
+        }
+      }
+    },
+    "terms.point1.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reads your data from Apple Health, on your device"
+          }
+        }
+      }
+    },
+    "terms.point2.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every metric is processed and stored only on your device. There is no Cénit server, no Cénit account, and no telemetry — the maintainers cannot see your data and never receive it."
+          }
+        }
+      }
+    },
+    "terms.point2.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Offline and local — no account, no server"
+          }
+        }
+      }
+    },
+    "terms.point3.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit is not a medical device and provides no medical advice. Every metric is an unvalidated approximation — don't use Cénit to diagnose, treat, or make any health decision. Always consult a qualified professional."
+          }
+        }
+      }
+    },
+    "terms.point3.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "General wellness only — not a medical device"
+          }
+        }
+      }
+    },
+    "terms.point4.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit is free and provided \"as is\", with no warranty. Liability is limited to the maximum extent the law that applies to you allows, and nothing here removes protections your local law won't let us remove."
+          }
+        }
+      }
+    },
+    "terms.point4.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No warranty; liability limited"
+          }
+        }
+      }
+    },
+    "terms.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Before you use Cénit"
+          }
+        }
+      }
+    },
     "one of your signals" : {
       "extractionState" : "manual",
       "localizations" : {
