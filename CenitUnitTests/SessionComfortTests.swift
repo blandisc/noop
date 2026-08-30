@@ -22,6 +22,36 @@ final class SessionComfortTests: XCTestCase {
         XCTAssertFalse(SessionComfort.isEnabled(SessionComfort.restSoundKey, defaults: defaults))
     }
 
+    /// FER-250 — durante la sesión, keep-awake y tono nacen ON si nunca se configuraron; un
+    /// `false` explícito se respeta. `isEnabled` (Ajustes) sigue leyendo el crudo y no cambia.
+    func testEffectiveDuringSessionDefaultsOnWithoutPisandoPreferencia() {
+        XCTAssertTrue(
+            SessionComfort.effectiveDuringSession(SessionComfort.keepAwakeKey, defaults: defaults),
+            "vacío ⇒ ON en sesión (keepAwake)"
+        )
+        defaults.set(false, forKey: SessionComfort.keepAwakeKey)
+        XCTAssertFalse(
+            SessionComfort.effectiveDuringSession(SessionComfort.keepAwakeKey, defaults: defaults),
+            "apagado explícito ⇒ OFF"
+        )
+
+        XCTAssertTrue(
+            SessionComfort.effectiveDuringSession(SessionComfort.restSoundKey, defaults: defaults),
+            "vacío ⇒ ON en sesión (restSound)"
+        )
+        defaults.set(false, forKey: SessionComfort.restSoundKey)
+        XCTAssertFalse(
+            SessionComfort.effectiveDuringSession(SessionComfort.restSoundKey, defaults: defaults),
+            "apagado explícito ⇒ OFF"
+        )
+
+        defaults.removeObject(forKey: SessionComfort.keepAwakeKey)
+        XCTAssertFalse(
+            SessionComfort.isEnabled(SessionComfort.keepAwakeKey, defaults: defaults),
+            "Ajustes (isEnabled) con vacío sigue false"
+        )
+    }
+
     func testElInterruptorMandaSobreLaBandera() {
         defaults.set(true, forKey: SessionComfort.keepAwakeKey)
         XCTAssertTrue(SessionComfort.isEnabled(SessionComfort.keepAwakeKey, defaults: defaults))

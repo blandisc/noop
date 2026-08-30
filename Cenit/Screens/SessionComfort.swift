@@ -48,15 +48,30 @@ enum SessionComfort {
         defaults.bool(forKey: key)
     }
 
+    /// Llaves que, durante una sesión activa, nacen ON si el usuario nunca las configuró (FER-250).
+    /// `restNotifyKey` queda fuera a propósito: pide permiso aparte y sigue OFF de fábrica.
+    private static let sessionDefaultOn: Set<String> = [keepAwakeKey, restSoundKey]
+
+    /// Valor efectivo DURANTE la sesión: no pisa la preferencia persistente del usuario.
+    ///
+    /// - Bool explícito en defaults → se respeta tal cual (apagó = OFF, encendió = ON).
+    /// - `object(forKey:) == nil` («nunca configurado») → ON solo para `sessionDefaultOn`.
+    /// Ajustes sigue leyendo con `isEnabled` (crudo): su display no cambia hasta que el usuario
+    /// mueva el interruptor.
+    static func effectiveDuringSession(_ key: String, defaults: UserDefaults = .standard) -> Bool {
+        if let v = defaults.object(forKey: key) as? Bool { return v }
+        return sessionDefaultOn.contains(key)
+    }
+
     /// Suspende o restaura el auto-bloqueo. Idempotente: se puede llamar de más sin efecto.
     ///
-    /// `active` es «hay una sesión viva Y el usuario lo pidió»; cualquier otra combinación restaura
-    /// el comportamiento normal del sistema. La decisión de restaurar SIEMPRE al salir es
+    /// `active` es «hay una sesión viva Y el valor efectivo lo pide»; cualquier otra combinación
+    /// restaura el comportamiento normal del sistema. La decisión de restaurar SIEMPRE al salir es
     /// deliberada: una app que deja el auto-bloqueo apagado tras cerrarse es una app que quema
     /// batería a espaldas de su dueño.
     @MainActor
     static func applyKeepAwake(active: Bool, defaults: UserDefaults = .standard) {
-        let wanted = active && isEnabled(keepAwakeKey, defaults: defaults)
+        let wanted = active && effectiveDuringSession(keepAwakeKey, defaults: defaults)
         if UIApplication.shared.isIdleTimerDisabled != wanted {
             UIApplication.shared.isIdleTimerDisabled = wanted
         }
@@ -66,9 +81,10 @@ enum SessionComfort {
     /// acaba SOLO tiene una — `EntrenarHaptic.descansoTerminado.play()` en `RestAutoSkipModifier` —,
     /// porque ahí nadie está mirando el teléfono. El toque manual de «Saltar ›»/«Continuar ›»
     /// (`HojaSesionViva.skipRest()`) no lleva háptico a propósito: quien lo toca ya sabe lo que hizo.
-    /// Esta función solo añade el sonido, y solo si el usuario lo encendió.
+    /// Esta función solo añade el sonido según `effectiveDuringSession` (ON por defecto en sesión
+    /// si nunca se configuró; OFF si el usuario lo apagó explícito).
     static func playRestChime(defaults: UserDefaults = .standard) {
-        guard isEnabled(restSoundKey, defaults: defaults) else { return }
+        guard effectiveDuringSession(restSoundKey, defaults: defaults) else { return }
         AudioServicesPlaySystemSound(restSoundID)
     }
 }
