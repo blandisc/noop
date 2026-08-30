@@ -25,6 +25,10 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
   **EN** — The note under steps / sleep total / active kcal (when ≥2 sources report) leaves Instrumento type and colors for `LiquidNotaLine`: verdict + both values (never an average), 2 pt side rule; on conflict the rule and verdict shift to attention.
   ([LiquidNotaLine.swift](Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/LiquidNotaLine.swift), [FusionAgreementRow.swift](Cenit/Screens/FusionAgreementRow.swift))
 
+- **Terminar a media sesión + descanso sin reloj / Finish mid-session + rest without a watch** (FER-250 A+B).
+  **ES** — Con al menos una serie hecha, «Terminar» aparece en la cabecera (discreto) y el confirm ofrece Guardar / Seguir / Descartar. Sin series solo Descartar / Seguir. Sin Apple Watch el descanso por FC cae a temporizador fijo y el aviso «sin reloj» sale una sola vez por sesión.
+  **EN** — With at least one set logged, “Finish” appears in the header (discreet) and the confirm offers Save / Keep going / Discard. With zero sets, only Discard / Keep going. Without an Apple Watch, HR rest falls back to a fixed timer and the “no watch” note appears once per session.
+  ([RoutineSheetLive.swift](Cenit/Screens/Hoja/RoutineSheetLive.swift), [RoutineSheetLiveCabecera.swift](Cenit/Screens/Hoja/RoutineSheetLiveCabecera.swift), [RoutineSheetLiveLogic.swift](Cenit/Screens/Hoja/RoutineSheetLiveLogic.swift))
 - **El aviso de malestar en Hoy pasa a Liquid Glass · El Eje / Today’s illness heads-up moves to Liquid Glass · El Eje** (FER-245).
   **ES** — El banner de alerta temprana deja la card Instrumento (triángulo + relleno ámbar) y queda como aviso Liquid: tarjeta sólida con barra lateral de juicio (ámbar «Atención» / rojo «Alerta») y el mismo cuerpo de texto de siempre. Solo cambia la piel; qué lo dispara no.
   **EN** — The early-illness banner leaves the Instrumento card (triangle + amber wash) for a Liquid notice: solid card with a judgment side bar (amber “Heads up” / red “Alert”) and the same body copy as before. Skin only; what fires it is unchanged.

@@ -62094,6 +62094,23 @@
         }
       }
     },
+    "rest by time (no watch)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "rest by time (no watch)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "descanso por tiempo (sin reloj)"
+          }
+        }
+      }
+    },
     "resting by clock: connect your Apple Watch for rest by heart rate" : {
       "extractionState" : "manual",
       "localizations" : {

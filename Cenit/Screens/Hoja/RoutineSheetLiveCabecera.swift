@@ -49,6 +49,12 @@ enum HojaCabeceraSesion {
             }
             .accessibilityHidden(true)
 
+            // FER-250: «Terminar» secundario a media sesión (≥1 serie hecha, aún incompleta). El CTA
+            // prominente `ctaTerminar` se reserva para sesión completa — no se mueve.
+            if vivo.session.doneCount >= 1 && !vivo.session.isComplete {
+                terminarSecundario(vivo: vivo)
+            }
+
             // R2(a): ⤢ — la misma puerta a Foco que `SessionStatsBar.onFocus` ofrecía en la barra vieja.
             if vivo.puedeEnfocar {
                 Button { vivo.enterFoco() } label: {
@@ -74,6 +80,26 @@ enum HojaCabeceraSesion {
         }
         .padding(.horizontal, CenitMetrics.screenPadding)
         .padding(.top, LiquidSpace.s150)
+    }
+
+    /// FER-250: píldora discreta «Terminar» en cabecera — mismo lenguaje que
+    /// `LiveStrengthSheet.sessionHeaderPill` (papel + canto), no el CTA verde de sesión completa.
+    private static func terminarSecundario(vivo: HojaSesionViva) -> some View {
+        Button {
+            vivo.confirmFinish = true
+        } label: {
+            Text("Finish")
+                .entrenarSessionEndLabel()
+                .foregroundStyle(vivo.sheet.theme.ink)
+                .padding(.horizontal, CenitMetrics.receiptPadding)
+                .frame(height: EntrenarMetrics.secondaryButton)
+                .background(Capsule().fill(vivo.sheet.theme.paper))
+                .overlay(Capsule().strokeBorder(vivo.sheet.theme.hairlineStrong, lineWidth: 1))
+        }
+        .buttonStyle(EntrenarPressStyle())
+        .frame(minHeight: CenitMetrics.touchTarget)
+        .contentShape(Capsule())
+        .accessibilityLabel(Text("Finish"))
     }
 
     /// ♥ 118 — SOLO con FC viva (R14, paridad `LiveStrengthSheet.sessionHeaderHeartRate`). Sin punto

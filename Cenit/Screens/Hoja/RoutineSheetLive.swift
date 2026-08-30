@@ -100,6 +100,8 @@ struct HojaSesionViva: View {
     // MARK: Integridad (B14 en `session.saveError`/`model.retryStrengthSave()`; B15b aquí; B16 en la cabecera)
     @State var confirmFinish = false
     @State var zombieAcknowledged = false
+    /// FER-250: el aviso «descanso por tiempo (sin reloj)» ya se mostró esta sesión — máximo una vez.
+    @State var shownNoWatchRestNote = false
 
     // MARK: B16b · «¿La rutina se queda así?» (FER-169)
     /// No-nil = hubo cambios estructurales y la pregunta está en pantalla; `nil` = cerrada/no aplica.
@@ -151,7 +153,12 @@ struct HojaSesionViva: View {
         .task(id: session.routineId) { await loadRoutineREs() }
         .task { await loadPersonalRecords() }   // R16
         .saveErrorToast(isPresented: $routineWriteError)   // B8: falló persistir a la rutina (no la sesión)
-        .onChange(of: session.phase) { _, phase in
+        .onChange(of: session.phase) { previous, phase in
+            // FER-250: al salir del primer descanso sin reloj, bloquea el aviso one-shot para el resto
+            // de la sesión (se mostró mientras `!shownNoWatchRestNote` y `watchBpm == nil`).
+            if previous == .resting, phase != .resting, restStartBpm == nil, !shownNoWatchRestNote {
+                shownNoWatchRestNote = true
+            }
             restStartBpm = phase == .resting ? sheet.model.watchBpm : nil
             peekRunId = nil   // O-r2a: cualquier cambio de fase limpia el «espiar» — nunca queda rancio
             // FER-170 (F5, D3): el descanso real que arrancó al cerrar un ejercicio/ronda ya terminó
@@ -285,14 +292,9 @@ struct HojaSesionViva: View {
             isPresented: $confirmFinish,
             title: String(localized: "Finish workout?"),
             context: String(localized: "SESSION · IN PROGRESS"),
-            // R6: DEDUPLICADA — la clave existente de `LiveStrengthSheet`, no una nueva.
-            message: String(localized: "You logged \(session.doneCount) sets. Finish to save this workout."),
-            actions: [
-                // R18 (Grok 12): guardar NO es destructivo — primaria, como el confirm viejo.
-                // B16b (FER-169): pasa por el detector de cambios de rutina antes de terminar de verdad.
-                .init(String(localized: "Finish and save"), role: .primary) { requestFinish() },
-                .init(String(localized: "Keep training"), role: .secondary)
-            ]
+            // FER-250: con 0 series no promete guardar; con ≥1 reusa la clave de siempre.
+            message: finishConfirmMessage,
+            actions: finishConfirmActions
         )
         // B16b (FER-169): «¿La rutina se queda así?» — solo aparece cuando SÍ hubo cambios (mapa: una
         // pregunta, una vez); si no hay ninguno, `requestFinish()` ya terminó sin pasar por aquí.
