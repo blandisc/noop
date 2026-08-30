@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **TermsGate pasa a Liquid Glass · El Eje / TermsGate moves to Liquid Glass · El Eje** (FER-241).
+  **ES** — La primera pantalla (aceptación de términos) deja el papel Instrumento legacy y reutiliza el shell del onboarding (`OnbShell`, tipografía Liquid, `LiquidGlassButton`). El interruptor sigue sin premarcarse y sigue gateando el CTA; el verde saturado solo aparece con el switch ON y el botón habilitado.
+  **EN** — The first-run terms gate leaves legacy Instrumento paper and reuses the onboarding shell (`OnbShell`, Liquid type, `LiquidGlassButton`). The switch stays un-prechecked and still gates the CTA; saturated green appears only when the switch is ON and the button is enabled.
+  ([TermsGateView.swift](Cenit/App/TermsGateView.swift), [Terms.swift](Cenit/App/Terms.swift))
+
 - **Se archiva Patrones / Patterns screen archived** (FER-240).
   **ES** — La pestaña Patrones (ya fuera del dock desde FER-992) se borra del código: la pantalla, sus hojas y los deep-links que aún la apuntaban (`openInsightKey`, ruteo `.coach`). El dock sigue en Hoy · Tendencias · Entrenar · Ajustes; un deep-link viejo a Patrones ya no navega a nada muerto.
   **EN** — The Patterns tab (off the dock since FER-992) is deleted from the codebase: the screen, its sheets, and the deep-links that still pointed at it (`openInsightKey`, `.coach` routing). The dock stays Today · Trends · Train · Settings; a stale Patterns deep-link no longer navigates to a dead destination.
