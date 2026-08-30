@@ -133,7 +133,7 @@ Base: filas DNA **Instrumento** / «papel muerto» / huérfanas de `AUDIT-FRONTE
 | 13 | `ExerciseDetailScreen` chrome Instrumento | Fondo ya El Eje `:128`; residual `toolbarBackground(theme.paper)` `:184` · audit #42 | **Migrar → mosaico** (limpiar chrome/papel residual) |
 | 14 | `ContentView` / `StoreFailure` papel | `Cenit/App/ContentView.swift:158`, `:307` · audit #1 | **Migrar → sobrio** |
 | 15 | **WhatsNewView** | `Cenit/Screens/WhatsNewView.swift:36`–`:37`; sheet desde `ContentView.swift:133` · audit #37 | **Migrar → sobrio** (sigue alcanzable post-update). *No* archivar mientras el shell la presente. |
-| 16 | **DietCaptureView** | `Cenit/Screens/DietCaptureView.swift:81`; sin puerta — `AppMap.swift:392`–`:393` (FER-92) · audit #38 | **Archivar** (huérfana; sin ruta de producto) |
+| 16 | ~~Dieta (captura)~~ | Archivada FER-239 — archivo y puerta retirados (FER-92 + audit #38) | **Archivada** (borrada; sin ruta de producto) |
 | 17 | **BucleView / Patrones** + **BucleSheets** | `BucleView.swift:32`–`:36`, `:125`; sheets `BucleSheets.swift:100`, `:247`, `:336`, `:666`, `:732`, `:770`, `:1060`; off-dock (no montada en `RootTabView`) · audit #63–#64 | **Archivar** (código huérfano de producto; reabrir solo con issue propio + régimen sobrio) |
 
 ### 2.2 Decisiones explícitas (WhatsNew / Dieta / Patrones)
@@ -141,7 +141,7 @@ Base: filas DNA **Instrumento** / «papel muerto» / huérfanas de `AUDIT-FRONTE
 | Superficie | ¿Huérfana? | Decisión de alcance FER-229 |
 |---|---|---|
 | **WhatsNewView** | No del todo: `ContentView` aún la presenta tras update (`ContentView.swift:133`) | **Migrar a sobrio** en la ola de papel. Archivar solo si el dueño retira el auto-sheet en el mismo PR. |
-| **DietCaptureView** | Sí — puerta retirada FER-92 (`AppMap.swift:392`–`:393`) | **Archivar** (borrar o mover a `_archived/` según convención del repo; no migrar). |
+| ~~Dieta (captura)~~ | Sí — puerta retirada FER-92; pantalla borrada FER-239 | **Archivada** (borrada; no migrar). |
 | **BucleView / PatronesLanding + BucleSheets** | Sí — tab off-dock; `RootTabView` no la monta (audit H-055) | **Archivar** el cluster Patrones. No migrar Instrumento. Si vuelve el producto, nueva issue + sobrio desde cero. |
 
 ### 2.3 Fuera de esta lista (no contar como «papel a migrar»)
@@ -220,7 +220,7 @@ Los archivos `Cenit/Screens/Entrenar/EntrenarHub*.swift` consumen `EntrenarTono`
 
 1. El archivo existe en `docs/design-system/INVENTARIO-UN-SOLO-VIDRIO.md` con las **3 secciones**.
 2. Cada superficie de §1 tiene destino funde / conserva / fuera-de-alcance (+ razón).
-3. Cada pantalla de §2 tiene destino migrar (régimen) / archivar; WhatsNew, DietCapture y Bucle/Patrones están decididos en §2.2.
+3. Cada pantalla de §2 tiene destino migrar (régimen) / archivar; WhatsNew, Dieta (archivada FER-239) y Bucle/Patrones están decididos en §2.2.
 4. §3 es grepeable con los dos `rg` de arriba; cualquier call site nuevo de `EntrenarTono` fuera del hub debe añadirse aquí antes de fundir.
 
 **Aprobación:** pendiente del dueño (criterio FER-233).

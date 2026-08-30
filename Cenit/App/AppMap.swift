@@ -389,8 +389,7 @@ private struct NewRoutineFlowMapCell: View {
 /// Mis entrenamientos→detalle / Respira / Intervalos / Dieta / Descanso / Otras formas / mapa de
 /// músculo / tickets, y «Empezar» presenta la Serie activa. Para verificar los flujos de punta a punta.
 private struct EntrenarFlowsMapCell: View {
-    // FER-92: `dieta` retirada — su fila llevaba un año comentada y la ruta no era alcanzable.
-    // `DietCaptureView` sigue en el repo, sin puerta, hasta que tenga su propio issue.
+    // FER-92 / FER-239: `dieta` retirada y la pantalla huérfana archivada.
     private enum Route: String, Hashable { case breathe, intervals, history, weeklyPlan, library }
 
     @State private var model = AppModel()

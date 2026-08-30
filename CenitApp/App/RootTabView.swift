@@ -24,8 +24,7 @@ struct RootTabView: View {
     private enum SecondaryScreen: String, Hashable {
         case library                              // Entrenar hub — exercise library (FER-346)
         case workoutHistory = "workouthistory"    // Entrenar hub — «Mis entrenamientos» (FER-504)
-        // FER-92: `dieta` retirada del enum — su entrada de UI llevaba un año comentada y ninguna
-        // ruta la alcanzaba. `DietCaptureView` sigue en el repo, sin puerta, hasta su propio issue.
+        // FER-92 / FER-239: `dieta` retirada del enum y la pantalla huérfana archivada.
         case breathe, intervals                   // Entrenar hub
         case weeklyPlan = "weeklyplan"            // Entrenar hub — weekly plan editor (FER-533)
         case misRutinas = "misrutinas"           // Entrenar hub — routine + folder management (FER-534)
