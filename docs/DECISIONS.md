@@ -30,6 +30,10 @@ el mismo PR** que la implementa (una línea basta: fecha, decisión, por qué).
   sin celdas de la tarjeta activa (thumb + nombre; no las filas/TapZones de peso-reps) entra
   a foco; (b) arrastre del grabber ⌄ hacia abajo sale. El DragGesture vive SOLO en el
   grabber de `FocoCabecera`, nunca sobre el ScrollView de Foco.
+  **Reversión parcial 2026-08-29 (orden del dueño, #1356):** el punto (a) queda DEROGADO — el tap
+  del cromo (thumb + nombre) de la tarjeta activa YA NO entra a foco; **abre el DETALLE del
+  ejercicio** (`detailExercise`). El foco queda SOLO en el «⤢» y en el «Enfoque» del «···».
+  El punto (b) del grabber sigue vigente.
 - **2026-08-30 · CTA de arranque = una sola voz** (FER-249). Verde de marca vía
   `LiquidGlassButton(.primary)` en TODOS los contextos, incluido día de descanso. El ámbar
   `dataStrain` queda como excepción nombrada SOLO en el pill «+ Serie». «Hoy subes» habla en
