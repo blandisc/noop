@@ -336,7 +336,7 @@ struct ExerciseDetailScreen: View {
                                 .font(InstrumentoType.grotesk(13, weight: .semibold)).monospacedDigit()
                                 .foregroundStyle(theme.ink)
                                 .padding(.horizontal, 9).padding(.vertical, 4)  // token-exempt: chip 9/4 del handoff
-                                .background(theme.patternBlock, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+                                .liquidGlass(.pastillaSolida)
                         }
                     }
                 }
@@ -546,10 +546,26 @@ struct ExerciseDetailScreen: View {
             }
         }
         .padding(.horizontal, 11).padding(.vertical, 5)  // token-exempt: chip 11/5 del handoff
-        .background(primary ? familyTint.opacity(StrandOpacity.tintFill) : theme.patternBlock,
-                    in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+        // El principal es el dato: lleva el tono de la familia (identidad). El asistente queda quieto
+        // sobre la superficie sólida de El Eje (`.pastillaSolida`), no el gris papel legacy.
+        .modifier(MuscleChipSurface(primary: primary, familyTint: familyTint))
         .accessibilityElement()
         .accessibilityLabel("\(StrengthDisplay.muscle(muscle)), \(String(localized: primary ? "primary" : "assisting"))")
+    }
+
+    /// Superficie del chip de músculo: el principal lleva el tono de familia (identidad, 12 % tint);
+    /// el asistente queda quieto sobre la pastilla sólida de El Eje — reemplaza el gris papel legacy.
+    private struct MuscleChipSurface: ViewModifier {
+        let primary: Bool
+        let familyTint: Color
+        func body(content: Content) -> some View {
+            if primary {
+                content.background(familyTint.opacity(StrandOpacity.tintFill),
+                                   in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+            } else {
+                content.liquidGlass(.pastillaSolida)
+            }
+        }
     }
 
     // MARK: - Variants (FER-739) — other catalog exercises for the same primary muscle
@@ -640,7 +656,7 @@ struct ExerciseDetailScreen: View {
                 HStack(spacing: CenitMetrics.gap) {
                     Image(systemName: "play.rectangle").font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkSecondary)
                         .frame(width: 34, height: 34)
-                        .background(theme.patternBlock, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
+                        .liquidGlass(.pastillaSolida)
                     VStack(alignment: .leading, spacing: 1) {
                         Text("Watch on YouTube").font(StrandFont.subhead).foregroundStyle(theme.ink)
                         Text("Opens outside the app · uses the internet")
