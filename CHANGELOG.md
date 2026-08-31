@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **El segmentado y el marco de media pasan a vidrio / The segmented control and media frame turn to glass** (migración · «Un solo vidrio · El Eje»).
+  **ES** — El control segmentado compartido (`SegmentedPillControl`, en las 7 pantallas que lo usan) deja el track de papel beige (`patternBlock`) por la pastilla sólida de vidrio del sistema; el thumb activo ink sigue destacando. Y el marco de media reservado del ejercicio (`ExerciseThumbnail`) deja el gradiente de papel por la superficie de vidrio. Termina de mover el detalle de ejercicio al lenguaje El Eje.
+  **EN** — The shared segmented control (`SegmentedPillControl`, across the 7 screens using it) leaves the beige paper track for the system's solid glass pastille; the active ink thumb still stands out. And the exercise's reserved media frame (`ExerciseThumbnail`) leaves the paper gradient for the glass surface.
+  ([Components.swift](Packages/StrandDesign/Sources/StrandDesign/Components.swift), [ExerciseThumbnail.swift](Packages/StrandDesign/Sources/StrandDesign/ExerciseThumbnail.swift))
+
 - **Descanso sin reloj, remates / Rest without a watch, follow-ups** (FER-257).
   **ES** — Los registros desde el Apple Watch ya no asumen pulso vivo (el descanso cae a temporizador fijo también por esa vía); el aviso «descanso por reloj» sale una sola vez por sesión aunque el pulso muera a mitad de un descanso.
   **EN** — Logs from the Apple Watch mirror no longer assume a live pulse (rest falls back to a fixed timer on that path too); the “resting by clock” note shows once per session even if the pulse dies mid-rest.

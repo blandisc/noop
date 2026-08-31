@@ -62,23 +62,20 @@ public struct ExerciseThumbnail: View {
 
     public var body: some View {
         let shape = RoundedRectangle(cornerRadius: corner, style: .continuous)
-        shape
-            .fill(
-                LinearGradient(
-                    colors: [theme.hairline, theme.hairlineStrong],
-                    startPoint: .topLeading, endPoint: .bottomTrailing
-                )
-            )
-            .overlay {
-                if let image {
-                    image
-                        .resizable()
-                        .scaledToFill()
-                        .clipShape(shape)
-                }
+        Group {
+            if let image {
+                image
+                    .resizable()
+                    .scaledToFill()
+                    .clipShape(shape)
+            } else {
+                // El Eje («Un solo vidrio»): el marco de media reservado deja el gradiente de papel
+                // (`hairline → hairlineStrong`) por la superficie de vidrio del sistema.
+                Color.clear.liquidGlass(.superficie)
             }
-            .modifier(FrameForForm(form: form))
-            .accessibilityHidden(true)   // decorative — the exercise name carries the meaning
+        }
+        .modifier(FrameForForm(form: form))
+        .accessibilityHidden(true)   // decorative — the exercise name carries the meaning
     }
 
     private struct FrameForForm: ViewModifier {
