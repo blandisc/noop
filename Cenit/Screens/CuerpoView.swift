@@ -116,8 +116,6 @@ private struct DetailChrome<Content: View>: View {
     @ViewBuilder var content: Content
 
     var body: some View {
-        // Compat signature: callers still pass `theme`; Liquid chrome no longer paints with it.
-        _ = theme
         VStack(spacing: 0) {
             HStack(spacing: LiquidSpace.s150) {
                 Button { onClose() } label: {
