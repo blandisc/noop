@@ -32,10 +32,6 @@ import CenitStore
 //     side of the zero axis, never a red/green colour. The r bar wears the correlate's IDENTITY
 //     hue; the value stays neutral ink.
 //
-// DECLARED DEGRADATION: `FusionAgreementRow` (FER-670) is NOT migrated — it keeps its «Instrumento»
-// theme (precedent SleepDetailScreen:1107), rendered on the sheet paper below the tinted field so
-// its dark inks read. That is why both views still accept `theme`.
-//
 // CORRELATION ROW — the bar is composed IN-LINE, not coined as a DS piece (DS rule §7: a single
 // call-site composition stays atoms in the screen, the same choice Compare made for its pairCard).
 // Neither declared option fit: `LiquidBarrasContribucion` carries a Body-Age good/bad colour
@@ -72,10 +68,6 @@ private func longDate(_ d: Date) -> String { longDateFmt.string(from: d) }
 /// solid card, each pushing the generic `MetricDetailView`. A metric with no series at all is flagged
 /// in the a11y hint only ("No data"), never as a visible trailing word (TND31-3).
 struct MetricExplorerView: View {
-    /// Conserved from the paper call site (Cuerpo passes it explicitly; sheets start a fresh
-    /// environment, FER-162). The Liquid surfaces read `LiquidColor`; `theme` survives ONLY to feed
-    /// the un-migrated `FusionAgreementRow` in the detail (declared degradation, FER-670).
-    var theme: InstrumentoTheme = .base
     @EnvironmentObject var repo: Repository
     /// metric.id → whether its series is empty (loaded once, lazily).
     @State private var emptyByID: [String: Bool] = [:]
@@ -105,7 +97,7 @@ struct MetricExplorerView: View {
         // neutral picker. Set on the sheet so its gutters match the scroll ground.
         .presentationBackground { LiquidSheetFondo() }
         .navigationDestination(for: MetricDescriptor.self) { metric in
-            MetricDetailView(metric: metric, theme: theme)
+            MetricDetailView(metric: metric)
         }
         .task { await probeEmptiness() }
     }
@@ -187,8 +179,6 @@ struct MetricExplorerView: View {
 /// rest fall to `verdePrimario` with no glyph (TND-29's documented fallback).
 struct MetricDetailView: View {
     let metric: MetricDescriptor
-    /// Conserved for the un-migrated `FusionAgreementRow` (FER-670); the Liquid surfaces ignore it.
-    var theme: InstrumentoTheme = .base
     @EnvironmentObject var repo: Repository
     /// Drives the correlation row's AX-size stacking (TND31-1), the same lever CompareView.pairCard uses.
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -405,13 +395,13 @@ struct MetricDetailView: View {
         .liquidSeccion(top: LiquidSpace.s400, bottom: LiquidSpace.s200)
     }
 
-    /// FER-670 (DECLARED DEGRADATION): when a second source reported the shown day (steps / sleep
-    /// total / active kcal), say whether they agree — both values visible, a conflict flagged, never
-    /// averaged. NOT migrated (keeps its «Instrumento» theme); rendered on the sheet paper BELOW the
-    /// tinted field so its dark inks read. `fusionPoint` folds the calorie alias, so the raw key works.
+    /// FER-670 / FER-254: when a second source reported the shown day (steps / sleep total /
+    /// active kcal), say whether they agree — both values visible, a conflict flagged, never
+    /// averaged. Liquid via `LiquidNotaLine`. `fusionPoint` folds the calorie alias, so the raw
+    /// key works.
     @ViewBuilder private var fusionRow: some View {
         if let day = latest?.day, let agreement = repo.fusionPoint(day: day, metric: metric.key) {
-            FusionAgreementRow(point: agreement, theme: theme, format: fmt)
+            FusionAgreementRow(point: agreement, format: fmt)
                 .padding(.horizontal, LiquidSpace.s550)
                 .padding(.top, LiquidSpace.s300)
                 .frame(maxWidth: .infinity, alignment: .leading)

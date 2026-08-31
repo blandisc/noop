@@ -120,7 +120,7 @@ Base: filas DNA **Instrumento** / «papel muerto» / huérfanas de `AUDIT-FRONTE
 |---|---|---|---|
 | 1 | `TermsGateView` | `Cenit/App/TermsGateView.swift:19` (`theme.paper.ignoresSafeArea`) · audit #2 | **Migrar → sobrio** |
 | 2 | `AutonomicTrendDetailSheet` | `Cenit/Screens/AutonomicTrendCard.swift:35`–`:37` (`theme.paper` + `.sheetPaper`) · audit #32 | **Migrar → sobrio** |
-| 3 | `FusionAgreementRow` | `Cenit/Screens/FusionAgreementRow.swift:79` · audit #33 | **Migrar → sobrio** (parche Instrumento dentro de Explorer Liquid) |
+| 3 | `FusionAgreementRow` | `Cenit/Screens/FusionAgreementRow.swift` · audit #33 | **Hecho (FER-254)** → `LiquidNotaLine(verdict:values:tono:)` sobrio |
 | 4 | `TrainingLoadStrip` | `Cenit/Screens/TrainingLoadStrip.swift:128` · audit #28 | **Migrar → sobrio** (la hoja hermana ya es Liquid) |
 | 5 | `HealthAlertBanner` | audit #36 · `Cenit/Screens/HealthAlertBanner.swift` (Instrumento card) | **Migrar → sobrio** |
 | 6 | `WorkoutDetailScreen` | `Cenit/Screens/WorkoutDetailScreen.swift:103` · audit #44 | **Migrar → sobrio** |

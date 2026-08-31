@@ -2,37 +2,32 @@ import SwiftUI
 import StrandAnalytics
 import StrandDesign
 
-/// FER-670: the quiet source-agreement read under a fused single-construct metric (steps / sleep
-/// total / active kcal). Shows each source's value VERBATIM plus whether they match — a conflict is
-/// flagged and both values stay visible, never averaged away. Rendered only when ≥2 sources reported
-/// the displayed day (`Repository.fusionPoint` is nil otherwise); the cross-source vitals
-/// (HRV/RHR/resp/stages) never reach here — `FusionResolver` refuses them (SourceLens governs those).
+/// FER-670 / FER-254: the quiet source-agreement read under a fused single-construct metric
+/// (steps / sleep total / active kcal). Shows each source's value VERBATIM plus whether they
+/// match — a conflict is flagged and both values stay visible, never averaged away. Rendered
+/// only when ≥2 sources reported the displayed day (`Repository.fusionPoint` is nil otherwise);
+/// the cross-source vitals (HRV/RHR/resp/stages) never reach here — `FusionResolver` refuses
+/// them (SourceLens governs those).
+///
+/// Liquid Glass · El Eje: delegates chrome to `LiquidNotaLine(verdict:values:tono:)`.
 struct FusionAgreementRow: View {
     let point: FusedMetricPoint
-    let theme: InstrumentoTheme
     /// Formats a contributor's value in the metric's display unit (grouped steps, "7 h 05 m", kcal).
     var format: (Double) -> String = { "\(Int($0.rounded()))" }
 
     var body: some View {
         if point.agreement != .single {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(verdict)
-                    .font(StrandFont.footnote)
-                    .foregroundStyle(point.agreement == .conflict ? theme.warning : theme.inkTertiary)
-                Text(values)
-                    .font(StrandFont.footnote)
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .accessibilityElement(children: .combine)
+            LiquidNotaLine(verdict: verdict,
+                           values: values,
+                           tono: point.agreement == .conflict ? .atencion : .ok)
         }
     }
 
-    private var verdict: LocalizedStringKey {
+    private var verdict: String {
         switch point.agreement {
-        case .agree:      return "Sources match"
-        case .minorDelta: return "Sources differ slightly"
-        case .conflict:   return "Sources in conflict"
+        case .agree:      return String(localized: "Sources match")
+        case .minorDelta: return String(localized: "Sources differ slightly")
+        case .conflict:   return String(localized: "Sources in conflict")
         case .single:     return ""   // never rendered (the body guard)
         }
     }
@@ -53,7 +48,7 @@ struct FusionAgreementRow: View {
 
 #if DEBUG
 #Preview("FusionAgreementRow: states") {
-    VStack(alignment: .leading, spacing: 16) {
+    VStack(alignment: .leading, spacing: LiquidSpace.s400) {
         FusionAgreementRow(
             point: FusedMetricPoint(
                 metric: "steps", value: 8100, winningSource: .appleHealth,
@@ -62,8 +57,16 @@ struct FusionAgreementRow: View {
                     ContributingSource(source: .noopComputed, value: 8420, tier: 3, sourcePriority: 1, reason: "motion estimate"),
                 ],
                 agreement: .agree),
-            theme: .base,
             format: { $0.formatted(.number.grouping(.automatic)) })
+        FusionAgreementRow(
+            point: FusedMetricPoint(
+                metric: "active_kcal", value: 612, winningSource: .appleHealth,
+                contributors: [
+                    ContributingSource(source: .appleHealth, value: 612, tier: 0, sourcePriority: 2, reason: "active energy"),
+                    ContributingSource(source: .whoopImport, value: 588, tier: 0, sourcePriority: 0, reason: "imported kcal"),
+                ],
+                agreement: .minorDelta),
+            format: { "\(Int($0.rounded()))" })
         FusionAgreementRow(
             point: FusedMetricPoint(
                 metric: "sleep_total_min", value: 432, winningSource: .whoopImport,
@@ -72,10 +75,9 @@ struct FusionAgreementRow: View {
                     ContributingSource(source: .appleHealth, value: 120, tier: 2, sourcePriority: 2, reason: "phone sleep buckets"),
                 ],
                 agreement: .conflict),
-            theme: .base,
             format: { "\(Int($0 / 60)) h \(String(format: "%02d", Int($0.truncatingRemainder(dividingBy: 60)))) m" })
     }
-    .padding()
-    .background(InstrumentoTheme.base.paper)
+    .padding(LiquidSpace.s550)
+    .background(LiquidColor.papelAlto)
 }
 #endif

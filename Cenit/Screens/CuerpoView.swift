@@ -346,7 +346,7 @@ private struct CuerpoLanding: View {
             // boundary, FER-162); the env objects are re-supplied (a sheet starts a fresh environment).
             // A light sheet from a light tab keeps the status bar honest (no dark pin needed).
             NavigationStack {
-                MetricExplorerView(theme: theme)
+                MetricExplorerView()
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) {
                             Button("Done") { showExplore = false }.foregroundStyle(theme.ink)

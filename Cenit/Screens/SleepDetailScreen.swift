@@ -1102,9 +1102,8 @@ struct SleepDetailScreen: View {
                              etiqueta: DataOrigin.apple.label,
                              sufijo: String(localized: "last night"))
             if let agreement = model.sourceAgreement {
-                // Pieza compartida con las otras pantallas de detalle: se conserva tal cual
-                // (migrarla es trabajo del sistema de diseño, no de esta pantalla).
-                FusionAgreementRow(point: agreement, theme: theme, format: Self.sleepTotalHM)
+                // Pieza compartida con las otras pantallas de detalle (Liquid via LiquidNotaLine).
+                FusionAgreementRow(point: agreement, format: Self.sleepTotalHM)
             }
         }
         // El pie NO lleva franja (es pie, no sección), así que su padding superior se sumaba
