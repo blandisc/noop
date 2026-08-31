@@ -112,7 +112,11 @@ run_app_build() {
 }
 
 run_app_tests() {
-  sim=$(xcrun simctl list devices available | grep -oE 'iPhone [0-9A-Za-z ]+' | head -1 | sed 's/ *$//')
+  # Preferimos el iPhone 17 Pro (el simulador de trabajo del dueño, adelgazado con simslim);
+  # si no existe en esta máquina, cae al primer iPhone disponible.
+  sims=$(xcrun simctl list devices available | grep -oE 'iPhone [0-9A-Za-z ]+' | sed 's/ *$//')
+  sim=$(printf '%s\n' "$sims" | grep -x 'iPhone 17 Pro' | head -1)
+  [ -n "$sim" ] || sim=$(printf '%s\n' "$sims" | head -1)
   [ -n "$sim" ] || fail "no hay simulador iPhone disponible."
   # Un simulador que quedó a medias de una corrida anterior contesta «Failed to prepare device …
   # Invalid connectionUUID»: se arranca de limpio, no solo se apaga al final.
