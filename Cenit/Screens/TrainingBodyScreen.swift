@@ -180,7 +180,7 @@ struct TrainingBodyScreen: View {
                 }
             }
             .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.top, 20)
+            .padding(.top, 20)  // token-exempt: sin token exacto
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -227,7 +227,7 @@ struct TrainingBodyScreen: View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Your body · \(cabeceraFecha)").entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
             if loaded {
-                hiloDelVeredicto.padding(.top, 8)
+                hiloDelVeredicto.padding(.top, CenitMetrics.space2)
             }
         }
     }
@@ -280,23 +280,23 @@ struct TrainingBodyScreen: View {
                 BodyFiguresView(theme: theme, loadByMuscle: loadByMuscle,
                                 maxLoad: loads.first?.load ?? 0,
                                 highlight: focused?.muscle) { tapMuscle($0) }
-                    .padding(.top, 10)
+                    .padding(.top, 10)  // token-exempt: sin token exacto (edge ≠ rowVPad)
                 if let f = focused { floatingLabel(f) }
             }
             if let p = peeked {
-                peekCard(p).padding(.top, 4)
-                resetRow.padding(.top, 7)
+                peekCard(p).padding(.top, CenitMetrics.space1)
+                resetRow.padding(.top, 7)  // token-exempt: ajuste óptico / sin token exacto
             } else {
-                legend.padding(.top, 6)
+                legend.padding(.top, 6)  // token-exempt: ajuste óptico / sin token exacto
                 Text("Tap a muscle to see its load")
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    .padding(.top, 10)
+                    .padding(.top, 10)  // token-exempt: sin token exacto (edge ≠ rowVPad)
                 if !loads.isEmpty {
-                    markRecoveredButton.padding(.top, 12)
+                    markRecoveredButton.padding(.top, CenitMetrics.gap)
                 }
             }
         }
-        .padding(EdgeInsets(top: 16, leading: 10, bottom: 12, trailing: 10))
+        .padding(EdgeInsets(top: 16, leading: 10, bottom: 12, trailing: 10))  // token-exempt: EdgeInsets mixto sin token compuesto
         .frame(maxWidth: .infinity)
         .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
@@ -330,7 +330,7 @@ struct TrainingBodyScreen: View {
             Text(MuscleAtlas.name(m.muscle)).font(StrandFont.caption).fontWeight(.semibold).foregroundStyle(theme.paper)
             Text(stateSuffix(m.state)).font(StrandFont.caption).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
         }
-        .padding(.horizontal, 11).padding(.vertical, 5)
+        .padding(.horizontal, 11).padding(.vertical, 5)  // token-exempt: sin token exacto (horizontal/chip handoff)
         .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
         .accessibilityElement(children: .combine)
     }
@@ -365,7 +365,7 @@ struct TrainingBodyScreen: View {
         EntrenarModulo(tono: .neutro) {
             loadRow(muscle)
         }
-        .padding(.horizontal, 4)
+        .padding(.horizontal, CenitMetrics.space1)
     }
 
     private var resetRow: some View {
@@ -381,7 +381,7 @@ struct TrainingBodyScreen: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 4)
+        .padding(.horizontal, CenitMetrics.space1)
     }
 
     /// «Mark all recovered» — sets the recovery-reset point so the map reads all-fresh, without deleting
@@ -393,7 +393,7 @@ struct TrainingBodyScreen: View {
                 Text("Mark all recovered").font(StrandFont.caption)
             }
             .foregroundStyle(theme.inkSecondary)
-            .padding(.horizontal, 14).padding(.vertical, 8)
+            .padding(.horizontal, 14).padding(.vertical, CenitMetrics.space2)  // token-exempt: 14 del handoff
             .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
         }
         .buttonStyle(.plain)
@@ -427,7 +427,7 @@ struct TrainingBodyScreen: View {
                 Text("Loaded").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
             }
         }
-        .padding(.horizontal, 6)
+        .padding(.horizontal, 6)  // token-exempt: ajuste óptico / sin token exacto
     }
 
     // MARK: - Ranking
@@ -437,8 +437,8 @@ struct TrainingBodyScreen: View {
     private var ranking: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Loaded muscles · last 7 days").entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
-                .padding(.bottom, 8)
-            muscleColumnHeader.padding(.bottom, 2)
+                .padding(.bottom, CenitMetrics.space2)
+            muscleColumnHeader.padding(.bottom, 2)  // token-exempt: ajuste óptico
             ForEach(Array(rankingLoads.enumerated()), id: \.element.muscle) { i, m in
                 if i > 0 { Divider().overlay(theme.hairline) }
                 loadRow(m.muscle)
@@ -544,12 +544,12 @@ struct TrainingBodyScreen: View {
             (Text("Rough read: ").font(StrandFont.caption).fontWeight(.semibold).foregroundColor(theme.ink)
              + Text(verbatim: reading.gross).font(StrandFont.caption).foregroundColor(theme.inkSecondary))
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 12)
+                .padding(.top, CenitMetrics.gap)
         }
         Text("Load = sets that touch the muscle × how much it weighs in each exercise (primary 1, secondary ½) × time: every 2 days it's worth half. Fresh and loaded are compared against your most-loaded muscle, not a table. Sets = work sets from the last 7 days; 10–20 is a guide, not a target. You decide.")
             .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
             .fixedSize(horizontal: false, vertical: true)
-            .padding(.top, 8)
+            .padding(.top, CenitMetrics.space2)
     }
 
     // MARK: - Method foot — the cite, behind one disclosure
@@ -567,7 +567,7 @@ struct TrainingBodyScreen: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.top, 12)
+                    .padding(.top, CenitMetrics.gap)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(Text("See the method"))
@@ -576,7 +576,7 @@ struct TrainingBodyScreen: View {
                 Text("Each set adds load to the muscles it works, decaying by half every two days: the time course of muscle protein synthesis (MacDougall 1995; Damas 2015). Color is relative to your most-loaded muscle, so it reads which of your muscles are hot right now. Weekly volume is judged against the 10–20 sets-per-week band (Schoenfeld 2017), a hypertrophy guide per muscle group; the volume shown is weighted by involvement, so secondary muscles count less. The recommendation crosses this with today's verdict, the same one Hoy shows: a day that asks you to ease off gates everything to rest.")
                     .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 10)
+                    .padding(.top, 10)  // token-exempt: sin token exacto (edge ≠ rowVPad)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -591,17 +591,17 @@ struct TrainingBodyScreen: View {
                 .stroke(theme.hairline, lineWidth: 1.2)
                 .aspectRatio(200.0 / 430.0, contentMode: .fit)
                 .frame(maxHeight: 220)
-                .padding(.top, 8)
+                .padding(.top, CenitMetrics.space2)
             Text("Train to fill your map")
                 .font(InstrumentoType.groteskHeadline(20)).foregroundStyle(theme.ink)
             Text("Log your sets and you'll see which muscles are loaded and which are fresh to train today.")
                 .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, 8)
+                .padding(.horizontal, CenitMetrics.space2)
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 24)
+        .padding(.top, CenitMetrics.screenPadding)
     }
 
     // MARK: - Data
@@ -665,16 +665,16 @@ struct TrainingBodyScreen: View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Volume per muscle").groteskOverline().foregroundStyle(theme.inkTertiary)
             volumeSpanPicker
-                .padding(.top, 12)
+                .padding(.top, CenitMetrics.gap)
             if volumes.isEmpty {
-                volumeEmptyState.padding(.top, 20)
+                volumeEmptyState.padding(.top, 20)  // token-exempt: sin token exacto
             } else {
-                volumeRows.padding(.top, 6)
-                volumeRailAxisMarks.padding(.top, 4)
-                volumeInsightLine.padding(.top, 12)
+                volumeRows.padding(.top, 6)  // token-exempt: ajuste óptico / sin token exacto
+                volumeRailAxisMarks.padding(.top, CenitMetrics.space1)
+                volumeInsightLine.padding(.top, CenitMetrics.gap)
             }
         }
-        .padding(.top, 20)
+        .padding(.top, 20)  // token-exempt: sin token exacto
         .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 1) }
     }
 
@@ -692,7 +692,7 @@ struct TrainingBodyScreen: View {
 
     private func volumeRow(_ v: MuscleFatigueMap.MuscleWeeklyVolume) -> some View {
         let below = v.band == .below
-        return HStack(spacing: 12) {
+        return HStack(spacing: CenitMetrics.gap) {
             Text(MuscleAtlas.name(v.muscle))
                 .font(StrandFont.body).foregroundStyle(theme.ink)
                 .lineLimit(1).minimumScaleFactor(0.85)
@@ -740,7 +740,7 @@ struct TrainingBodyScreen: View {
     private var volumeRailAxisMarks: some View {
         // Derived from `railTop` so a future band-rail change keeps the ticks honest (today 0 / 10 / 20 / 30).
         let marks: [Double] = [0, railTop / 3, 2 * railTop / 3, railTop]
-        return HStack(spacing: 12) {
+        return HStack(spacing: CenitMetrics.gap) {
             Color.clear.frame(width: 96)
             GeometryReader { geo in
                 let w = geo.size.width
@@ -845,7 +845,7 @@ private struct BodyFiguresView: View {
     let onSelect: (String) -> Void
 
     var body: some View {
-        HStack(alignment: .top, spacing: 8) {
+        HStack(alignment: .top, spacing: CenitMetrics.space2) {
             figure(.front)
             figure(.back)
         }
@@ -918,7 +918,7 @@ private struct MuscleDetailView: View {
             VStack(alignment: .leading, spacing: CenitMetrics.gap) {
                 Text(MuscleAtlas.name(muscle)).instrumentoOverlineProminent().foregroundStyle(theme.inkSecondary)
 
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space2) {
                     Text(MuscleFatigueMap.formattedSets(weeklySets))
                         .font(InstrumentoType.groteskHeroNumeral(52)).foregroundStyle(stateColor)
                     Text("sets · 7 d").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
@@ -931,7 +931,7 @@ private struct MuscleDetailView: View {
                 recommendation
             }
             .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.top, 24)
+            .padding(.top, CenitMetrics.screenPadding)
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(GeometryReader { proxy in
@@ -1037,7 +1037,7 @@ private struct MuscleDetailView: View {
     private var exercises: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Exercises that work it").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                .padding(.bottom, 8)
+                .padding(.bottom, CenitMetrics.space2)
             ForEach(Array(hits.prefix(6)), id: \.exerciseId) { hit in
                 HStack {
                     Text(hit.name).font(StrandFont.body).foregroundStyle(theme.ink)
@@ -1045,7 +1045,7 @@ private struct MuscleDetailView: View {
                     Text(hit.primary ? "primary" : "secondary")
                         .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                 }
-                .padding(.vertical, 7)
+                .padding(.vertical, 7)  // token-exempt: ajuste óptico / sin token exacto
                 .overlay(alignment: .bottom) {
                     if hit.exerciseId != hits.prefix(6).last?.exerciseId {
                         Rectangle().fill(theme.hairline).frame(height: 0.5)

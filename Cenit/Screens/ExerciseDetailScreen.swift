@@ -226,14 +226,14 @@ struct ExerciseDetailScreen: View {
                 Button { isLoopPlaying.toggle() } label: {
                     Image(systemName: isLoopPlaying ? "pause.fill" : "play.fill")
                         .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(.white)
-                        .padding(8).background(.black.opacity(StrandOpacity.strokeSoft), in: Circle())
+                        .padding(CenitMetrics.space2).background(.black.opacity(StrandOpacity.strokeSoft), in: Circle())
                 }
                 .buttonStyle(EntrenarPressStyle())
                 // FER-121: círculo visible ≈28pt; el toque real crece a 44 (HIG) sin mover el
                 // círculo — padding + contentShape + padding negativo se cancelan en layout (mismo
                 // principio que `PaperStepper.hitTarget`, FER-947, StrandDesign).
-                .padding(8).contentShape(Rectangle()).padding(-8)
-                .padding(10)
+                .padding(8).contentShape(Rectangle()).padding(-8)  // token-exempt: hit slop pair (±8)
+                .padding(10)  // token-exempt: sin token exacto (edge ≠ rowVPad)
                 .accessibilityLabel(Text(isLoopPlaying ? "Pause preview" : "Play preview"))
             }
             // Handoff: the hero carries a 2px frame in the movement family's hue — the same frame
@@ -243,7 +243,7 @@ struct ExerciseDetailScreen: View {
             .accessibilityElement(children: .contain)
             .accessibilityLabel(Text("\(exercise.name) preview"))
         } else {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: CenitMetrics.space2) {
                 ZStack {
                     ExerciseThumbnail(hero: nil)
                     if loadingMedia { ProgressView().tint(theme.inkTertiary) }
@@ -319,7 +319,7 @@ struct ExerciseDetailScreen: View {
                             .fill(familyTint).frame(width: 8, height: 8)
                         historyDayText(day.ts, routineName: day.routineName)
                             .font(StrandFont.body.weight(.medium)).foregroundStyle(theme.ink)
-                        Spacer(minLength: 8)
+                        Spacer(minLength: CenitMetrics.space2)
                         if day.isRecord {
                             Text("RECORD")
                                 .font(InstrumentoType.grotesk(10, weight: .bold)).tracking(0.5)
@@ -450,10 +450,10 @@ struct ExerciseDetailScreen: View {
     // MARK: - Measurement type (FER-541) — let the user re-type any exercise, incl. a catalog one
 
     private var measurementSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Divider().overlay(theme.hairline).padding(.bottom, 10)
+        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+            Divider().overlay(theme.hairline).padding(.bottom, 10)  // token-exempt: sin token exacto (edge ≠ rowVPad)
             Text("Measured by").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            HStack(spacing: 12) {
+            HStack(spacing: CenitMetrics.gap) {
                 Button { showTypeMenu = true } label: {
                     HStack(spacing: 6) {
                         Text(StrengthDisplay.typeLabel(effectiveType)).font(StrandFont.body).foregroundStyle(theme.ink)
@@ -465,7 +465,7 @@ struct ExerciseDetailScreen: View {
                     PaperMenuItem(StrengthDisplay.typeName(t),
                                   systemImage: t == effectiveType ? "checkmark" : nil) { setType(t) }
                 })
-                Spacer(minLength: 8)
+                Spacer(minLength: CenitMetrics.space2)
                 if hasTypeOverride {
                     Button { revertType() } label: {
                         Text("Revert to default").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
@@ -521,7 +521,7 @@ struct ExerciseDetailScreen: View {
         if !exercise.primaryMuscles.isEmpty || !exercise.secondaryMuscles.isEmpty {
             VStack(alignment: .leading, spacing: CenitMetrics.space2) {
                 Text("Muscles").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                ChipFlow(spacing: 8) {
+                ChipFlow(spacing: CenitMetrics.space2) {
                     ForEach(exercise.primaryMuscles, id: \.self) { m in muscleChip(m, primary: true) }
                     ForEach(exercise.secondaryMuscles, id: \.self) { m in muscleChip(m, primary: false) }
                 }
@@ -562,7 +562,7 @@ struct ExerciseDetailScreen: View {
             VStack(alignment: .leading, spacing: CenitMetrics.space2) {
                 Divider().overlay(theme.hairline).padding(.bottom, CenitMetrics.space1)
                 Text("Variants").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                ChipFlow(spacing: 8) {
+                ChipFlow(spacing: CenitMetrics.space2) {
                     ForEach(variants) { ex in variantChip(ex) }
                 }
             }
@@ -613,11 +613,11 @@ struct ExerciseDetailScreen: View {
                             .fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .padding(.vertical, 11)  // token-exempt: fila 11pt del handoff
+                    .padding(.vertical, CenitMetrics.rowVPad)
                     if index < cues.count - 1 { Divider().overlay(theme.hairline) }
                 }
             }
-            .padding(.top, 2)
+            .padding(.top, 2)  // token-exempt: ajuste óptico
         }
     }
 
@@ -646,7 +646,7 @@ struct ExerciseDetailScreen: View {
                         Text("Opens outside the app · uses the internet")
                             .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     }
-                    Spacer(minLength: 8)
+                    Spacer(minLength: CenitMetrics.space2)
                     StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
                 }
                 .padding(.top, CenitMetrics.gap)
@@ -701,7 +701,7 @@ struct ExerciseDetailScreen: View {
                         .accessibilityLabel(deltaAccessibilityLabel(deltaPercent))
                 }
             }
-            .padding(.top, 3)
+            .padding(.top, 3)  // token-exempt: ajuste óptico
 
             // The axis chart, in a raised card (handoff: gridlines + y labels + MAY/JUN/HOY).
             if oneRM.count >= 2, !historyDays.isEmpty {
@@ -780,7 +780,7 @@ struct ExerciseDetailScreen: View {
     private func recordRow(_ label: Text, _ value: Text) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.gap) {
             label.font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-            Spacer(minLength: 8)
+            Spacer(minLength: CenitMetrics.space2)
             value.font(InstrumentoType.grotesk(15, weight: .semibold)).monospacedDigit()
         }
         .padding(.vertical, CenitMetrics.gap)
@@ -925,7 +925,7 @@ private struct TrendAxisChart: View {
                         .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                 }
             }
-            .padding(.bottom, 2)
+            .padding(.bottom, 2)  // token-exempt: ajuste óptico
         }
     }
 
@@ -1004,8 +1004,8 @@ private struct TrendAxisChart: View {
                         .onEnded { (_: DragGesture.Value) in scrubIndex = nil }
                 )
             }
-            .padding(.leading, 34)
-            .padding(.vertical, 5)   // keeps the line inside the first/last gridline
+            .padding(.leading, 34)  // token-exempt: sin token exacto
+            .padding(.vertical, 5)  // token-exempt: ajuste óptico / sin token exacto
         }
         .frame(height: Self.plotHeight)
     }
@@ -1026,7 +1026,7 @@ private struct TrendAxisChart: View {
                 .foregroundStyle(accent)
                 .frame(maxWidth: .infinity, alignment: .trailing)
         }
-        .padding(.leading, 34)
+        .padding(.leading, 34)  // token-exempt: sin token exacto
     }
 
     var body: some View {

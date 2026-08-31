@@ -94,7 +94,7 @@ struct WorkoutImportView: View {
                     .foregroundStyle(theme.ink)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .patternBlock(theme, bar: theme.critical)
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, 16)  // token-exempt: sin token exacto en mapa FER-207 (cardPadding candidato)
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .task {
                         try? await Task.sleep(for: .seconds(4))
@@ -234,7 +234,7 @@ struct WorkoutImportView: View {
                 .strokeBorder(theme.hairlineStrong, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
             .overlay(alignment: .center) {
                 if pasteText.isEmpty {
-                    VStack(spacing: 4) {
+                    VStack(spacing: CenitMetrics.space1) {
                         Text("Paste the JSON").font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
                         Text("or open the downloaded .json file").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                     }
@@ -332,7 +332,7 @@ struct WorkoutImportView: View {
                         .lineLimit(1).minimumScaleFactor(0.85)
                     }
                     .foregroundStyle(theme.verdict)
-                    .padding(.horizontal, 9).padding(.vertical, 3)
+                    .padding(.horizontal, 9).padding(.vertical, 3)  // token-exempt: sin token exacto (horizontal/chip handoff)
                     .background(theme.verdict.opacity(StrandOpacity.tintFill), in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
                     .accessibilityElement(children: .combine)
                     Spacer(minLength: CenitMetrics.space2)
@@ -354,10 +354,10 @@ struct WorkoutImportView: View {
                                 Text(StrengthDisplay.name(s)).font(StrandFont.subhead.weight(.medium)).foregroundStyle(theme.ink)
                                 Spacer(minLength: CenitMetrics.space2)
                                 Text("Use").font(InstrumentoType.grotesk(12, weight: .bold)).foregroundStyle(theme.paperHi)
-                                    .padding(.horizontal, 11).padding(.vertical, 4)
+                                    .padding(.horizontal, 11).padding(.vertical, CenitMetrics.space1)  // token-exempt: sin token exacto (horizontal/chip handoff)
                                     .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
                             }
-                            .padding(.horizontal, 10).padding(.vertical, 8)
+                            .padding(.horizontal, 10).padding(.vertical, CenitMetrics.space2)  // token-exempt: sin token exacto (edge ≠ rowVPad)
                             .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
                             .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
                                 .strokeBorder(theme.hairline, lineWidth: 1))
@@ -388,7 +388,7 @@ struct WorkoutImportView: View {
     private func chip(_ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title).font(InstrumentoType.grotesk(12, weight: .semibold)).foregroundStyle(theme.inkSecondary)
-                .padding(.horizontal, 13).padding(.vertical, 6)
+                .padding(.horizontal, 13).padding(.vertical, 6)  // token-exempt: sin token exacto (horizontal/chip handoff)
                 .overlay(Capsule().stroke(theme.hairlineStrong, lineWidth: 1))
         }
         .buttonStyle(.plain)
@@ -502,7 +502,7 @@ struct WorkoutImportView: View {
             if mapped > 0 {
                 Text(mapped == 1 ? "1 mapped" : "\(mapped) mapped")
                     .font(StrandFont.caption.weight(.semibold)).foregroundStyle(theme.verdict)
-                    .padding(.horizontal, 9).padding(.vertical, 3)
+                    .padding(.horizontal, 9).padding(.vertical, 3)  // token-exempt: sin token exacto (horizontal/chip handoff)
                     .background(theme.verdict.opacity(StrandOpacity.tintFill),
                                 in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
             }
@@ -582,7 +582,7 @@ struct WorkoutImportView: View {
                         .frame(maxWidth: .infinity)
                 }
             }
-            .padding(.trailing, 44)
+            .padding(.trailing, 44)  // token-exempt: 44 del handoff / touchTarget
             HStack(spacing: CenitMetrics.space2) {
                 ForEach(0..<labels.count, id: \.self) { i in
                     Text(labels[i])
@@ -596,7 +596,7 @@ struct WorkoutImportView: View {
             // El MISMO carril cedido que las barras: sin este padding las etiquetas se reparten el ancho
             // completo y las barras `ancho − 44`, así que cada etiqueta se centraba en una celda más ancha
             // que su barra y el desfase crecía hacia la derecha.
-            .padding(.trailing, 44)
+            .padding(.trailing, 44)  // token-exempt: 44 del handoff / touchTarget
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("Step \(currentIndex + 1) of 4"))
@@ -612,7 +612,7 @@ struct WorkoutImportView: View {
     }
 
     private func header(_ overline: LocalizedStringKey, _ title: LocalizedStringKey) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: CenitMetrics.space1) {
             Text(overline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
             Text(title).font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking).foregroundStyle(theme.ink)
         }

@@ -143,7 +143,7 @@ struct WorkoutHistoryScreen: View {
                     manualEntryRow
                 }
             }
-            .padding(.top, 20)
+            .padding(.top, 20)  // token-exempt: sin token exacto
             .padding(.horizontal, CenitMetrics.screenPadding)
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -159,7 +159,7 @@ struct WorkoutHistoryScreen: View {
             if let onClose {
                 ToolbarItem(placement: .cancellationAction) {
                     Button { onClose() } label: {
-                        HStack(spacing: 4) {
+                        HStack(spacing: CenitMetrics.space1) {
                             StrandIcon.back.image.font(StrandFont.glyph(.inline, weight: .semibold))
                             Text("Tendencias").font(StrandFont.body)
                         }
@@ -180,7 +180,7 @@ struct WorkoutHistoryScreen: View {
                     .foregroundStyle(theme.ink)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .patternBlock(theme, bar: theme.critical)
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, 16)  // token-exempt: sin token exacto en mapa FER-207 (cardPadding candidato)
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .task {
                         try? await Task.sleep(for: .seconds(4))
@@ -229,7 +229,7 @@ struct WorkoutHistoryScreen: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: CenitMetrics.space1) {
             // FER-246: título CONSTANTE «Historial» (sin overline «Registro»/«Bitácora»). El subtítulo
             // «N sesiones · 90 días · marcas» es del dialecto de Fuerza; el dialecto «Todo» lleva su
             // propio héroe con el conteo del rango.
@@ -401,7 +401,7 @@ struct WorkoutHistoryScreen: View {
                 StrandIcon.close.image
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
             }
-            .padding(.horizontal, 10).padding(.vertical, 5)
+            .padding(.horizontal, 10).padding(.vertical, 5)  // token-exempt: sin token exacto (edge ≠ rowVPad)
             .background(theme.patternBlock, in: Capsule(style: .continuous))
             .contentShape(Capsule())
         }
@@ -454,7 +454,7 @@ struct WorkoutHistoryScreen: View {
         let sports = UnifiedWorkoutHistory.sports(base)
         let strengthCount = base.filter(\.isStrength).count
         if !sports.isEmpty || strengthCount > 0 {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: CenitMetrics.space1) {
                 InstrumentoSectionBand("By sport")
                 if strengthCount > 0 {
                     porDeporteRow(symbol: "dumbbell.fill", name: String(localized: "Strength"),
@@ -476,12 +476,12 @@ struct WorkoutHistoryScreen: View {
     private func porDeporteRow(symbol: String, name: String, count: Int,
                                tap: @escaping () -> Void) -> some View {
         Button(action: tap) {
-            HStack(spacing: 12) {
+            HStack(spacing: CenitMetrics.gap) {
                 Image(systemName: symbol)
                     .font(StrandFont.glyph(.inline, weight: .medium)).foregroundStyle(theme.inkSecondary)
                     .frame(width: 22)
                 Text(verbatim: name).font(StrandFont.body).foregroundStyle(theme.ink).lineLimit(1)
-                Spacer(minLength: 8)
+                Spacer(minLength: CenitMetrics.space2)
                 Text(verbatim: "\(count)").font(StrandFont.captionNumber).foregroundStyle(theme.inkSecondary)
                 StrandIcon.disclosure.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
@@ -499,7 +499,7 @@ struct WorkoutHistoryScreen: View {
     /// La línea de tiempo MIXTA: cada entrada como fila rica de fuerza o fila de actividad, en el
     /// contenedor `EntrenarHistorialLista` (separadores tinta7). El vacío dice que el periodo está vacío.
     private func todoTimeline(entries: [HistoryEntry]) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: CenitMetrics.space1) {
             InstrumentoSectionBand("Sessions") {
                 Text(verbatim: "\(entries.count)").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             }
@@ -601,7 +601,7 @@ struct WorkoutHistoryScreen: View {
 
     /// Split for type-check cost (FER-981): volume card + month tiles are separate ViewBuilders.
     private var tuMes: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: CenitMetrics.gap) {
             InstrumentoSectionBand("Your month")
             tuMesVolumeCard
             tuMesMonthTiles
@@ -630,7 +630,7 @@ struct WorkoutHistoryScreen: View {
     private var tuMesVolumeHeader: some View {
         HStack(alignment: .firstTextBaseline) {
             Text("Volume per week").font(StrandFont.subhead).fontWeight(.semibold).foregroundStyle(theme.ink)
-            Spacer(minLength: 8)
+            Spacer(minLength: CenitMetrics.space2)
             if let delta: Double = monthVolumeDeltaPercent {
                 tuMesDeltaChip(delta: delta)
             }
@@ -650,14 +650,14 @@ struct WorkoutHistoryScreen: View {
         .font(InstrumentoType.grotesk(11, weight: .bold))
         // §8.7: valence en texto <24pt usa positiveText (5.0:1), no el hue del dato.
         .foregroundStyle(valence)
-        .padding(.horizontal, 9).padding(.vertical, 3)
+        .padding(.horizontal, 9).padding(.vertical, 3)  // token-exempt: sin token exacto (horizontal/chip handoff)
         .background(valence.opacity(StrandOpacity.tintFill),
                     in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
     }
 
     /// 8-week bar chart + axis labels. Bar height uses fully-typed CGFloat math (FER-981).
     private func tuMesWeeklyBars(weeks: [WeekVolume], peak: Double, selectedId: Int) -> some View {
-        VStack(spacing: 4) {
+        VStack(spacing: CenitMetrics.space1) {
             HStack(alignment: .bottom, spacing: 6) {
                 ForEach(weeks) { (w: WeekVolume) in
                     let isSelected: Bool = w.id == selectedId
@@ -676,7 +676,7 @@ struct WorkoutHistoryScreen: View {
             Rectangle().fill(theme.hairlineStrong).frame(height: 1.2)  // token-exempt: eje de dato
             HStack {
                 Text(weekLabel(weeks.first?.start)).font(InstrumentoType.grotesk(9)).foregroundStyle(theme.inkTertiary)
-                Spacer(minLength: 8)
+                Spacer(minLength: CenitMetrics.space2)
                 Text("this week").font(InstrumentoType.grotesk(9)).foregroundStyle(theme.inkTertiary)
             }
         }
@@ -704,7 +704,7 @@ struct WorkoutHistoryScreen: View {
             Text(volumeText)
                 .font(InstrumentoType.groteskNumber(17)).foregroundStyle(theme.ink)
         }
-        .padding(.horizontal, 12).padding(.vertical, 9)
+        .padding(.horizontal, CenitMetrics.gap).padding(.vertical, CenitMetrics.rowVPad)
         .background(theme.patternBlock, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
     }
 
@@ -716,7 +716,7 @@ struct WorkoutHistoryScreen: View {
         let hoursValue: String = m.hours > 0 ? String(format: "%.1f", m.hours) : "—"
         let energyValue: String = m.energyKcal.map(StrandFormat.groupedInt) ?? "—"
         let energyUnit: LocalizedStringKey? = m.energyKcal != nil ? "kcal" : nil
-        HStack(spacing: 8) {
+        HStack(spacing: CenitMetrics.space2) {
             monthTile("Sessions", sessionsValue, caption: "this month")
             monthTile("Hours", hoursValue, caption: "trained")
             monthTile("Energy", energyValue, unit: energyUnit, caption: "measured")
@@ -819,7 +819,7 @@ struct WorkoutHistoryScreen: View {
     @ViewBuilder
     private var progressionBlock: some View {
         if !progressionRows.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: CenitMetrics.space2) {
                 // «Ciclos de subida», no «Tu progresión» (FER-148, decisión del dueño): en esta misma
                 // pantalla vive «Progreso» (1RM por ejercicio, FER-136) y los dos nombres casi
                 // iguales nombraban cosas distintas — este es el plan de subida, aquel el marcador.
@@ -829,10 +829,10 @@ struct WorkoutHistoryScreen: View {
                         Text(row.name)
                             .font(StrandFont.body).foregroundStyle(theme.ink)
                             .lineLimit(1).minimumScaleFactor(0.85)
-                        Spacer(minLength: 8)
+                        Spacer(minLength: CenitMetrics.space2)
                         switch row.kind {
                         case .raised(let kg):
-                            HStack(spacing: 4) {
+                            HStack(spacing: CenitMetrics.space1) {
                                 StrandIcon.up.image
                                 Text(StrengthDisplay.weight(kg, system: system))
                             }
@@ -840,7 +840,7 @@ struct WorkoutHistoryScreen: View {
                             .foregroundStyle(theme.positiveText)   // §8.7 valence <24pt
                             .monospacedDigit()
                         case .deferred(let kg):
-                            HStack(spacing: 4) {
+                            HStack(spacing: CenitMetrics.space1) {
                                 Text("…")
                                 Text(StrengthDisplay.weight(kg, system: system))
                             }
@@ -853,7 +853,7 @@ struct WorkoutHistoryScreen: View {
                                 .foregroundStyle(theme.warning)
                         }
                     }
-                    .padding(.vertical, 4)
+                    .padding(.vertical, CenitMetrics.space1)
                     .accessibilityElement(children: .combine)
                 }
                 BarraAncla(String(localized: "What rose, what waits for a day that doesn't hold it back, and what stalled."),
@@ -868,7 +868,7 @@ struct WorkoutHistoryScreen: View {
     /// nada, así que esta misma vista sirve de cabecera-sola cuando `sessions.isEmpty` (el calendario
     /// dibuja sus 91 celdas `.empty`) sin una rama aparte.
     private var sessionsSection: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: CenitMetrics.space1) {
             InstrumentoSectionBand("Sessions") {
                 Text(verbatim: "\(String(localized: "Effort")) /21")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
@@ -883,7 +883,7 @@ struct WorkoutHistoryScreen: View {
                 },
                 monthLabels: historyMonthLabels
             )
-            .padding(.top, 6).padding(.bottom, 2)
+            .padding(.top, 6).padding(.bottom, 2)  // token-exempt: ajuste óptico / sin token exacto
             LazyVStack(alignment: .leading, spacing: 0) {
                 // FER-136 (quisquilloso ronda 4): la lista se acota a la MISMA ventana de 90 días que
                 // `historialSubtitle` anuncia — antes iteraba `sessions` (hasta 200, cualquier
@@ -987,7 +987,7 @@ struct WorkoutHistoryScreen: View {
     /// Handoff v2 session row: family glyph chip · name + «vie 10 jul · 48 min · 4.320 kg» · one right
     /// datum (effort in the strain hue, else kcal, else the honest «—»). Replaces the tall cards.
     private func sessionRow(_ session: StrengthSession) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: CenitMetrics.gap) {
             RoutineRegionGlyph(sessionGlyph(session), tint: sessionTint(session))
                 .frame(width: 22, height: 22)
                 .frame(width: 38, height: 38)
@@ -1004,7 +1004,7 @@ struct WorkoutHistoryScreen: View {
                 Text(sessionMeta(session)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     .lineLimit(1).minimumScaleFactor(0.8)
             }
-            Spacer(minLength: 8)
+            Spacer(minLength: CenitMetrics.space2)
             if let strain = session.strain {
                 // Mismo remedio de contraste que `EntrenarView.bitacoraRow`: 13 pt está bajo el piso
                 // de 24 pt, `dataStrain` crudo no llega a 4.5:1 sobre el papel.
@@ -1064,11 +1064,11 @@ struct WorkoutHistoryScreen: View {
     // MARK: - Saved tickets entry (thermal receipts peek)
 
     private var savedTicketsEntry: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: CenitMetrics.gap) {
             InstrumentoSectionBand("My saved tickets")
             NavigationLink(value: SavedTicketsRoute()) {
                 EntrenarModulo(tono: .neutro) {
-                    HStack(spacing: 12) {
+                    HStack(spacing: CenitMetrics.gap) {
                         RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
                             .fill(theme.hairline)
                             .frame(width: 38, height: 38)
@@ -1082,7 +1082,7 @@ struct WorkoutHistoryScreen: View {
                             Text("\(sessions.count) receipts · today's on top")
                                 .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                         }
-                        Spacer(minLength: 8)
+                        Spacer(minLength: CenitMetrics.space2)
                         StrandIcon.disclosure.image
                             .font(StrandFont.glyph(.chevron, weight: .semibold))
                             .foregroundStyle(theme.inkTertiary)
@@ -1141,7 +1141,7 @@ struct WorkoutHistoryScreen: View {
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                  + Text(oneRMLabel(row.oneRMKg))
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary))
-                Spacer(minLength: 8)
+                Spacer(minLength: CenitMetrics.space2)
                 StrandIcon.disclosure.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold))
                     .foregroundStyle(theme.inkTertiary)
@@ -1166,7 +1166,7 @@ struct WorkoutHistoryScreen: View {
         Button { showManualEntry = true } label: {
             HStack {
                 Text("Log a workout by hand").font(StrandFont.body).foregroundStyle(theme.ink)
-                Spacer(minLength: 8)
+                Spacer(minLength: CenitMetrics.space2)
                 StrandIcon.disclosure.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold))
                     .foregroundStyle(theme.inkTertiary)
@@ -1192,7 +1192,7 @@ struct WorkoutHistoryScreen: View {
                 .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 34)
+        .padding(.vertical, 34)  // token-exempt: sin token exacto
     }
 
     /// «Error de lectura» (Estados, decisión #16 del épico): sustituye la ilustración de «sin datos» —
@@ -1311,18 +1311,18 @@ struct WorkoutHistoryScreen: View {
     }
 
     private func undoBanner(_ d: WorkoutHistoryCoordinator.DeletedSession) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: CenitMetrics.gap) {
             Text("Workout deleted").font(StrandFont.subhead).foregroundStyle(theme.surface)
-            Spacer(minLength: 8)
+            Spacer(minLength: CenitMetrics.space2)
             Button { undoDelete(d) } label: {
                 Text("Undo").font(InstrumentoType.grotesk(15, weight: .bold)).foregroundStyle(theme.surface)
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 18).padding(.vertical, 14)
+        .padding(.horizontal, 18).padding(.vertical, 14)  // token-exempt: 14 del handoff
         .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
         .padding(.horizontal, CenitMetrics.screenPadding)
-        .padding(.bottom, 8)
+        .padding(.bottom, CenitMetrics.space2)
         .transition(.move(edge: .bottom).combined(with: .opacity))
         .task(id: d.id) {
             try? await Task.sleep(nanoseconds: 4_000_000_000)
@@ -1591,7 +1591,7 @@ struct WorkoutSessionDetailScreen: View {
                     actions
                 }
             }
-            .padding(.top, 20)
+            .padding(.top, 20)  // token-exempt: sin token exacto
             .padding(.horizontal, CenitMetrics.screenPadding)
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -1608,7 +1608,7 @@ struct WorkoutSessionDetailScreen: View {
                     .foregroundStyle(theme.ink)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .patternBlock(theme, bar: theme.critical)
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, 16)  // token-exempt: sin token exacto en mapa FER-207 (cardPadding candidato)
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .task {
                         try? await Task.sleep(for: .seconds(4))
@@ -1797,7 +1797,7 @@ struct WorkoutSessionDetailScreen: View {
     /// identidad. `InstrumentoFlowTitle.title` es un `Text` puro (no admite una vista compuesta), así
     /// que el punto vive AL LADO del bloque de título, no incrustado en el propio texto.
     private var heading: some View {
-        HStack(alignment: .center, spacing: 8) {
+        HStack(alignment: .center, spacing: CenitMetrics.space2) {
             if let region = dispRoutineRegion { EntrenarFamilyDot(region.tint(theme)) }
             // «Sesión · {fecha}» — el kicker literal de copy.md «Acta» para el acta pasada
             // (FER-136 · V7). NOTA: esta pantalla sigue siendo `WorkoutSessionDetailScreen`, no una
@@ -1839,7 +1839,7 @@ struct WorkoutSessionDetailScreen: View {
                           color: Color, caption: LocalizedStringKey) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
+            HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space1) {
                 Text(value).instrumentoHero(54).foregroundStyle(color)
                     .monospacedDigit().minimumScaleFactor(0.5).lineLimit(1)
                 if let unit { Text(unit).font(StrandFont.unit).foregroundStyle(theme.inkTertiary) }
@@ -1925,7 +1925,7 @@ struct WorkoutSessionDetailScreen: View {
             if let hr = dispAvgHr {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Avg HR").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space1) {
                         Text(verbatim: "\(hr)")
                             .font(InstrumentoType.groteskNumber(19)).foregroundStyle(theme.dataHeart)
                         Text(verbatim: "bpm").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
@@ -1935,7 +1935,7 @@ struct WorkoutSessionDetailScreen: View {
             if let maxHr = journalRow?.maxHr {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Max HR").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space1) {
                         Text(verbatim: "\(maxHr)")
                             .font(InstrumentoType.groteskNumber(19)).foregroundStyle(theme.dataHeart)
                         Text(verbatim: "bpm").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
@@ -1961,7 +1961,7 @@ struct WorkoutSessionDetailScreen: View {
 
     /// «FUENTE» — measured with the band (journal join) vs estimated; honest, quiet, never a guess.
     private var sourceBadge: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: CenitMetrics.space2) {
             Text("Source").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             if journalRow != nil {
                 // Idioma de origen del sistema (OriginStamp): punto `originBand` + copy en ink —
@@ -1971,12 +1971,12 @@ struct WorkoutSessionDetailScreen: View {
                     Text("Measured on device")
                         .font(StrandFont.caption).foregroundStyle(theme.ink)
                 }
-                .padding(.horizontal, 9).padding(.vertical, 3)
+                .padding(.horizontal, 9).padding(.vertical, 3)  // token-exempt: sin token exacto (horizontal/chip handoff)
                 .background(theme.patternBlock, in: Capsule(style: .continuous))
             } else {
                 Text("Estimated")
                     .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
-                    .padding(.horizontal, 9).padding(.vertical, 3)
+                    .padding(.horizontal, 9).padding(.vertical, 3)  // token-exempt: sin token exacto (horizontal/chip handoff)
                     .background(theme.patternBlock, in: Capsule(style: .continuous))
             }
             Spacer(minLength: 0)
@@ -2004,24 +2004,24 @@ struct WorkoutSessionDetailScreen: View {
             // in performed order (v3 · 2A). The datum here is anatomical/structural, so it stays in ink.
             if isInSuperset(index) {
                 SupersetTag()
-                    .padding(.bottom, 4)
+                    .padding(.bottom, CenitMetrics.space1)
             }
             exerciseTitle(g)
-                .padding(.bottom, 6)
+                .padding(.bottom, 6)  // token-exempt: ajuste óptico / sin token exacto
             ForEach(Array(g.sets.enumerated()), id: \.element.id) { idx, set in
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space2) {
                     Text("Set \(idx + 1)").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
                     if isPRSet(set, exerciseId: g.exerciseId) {
                         Text("PR").font(StrandFont.captionNumber).foregroundStyle(theme.dataStrain)
-                            .padding(.horizontal, 6).padding(.vertical, 1)
+                            .padding(.horizontal, 6).padding(.vertical, 1)  // token-exempt: ajuste óptico / sin token exacto
                             .overlay(Capsule().strokeBorder(theme.dataStrain.opacity(0.5), lineWidth: 1)) // token-exempt: stroke chip PR 0.5 (alfa propio)
                             .accessibilityLabel(Text("Personal record"))
                     }
-                    Spacer(minLength: 8)
+                    Spacer(minLength: CenitMetrics.space2)
                     Text(StrengthHistoryFormat.setLine(set, system: system))
                         .font(InstrumentoType.groteskNumber(14)).foregroundStyle(theme.ink)
                 }
-                .padding(.vertical, 5)
+                .padding(.vertical, 5)  // token-exempt: ajuste óptico / sin token exacto
                 .overlay(alignment: .top) {
                     if idx > 0 { Divider().overlay(theme.hairline) }
                 }
