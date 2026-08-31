@@ -328,7 +328,7 @@ struct HojaFoco: View {
                     }
                     .buttonStyle(.plain)
                 }
-                Spacer(minLength: 12)
+                Spacer(minLength: CenitMetrics.gap)
                 if let next {
                     Button { focoJump(to: next.id) } label: {
                         Text(verbatim: "\(next.name) ›").font(StrandFont.subhead.weight(.semibold)).foregroundStyle(LiquidColor.tinta900).lineLimit(1)

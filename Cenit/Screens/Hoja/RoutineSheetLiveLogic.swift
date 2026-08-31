@@ -659,7 +659,7 @@ extension HojaSesionViva {
             if let ei = restOwnerExerciseIndex, !session.paused {
                 Button { openRestEditor(ei: ei) } label: {
                     Label("Change rest", systemImage: "pencil").font(StrandFont.caption).foregroundStyle(sheet.theme.ink)
-                        .padding(.horizontal, 13).padding(.vertical, LiquidSpace.s150)
+                        .padding(.horizontal, 13).padding(.vertical, LiquidSpace.s150)  // token-exempt: sin token exacto (horizontal/chip handoff)
                         .overlay(Capsule().strokeBorder(sheet.theme.hairlineStrong, lineWidth: 1))
                 }
                 .buttonStyle(.plain)
