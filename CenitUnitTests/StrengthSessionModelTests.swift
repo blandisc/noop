@@ -924,4 +924,40 @@ final class StrengthSessionModelTests: XCTestCase {
         XCTAssertEqual(restored.runs[0].deloadState, .deloading(fromKg: 100, toKg: 92.5),
                        "the un-actioned deload proposal must survive a crash-restore")
     }
+
+    // MARK: Descanso sin reloj vivo (FER-250)
+
+    private func hrEx(_ id: String, exerciseId: String, sets: Int, restSeconds: Int) -> RoutineExercise {
+        RoutineExercise(id: id, routineId: "rt", exerciseId: exerciseId, position: 0,
+                        targetSets: sets, restMode: .heartRate, restSeconds: restSeconds)
+    }
+
+    func testHeartRateRestDegradesToRoutineSecondsWithoutLivePulse() {
+        // Rutina pide descanso por FC (120 s de objetivo). Sin pulso vivo → temporizador fijo de 120 s,
+        // no un descanso por FC que nunca suelta ni un cronómetro en 0.
+        let s = make([StrengthSessionModel.PlanSlot(re: hrEx("a", exerciseId: "bench", sets: 3, restSeconds: 120),
+                                                    exercise: ex("bench", "Bench"), lastSets: [])])
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 5000), restingHR: 60, hasLivePulse: false)
+        XCTAssertEqual(s.currentRestMode, .fixed, "sin pulso vivo, el descanso por FC cae a fijo")
+        XCTAssertEqual(s.restEndsAt?.timeIntervalSince1970 ?? 0, 5000 + 120, accuracy: 0.5,
+                       "usa el objetivo de la rutina (120 s), no el respaldo")
+    }
+
+    func testHeartRateRestWithoutSecondsFallsBackTo90WithoutLivePulse() {
+        // Rutina por FC sin segundos definidos + sin reloj → respaldo de 90 s (no un cronómetro en 0).
+        let s = make([StrengthSessionModel.PlanSlot(re: hrEx("a", exerciseId: "bench", sets: 3, restSeconds: 0),
+                                                    exercise: ex("bench", "Bench"), lastSets: [])])
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 5000), restingHR: 60, hasLivePulse: false)
+        XCTAssertEqual(s.currentRestMode, .fixed)
+        XCTAssertEqual(s.restEndsAt?.timeIntervalSince1970 ?? 0, 5000 + 90, accuracy: 0.5,
+                       "sin objetivo de rutina, el respaldo son 90 s")
+    }
+
+    func testHeartRateRestPreservedWithLivePulse() {
+        // No-regresión: con pulso vivo y baseline, el descanso por FC se conserva.
+        let s = make([StrengthSessionModel.PlanSlot(re: hrEx("a", exerciseId: "bench", sets: 3, restSeconds: 120),
+                                                    exercise: ex("bench", "Bench"), lastSets: [])])
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 5000), restingHR: 60, hasLivePulse: true)
+        XCTAssertEqual(s.currentRestMode, .heartRate, "con pulso vivo, el descanso por FC se preserva")
+    }
 }

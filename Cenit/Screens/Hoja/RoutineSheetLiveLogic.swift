@@ -204,6 +204,36 @@ extension HojaSesionViva {
         }
     }
 
+    /// FER-250: «Descartar entrenamiento» del confirm de cierre — tira la sesión sin guardar y sin
+    /// pasar por el detector de cambios de rutina (no hay acta que preservar).
+    func discardFinish() {
+        sheet.model.endStrengthSession(save: false)
+    }
+
+    /// FER-250: con 0 series no promete guardar; con ≥1 reusa la clave existente de la Hoja.
+    var finishConfirmMessage: String {
+        if session.doneCount == 0 {
+            return String(localized: "You haven't logged any sets yet.")
+        }
+        return String(localized: "You logged \(session.doneCount) sets. Finish to save this workout.")
+    }
+
+    /// FER-250: Guardar solo si hay qué guardar; Descartar siempre; Seguir siempre.
+    /// Paridad `LiveStrengthSheet.bodyFinishConfirmActions` (claves existentes).
+    var finishConfirmActions: [InstrumentoConfirmAction] {
+        if session.doneCount == 0 {
+            return [
+                .init(String(localized: "Keep training"), role: .primary),
+                .init(String(localized: "Discard workout"), role: .destructive) { discardFinish() }
+            ]
+        }
+        return [
+            .init(String(localized: "Finish and save"), role: .primary) { requestFinish() },
+            .init(String(localized: "Keep training"), role: .secondary),
+            .init(String(localized: "Discard workout"), role: .destructive) { discardFinish() }
+        ]
+    }
+
     /// «GUARDAR EN LA RUTINA»: escribe los cambios detectados a `RoutineExercise` (series, ejercicio)
     /// y DESPUÉS termina — la próxima vez que se abra esta rutina, sale así. El acta de HOY no
     /// depende de esto: refleja lo que de verdad se hizo sea cual sea la respuesta.
@@ -354,7 +384,8 @@ extension HojaSesionViva {
     /// veces; el evento vive solo aquí ahora. `sheet.model.buzz(loops: 1)` (AppModel.buzz, el cuarto
     /// sistema háptico del repo) queda reemplazado por el catálogo de Entrenar.
     func registerActiveSet(ei: Int, si: Int) {
-        session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR)
+        session.registerCurrentSet(restingHR: restingBaseline, maxHR: profileMaxHR,
+                                   hasLivePulse: sheet.model.watchBpm != nil)
         let rirForThisSet = LiveStrengthSheet.rirScoped(
             selectedRIR: selectedRIR, selectedRIRTarget: selectedRIRTarget,
             registering: LiveStrengthSheet.RIRTarget(ei: ei, si: si))
@@ -675,10 +706,18 @@ extension HojaSesionViva {
         let cappedEnd = noStrapFallback ? min(end ?? now, started.addingTimeInterval(300)) : end
         let totalS = cappedEnd.map { max(0, Int($0.timeIntervalSince(started))) } ?? 0
         let elapsed = max(0, min(totalS, Int(now.timeIntervalSince(started))))
+        // FER-250: sin reloj el motor ya cayó a fijo — no regañar «sin reloj» en el trailing de CADA
+        // descanso. El aviso «descanso por tiempo (sin reloj)» sale UNA vez vía `shownNoWatchRestNote`.
+        let oneShotNoWatch = sheet.model.watchBpm == nil && !shownNoWatchRestNote
+        let note: LocalizedStringKey? = {
+            if oneShotNoWatch { return "rest by time (no watch)" }
+            if noStrapFallback { return "resting by clock: connect your Apple Watch for rest by heart rate" }
+            return nil
+        }()
         return RestBand(kicker: restBandKicker(esRonda: esRonda),
                          mode: .clock(elapsed: SessionClock.format(elapsed), target: SessionClock.format(totalS)),
-                         trailing: sheet.model.watchBpm == nil ? String(localized: "no watch on your wrist") : SessionClock.format(elapsed),
-                         note: noStrapFallback ? "resting by clock: connect your Apple Watch for rest by heart rate" : nil,
+                         trailing: SessionClock.format(elapsed),
+                         note: note,
                          large: large,
                          onSkip: { skipRest() })
             .accessibilityAddTraits(.updatesFrequently)
