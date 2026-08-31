@@ -37,7 +37,7 @@ public enum EntrenarFamily: String, Sendable, CaseIterable, Hashable {
     /// de texto (≥ 4.5:1) sobre el papel vivo. Es el par obligatorio del anterior — «hue de dato /
     /// tono de lectura» — para que un rótulo de familia nunca se pinte en el hue saturado.
     public func reading(_ theme: InstrumentoTheme) -> Color {
-        OKLab.darkened(tint(theme), toContrast: 4.5, against: theme.paper)
+        theme.onPaper(tint(theme))
     }
 
     /// Nombre visible de la familia (vía catálogo). Claves `muscleGroup.*` — un «Push» suelto

@@ -115,7 +115,7 @@ enum HojaCabeceraSesion {
     /// animado a propósito: el numeral ya es la señal de vida.
     @ViewBuilder private static func heartRate(vivo: HojaSesionViva) -> some View {
         if let bpm = vivo.sheet.model.watchBpm {
-            let tone = OKLab.darkened(vivo.sheet.theme.dataHeart, toContrast: 4.5, against: vivo.sheet.theme.paper)
+            let tone = vivo.sheet.theme.onPaper(vivo.sheet.theme.dataHeart)
             HStack(spacing: CenitMetrics.space1) {
                 StrandIcon.heart.image.font(StrandFont.glyph(.chevron))
                 Text("\(bpm)").font(StrandFont.subhead.weight(.semibold))

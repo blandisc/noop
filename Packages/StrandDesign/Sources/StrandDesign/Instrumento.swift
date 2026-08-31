@@ -229,6 +229,13 @@ public extension InstrumentoTheme {
     /// `positiveText`. (FER-131 · 02)
     var negativeText: Color { critical }
 
+    /// Any data hue darkened to ≥4.5:1 against the live `paper` — the reading tone for text
+    /// below 24 pt. Pass the call site's own hue (`dataHeart`, `dataStrain`, a band color…);
+    /// do not bake one fixed role in. (FER-208)
+    func onPaper(_ tono: Color) -> Color {
+        OKLab.darkened(tono, toContrast: 4.5, against: paper)
+    }
+
     // MARK: Paper gradient — warm-paper depth for the «Hoy» canvas (handoff «Hoy · Estados»)
     //
     // The daytime «Hoy» canvas reads as paper with a faint pool of light near the

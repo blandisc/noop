@@ -557,7 +557,7 @@ struct WorkoutHistoryScreen: View {
     private func cardioDato(_ r: WorkoutRow) -> EntrenarFilaCardio.Dato {
         if let hr = r.avgHr {
             return .init(valor: "\(hr)", unidad: "bpm",
-                         tono: OKLab.darkened(theme.dataHeart, toContrast: 4.5, against: theme.paper))
+                         tono: theme.onPaper(theme.dataHeart))
         }
         let mins = Int((r.durationS ?? Double(max(0, r.endTs - r.startTs))) / 60)
         return .init(valor: "\(mins)", unidad: String(localized: "min"), tono: theme.inkSecondary)
@@ -1010,7 +1010,7 @@ struct WorkoutHistoryScreen: View {
                 // de 24 pt, `dataStrain` crudo no llega a 4.5:1 sobre el papel.
                 (Text(verbatim: StrengthHistoryFormat.strain(strain))
                     .font(InstrumentoType.grotesk(13, weight: .bold))
-                    .foregroundStyle(OKLab.darkened(theme.dataStrain, toContrast: 4.5, against: theme.paper))
+                    .foregroundStyle(theme.onPaper(theme.dataStrain))
                  + Text(verbatim: " /21").font(StrandFont.caption).foregroundStyle(theme.inkTertiary))
             } else if let k = session.energyKcal {
                 (Text(StrandFormat.groupedInt(k)) + Text(verbatim: " ") + Text("kcal"))
