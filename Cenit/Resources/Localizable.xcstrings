@@ -9444,6 +9444,23 @@
         }
       }
     },
+    "Assign a day" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assign a day"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asigna un día"
+          }
+        }
+      }
+    },
     "At home" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -33263,22 +33280,6 @@
         }
       }
     },
-    "Ready to edit" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ready to edit"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Para editar"
-          }
-        }
-      }
-    },
     "Ready to search" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -37658,6 +37659,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ver cómo se calcula"
+          }
+        }
+      }
+    },
+    "Show the plan" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show the plan"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Muestra el plan"
           }
         }
       }
@@ -43666,6 +43684,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Usar %@ para %@"
+          }
+        }
+      }
+    },
+    "Use this plan" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use this plan"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usar este plan"
           }
         }
       }

@@ -8,6 +8,14 @@ el mismo PR** que la implementa (una línea basta: fecha, decisión, por qué).
 
 ## Producto
 
+- **2026-08-30 · Primer uso de Entrenar = «el split decide» (FER-251, opción A).** Una
+  acción primaria (los 3 chips, cada uno abre SU grupo con la primera rutina en preview y
+  el CTA «Usar este plan»); «Desde cero» e «Importar» como filas secundarias; ningún tap
+  único escribe rutinas ni agenda la semana. Consecuencia directa (asunción del director,
+  validada por QA): `CrearPlanScreen` («Tres caminos», FER-137) se ARCHIVÓ — sus tres
+  caminos quedaron accesibles en directo y la pantalla quedó sin ninguna puerta de entrada.
+  Revivirla es una reversión explícita de esta entrada, no un accidente.
+
 - **2026-06 · Cero banda.** La banda WHOOP nunca existió para los usuarios de Cénit: la
   app es 100% Apple Health. Ningún copy, doc o feature nuevo la menciona como vigente
   (épico FER-1003; axioma «mundo nuevo cero banda»).

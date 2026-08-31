@@ -20,6 +20,10 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Primer uso de Entrenar honesto / Honest Training first-run** (FER-251).
+  **ES** — Los tres chips de split ahora abren su plantilla real con los ejercicios a la vista y un solo botón «Usar este plan»; «Desde cero» e «Importar» quedan a un tap; ya no hay puertas duplicadas ni plantillas que se apliquen a ciegas. La pantalla «Tres caminos» se archivó.
+  **EN** — The three split chips now open their real template with exercises visible and a single “Use this plan” button; “From scratch” and “Import” stay one tap away; no more duplicate doors or templates applied blindly. The “Three paths” screen was archived.
+
 - **«Tu cuerpo» al vidrio El Eje / Body screen moves to El Eje glass** (FER-206).
   **ES** — La última superficie de Entrenar en tarjetas de papel legacy migra al sistema de módulos y teselas de cristal del hub; contenido e interacciones intactos.
   **EN** — The last Training surface on legacy paper cards moves to the hub's glass module/tile system; content and interactions unchanged.

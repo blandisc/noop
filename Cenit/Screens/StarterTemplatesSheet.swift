@@ -12,6 +12,10 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 // templates are bundled data (`StarterTemplates`) and the exercises resolve from the seed catalog.
 // Adding writes a normal `Routine` via the existing save path, so the copy edits like any routine.
 //
+// FER-251: optional `grupo` acota la hoja a UN programa (lista SUS rutinas + preview + CTA
+// «Usar este plan» que crea el grupo entero y agenda días libres). Sin `grupo` (nil) el
+// comportamiento es el catálogo completo de siempre — cero regresión para WeeklyPlanEditor y co.
+//
 // Presented like the routine builder: from `EntrenarView` as a `.sheet`, with the theme passed in
 // explicitly (it doesn't cross the sheet boundary — FER-190) and `onAdded` to reload the hub.
 
@@ -20,8 +24,12 @@ struct StarterTemplatesSheet: View {
     @Environment(\.instrumentoTheme) private var theme
     @Environment(\.dismiss) private var dismiss
 
-    /// Called after a template is copied, so the hub reloads «My routines» and the new one shows.
+    /// Called after a template is copied (or a group is applied), so the hub reloads.
     var onAdded: () async -> Void
+    /// Optional: fired after a successful group apply (toast / dismiss parent), never on single-add.
+    var onApplied: (() -> Void)?
+    /// nil = catálogo completo; non-nil = solo ese grupo (FER-251).
+    var grupo: StarterTemplate.Group?
 
     /// nil = the grouped list; non-nil = that template's preview.
     @State private var selected: StarterTemplate?
@@ -30,16 +38,33 @@ struct StarterTemplatesSheet: View {
     /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
     @ObserveInjection private var inject
 
-    /// La hoja abre SIEMPRE en la lista agrupada. El atajo que la abría clavada en una plantilla
-    /// («Empezar» directo, sin guardar) era del camino «suave», y ese camino se retiró en FER-85.
-    init(onAdded: @escaping () async -> Void) {
+    /// Catálogo completo (`grupo == nil`) o acotado a un programa. En modo grupo abre SIEMPRE con
+    /// la primera rutina en preview (ronda 2 del gate FER-251: el CTA «Usar este plan» nunca es
+    /// alcanzable sin ejercicios visibles — el preview aprobado por el dueño llega abierto).
+    init(grupo: StarterTemplate.Group? = nil,
+         onApplied: (() -> Void)? = nil,
+         onAdded: @escaping () async -> Void) {
+        self.grupo = grupo
+        self.onApplied = onApplied
         self.onAdded = onAdded
+        if let grupo {
+            _selected = State(initialValue: StarterTemplates.inGroup(grupo).first)
+        }
     }
+
+    private var isGroupMode: Bool { grupo != nil }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-                if let t = selected { preview(t) } else { listContent }
+                if let t = selected {
+                    preview(t)
+                } else {
+                    listContent
+                }
+                if isGroupMode {
+                    useThisPlanFooter
+                }
             }
             .padding(.horizontal, CenitMetrics.screenPadding)
             .padding(.top, CenitMetrics.gap)
@@ -71,28 +96,44 @@ struct StarterTemplatesSheet: View {
         .enableInjection()
     }
 
-    // MARK: - List (grouped by program)
+    // MARK: - List (grouped by program, or one group in FER-251 mode)
 
     private var listContent: some View {
         VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-            VStack(alignment: .leading, spacing: 4) {
-                // FER-952: the sheet speaks the module's Grotesk voice (overline + hero title).
-                Text("Templates").groteskSheetTitle().textCase(.uppercase).foregroundStyle(theme.inkTertiary)
-                Text("Start from a template")
-                    .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
-                    .foregroundStyle(theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text("Begin with a proven base and edit it to taste. Everything works offline.")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 2)
+            if !isGroupMode {
+                VStack(alignment: .leading, spacing: 4) {
+                    // FER-952: the sheet speaks the module's Grotesk voice (overline + hero title).
+                    Text("Templates").groteskSheetTitle().textCase(.uppercase).foregroundStyle(theme.inkTertiary)
+                    Text("Start from a template")
+                        .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
+                        .foregroundStyle(theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("Begin with a proven base and edit it to taste. Everything works offline.")
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 2)
+                }
+            } else if let grupo {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Templates").groteskSheetTitle().textCase(.uppercase).foregroundStyle(theme.inkTertiary)
+                    Text(groupName(grupo))
+                        .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
+                        .foregroundStyle(theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text(routineCountText(StarterTemplates.inGroup(grupo).count))
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 2)
+                }
             }
 
-            ForEach(StarterTemplate.Group.allCases, id: \.self) { group in
+            ForEach(visibleGroups, id: \.self) { group in
                 let templates = StarterTemplates.inGroup(group)
                 if !templates.isEmpty {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text(groupName(group)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                        if !isGroupMode {
+                            Text(groupName(group)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                        }
                         EntrenarModulo(tono: .neutro, intensidad: LiquidTonoMetrics.intensidadDefault, insets: EdgeInsets()) {
                             VStack(alignment: .leading, spacing: 0) {
                                 ForEach(templates) { t in
@@ -105,6 +146,11 @@ struct StarterTemplatesSheet: View {
                 }
             }
         }
+    }
+
+    private var visibleGroups: [StarterTemplate.Group] {
+        if let grupo { return [grupo] }
+        return Array(StarterTemplate.Group.allCases)
     }
 
     private func templateRow(_ t: StarterTemplate) -> some View {
@@ -126,19 +172,24 @@ struct StarterTemplatesSheet: View {
         .accessibilityHint(Text("Preview this template"))
     }
 
-    // MARK: - Preview (one template + the «add» action)
+    // MARK: - Preview (one template + add / use-plan action)
 
     private func preview(_ t: StarterTemplate) -> some View {
         VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-            Button { withAnimation(StrandMotion.interactive) { selected = nil } } label: {
-                HStack(spacing: 4) {
-                    StrandIcon.back.image.font(StrandFont.glyph(.chevron, weight: .semibold))
-                    Text("Templates").font(StrandFont.subhead)
+            // En modo grupo con 1 rutina no hay lista detrás; el back solo tiene sentido si hay
+            // más de una (o catálogo completo).
+            if !isGroupMode || (grupo.map { StarterTemplates.inGroup($0).count } ?? 0) > 1 {
+                Button { withAnimation(StrandMotion.interactive) { selected = nil } } label: {
+                    HStack(spacing: 4) {
+                        StrandIcon.back.image.font(StrandFont.glyph(.chevron, weight: .semibold))
+                        Text(isGroupMode ? groupName(t.group) : LocalizedStringKey("Templates"))
+                            .font(StrandFont.subhead)
+                    }
+                    .foregroundStyle(theme.inkSecondary)
                 }
-                .foregroundStyle(theme.inkSecondary)
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("Back to templates"))
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Text("Back to templates"))
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(groupName(t.group)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
@@ -160,25 +211,50 @@ struct StarterTemplatesSheet: View {
                 }
             }
 
-            VStack(spacing: 10) {
-                Button { add(t) } label: {
-                    Text("Add to my routines")
-                        .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
-                        .foregroundStyle(theme.paper)
-                        .frame(maxWidth: .infinity).padding(.vertical, 15)
-                        .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
-                }
-                .buttonStyle(.plain)
-                .disabled(saving)
-                .opacity(saving ? 0.6 : 1)
+            if !isGroupMode {
+                VStack(spacing: 10) {
+                    Button { add(t) } label: {
+                        Text("Add to my routines")
+                            .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
+                            .foregroundStyle(theme.paper)
+                            .frame(maxWidth: .infinity).padding(.vertical, 15)
+                            .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(saving)
+                    .opacity(saving ? 0.6 : 1)
 
-                Text("It's copied into «My routines». You can edit it like any routine.")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity)
+                    Text("It's copied into «My routines». You can edit it like any routine.")
+                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity)
+                }
+                .padding(.top, 2)
             }
-            .padding(.top, 2)
         }
+    }
+
+    /// CTA de modo grupo (FER-251): aplica el programa entero + agenda, no una sola rutina.
+    private var useThisPlanFooter: some View {
+        VStack(spacing: 10) {
+            Button { applyTemplateGroup() } label: {
+                Text("Use this plan")
+                    .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
+                    .foregroundStyle(theme.paper)
+                    .frame(maxWidth: .infinity).padding(.vertical, 15)
+                    .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .disabled(saving)
+            .opacity(saving ? 0.6 : 1)
+            .accessibilityHint(Text("Choosing a template creates its routines and your week is set; you can always edit it later, day by day."))
+
+            Text("Choosing a template creates its routines and your week is set; you can always edit it later, day by day.")
+                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity)
+        }
+        .padding(.top, 2)
     }
 
     private func slotRow(_ slot: StarterTemplate.Slot) -> some View {
@@ -221,11 +297,52 @@ struct StarterTemplatesSheet: View {
         }
     }
 
+    // MARK: - Apply group (FER-251 · misma lógica que CrearPlanScreen.applyTemplateGroup)
+
+    /// Días lunes→domingo (Calendar weekday: 1 = domingo … 7 = sábado).
+    private static let mondayFirstWeekdays = [2, 3, 4, 5, 6, 7, 1]
+
+    /// Copia CADA rutina del grupo y asigna cada una al primer día LIBRE — nunca pisa un día ya
+    /// asignado. Si falla el guardado: banner inline, la hoja NO se cierra, nada a medias.
+    private func applyTemplateGroup() {
+        guard let group = grupo, !saving else { return }
+        saving = true
+        Task {
+            guard let store = await repo.storeHandle() else {
+                saving = false; saveError = true; return
+            }
+            do {
+                let existing = (try? await store.routineSchedule()) ?? []
+                let taken = Set(existing.map(\.weekday))
+                var freeWeekdays = Self.mondayFirstWeekdays.filter { !taken.contains($0) }
+                let now = Int(Date().timeIntervalSince1970)
+                for t in StarterTemplates.inGroup(group) {
+                    let name = String(localized: templateName(t.id))
+                    let (routine, exercises) = t.makeRoutine(name: name, now: now)
+                    try await repo.saveRoutine(routine, exercises: exercises)
+                    if !freeWeekdays.isEmpty {
+                        try? await store.setRoutineSchedule(weekday: freeWeekdays.removeFirst(), routineId: routine.id)
+                    }
+                }
+                await onAdded()
+                onApplied?()
+                dismiss()
+            } catch {
+                saving = false
+                saveError = true
+            }
+        }
+    }
+
     // MARK: - Bits
 
     private var divider: some View { Divider().overlay(theme.hairline) }
 
     private func exerciseCountText(_ n: Int) -> String { String(localized: "\(n) exercises") }
+
+    private func routineCountText(_ n: Int) -> String {
+        n == 1 ? String(localized: "1 routine") : String(localized: "\(n) routines")
+    }
 
     /// "4 × 6" for rep work; "4 sets" when a template prescribes no rep target.
     private func schemeText(_ slot: StarterTemplate.Slot) -> String {
