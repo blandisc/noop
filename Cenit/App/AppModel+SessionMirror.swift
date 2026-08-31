@@ -294,10 +294,13 @@ extension AppModel {
         case .completeSet:
             // «Completar» — works from the active card (log the set → rest) AND the rest card (log the
             // upcoming set → rest again). registerCurrentSet advances either way.
-            s.registerCurrentSet(restingHR: restingHrBaseline, maxHR: Double(profile.hrMax))
+            // FER-257 D4: pulso vivo real (mismo criterio que RoutineSheetLiveLogic) — no asumir true.
+            s.registerCurrentSet(restingHR: restingHrBaseline, maxHR: Double(profile.hrMax),
+                                 hasLivePulse: watchBpm != nil)
         case .finishWorkout:
             // Last set of the routine: log it, then end the session (which ends the Live Activity).
-            s.registerCurrentSet(restingHR: restingHrBaseline, maxHR: Double(profile.hrMax))
+            s.registerCurrentSet(restingHR: restingHrBaseline, maxHR: Double(profile.hrMax),
+                                 hasLivePulse: watchBpm != nil)
             endStrengthSession(save: true)
         case .addThirty:
             guard s.phase == .resting, !s.paused else { return }
@@ -322,7 +325,9 @@ extension AppModel {
         switch action {
         case .completeSet:
             guard s.phase == .capturing else { return }
-            s.registerCurrentSet(restingHR: restingHrBaseline, maxHR: Double(profile.hrMax))
+            // FER-257 D4: pulso vivo real — el default `true` colgaría un descanso por FC sin Watch.
+            s.registerCurrentSet(restingHR: restingHrBaseline, maxHR: Double(profile.hrMax),
+                                 hasLivePulse: watchBpm != nil)
         case .skipRest:
             guard s.phase == .resting else { return }
             s.skipRest()

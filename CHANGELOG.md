@@ -20,6 +20,10 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Descanso sin reloj, remates / Rest without a watch, follow-ups** (FER-257).
+  **ES** — Los registros desde el Apple Watch ya no asumen pulso vivo (el descanso cae a temporizador fijo también por esa vía); el aviso «descanso por reloj» sale una sola vez por sesión aunque el pulso muera a mitad de un descanso.
+  **EN** — Logs from the Apple Watch mirror no longer assume a live pulse (rest falls back to a fixed timer on that path too); the “resting by clock” note shows once per session even if the pulse dies mid-rest.
+
 - **El detalle de ejercicio termina de pasar a vidrio / Exercise detail finishes its move to glass** (migración · «Un solo vidrio · El Eje»).
   **ES** — Las últimas superficies de papel del detalle de ejercicio (chips de músculos asistentes, chips de peso×reps del historial, el cuadro del ícono de YouTube) dejan el gris papel (`patternBlock` #EFEAE0) y pasan a la pastilla sólida de El Eje (`.liquidGlass(.pastillaSolida)`, la misma superficie que `LiquidChipSeleccion`). El músculo principal conserva el tono de su familia de movimiento (identidad); tipografía, tinta, el segmentado y el marco del hero no cambian.
   **EN** — The exercise detail's last paper surfaces (assisting-muscle chips, the history's weight×reps chips, the YouTube icon square) leave the paper gray (`patternBlock`) for El Eje's solid pastille (`.liquidGlass(.pastillaSolida)`, the same surface `LiquidChipSeleccion` uses). The primary muscle keeps its movement-family hue (identity); type, ink, the segmented control and the hero frame are untouched.
