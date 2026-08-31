@@ -94,9 +94,6 @@ public enum EntrenarHubMetrics {
     // MARK: HÉROE — el CTA verde y la píldora «Otra forma» (mock `.ctaV`/`.otra`)
 
     public static let heroCTAMinWidth: CGFloat = 168
-    public static let heroCTAShadowY: CGFloat = 6
-    public static let heroCTAShadowRadius: CGFloat = 8
-    public static let heroCTAShadowAlfa: Double = 0.28
     public static let otraFormaPaddingH: CGFloat = 18
     public static let otraFormaFondoAlfa: Double = 0.62
     public static let otraFormaHighlightAlfa: Double = 0.85
@@ -169,8 +166,6 @@ public enum EntrenarHubMetrics {
     /// Píldora «Hoy subes» → fila CTA (mock `.ctaRow{margin-top:12px}`).
     public static let heroSubPillToCtaTop: CGFloat = 12
     public static let heroCtaGap: CGFloat = 14
-    /// «Empezar» — grotesk 14/600 (mock `.ctaV{font-size:14px;font-weight:600}`).
-    public static let heroCTATexto = InstrumentoType.grotesk(14, weight: .semibold)
     /// «Otra forma ⌄» — grotesk 13/600 (mock `.otra{font-size:13px;font-weight:600}`).
     public static let heroOtraFormaTexto = InstrumentoType.grotesk(13, weight: .semibold)
 

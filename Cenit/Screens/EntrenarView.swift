@@ -659,42 +659,45 @@ private struct EntrenarLanding: View {
     }
 
     /// ③ Descanso (+ leve): el héroe del handoff «Descanso» — título a 40 pt, SIN numerales ni
-    /// progresión (no hay sesión que medir), y la única puerta es «Movilidad · 20 min» en papel. El
-    /// hilo de arriba ya pinta ámbar cuando el consejo de hoy es `.lighter`; este bloque solo añade
-    /// la cláusula de texto — nunca reordena ni repite el veredicto.
+    /// progresión (no hay sesión que medir), y la única puerta es «Movilidad · 20 min» en verde de
+    /// marca. El hilo de arriba ya pinta ámbar cuando el consejo de hoy es `.lighter`; este bloque
+    /// solo añade la cláusula de texto — nunca reordena ni repite el veredicto.
     private var heroSectionDescanso: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // FER-132 ronda 2: kicker FIJO «Hoy» — copy literal del prototipo (`descansoLeve.hk: "Hoy"`,
-            // sin el día). `hoyOverline` interpola el día para los héroes con rutina; reusarlo aquí
-            // colaba «Hoy · Martes» en cualquier descanso que no fuera `.recover`.
-            Text("Today").entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
-            Text("Rest")
-                .font(InstrumentoType.grotesk(EntrenarMetrics.restHeroTitle, weight: .bold)).tracking(-1)
-                .foregroundStyle(theme.ink)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, EntrenarMetrics.heroTitleTop)
-            Text(descansoSubtitulo)
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, EntrenarMetrics.heroSubTop)
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .center, spacing: EntrenarMetrics.ctaRowGap) {
-                    movilidadButton
-                    otraFormaEnlace(fillsWidth: false)
+        EntrenarModulo(tono: .neutro, intensidad: LiquidTonoMetrics.intensidadDefault,
+                       insets: EntrenarHubMetrics.heroInsets) {
+            VStack(alignment: .leading, spacing: 0) {
+                // FER-132 ronda 2: kicker FIJO «Hoy» — copy literal del prototipo (`descansoLeve.hk: "Hoy"`,
+                // sin el día). `hoyOverline` interpola el día para los héroes con rutina; reusarlo aquí
+                // colaba «Hoy · Martes» en cualquier descanso que no fuera `.recover`.
+                Text("Today").entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
+                Text("Rest")
+                    .font(InstrumentoType.grotesk(EntrenarMetrics.restHeroTitle, weight: .bold)).tracking(-1)
+                    .foregroundStyle(theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, EntrenarMetrics.heroTitleTop)
+                Text(descansoSubtitulo)
+                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, EntrenarMetrics.heroSubTop)
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .center, spacing: EntrenarMetrics.ctaRowGap) {
+                        movilidadButton
+                        otraFormaEnlace(fillsWidth: false)
+                    }
+                    VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+                        movilidadButton
+                        otraFormaEnlace(fillsWidth: false)
+                    }
                 }
-                VStack(alignment: .leading, spacing: CenitMetrics.space2) {
-                    movilidadButton
-                    otraFormaEnlace(fillsWidth: false)
-                }
+                .padding(.top, EntrenarMetrics.ctaRowTop)
+                otraFormaPliegue
             }
-            .padding(.top, EntrenarMetrics.ctaRowTop)
-            otraFormaPliegue
         }
     }
 
-    /// «Movilidad · 20 min» — papel, la única puerta del héroe de descanso (copy.md «Héroe»).
+    /// «Movilidad · 20 min» — verde de marca también en descanso (FER-249, decisión del dueño).
     private var movilidadButton: some View {
-        StrandCTAButton("Mobility · 20 min", kind: .outline, fillsWidth: false) { startMobilityFromDisc() }
+        LiquidGlassButton("Mobility · 20 min", variant: .primary) { startMobilityFromDisc() }
     }
 
     /// «tu semana marca descanso» + (si el consejo de hoy es `.lighter`) la cláusula ámbar del
@@ -1140,34 +1143,39 @@ private struct EntrenarLanding: View {
 
     private var primerUsoSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Let's start")
-                .entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
-            Text("Build your week")
-                .font(InstrumentoType.grotesk(32, weight: .bold)).tracking(-1)
-                .foregroundStyle(theme.ink)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, EntrenarMetrics.heroTitleTop)
-            Text("Choose a template or build your own routine · Entrenar serves it to you every day after that")
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, EntrenarMetrics.heroSubTop)
-            primerUsoChips.padding(.top, CenitMetrics.gap)
-            Button { showHubImport = true } label: {
-                HStack(spacing: CenitMetrics.space1) {
-                    Text("Import your AI's plan").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    StrandIcon.disclosure.image
-                        .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-                        .accessibilityHidden(true)
+            EntrenarModulo(tono: .neutro, intensidad: LiquidTonoMetrics.intensidadDefault,
+                           insets: EntrenarHubMetrics.heroInsets) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Let's start")
+                        .entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
+                    Text("Build your week")
+                        .font(InstrumentoType.grotesk(32, weight: .bold)).tracking(-1)
+                        .foregroundStyle(theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, EntrenarMetrics.heroTitleTop)
+                    Text("Choose a template or build your own routine · Entrenar serves it to you every day after that")
+                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, EntrenarMetrics.heroSubTop)
+                    primerUsoChips.padding(.top, CenitMetrics.gap)
+                    Button { showHubImport = true } label: {
+                        HStack(spacing: CenitMetrics.space1) {
+                            Text("Import your AI's plan").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                            StrandIcon.disclosure.image
+                                .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                                .accessibilityHidden(true)
+                        }
+                        .frame(minHeight: EntrenarMetrics.row, alignment: .leading)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(EntrenarPressStyle())
+                    .accessibilityElement(children: .combine)
+                    // FER-137: el CTA de primer uso abre «Tres caminos» — antes saltaba derecho a la hoja de
+                    // plantillas, un solo camino de los tres que ahora ofrece la puerta.
+                    LiquidGlassButton("Build my plan", variant: .primary) { showCreatePlan = true }
+                        .padding(.top, CenitMetrics.space1)
                 }
-                .frame(minHeight: EntrenarMetrics.row, alignment: .leading)
-                .contentShape(Rectangle())
             }
-            .buttonStyle(EntrenarPressStyle())
-            .accessibilityElement(children: .combine)
-            // FER-137: el CTA de primer uso abre «Tres caminos» — antes saltaba derecho a la hoja de
-            // plantillas, un solo camino de los tres que ahora ofrece la puerta.
-            StrandCTAButton("Build my plan", tint: theme.positiveText, fillsWidth: false) { showCreatePlan = true }
-                .padding(.top, CenitMetrics.space1)
             // FER-138 (ronda 2, grave): con `split` vacío no hay nada que rotar — la hoja rápida
             // solo tiene sentido una vez que ya existe al menos una rutina programada. Aquí TU
             // SEMANA sigue abriendo el editor completo (`openWeeklyPlan` → `WeeklyPlanEditorView`),

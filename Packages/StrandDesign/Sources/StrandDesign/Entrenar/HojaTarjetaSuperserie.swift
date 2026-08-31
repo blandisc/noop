@@ -3,35 +3,14 @@ import SwiftUI
 // MARK: - HojaTarjetaSuperserie — tarjeta única de superserie (FER-166)
 //
 // Estado EDICIÓN (mock `hoja-pantallas.html` P1 `.ss2` / `.ssL`). El vivo de sesión (P5) llega
-// en F3. Cristal cian local (forma/chrome propios); el rótulo cian reusa `LiquidTono.cian.rotulo`.
+// en F3. Contenedor = módulo mosaico cian (FER-249); el rótulo cian reusa
+// `LiquidTono.cian.rotulo`.
 
-/// Tarjeta de superserie en edición: cristal cian + nombre + pastilla + filas + pie.
+/// Tarjeta de superserie en edición: módulo cian + nombre + pastilla + filas + pie.
 public struct HojaTarjetaSuperserie<Filas: View>: View {
 
-    // MARK: Cristal cian — constantes locales (mock `.ss2`)
-
-    /// Radio de la tarjeta (`.ss2` / `.mod` `border-radius: 17px`).
-    private static var radio: CGFloat { 17 }
-    /// Fondo cian al 8 % (`.ss2{background:rgba(20,124,140,.08)}`).
-    private static var fondoAlfa: Double { 0.08 }
-    /// Highlight inset superior (`.ss2` `inset 0 1px 0 rgba(255,255,255,.75)`).
-    private static var highlightAlfa: Double { 0.75 }
-    /// Segundo aro inset blanco (`.ss2` `inset 0 0 0 1px rgba(255,255,255,.35)`).
-    private static var aroAlfa: Double { 0.35 }
-    /// Canto exterior cian al 30 % (`.ss2` `0 0 0 .5px rgba(20,124,140,.30)`).
+    /// Canto exterior cian al 30 % de la pastilla SUPERSERIE (`.ssL`).
     private static var cantoAlfa: Double { 0.30 }
-    /// Sombra difusa cian (`.ss2` `0 10px 20px rgba(20,124,140,.10)`).
-    private static var sombraRadio: CGFloat { 20 }
-    private static var sombraY: CGFloat { 10 }
-    private static var sombraAlfa: Double { 0.10 }
-    /// Sombra cercana (`.ss2` `0 2px 3px rgba(34,29,22,.04)`).
-    private static var sombraCercaRadio: CGFloat { 3 }
-    private static var sombraCercaY: CGFloat { 2 }
-    private static var sombraCercaAlfa: Double { 0.04 }
-
-    /// Padding interior P1 (`style="padding:10px 14px"`).
-    private static var padV: CGFloat { 10 }
-    private static var padH: CGFloat { 14 }
 
     /// Nombre bold 13.5 (P1 header).
     private static var nombreSize: CGFloat { 13.5 }
@@ -75,20 +54,20 @@ public struct HojaTarjetaSuperserie<Filas: View>: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            header
-            filas
-            if let pie {
-                Text(verbatim: pie)
-                    .font(InstrumentoType.grotesk(
-                        Self.pieSize, weight: .semibold, relativeTo: .caption2))
-                    .foregroundStyle(LiquidColor.tinta700)
-                    .padding(.top, Self.pieTop)
+        EntrenarModulo(tono: .cian, intensidad: LiquidTonoMetrics.intensidadDefault,
+                       insets: EdgeInsets(top: 10, leading: 14, bottom: 10, trailing: 14)) {
+            VStack(alignment: .leading, spacing: 0) {
+                header
+                filas
+                if let pie {
+                    Text(verbatim: pie)
+                        .font(InstrumentoType.grotesk(
+                            Self.pieSize, weight: .semibold, relativeTo: .caption2))
+                        .foregroundStyle(LiquidColor.tinta700)
+                        .padding(.top, Self.pieTop)
+                }
             }
         }
-        .padding(.vertical, Self.padV)
-        .padding(.horizontal, Self.padH)
-        .background { cristal }
         .accessibilityElement(children: .contain)
         // N5 (ronda 3, menor): vía catálogo — reusa la MISMA clave que `SupersetTag`
         // (`RoutineSetEditing.swift`) en vez de hardcodear «Superserie» en español.
@@ -169,33 +148,6 @@ public struct HojaTarjetaSuperserie<Filas: View>: View {
         }
     }
 
-    // MARK: - Cristal
-
-    /// Aproxima el `box-shadow` inset + canto + sombra de `.ss2` (SwiftUI no tiene inset shadow).
-    private var cristal: some View {
-        let shape = RoundedRectangle(cornerRadius: Self.radio, style: .continuous)
-        return shape
-            .fill(LiquidColor.cian.opacity(Self.fondoAlfa))
-            .overlay {
-                shape.strokeBorder(Color.white.opacity(Self.highlightAlfa), lineWidth: 1)
-                    .blur(radius: 0.5)
-                    .mask(shape)
-            }
-            .overlay {
-                shape.strokeBorder(Color.white.opacity(Self.aroAlfa), lineWidth: 1)
-            }
-            .overlay {
-                shape.strokeBorder(LiquidColor.cian.opacity(Self.cantoAlfa), lineWidth: 0.5)
-            }
-            .shadow(
-                color: LiquidColor.tinta900.opacity(Self.sombraCercaAlfa),
-                radius: Self.sombraCercaRadio / 2,
-                x: 0, y: Self.sombraCercaY)
-            .shadow(
-                color: LiquidColor.cian.opacity(Self.sombraAlfa),
-                radius: Self.sombraRadio / 2,
-                x: 0, y: Self.sombraY)
-    }
 }
 
 /// D0 (FER-170 · F5): agrega la acción de VoiceOver «Foco» solo cuando el caller trae una — sin
@@ -232,7 +184,7 @@ private extension View {
                 arrastrable: true),
             contexto: .edicion, marca: .pendiente)
     }
-    .padding(16)
-    .background(LiquidColor.fondoGradient)
+    .padding(LiquidSpace.s400)
+    .background(LiquidColor.papelGradient)
 }
 #endif

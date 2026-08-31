@@ -111,19 +111,11 @@ enum HojaCabecera {
 
     /// El CTA fijo — «Empezar»/«Resume», la ÚNICA puerta al ejercicio guiado (F2 lo sustituye).
     static func ctaBar(sheet: RoutineSheet) -> some View {
-        Button { sheet.start() } label: {
-            HStack(spacing: CenitMetrics.space2) {
-                Image(systemName: "play.fill").font(.system(size: 13, weight: .bold))  // token-exempt: glifo del CTA
-                Text(sheet.ctaTitle).font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
-            }
-            .foregroundStyle(sheet.theme.paper).frame(maxWidth: .infinity, minHeight: EntrenarMetrics.primaryButton)
-            .background(sheet.theme.dataStrain, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
-        }
-        .buttonStyle(.plain)
-        .padding(.horizontal, CenitMetrics.screenPadding)
-        .padding(.top, CenitMetrics.space2)
-        .padding(.bottom, CenitMetrics.space2)
-        .background(CenitColor.pantalla)
+        LiquidGlassButton(sheet.ctaTitle, variant: .primary, expands: true) { sheet.start() }
+            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.top, CenitMetrics.space2)
+            .padding(.bottom, CenitMetrics.space2)
+            .entrenarHojaBarraFondo(tono: .indigo)
     }
 }
 #endif
