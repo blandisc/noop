@@ -52,6 +52,11 @@ run_lint() {
       # shellcheck disable=SC2086
       python3 Tools/check-design-drift.py --rules no-adhoc-font,no-radius-literal,no-opacity-literal $screens || ok=1
     fi
+    # FER-258: espaciado/trazo literal, con trinquete — la deuda vieja pasa, una más no.
+    if [ -f Tools/design-drift-baseline.json ]; then
+      python3 Tools/check-design-drift.py --rules no-spacing-literal \
+        --baseline Tools/design-drift-baseline.json Cenit/Screens || ok=1
+    fi
     [ "$ok" -ne 0 ] && fail "deriva del sistema de diseño (token de StrandDesign o « // token-exempt: <motivo> »)."
   fi
   if changed_files | grep -qE 'Localizable\.xcstrings$' && [ -f Tools/check-xcstrings-cycles.py ]; then
