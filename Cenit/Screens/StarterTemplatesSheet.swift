@@ -38,8 +38,9 @@ struct StarterTemplatesSheet: View {
     /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
     @ObserveInjection private var inject
 
-    /// Catálogo completo (`grupo == nil`) o acotado a un programa. Si el grupo trae 1 sola rutina
-    /// (p. ej. Cuerpo completo), abre directo en su preview con el CTA de plan.
+    /// Catálogo completo (`grupo == nil`) o acotado a un programa. En modo grupo abre SIEMPRE con
+    /// la primera rutina en preview (ronda 2 del gate FER-251: el CTA «Usar este plan» nunca es
+    /// alcanzable sin ejercicios visibles — el preview aprobado por el dueño llega abierto).
     init(grupo: StarterTemplate.Group? = nil,
          onApplied: (() -> Void)? = nil,
          onAdded: @escaping () async -> Void) {
@@ -47,10 +48,7 @@ struct StarterTemplatesSheet: View {
         self.onApplied = onApplied
         self.onAdded = onAdded
         if let grupo {
-            let templates = StarterTemplates.inGroup(grupo)
-            if templates.count == 1 {
-                _selected = State(initialValue: templates[0])
-            }
+            _selected = State(initialValue: StarterTemplates.inGroup(grupo).first)
         }
     }
 

@@ -174,8 +174,6 @@ private struct EntrenarLanding: View {
     @State private var showLibrary = false
     /// «Lo que Cénit sabe hacer» (decisión Fer 2026-07-16): puerta permanente + tarjeta única.
     @State private var showTricks = false
-    /// FER-137: «Crear plan» — puerta a «Tres caminos» (sigue viva por si otra entrada la abre).
-    @State private var showCreatePlan = false
     /// Success toast after a template group is applied — auto-dismisses.
     @State private var showPlanAppliedToast = false
     /// FER-950: Quick / Mobility discs with a live strength session — confirm resume instead of
@@ -265,7 +263,7 @@ private struct EntrenarLanding: View {
         // FER-969: el fallo de escritura es un banner honesto, no éxito silencioso. Componente
         // compartido desde 2026-07-19 (era la misma copia en tres pantallas).
         .saveErrorToast(isPresented: $saveError)
-        // FER-137: el eco de «Plantilla aplicada» tras volver de `CrearPlanScreen`.
+        // FER-137/251: el eco de «Plantilla aplicada» tras aplicar un plan desde la hoja de plantillas.
         .planAppliedToast(isPresented: $showPlanAppliedToast)
         // La boleta del veredicto, dentro de Entrenar (FER-85): el mismo modelo y la misma vista
         // que sirve Hoy, así que las dos pantallas no pueden divergir ni en la tabla ni en la
@@ -301,13 +299,10 @@ private struct EntrenarLanding: View {
             WorkoutImportView { await load() }
                 .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
-        // FER-137: «Crear plan» — «Tres caminos» (ya no es CTA de primer uso; FER-251 lo apagó ahí).
-        .navigationDestination(isPresented: $showCreatePlan) {
-            CrearPlanScreen(openRoutine: openRoutine, onChange: { await load() }) {
-                showPlanAppliedToast = true
-            }
-        }
-        // FER-251: «Desde cero» del primer uso — misma Biblioteca → crear que CrearPlanScreen.
+        // FER-251: «Desde cero» del primer uso — Biblioteca → crear (3×8), directo, sin menú previo.
+        // «Tres caminos» (CrearPlanScreen) se archivó aquí mismo: la opción A del dueño dejó sus
+        // tres puertas accesibles en directo (chips = plantillas, Desde cero, Importar) y la
+        // pantalla quedó sin ninguna entrada — puerta fantasma fuera, no dormida.
         .navigationDestination(isPresented: $showLibrary) {
             ExerciseLibraryScreen(createFlow: true) { picks in createRoutineFromLibrary(picks) }
         }

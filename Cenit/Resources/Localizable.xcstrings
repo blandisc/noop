@@ -33280,22 +33280,6 @@
         }
       }
     },
-    "Ready to edit" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ready to edit"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Para editar"
-          }
-        }
-      }
-    },
     "Ready to search" : {
       "extractionState" : "manual",
       "localizations" : {
