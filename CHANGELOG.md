@@ -23,6 +23,9 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 - **«Tu cuerpo» al vidrio El Eje / Body screen moves to El Eje glass** (FER-206).
   **ES** — La última superficie de Entrenar en tarjetas de papel legacy migra al sistema de módulos y teselas de cristal del hub; contenido e interacciones intactos.
   **EN** — The last Training surface on legacy paper cards moves to the hub's glass module/tile system; content and interactions unchanged.
+- **Una sola voz para «empezar» / One voice for “start”** (FER-249).
+  **ES** — Todos los botones de arrancar, crear y terminar hablan en el verde de marca (incluido el día de descanso); el ámbar queda solo en «+ Serie»; «Hoy subes» pasa al verde de carga; los héroes de descanso y primer uso entran al vidrio del mosaico; la tarjeta de superserie y el fondo del editor usan la receta canónica.
+  **EN** — Every start/create/finish button speaks brand green (rest day included); amber stays only on “+ Set”; “Today you go up” moves to load green; rest and first-use heroes join the mosaic glass; the superset card and editor background use the canonical recipe.
 
 - **Fondo blanco consistente en Entrenar / Consistent white background in Training** (FER-205).
   **ES** — Abrir una sesión desde el historial ya no salta de blanco a papel; seis pantallas de Entrenar declaran el fondo blanco explícito.
