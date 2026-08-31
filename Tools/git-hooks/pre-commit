@@ -29,6 +29,12 @@ if [ -n "$swift_staged" ] && [ -f "$root/Tools/check-design-drift.py" ]; then
   if [ -n "$screens_staged" ]; then
     python3 "$root/Tools/check-design-drift.py" --rules no-adhoc-font,no-radius-literal,no-opacity-literal $screens_staged || fail=1
   fi
+  # FER-258: espaciado/trazo literal con trinquete — se mide el árbol entero contra la línea base,
+  # porque el presupuesto es POR ARCHIVO y sólo así se ve una literal de más.
+  if [ -f "$root/Tools/design-drift-baseline.json" ]; then
+    (cd "$root" && python3 Tools/check-design-drift.py --rules no-spacing-literal \
+      --baseline Tools/design-drift-baseline.json Cenit/Screens) || fail=1
+  fi
   if [ "$fail" -ne 0 ]; then
     echo ""
     echo "✋ Commit bloqueado: deriva del sistema de diseño (usa un token de StrandDesign,"

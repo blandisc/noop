@@ -296,7 +296,15 @@ Both are honest about current gaps (e.g. plurals are used on 2 keys out of ~939 
 The linter's rules turn on incrementally as each migration sweep lands. `no-hex` runs on every root;
 the font/radius/opacity rules are now ON for `Cenit/Screens` + `Cenit/Onboarding` (fully migrated).
 `CenitWidgets` (Live Activity) and `CenitWatch` are fixed Dynamic-Island / watch geometry (the
-`WidgetMetrics` category, exempt from Dynamic Type) and are not yet under the three new rules. The token blocks in
+`WidgetMetrics` category, exempt from Dynamic Type) and are not yet under the three new rules.
+
+`no-spacing-literal` (FER-258) is the same idea for **distance**: a bare number in `.padding(…)`,
+`spacing:` or `lineWidth:`. It could not start green — the tree still carries 466 of them — so it runs
+over `Cenit/Screens` as a **ratchet** against `Tools/design-drift-baseline.json`, which grandfathers
+that debt *per file*: one literal more than a file already had fails CI, the pre-commit hook and
+`verify.sh`. When a sweep removes some, the run stays green and prints how many to re-record with
+`python3 Tools/check-design-drift.py --rules no-spacing-literal --write-baseline Tools/design-drift-baseline.json Cenit/Screens`
+— the number only goes down. It extends to `CenitWidgets`/`CenitWatch` when FER-219 closes. The token blocks in
 `docs/design-system/tokens/design-tokens.json` and the color tables in `DESIGN.md` are **generated**
 from the Swift by `swift run StrandDesignTokens` — never hand-edit them; run the generator and commit.
 

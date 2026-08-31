@@ -6,6 +6,11 @@
 # `Cenit/Screens` + `Cenit/Onboarding` are fully token-clean (tasks 01/02/03). CenitWidgets
 # (Live Activity) and CenitWatch are fixed Dynamic-Island / watch geometry (the WidgetMetrics
 # category, exempt from Dynamic Type) and are intentionally not yet under the 3 new rules.
+#
+# `no-spacing-literal` (FER-258) runs over Cenit/Screens as a RATCHET against
+# Tools/design-drift-baseline.json: the 466 literals the tree still carries are grandfathered per file,
+# one more fails. It extends to CenitWidgets/CenitWatch only when FER-219 closes — their fixed
+# Dynamic-Island / watch geometry is exempt on purpose.
 name: Design Lint
 
 on:
@@ -38,5 +43,7 @@ jobs:
         run: python3 Tools/check-design-drift.py --rules no-emdash-string Cenit/Screens Cenit/Onboarding
       - name: Design-drift linter — no raw shadow, use StrandElevation (migrated screens)
         run: python3 Tools/check-design-drift.py --rules no-raw-shadow Cenit/Screens
+      - name: Design-drift linter — no spacing/stroke literal, ratchet (FER-258)
+        run: python3 Tools/check-design-drift.py --rules no-spacing-literal --baseline Tools/design-drift-baseline.json Cenit/Screens
       - name: Sin vidrio dentro de una hoja (papel opaco)
         run: python3 Tools/check-design-drift.py --rules no-sheet-glass Packages/StrandDesign/Sources Cenit CenitApp CenitShared CenitWidgets
