@@ -101,6 +101,6 @@ public struct LiquidNotaLine: View {
                        tono: .atencion)
     }
     .padding(LiquidSpace.s550)
-    .background(LiquidColor.papel)
+    .background(LiquidColor.papelAlto)
 }
 #endif
