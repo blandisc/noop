@@ -145,6 +145,7 @@ struct ProgressionSetupScreen: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .entrenarHojaFondo(tono: .verde)
+        .pantallaFondo()
         .instrumentoTheme(theme)
         // FER-988: deslizar guarda igual que «Guardar» — la convención del editor Instrumento.
         .keepsSwipeBack { saveAndClose(); return false }

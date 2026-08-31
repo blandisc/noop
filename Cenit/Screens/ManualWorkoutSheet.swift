@@ -102,7 +102,7 @@ struct ManualWorkoutSheet: View {
                 if let validationNote { noteRow(validationNote) }
                 footer
             }
-            .padding(24)
+            .padding(CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         // FER-202: cristal El Eje. Se retira `.sheetPaper` (papel opaco de presentación) — taparía

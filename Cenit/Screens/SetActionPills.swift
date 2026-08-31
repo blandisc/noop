@@ -87,7 +87,7 @@ struct SetActionPills: View {
         SetActionPills(showWarmup: false, theme: .base, addSet: {}, addWarmup: {})
     }
     .padding()
-    .background(InstrumentoTheme.base.paper)
+    .background(CenitColor.pantalla)
 }
 #endif
 #endif

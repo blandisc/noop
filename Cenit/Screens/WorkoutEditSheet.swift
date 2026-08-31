@@ -253,7 +253,7 @@ struct WorkoutEditSheet: View {
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(12)
+            .padding(CenitMetrics.gap)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(theme.paperHi, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
         }
