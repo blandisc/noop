@@ -68,6 +68,11 @@ el mismo PR** que la implementa (una línea basta: fecha, decisión, por qué).
   raíz de tooling (hook-discovery + acceptEdits), resuelta por el wrapper.
 - **2026-08-26 · Build del iPhone:** sigue siendo manual y al ritmo del dueño — no se
   agenda ni se automatiza.
+- **2026-08-30 · El build del iPhone es OPCIONAL, no un paso del flujo (aclara 2026-08-26).**
+  El flujo termina en «mergeado a `origin/iOS` + sincronizado a `~/code/noop`». Compilar e
+  instalar en el iPhone desde Xcode es cosa del dueño, cuando él quiera: nunca es un gate,
+  nunca cierra ni «completa» un cambio, nunca se agenda ni automatiza. Ningún flujo, skill ni
+  rutina lo añade como último paso ni trata un cambio como inconcluso hasta estar en el teléfono.
 - **DNA:** «Instrumento diurno» es canónico; el sistema oscuro es legacy (mantener, no
   extender). **Superseded 2026-08-29** por «Un solo vidrio: unificar en Liquid Glass · El Eje»
   (abajo); el sistema oscuro sigue retirado.
