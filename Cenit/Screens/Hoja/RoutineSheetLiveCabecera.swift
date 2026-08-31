@@ -49,9 +49,10 @@ enum HojaCabeceraSesion {
             }
             .accessibilityHidden(true)
 
-            // FER-250: «Terminar» secundario a media sesión (≥1 serie hecha, aún incompleta). El CTA
+            // FER-250: «Terminar» secundario SIEMPRE visible a media sesión (criterio 1: con 0 series
+            // el confirm ya es honesto — «Aún no registras ninguna serie.» + Seguir/Descartar). El CTA
             // prominente `ctaTerminar` se reserva para sesión completa — no se mueve.
-            if vivo.session.doneCount >= 1 && !vivo.session.isComplete {
+            if !vivo.session.isComplete {
                 terminarSecundario(vivo: vivo)
             }
 
