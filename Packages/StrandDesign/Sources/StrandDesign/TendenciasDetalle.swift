@@ -2,30 +2,24 @@ import SwiftUI
 
 // MARK: - «Detalle de Tendencias Final» — componentes compartidos (FER-856/857)
 //
-// El esqueleto estándar de las cuatro pantallas de detalle (Recuperación, Sueño, Esfuerzo, Estrés)
-// comparte estas piezas, del handoff `design-handoff/detalle-tendencias-final`:
+// FER-164: el apagón del papel dejó aquí solo las piezas CON consumidor vivo verificado por
+// símbolo (2026-08-30). Las demás (`SeccionFranja`, `SeccionBloque`, `TileSurface`, `PieMetodo`,
+// `QueMedimosCard`, `ChipTendencia`, `QueLaMueveHeader`, `PaperSideBarBlock`) se borraron cuando
+// su último consumidor migró a Liquid. Sobreviven:
 //
-//   · `SeccionFranja` — cabecera de sección a sangre completa (sustituye a los overlines flotantes)
-//   · `SeccionBloque` — franja + contenido con el padding handoff bajo ella
-//   · `TileSurface`   — el tile para todo escalar (label overline + valor + delta/caption/swatch)
-//   · `BarraAncla`    — el ÚNICO formato legal de caption (rect 2×10 del color del dato + texto)
-//   · `Metodo`        — el DisclosureGroup «Cómo se calcula» sobre superficie
-//   · `PieMetodo`     — divisor + método + sello de origen al pie de la pantalla
-//   · `QueMedimosCard`— la tarjeta del ⓘ del héroe («What we measure»)
-//   · `ChipTendencia` — píldora rellena «tendencia, no causa» (no confundir con InlineFlagChip)
-//   · `QueLaMueveHeader` — overline + ChipTendencia de la cabecera «qué la mueve»
-//   · `HeatLegend`    — la leyenda de swatches del calendario 90 días
-//   · `OnFieldOpacity`— las opacidades sancionadas del texto sobre el campo invertido del héroe
+//   · `BarraAncla` — el ÚNICO formato legal de caption (rect 2×10 del color del dato + texto);
+//                    vive en `WorkoutHistoryScreen` y dentro de `GraficaRangos`
+//   · `Metodo`     — el DisclosureGroup «Cómo se calcula» sobre superficie (`RestEditorScreen`)
+//   · `HeatLegend` — la leyenda de swatches del calendario 90 días (`HeatCalendarSection`)
+//   · `OnFieldOpacity` — opacidades sancionadas sobre campo invertido (`ConfidenceSello`)
 //
 // Los componentes son mudos en copy: reciben `String`/`LocalizedStringKey` ya localizados desde la
-// capa de app (el paquete no carga catálogo propio). El selector de periodo es el
-// `SegmentedPillControl` themed existente; la gráfica de historial es `GraficaRangos` (archivo
-// propio); el sello es `OriginStamp`.
+// capa de app (el paquete no carga catálogo propio).
 
 // MARK: - Opacidades sobre campo invertido
 
-/// Opacidades sancionadas para texto/chrome sobre el campo saturado del héroe invertido (el texto
-/// es `theme.paper` sobre el hue de la pantalla). Del handoff: secundarios 0.72–0.78, cápsula 0.16.
+/// Opacidades sancionadas para texto/chrome sobre un campo saturado (el texto es `theme.paper`
+/// sobre el hue de la pantalla). Del handoff: secundarios 0.72–0.78, cápsula 0.16.
 public enum OnFieldOpacity {
     /// Texto secundario sobre el campo («/100», «vs tu base», el driver del veredicto).
     public static let secondary: Double = 0.75
@@ -35,250 +29,6 @@ public enum OnFieldOpacity {
     public static let dimChrome: Double = 0.8
     /// Regla/divisor vertical entre dos datos sobre el campo invertido.
     public static let divider: Double = 0.28
-}
-
-// MARK: - SeccionFranja
-
-/// Cabecera de sección a sangre completa: fondo `patternBlock` de borde a borde, overline
-/// Grotesk 11/600 tracking 1.4 en tinta secundaria, con una `pista` opcional a la derecha.
-/// El caller la coloca SIN padding horizontal (a sangre); el contenido bajo ella lleva el suyo.
-public struct SeccionFranja: View {
-    private let titulo: String
-    private let pista: String?
-    private let theme: InstrumentoTheme
-
-    public init(_ titulo: String, pista: String? = nil, theme: InstrumentoTheme) {
-        self.titulo = titulo
-        self.pista = pista
-        self.theme = theme
-    }
-
-    public var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 10) {
-            Text(titulo)
-                .font(InstrumentoType.grotesk(11, weight: .semibold))
-                .tracking(1.4)
-                .textCase(.uppercase)
-                .foregroundStyle(theme.inkSecondary)
-            if let pista {
-                Spacer(minLength: 10)
-                Text(pista)
-                    .font(StrandFont.scaled(11))
-                    .foregroundStyle(theme.inkTertiary)
-            }
-        }
-        .padding(.vertical, 7)
-        .padding(.horizontal, 20)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.patternBlock)
-        .accessibilityAddTraits(.isHeader)
-    }
-}
-
-// MARK: - SeccionBloque
-
-/// Una sección del esqueleto Final: `SeccionFranja` a sangre + el contenido con el padding handoff
-/// bajo ella (default 14 · 20 · 22; TrainingLoad pasa `leading: 14` en «The hill»). La `pista`
-/// opcional viaja a la franja. El título llega ya localizado.
-public struct SeccionBloque<Content: View>: View {
-    private let titulo: String
-    private let pista: String?
-    private let contentPadding: EdgeInsets
-    private let theme: InstrumentoTheme
-    private let content: Content
-
-    public init(_ titulo: String,
-                pista: String? = nil,
-                contentPadding: EdgeInsets = EdgeInsets(top: 14, leading: 20, bottom: 22, trailing: 20),
-                theme: InstrumentoTheme,
-                @ViewBuilder content: () -> Content) {
-        self.titulo = titulo
-        self.pista = pista
-        self.contentPadding = contentPadding
-        self.theme = theme
-        self.content = content()
-    }
-
-    public var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            SeccionFranja(titulo, pista: pista, theme: theme)
-            content
-                .padding(contentPadding)
-        }
-    }
-}
-
-// MARK: - QueMedimosCard
-
-/// La tarjeta del ⓘ bajo el héroe: overline «What we measure» + explicación en tinta secundaria,
-/// superficie `.instrumentoCard(.control)`. `bottomInset` default 14 (Recovery/Strain/Stress/Sleep);
-/// TrainingLoad pasa `0` para no empujar la franja «The hill». Copy ya localizado (LocalizedStringKey).
-public struct QueMedimosCard: View {
-    private let title: LocalizedStringKey
-    private let explanation: LocalizedStringKey
-    private let theme: InstrumentoTheme
-    private let bottomInset: CGFloat
-
-    public init(title: LocalizedStringKey, explanation: LocalizedStringKey,
-                theme: InstrumentoTheme, bottomInset: CGFloat = 14) {
-        self.title = title
-        self.explanation = explanation
-        self.theme = theme
-        self.bottomInset = bottomInset
-    }
-
-    public var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(InstrumentoType.grotesk(13, weight: .semibold))
-                .foregroundStyle(theme.ink)
-            Text(explanation)
-                .font(InstrumentoType.grotesk(12))
-                .lineSpacing(3)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(EdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14))
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .instrumentoCard(.control, theme: theme)
-        .padding(EdgeInsets(top: 12, leading: 20, bottom: bottomInset, trailing: 20))
-    }
-}
-
-// MARK: - ChipTendencia
-
-/// Píldora rellena estándar «tendencia, no causa» del ADN: fondo `patternBlock`, grotesk 9/600
-/// tracking 1 uppercase, radio cápsula. Color de texto: `inkMuted` (el token de tinta más tenue
-/// disponible; no hay `inkTenue` — `inkTertiary` es para overlines legibles AA; este chip es
-/// chrome de disclaimers). NO es `InlineFlagChip` (ese sigue para avisos Low conf / Estimate).
-public struct ChipTendencia: View {
-    private let text: LocalizedStringKey
-    private let theme: InstrumentoTheme
-
-    public init(_ text: LocalizedStringKey, theme: InstrumentoTheme) {
-        self.text = text
-        self.theme = theme
-    }
-
-    public var body: some View {
-        Text(text)
-            .font(InstrumentoType.grotesk(9, weight: .semibold))
-            .tracking(1)
-            .textCase(.uppercase)
-            .foregroundStyle(theme.inkMuted)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 4)
-            .background(theme.patternBlock, in: Capsule())
-    }
-}
-
-// MARK: - QueLaMueveHeader
-
-/// Cabecera de la tarjeta «qué la mueve / lo que vemos»: overline grotesk 10/600 tracking 1.2
-/// uppercase en `inkTertiary` + `ChipTendencia`. El copy llega localizado desde la app.
-public struct QueLaMueveHeader: View {
-    private let overline: LocalizedStringKey
-    private let chip: LocalizedStringKey
-    private let theme: InstrumentoTheme
-
-    public init(_ overline: LocalizedStringKey, chip: LocalizedStringKey, theme: InstrumentoTheme) {
-        self.overline = overline
-        self.chip = chip
-        self.theme = theme
-    }
-
-    public var body: some View {
-        HStack(alignment: .center, spacing: 8) {
-            Text(overline)
-                .font(InstrumentoType.grotesk(10, weight: .semibold))
-                .tracking(1.2)
-                .textCase(.uppercase)
-                .foregroundStyle(theme.inkTertiary)
-            ChipTendencia(chip, theme: theme)
-        }
-    }
-}
-
-// MARK: - TileSurface
-
-/// El tile para todo escalar: superficie radio 12 con hairline, label overline (Grotesk 9/600
-/// tracking 1.1), valor tabular (hue solo con valencia o identidad), delta y caption opcionales,
-/// y un swatch de identidad opcional junto al label.
-public struct TileSurface: View {
-    private let label: String
-    private let value: String
-    private let valueColor: Color?
-    private let valueSize: CGFloat
-    private let unit: String?
-    private let caption: String?
-    private let swatch: Color?
-    private let delta: String?
-    private let deltaColor: Color?
-    private let theme: InstrumentoTheme
-
-    public init(label: String, value: String, valueColor: Color? = nil, valueSize: CGFloat = 15,
-                unit: String? = nil, caption: String? = nil, swatch: Color? = nil,
-                delta: String? = nil, deltaColor: Color? = nil,
-                theme: InstrumentoTheme) {
-        self.label = label
-        self.value = value
-        self.valueColor = valueColor
-        self.valueSize = valueSize
-        self.unit = unit
-        self.caption = caption
-        self.swatch = swatch
-        self.delta = delta
-        self.deltaColor = deltaColor
-        self.theme = theme
-    }
-
-    public var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            HStack(spacing: 5) {
-                if let swatch {
-                    RoundedRectangle(cornerRadius: 2, style: .continuous)
-                        .fill(swatch)
-                        .frame(width: 8, height: 8)
-                }
-                Text(label)
-                    .font(InstrumentoType.grotesk(9, weight: .semibold))
-                    .tracking(1.1)
-                    .textCase(.uppercase)
-                    .foregroundStyle(theme.inkTertiary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-            }
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(value)
-                    .font(InstrumentoType.groteskNumber(valueSize, weight: .medium))
-                    .foregroundStyle(valueColor ?? theme.ink)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                if let unit {
-                    Text(unit)
-                        .font(InstrumentoType.grotesk(10, weight: .medium))
-                        .foregroundStyle(theme.inkTertiary)
-                        .lineLimit(1)
-                }
-                if let delta {
-                    Text(delta)
-                        .font(InstrumentoType.groteskNumber(11, weight: .semibold))
-                        .foregroundStyle(deltaColor ?? theme.inkTertiary)
-                }
-            }
-            if let caption {
-                Text(caption)
-                    .font(StrandFont.scaled(10))
-                    .foregroundStyle(theme.inkTertiary)
-                    .lineLimit(2)
-            }
-        }
-        .padding(.vertical, 10)
-        .padding(.horizontal, 12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .instrumentoCard(.control, theme: theme)
-        .accessibilityElement(children: .combine)
-    }
 }
 
 // MARK: - BarraAncla
@@ -349,46 +99,6 @@ public struct Metodo<Content: View>: View {
         .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
-
-/// Pie de pantalla Final: divisor hairline (opcional) + el `Metodo{…}` del caller + sello de origen.
-/// El sello es un `@ViewBuilder` porque las pantallas ensamblan `OriginStamp` con firmas distintas
-/// (origin/when/inProgress) y a veces un `FusionAgreementRow` debajo (Sueño). `showsDivider: false`
-/// cubre estados de calibración sin raya. Padding default = el handoff (16 · 20 · 26 · 20).
-public struct PieMetodo<MetodoContent: View, Sello: View>: View {
-    private let theme: InstrumentoTheme
-    private let showsDivider: Bool
-    private let contentPadding: EdgeInsets
-    private let metodo: MetodoContent
-    private let sello: Sello
-
-    public init(showsDivider: Bool = true,
-                contentPadding: EdgeInsets = EdgeInsets(top: 16, leading: 20, bottom: 26, trailing: 20),
-                theme: InstrumentoTheme,
-                @ViewBuilder metodo: () -> MetodoContent,
-                @ViewBuilder sello: () -> Sello) {
-        self.showsDivider = showsDivider
-        self.contentPadding = contentPadding
-        self.theme = theme
-        self.metodo = metodo()
-        self.sello = sello()
-    }
-
-    public var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if showsDivider {
-                Rectangle()
-                    .fill(theme.hairline)
-                    .frame(height: 1)
-                    .padding(.horizontal, 20)
-            }
-            VStack(alignment: .leading, spacing: 10) {
-                metodo
-                sello
-            }
-            .padding(contentPadding)
-        }
-    }
-}
 #endif
 
 // MARK: - HeatLegend
@@ -420,73 +130,9 @@ public struct HeatLegend: View {
     }
 }
 
-// MARK: - PaperSideBarBlock
-
-/// A paper block with a metric-hue left bar (2.5pt) + (overline + prose): the shared shape behind
-/// `MetricInfoSheet`'s «For tonight» sleep block. Promoted from `sleepParaEstaNoche` (FER-975) — its
-/// sibling `vitalPatternBlock` renders UP TO TWO findings via a `ForEach` (not a single `text`), so it
-/// stays app-side rather than forcing a shape mismatch here.
-public struct PaperSideBarBlock: View {
-    private let overline: LocalizedStringKey
-    private let text: LocalizedStringKey
-    private let hue: Color
-    private let theme: InstrumentoTheme
-
-    public init(overline: LocalizedStringKey, text: LocalizedStringKey, hue: Color, theme: InstrumentoTheme) {
-        self.overline = overline
-        self.text = text
-        self.hue = hue
-        self.theme = theme
-    }
-
-    public var body: some View {
-        HStack(spacing: 0) {
-            Rectangle().fill(hue).frame(width: 2.5)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(overline).groteskOverline().foregroundStyle(theme.inkTertiary)
-                Text(text).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(14)
-            Spacer(minLength: 0)
-        }
-        .background(theme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
-    }
-}
-
 // MARK: - Previews
 
 #if DEBUG
-#Preview("SeccionFranja") {
-    let t = InstrumentoTheme.base
-    VStack(spacing: 14) {
-        SeccionFranja("HOY, VS TU NORMAL", theme: t)
-        SeccionFranja("CALENDARIO · 90 DÍAS", pista: "últimos 3 meses", theme: t)
-    }
-    .background(t.paper)
-}
-
-#Preview("TileSurface") {
-    let t = InstrumentoTheme.base
-    VStack(spacing: 14) {
-        // La tira de los vitales: la unidad va inline junto al número, nunca en su propio renglón.
-        HStack(alignment: .top, spacing: 8) {
-            TileSurface(label: "PROMEDIO", value: "62", unit: "ms", theme: t)
-            TileSurface(label: "TENDENCIA", value: "▲ 4%", valueColor: t.verdictDeep, theme: t)
-            TileSurface(label: "RANGO", value: "48–71", unit: "ms", theme: t)
-        }
-        HStack(alignment: .top, spacing: 8) {
-            TileSurface(label: "VS AYER", value: "+6", valueColor: t.verdictDeep, unit: "puntos", theme: t)
-            TileSurface(label: "VFC", value: "48→52", unit: "ms", delta: "+4", deltaColor: t.verdictDeep, theme: t)
-            // El caption sigue siendo la nota real, no la unidad.
-            TileSurface(label: "NOCHES < 95%", value: "3", caption: "de 30", theme: t)
-        }
-    }
-    .padding(20)
-    .background(t.paper)
-}
-
 #if !os(watchOS)
 #Preview("BarraAncla + Metodo + HeatLegend") {
     let t = InstrumentoTheme.base
@@ -501,45 +147,6 @@ public struct PaperSideBarBlock: View {
                     (t.critical, "bajo"), (t.rangeBand, "sin dato")], theme: t)
     }
     .padding(20)
-    .background(t.paper)
-}
-
-#Preview("PaperSideBarBlock") {
-    let t = InstrumentoTheme.base
-    PaperSideBarBlock(overline: "For tonight", text: "A steadier bedtime tonight helps your rhythm.",
-                       hue: t.dataSleep, theme: t)
-        .padding(20)
-        .background(t.paper)
-}
-
-#Preview("QueMedimos + SeccionBloque + Chip + PieMetodo") {
-    let t = InstrumentoTheme.base
-    ScrollView {
-        VStack(alignment: .leading, spacing: 0) {
-            QueMedimosCard(title: "What we measure",
-                           explanation: "Recovery blends several signals with your own baseline.",
-                           theme: t)
-            SeccionBloque("HOY, VS TU NORMAL", theme: t) {
-                Text("Contenido de la sección")
-                    .font(StrandFont.scaled(13))
-                    .foregroundStyle(t.inkSecondary)
-            }
-            SeccionBloque("CALENDARIO · 90 DÍAS", pista: "últimos 3 meses", theme: t) {
-                QueLaMueveHeader("What moves your strain", chip: "trend, not cause", theme: t)
-            }
-            PieMetodo(theme: t) {
-                Metodo(title: "How it's calculated", theme: t) {
-                    Text("Each signal is compared to your own 30-day base.")
-                        .font(StrandFont.scaled(13))
-                        .foregroundStyle(t.inkSecondary)
-                }
-            } sello: {
-                OriginStamp(origin: .computed, when: "today", theme: t)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.top, 2)
-            }
-        }
-    }
     .background(t.paper)
 }
 #endif
