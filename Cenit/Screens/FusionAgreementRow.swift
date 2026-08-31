@@ -53,8 +53,8 @@ struct FusionAgreementRow: View {
             point: FusedMetricPoint(
                 metric: "steps", value: 8100, winningSource: .appleHealth,
                 contributors: [
-                    ContributingSource(source: .appleHealth, value: 8100, tier: 0, devicePriority: 2, reason: "counts directly"),
-                    ContributingSource(source: .noopComputed, value: 8420, tier: 3, devicePriority: 1, reason: "motion estimate"),
+                    ContributingSource(source: .appleHealth, value: 8100, tier: 0, sourcePriority: 2, reason: "counts directly"),
+                    ContributingSource(source: .noopComputed, value: 8420, tier: 3, sourcePriority: 1, reason: "motion estimate"),
                 ],
                 agreement: .agree),
             format: { $0.formatted(.number.grouping(.automatic)) })
@@ -62,8 +62,8 @@ struct FusionAgreementRow: View {
             point: FusedMetricPoint(
                 metric: "active_kcal", value: 612, winningSource: .appleHealth,
                 contributors: [
-                    ContributingSource(source: .appleHealth, value: 612, tier: 0, devicePriority: 2, reason: "active energy"),
-                    ContributingSource(source: .whoopImport, value: 588, tier: 0, devicePriority: 0, reason: "imported kcal"),
+                    ContributingSource(source: .appleHealth, value: 612, tier: 0, sourcePriority: 2, reason: "active energy"),
+                    ContributingSource(source: .whoopImport, value: 588, tier: 0, sourcePriority: 0, reason: "imported kcal"),
                 ],
                 agreement: .minorDelta),
             format: { "\(Int($0.rounded()))" })
@@ -71,13 +71,13 @@ struct FusionAgreementRow: View {
             point: FusedMetricPoint(
                 metric: "sleep_total_min", value: 432, winningSource: .whoopImport,
                 contributors: [
-                    ContributingSource(source: .whoopImport, value: 432, tier: 0, devicePriority: 0, reason: "band sleep timeline"),
-                    ContributingSource(source: .appleHealth, value: 120, tier: 2, devicePriority: 2, reason: "phone sleep buckets"),
+                    ContributingSource(source: .whoopImport, value: 432, tier: 0, sourcePriority: 0, reason: "band sleep timeline"),
+                    ContributingSource(source: .appleHealth, value: 120, tier: 2, sourcePriority: 2, reason: "phone sleep buckets"),
                 ],
                 agreement: .conflict),
             format: { "\(Int($0 / 60)) h \(String(format: "%02d", Int($0.truncatingRemainder(dividingBy: 60)))) m" })
     }
     .padding(LiquidSpace.s550)
-    .background(LiquidColor.papel)
+    .background(LiquidColor.papelAlto)
 }
 #endif
