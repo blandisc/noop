@@ -73,7 +73,7 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
                             .font(.system(size: heroNombresSize))
                             .foregroundStyle(LiquidColor.tinta700)
                             .lineSpacing(EntrenarHubMetrics.heroNombresLineSpacing)
-                            .lineLimit(2)
+                            .lineLimit(2).minimumScaleFactor(0.8)
                             .frame(maxWidth: EntrenarHubMetrics.heroNombresMaxWidth, alignment: .leading)
                             .padding(.top, EntrenarHubMetrics.heroMetaToNombresTop)
                     }

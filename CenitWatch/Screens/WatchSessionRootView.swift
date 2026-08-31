@@ -60,22 +60,29 @@ struct WatchIdleView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: CenitMetrics.space2) {
-                Text(routineTitle)
-                    .font(StrandFont.headline)
-                    .foregroundStyle(t.ink)
-                    .multilineTextAlignment(.center)
-                if let word = manager.idleContext.word {
-                    EntrenarHilo(tone: manager.idleContext.tone, word: LocalizedStringKey(word),
-                                advice: manager.idleContext.advice.map { LocalizedStringKey($0) },
-                                radio: EntrenarMetrics.orbeSesion)
-                        // FER-96: freezes with the screen dimmed (Always-On), same brake `OrbeVivo`
-                        // already reads for Reduce Motion.
-                        .environment(\.liquidAmbientPaused, isLuminanceReduced)
+                // Grupo informativo (sin el CTA): un solo elemento VoiceOver con los textos visibles.
+                // `Group` no altera el layout; el botón «Empezar» sigue siendo foco aparte.
+                Group {
+                    Text(routineTitle)
+                        .font(StrandFont.headline)
+                        .foregroundStyle(t.ink)
+                        .multilineTextAlignment(.center)
+                    if let word = manager.idleContext.word {
+                        EntrenarHilo(tone: manager.idleContext.tone, word: LocalizedStringKey(word),
+                                    advice: manager.idleContext.advice.map { LocalizedStringKey($0) },
+                                    radio: EntrenarMetrics.orbeSesion)
+                            // FER-96: freezes with the screen dimmed (Always-On), same brake `OrbeVivo`
+                            // already reads for Reduce Motion.
+                            .environment(\.liquidAmbientPaused, isLuminanceReduced)
+                    }
+                    Text("Start a strength routine on your iPhone and the watch joins in.")
+                        .font(StrandFont.caption)
+                        .foregroundStyle(t.inkSecondary)
+                        .multilineTextAlignment(.center)
                 }
-                Text("Start a strength routine on your iPhone and the watch joins in.")
-                    .font(StrandFont.caption)
-                    .foregroundStyle(t.inkSecondary)
-                    .multilineTextAlignment(.center)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(idleAccessibilityLabel)
+
                 if let routine = manager.idleContext.routineName { startButton(routine) }
                 if couldNotConnect {
                     Text("Couldn't connect to the session. Keep going on your iPhone.")
@@ -94,6 +101,18 @@ struct WatchIdleView: View {
             .padding(.horizontal, CenitMetrics.gap)
             .padding(.vertical, CenitMetrics.space2)
         }
+    }
+
+    /// VoiceOver: los mismos textos visibles del bloque informativo (sin inventar copy).
+    private var idleAccessibilityLabel: Text {
+        var label = Text(verbatim: routineTitle)
+        if let word = manager.idleContext.word {
+            label = label + Text(verbatim: ". ") + Text(LocalizedStringKey(word))
+            if let advice = manager.idleContext.advice {
+                label = label + Text(verbatim: ". ") + Text(LocalizedStringKey(advice))
+            }
+        }
+        return label + Text(verbatim: ". ") + Text("Start a strength routine on your iPhone and the watch joins in.")
     }
 
     private func startButton(_ routine: String) -> some View {
@@ -128,6 +147,8 @@ struct WatchConnectingView: View {
                 .tint(t.inkTertiary)
         }
         .padding(.horizontal, CenitMetrics.gap)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text("Connecting"))
     }
 }
 

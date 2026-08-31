@@ -23,6 +23,9 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 - **Fondo blanco consistente en Entrenar / Consistent white background in Training** (FER-205).
   **ES** — Abrir una sesión desde el historial ya no salta de blanco a papel; seis pantallas de Entrenar declaran el fondo blanco explícito.
   **EN** — Opening a session from history no longer flips from white to paper; six Training screens declare the explicit white background.
+- **Accesibilidad en Entrenar / Accessibility in Training** (FER-248).
+  **ES** — Los botones de la cabecera de sesión ahora tienen área de toque de 44 pt; VoiceOver anuncia el reloj de sesión y el avance «Serie N de M»; los títulos encogen antes de cortarse con letra grande; los estados del Watch anuncian su contenido.
+  **EN** — Session-header buttons now have 44 pt touch targets; VoiceOver announces the session clock and “Set N of M” progress; titles scale down before truncating at large type; Watch states announce their content.
 
 - **El acuerdo entre fuentes pasa a Liquid Glass · El Eje / Source-agreement row moves to Liquid Glass · El Eje** (FER-254).
   **ES** — La nota bajo pasos / sueño total / kcal activas (cuando hay ≥2 fuentes) deja tipografía y colores Instrumento y se dibuja con `LiquidNotaLine`: veredicto + ambos valores (nunca un promedio), regla lateral de 2 pt; en conflicto la regla y el veredicto pasan a atención.
