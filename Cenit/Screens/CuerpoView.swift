@@ -116,28 +116,39 @@ private struct DetailChrome<Content: View>: View {
     @ViewBuilder var content: Content
 
     var body: some View {
+        // Compat signature: callers still pass `theme`; Liquid chrome no longer paints with it.
+        _ = theme
         VStack(spacing: 0) {
-            HStack(spacing: 6) {
+            HStack(spacing: LiquidSpace.s150) {
                 Button { onClose() } label: {
-                    HStack(spacing: 4) {
-                        StrandIcon.back.image.font(StrandFont.glyph(.inline, weight: .semibold))
-                        Text("Trends").font(StrandFont.body)
+                    HStack(spacing: LiquidSpace.s100) {
+                        // No LiquidIcon back glyph — `.chevron` is the forward list-row arrow.
+                        Image(systemName: "chevron.left")
+                            .font(LiquidType.iconSF(size: 12))
+                        Text("Trends")
+                            .font(LiquidType.boton)
+                            .tracking(LiquidType.botonTracking)
                     }
-                    .foregroundStyle(theme.ink)
-                    .contentShape(Rectangle())
+                    .foregroundStyle(LiquidColor.tinta700)
+                    .padding(.horizontal, LiquidSpace.s400)
+                    .padding(.vertical, LiquidSpace.s200)
+                    .contentShape(Capsule())
                 }
-                .buttonStyle(.plain)
-                Spacer(minLength: 8)
+                .buttonStyle(.liquidPress)
+                .liquidGlass(.pastillaSolida)
+                Spacer(minLength: LiquidSpace.s200)
             }
-            .padding(.horizontal, 20).padding(.top, 10).padding(.bottom, 14)
+            .padding(.horizontal, LiquidSpace.s550)
+            .padding(.top, LiquidSpace.s400)
+            .padding(.bottom, LiquidSpace.s300)
             content
         }
-        // One unified, fully-opaque paper panel. It's stacked OVER the Tendencias landing (same view
-        // hierarchy), so as it slides right it reveals the real Tendencias underneath — no blank platter,
-        // no shadow, no separate layers. At rest it covers the landing completely.
+        // One unified panel stacked OVER the Tendencias landing (same view hierarchy), so as it
+        // slides right it reveals the real Tendencias underneath — no blank platter, no shadow, no
+        // separate layers. At rest it covers the landing completely. Liquid sheet paper replaces
+        // the old Instrumento `pantallaFondo` chrome (content inside was already Liquid).
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .pantallaFondo()
-        .instrumentoTheme(theme)
+        .background { LiquidSheetFondo().ignoresSafeArea() }
         // No `NavigationStack` → no FER-171 risk. The edge owns the back-swipe outright.
         .modifier(EdgeSwipeBack(enabled: true, onClose: onClose))
     }
