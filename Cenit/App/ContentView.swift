@@ -245,45 +245,47 @@ struct ContentView: View {
 }
 
 #if os(iOS)
-/// FER-969 (X-03): full-screen honest state when the SQLite store can't open (wedged migration or a
-/// corrupt file). Paper, one message, two ways out — retry in place, or restore an iCloud backup.
+/// FER-969 (X-03) / FER-256: full-screen honest state when the SQLite store can't open (wedged
+/// migration or a corrupt file). Liquid sobrio — one message, two ways out: retry in place, or
+/// restore from a backup file the user exported (no cloud).
 private struct StoreFailureView: View {
     let onRetry: () -> Void
     let onRestore: () -> Void
 
     var body: some View {
-        let theme = InstrumentoTheme.base
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 0) {
             Spacer()
-            Text("Cénit couldn't open your database.")
-                .font(StrandFont.headline)
-                .foregroundStyle(theme.ink)
-            Text("Your data is still on this phone: retry, or restore from an iCloud Drive backup.")
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.inkSecondary)
+            Text(String(localized: "store.failure.title",
+                        defaultValue: "Cénit couldn't open your database."))
+                .font(LiquidType.displayS)
+                .tracking(LiquidType.displaySTracking)
+                .foregroundStyle(LiquidColor.tinta900)
                 .fixedSize(horizontal: false, vertical: true)
-            Button(action: onRetry) {
-                Text("Retry")
-                    .font(StrandFont.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 9)
+            Text(String(localized: "store.failure.body",
+                        defaultValue: "Your data is still on this phone. Retry, or restore from the backup file you exported."))
+                .font(.system(.subheadline)) // SF15 — cuerpo de pantalla (preview)
+                .foregroundStyle(LiquidColor.tinta500)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, LiquidSpace.s300)
+            VStack(alignment: .leading, spacing: LiquidSpace.s400) {
+                LiquidGlassButton(
+                    String(localized: "store.failure.retry", defaultValue: "Retry"),
+                    variant: .primary, expands: true, action: onRetry)
+                HStack {
+                    Spacer(minLength: 0)
+                    LiquidGlassButton(
+                        String(localized: "store.failure.restore",
+                               defaultValue: "Restore from your backup…"),
+                        variant: .quiet, action: onRestore)
+                    Spacer(minLength: 0)
+                }
             }
-            .buttonStyle(.borderedProminent)
-            .tint(theme.ink)
-            .padding(.top, 10)
-            Button(action: onRestore) {
-                Text("Restore from backup…")
-                    .font(StrandFont.subhead)
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(theme.ink)
-            .padding(.vertical, 6)
+            .padding(.top, LiquidSpace.s800)
             Spacer()
         }
-        .padding(.horizontal, CenitMetrics.screenPadding)
+        .padding(.horizontal, LiquidSpace.s550)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .background(theme.paper.ignoresSafeArea())
+        .background(LiquidColor.fondoGradient.ignoresSafeArea())
     }
 }
 #endif
