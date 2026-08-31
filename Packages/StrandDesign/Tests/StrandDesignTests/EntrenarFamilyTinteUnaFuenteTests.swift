@@ -124,7 +124,7 @@ final class SessionStatsBarContrasteTests: XCTestCase {
 
     /// Y su tono de lectura sí, que es el que la barra usa.
     func testElTonoDeLecturaDelPulsoCumpleAA() {
-        let lectura = OKLab.darkened(theme.dataHeart, toContrast: 4.5, against: theme.paper)
+        let lectura = theme.onPaper(theme.dataHeart)
         XCTAssertGreaterThanOrEqual(OKLab.contrastRatio(lectura, theme.paper), 4.5)
         XCTAssertLessThan(OKLab.relativeLuminance(lectura), OKLab.relativeLuminance(theme.dataHeart),
                           "el tono de lectura tiene que ser más oscuro que su hue")
