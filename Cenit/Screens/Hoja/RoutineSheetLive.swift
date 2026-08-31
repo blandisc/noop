@@ -333,7 +333,7 @@ struct HojaSesionViva: View {
             // ancla por `run.id` (regla dura), nunca por índice.
             ScrollViewReader { proxy in
                 ScrollView {
-                    LazyVStack(spacing: CenitMetrics.sectionGap) {
+                    LazyVStack(spacing: CenitMetrics.gap) {
                         // REGLA DURA: `ForEach` por `run.id` — `session.runs.enumerated()` da `ei` fresco
                         // en cada construcción (nunca un ancla que sobreviva un reorden).
                         ForEach(Array(session.runs.enumerated()), id: \.element.id) { ei, run in
