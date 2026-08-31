@@ -210,7 +210,9 @@ public struct SegmentedPillControl<T: Hashable>: View {
             }
         }
         .padding(3)
-        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(trackFill))
+        // El Eje: el track deja el papel beige (`patternBlock`) por la pastilla sólida de vidrio del
+        // sistema — el thumb ink/tinta sigue destacando sobre ella (mismo gesto que los chips migrados).
+        .liquidGlass(.pastillaSolida)
     }
 
     /// One segment. Instrumento: the active «thumb» HUGS the label to the WIDTH (content-width, centered in
@@ -247,9 +249,6 @@ public struct SegmentedPillControl<T: Hashable>: View {
         .contentShape(Rectangle())
     }
 
-    // Instrumento track is a recessed `hairline` groove (so the lighter thumb reads as raised); the border stays.
-    private var trackFill: Color { theme.patternBlock }
-    private var trackStroke: Color { .clear }
 }
 
 // MARK: - Badges

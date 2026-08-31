@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **El segmentado y el marco de media pasan a vidrio / The segmented control and media frame turn to glass** (migración · «Un solo vidrio · El Eje»).
+  **ES** — El control segmentado compartido (`SegmentedPillControl`, en las 7 pantallas que lo usan: detalle de ejercicio, Historial, «Tu cuerpo», etc.) deja el track de papel beige (`patternBlock`) por la pastilla sólida de vidrio del sistema; el thumb activo ink/tinta sigue destacando. Y el marco de media reservado del ejercicio (`ExerciseThumbnail`, en el detalle y la biblioteca) deja el gradiente de papel por la superficie de vidrio. Termina de mover el detalle de ejercicio al lenguaje El Eje.
+  **EN** — The shared segmented control (`SegmentedPillControl`, across the 7 screens that use it: exercise detail, History, "Your body", etc.) leaves the beige paper track (`patternBlock`) for the system's solid glass pastille; the active ink thumb still stands out. And the exercise's reserved media frame (`ExerciseThumbnail`, in detail and the library) leaves the paper gradient for the glass surface.
+  ([Components.swift](Packages/StrandDesign/Sources/StrandDesign/Components.swift), [ExerciseThumbnail.swift](Packages/StrandDesign/Sources/StrandDesign/ExerciseThumbnail.swift))
+
 - **El detalle de ejercicio termina de pasar a vidrio / Exercise detail finishes its move to glass** (migración · «Un solo vidrio · El Eje»).
   **ES** — Las últimas superficies de papel del detalle de ejercicio (chips de músculos asistentes, chips de peso×reps del historial, el cuadro del ícono de YouTube) dejan el gris papel (`patternBlock` #EFEAE0) y pasan a la pastilla sólida de El Eje (`.liquidGlass(.pastillaSolida)`, la misma superficie que `LiquidChipSeleccion`). El músculo principal conserva el tono de su familia de movimiento (identidad); tipografía, tinta, el segmentado y el marco del hero no cambian.
   **EN** — The exercise detail's last paper surfaces (assisting-muscle chips, the history's weight×reps chips, the YouTube icon square) leave the paper gray (`patternBlock`) for El Eje's solid pastille (`.liquidGlass(.pastillaSolida)`, the same surface `LiquidChipSeleccion` uses). The primary muscle keeps its movement-family hue (identity); type, ink, the segmented control and the hero frame are untouched.
