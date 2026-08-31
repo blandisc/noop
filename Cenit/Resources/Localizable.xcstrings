@@ -9444,6 +9444,23 @@
         }
       }
     },
+    "Assign a day" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assign a day"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asigna un día"
+          }
+        }
+      }
+    },
     "At home" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -37662,6 +37679,23 @@
         }
       }
     },
+    "Show the plan" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show the plan"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Muestra el plan"
+          }
+        }
+      }
+    },
     "Showing the last %@ days" : {
 
     },
@@ -43666,6 +43700,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Usar %@ para %@"
+          }
+        }
+      }
+    },
+    "Use this plan" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use this plan"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usar este plan"
           }
         }
       }

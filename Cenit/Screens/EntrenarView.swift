@@ -164,15 +164,19 @@ private struct EntrenarLanding: View {
     @State private var startWhenLoaded = false
     /// Presents the live-HR workout sheet from the «Formas de entrenar» → «En vivo» chip (the same sheet
     /// «Otra forma» presents).
-    /// Presents the starter-templates list from the first-use «Rutinas de plantilla» row (mock 5a).
+    /// Presents the starter-templates sheet (catálogo completo o acotado a un grupo — FER-251).
     @State private var showTemplates = false
-    /// FER-952: the hub's Import door-chip.
+    /// Grupo con el que abrir `StarterTemplatesSheet` (nil = catálogo completo). Se limpia al cerrar.
+    @State private var templatesGroup: StarterTemplate.Group?
+    /// FER-952: the hub's Import door-chip / primer-uso «Importar tu plan de tu IA».
     @State private var showHubImport = false
+    /// FER-251: «Desde cero» del primer uso — misma Biblioteca → crear rutina que «Tres caminos».
+    @State private var showLibrary = false
     /// «Lo que Cénit sabe hacer» (decisión Fer 2026-07-16): puerta permanente + tarjeta única.
     @State private var showTricks = false
-    /// FER-137: «Crear plan» — the single door into «Tres caminos» (plantillas / desde cero / importar).
+    /// FER-137: «Crear plan» — puerta a «Tres caminos» (sigue viva por si otra entrada la abre).
     @State private var showCreatePlan = false
-    /// Success toast after a template group is applied from `CrearPlanScreen` — auto-dismisses.
+    /// Success toast after a template group is applied — auto-dismisses.
     @State private var showPlanAppliedToast = false
     /// FER-950: Quick / Mobility discs with a live strength session — confirm resume instead of
     /// silently re-presenting via `startStrengthSession`'s no-op guard (which looks like "start new").
@@ -285,23 +289,27 @@ private struct EntrenarLanding: View {
                             dayLetter: weekdayLetter)
                 .environmentObject(repo)
         }
-        // First-use «Rutinas de plantilla» (mock 5a): the grouped templates list. «Add to my routines»
-        // is the only action here (no `onStart`), so a copy lands in «My routines» and the landing
-        // reloads out of the empty state on dismiss.
-        .sheet(isPresented: $showTemplates) {
-            StarterTemplatesSheet { await load() }
-                .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+        // FER-251: plantillas — catálogo completo (`templatesGroup == nil`) o acotado al chip tocado.
+        .sheet(isPresented: $showTemplates, onDismiss: { templatesGroup = nil }) {
+            StarterTemplatesSheet(grupo: templatesGroup, onApplied: { showPlanAppliedToast = true }) {
+                await load()
+            }
+            .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
         // FER-952: the hub's Import chip opens the importer right here (same sheet as Tu Plan).
         .sheet(isPresented: $showHubImport) {
             WorkoutImportView { await load() }
                 .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
-        // FER-137: «Crear plan» — la puerta única de «Tres caminos».
+        // FER-137: «Crear plan» — «Tres caminos» (ya no es CTA de primer uso; FER-251 lo apagó ahí).
         .navigationDestination(isPresented: $showCreatePlan) {
             CrearPlanScreen(openRoutine: openRoutine, onChange: { await load() }) {
                 showPlanAppliedToast = true
             }
+        }
+        // FER-251: «Desde cero» del primer uso — misma Biblioteca → crear que CrearPlanScreen.
+        .navigationDestination(isPresented: $showLibrary) {
+            ExerciseLibraryScreen(createFlow: true) { picks in createRoutineFromLibrary(picks) }
         }
         .navigationDestination(isPresented: $showTricks) {
             WorkshopTricksScreen()
@@ -1132,14 +1140,13 @@ private struct EntrenarLanding: View {
         return nil
     }
 
-    // MARK: - ④ Primer uso (sin rutinas) — «Arma tu semana» (FER-132)
+    // MARK: - ④ Primer uso (`split` vacío) — «Arma tu semana» (FER-132 · FER-251)
     //
-    // Sin ningún día asignado todavía: el héroe habla del arranque, no de un día — mismo lenguaje
-    // tipográfico que `heroSectionRoutineDay` (kicker + título Grotesk 32), plantillas tocables +
-    // «Importar tu plan de tu IA ›» en vez de «Empezar», y TU SEMANA vacía (`weekTokenDays` ya cae
-    // en contornos por sí solo cuando `split` está vacío — no hace falta un caso especial). SIN
-    // «Otra forma» (no hay sesión de hoy que ofrecer una alternativa) y SIN Músculos/Bitácora — la
-    // misma nota de silencio que «plan sin sesiones» los explica.
+    // Sin ningún día asignado: héroe de arranque intacto + UNA primaria (3 chips honestos, cada uno
+    // abre SU grupo con preview) + DOS secundarias («Desde cero», «Importar»). FER-251 apaga el CTA
+    // «Crear mi plan» y la tira WeekTokens vacía. Si ya hay rutinas sin día (`!routines.isEmpty`),
+    // aparece «TU SEMANA — Asigna un día» hacia el editor semanal. SIN «Otra forma» / Músculos /
+    // Bitácora — la nota de silencio los explica. `loadErrorState` gana sobre esta sección.
 
     private var primerUsoSection: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -1158,6 +1165,19 @@ private struct EntrenarLanding: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.top, EntrenarMetrics.heroSubTop)
                     primerUsoChips.padding(.top, CenitMetrics.gap)
+                    // Secundarias: «Desde cero» (biblioteca) + «Importar» — sin «Crear mi plan».
+                    Button { showLibrary = true } label: {
+                        HStack(spacing: CenitMetrics.space1) {
+                            Text("From scratch").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                            StrandIcon.disclosure.image
+                                .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                                .accessibilityHidden(true)
+                        }
+                        .frame(minHeight: EntrenarMetrics.row, alignment: .leading)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(EntrenarPressStyle())
+                    .accessibilityElement(children: .combine)
                     Button { showHubImport = true } label: {
                         HStack(spacing: CenitMetrics.space1) {
                             Text("Import your AI's plan").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
@@ -1170,56 +1190,95 @@ private struct EntrenarLanding: View {
                     }
                     .buttonStyle(EntrenarPressStyle())
                     .accessibilityElement(children: .combine)
-                    // FER-137: el CTA de primer uso abre «Tres caminos» — antes saltaba derecho a la hoja de
-                    // plantillas, un solo camino de los tres que ahora ofrece la puerta.
-                    LiquidGlassButton("Build my plan", variant: .primary) { showCreatePlan = true }
-                        .padding(.top, CenitMetrics.space1)
                 }
             }
-            // FER-138 (ronda 2, grave): con `split` vacío no hay nada que rotar — la hoja rápida
-            // solo tiene sentido una vez que ya existe al menos una rutina programada. Aquí TU
-            // SEMANA sigue abriendo el editor completo (`openWeeklyPlan` → `WeeklyPlanEditorView`),
-            // el único lugar donde se puede asignar la primera rutina a un día.
-            nivelHub { EntrenarNivel("Your week", value: "Tap a day", kickerStyle: .handoff) { openWeeklyPlan() } }
+            // FER-251: rutinas creadas pero sin día — fila hacia el editor; ausente con 0 rutinas.
+            if !routines.isEmpty {
+                nivelHub {
+                    EntrenarNivel("Your week", value: "Assign a day", kickerStyle: .handoff) {
+                        openWeeklyPlan()
+                    }
+                }
                 .padding(.top, EntrenarMetrics.firstLevelTop)
-            WeekTokens(days: weekTokenDays, labels: orderedWeekdays.map(weekdayLetter)) { openWeeklyPlan() }
-                .padding(.top, CenitMetrics.space2)
+            }
             silencioPrimeraSesion.padding(.top, EntrenarMetrics.levelTop)
         }
     }
 
-    /// Tres plantillas tocables (nombre + «lista para editar»): tocar cualquiera abre la misma hoja
-    /// de plantillas (`StarterTemplatesSheet`) — el mismo destino que «Crear mi plan», solo un atajo
-    /// más corto para quien ya sabe cuál quiere.
+    /// Tres chips honestos (FER-251): cada uno abre `StarterTemplatesSheet` ACOTADA a su grupo.
+    /// Subtítulo = conteo real («3 rutinas» / «1 rutina» / «2 rutinas»). A tamaños AX se apilan.
     private var primerUsoChips: some View {
-        HStack(spacing: CenitMetrics.space2) {
-            ForEach(Self.primerUsoGroupNames, id: \.self) { name in
-                Button { showTemplates = true } label: {
-                    // token-exempt: 1 pt es el hairline entre nombre y «lista para editar» dentro del
-                    // chip, más chico que `CenitMetrics.space1` (4). El archivo ya tiene otros gaps sin
-                    // token (2, 7, 8, 9, 12); no es una regresión nueva de este PR.
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(LocalizedStringKey(name)).font(StrandFont.body).fontWeight(.semibold).foregroundStyle(theme.ink)
-                        Text("Ready to edit").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                    }
-                    .padding(.horizontal, CenitMetrics.space2)
-                    // El prototipo pide 36 pt; sube a EntrenarMetrics.row (44 pt) por el mínimo de
-                    // tap target de HIG — misma regla que el resto de filas de esta pantalla
-                    // (sesionMetrics). Deviation documentada ronda 3 (quisquilloso).
-                    .frame(minHeight: EntrenarMetrics.row, alignment: .leading)
-                    .liquidGlass(.pastillaSolida)
+        let chips = Self.primerUsoGroups
+        return ViewThatFits(in: .horizontal) {
+            HStack(spacing: CenitMetrics.space2) {
+                ForEach(chips, id: \.name) { item in
+                    primerUsoChip(name: item.name, group: item.group)
                 }
-                .buttonStyle(EntrenarPressStyle())
-                .accessibilityLabel(Text(LocalizedStringKey(name)) + Text(verbatim: ", ") + Text("Ready to edit"))
+            }
+            VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+                ForEach(chips, id: \.name) { item in
+                    primerUsoChip(name: item.name, group: item.group)
+                }
             }
         }
     }
 
-    /// Nombres de las tres plantillas destacadas (mismo vocabulario que `StarterTemplatesSheet`, sin
-    /// re-exponer su enum privado): Empuje · Jalón · Pierna, Cuerpo completo, Torso / Pierna — el
-    /// catálogo es-MX real (`Localizable.xcstrings`), corregido ronda 3 (quisquilloso, menor): el
-    /// comentario decía «Tirón»/«Superior·Inferior», vocabulario que el catálogo no produce.
-    private static let primerUsoGroupNames: [String] = ["Push Pull Legs", "Full body", "Upper / Lower"]
+    private func primerUsoChip(name: String, group: StarterTemplate.Group) -> some View {
+        let count = StarterTemplates.inGroup(group).count
+        let countText = count == 1
+            ? String(localized: "1 routine")
+            : String(localized: "\(count) routines")
+        return Button {
+            templatesGroup = group
+            showTemplates = true
+        } label: {
+            // token-exempt: 1 pt es el hairline entre nombre y conteo dentro del chip, más chico
+            // que `CenitMetrics.space1` (4). El archivo ya tiene otros gaps sin token.
+            VStack(alignment: .leading, spacing: 1) {
+                Text(LocalizedStringKey(name)).font(StrandFont.body).fontWeight(.semibold).foregroundStyle(theme.ink)
+                Text(countText).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            }
+            .padding(.horizontal, CenitMetrics.space2)
+            // EntrenarMetrics.row (44 pt) = mínimo HIG — no bajar.
+            .frame(maxWidth: .infinity, minHeight: EntrenarMetrics.row, alignment: .leading)
+            .liquidGlass(.pastillaSolida)
+        }
+        .buttonStyle(EntrenarPressStyle())
+        .disabled(!loaded)
+        .accessibilityLabel(Text(LocalizedStringKey(name)) + Text(verbatim: ", ") + Text(verbatim: countText))
+        .accessibilityHint(Text("Show the plan"))
+    }
+
+    /// Los tres splits destacados del primer uso (mismo vocabulario que `StarterTemplatesSheet`).
+    private static let primerUsoGroups: [(name: String, group: StarterTemplate.Group)] = [
+        ("Push Pull Legs", .pushPullLegs),
+        ("Full body", .fullBody),
+        ("Upper / Lower", .upperLower),
+    ]
+
+    /// «Desde cero» del primer uso: misma materialización 3×8 que `CrearPlanScreen.createRoutine`.
+    private func createRoutineFromLibrary(_ picks: [Exercise]) {
+        guard !picks.isEmpty else { return }
+        let now = Int(Date().timeIntervalSince1970)
+        let r = Routine(name: String(localized: "New routine"), createdTs: now, updatedTs: now, sortOrder: 0)
+        let exercises = picks.enumerated().map { idx, ex -> RoutineExercise in
+            let usesReps = ex.type == .weightReps || ex.type == .bodyweight
+            let reps: Int? = usesReps ? 8 : nil
+            let sets = (0..<3).map { RoutineSet(position: $0, kind: .work, reps: reps, weightKg: nil) }
+            return RoutineExercise(routineId: r.id, exerciseId: ex.id, position: idx,
+                                   targetSets: 3, targetReps: reps, targetWeightKg: nil, sets: sets)
+        }
+        Task {
+            do {
+                try await repo.saveRoutine(r, exercises: exercises)
+                await load()
+                try? await Task.sleep(nanoseconds: 550_000_000)
+                openRoutine(r.id)
+            } catch {
+                saveError = true
+            }
+        }
+    }
 
     // MARK: - Error state · store couldn't be read (distinct from «no plan yet»)
     //

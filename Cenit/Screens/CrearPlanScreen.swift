@@ -6,18 +6,15 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // CrearPlanScreen.swift — «Tres caminos» (FER-137, sobre el handoff «Entrenar, reconstruido» v2).
 //
-// La puerta única de creación: el chip «Crear plan» de la landing y el CTA «Crear mi plan» del
-// primer uso empujan aquí, en vez de saltar directo a una plantilla o al importador. Tres filas,
-// tres caminos, todos offline:
-//   PLANTILLAS   — tocar un grupo COPIA todas sus rutinas Y arma la semana (los días libres se
-//                  llenan en orden lunes→domingo; un día ya asignado no se toca — FER-137 no pisa
-//                  un plan que el usuario ya armó a mano).
+// La puerta única de creación: tres caminos, todos offline:
+//   PLANTILLAS   — tocar un grupo abre `StarterTemplatesSheet(grupo:)` (preview + «Usar este plan»).
+//                  FER-251: NUNCA más un tap ciego que escriba rutinas + agenda.
 //   DESDE CERO   — «Nueva rutina» empuja la Biblioteca en su flujo de creación (existente).
 //   IMPORTAR     — «Importar de tu IA» abre `WorkoutImportView` (existente) como hoja.
 //
 // Empuja sobre la MISMA pila que `EntrenarView` (vía `.navigationDestination(isPresented:)`, igual
 // que «＋ Nueva rutina»/«? Trucos»), así que el tema y el repositorio ya viajan por el entorno —
-// solo la hoja de importar necesita reinyectarlos (una hoja no cruza el entorno de su padre).
+// solo las hojas necesitan reinyectarlos (una hoja no cruza el entorno de su padre).
 struct CrearPlanScreen: View {
     /// Empuja el editor de una rutina recién creada — el mismo closure que la landing ya recibe de
     /// `RootTabView` (FER-952: el flujo unificado biblioteca → editor).
@@ -31,10 +28,12 @@ struct CrearPlanScreen: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var repo: Repository
 
-    @State private var applyingGroup: StarterTemplate.Group?
     @State private var saveError = false
     @State private var showLibrary = false
     @State private var showImport = false
+    /// FER-251: hoja de preview de un grupo (mismo path que los chips del primer uso).
+    @State private var showGroupPreview = false
+    @State private var previewGroup: StarterTemplate.Group?
     /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
     @ObserveInjection private var inject
 
@@ -78,10 +77,17 @@ struct CrearPlanScreen: View {
             WorkoutImportView { await onChange() }
                 .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
+        .sheet(isPresented: $showGroupPreview, onDismiss: { previewGroup = nil }) {
+            StarterTemplatesSheet(grupo: previewGroup, onApplied: {
+                onApplied()
+                dismiss()
+            }) { await onChange() }
+                .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+        }
         .enableInjection()
     }
 
-    // MARK: - «Plantillas» — un grupo por fila, copia todas sus rutinas y arma la semana
+    // MARK: - «Plantillas» — un grupo por fila → preview → «Usar este plan» (FER-251)
 
     private var plantillasSection: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -103,11 +109,14 @@ struct CrearPlanScreen: View {
 
     private func plantillaRow(_ group: StarterTemplate.Group) -> some View {
         let templates = StarterTemplates.inGroup(group)
-        return Button { applyTemplateGroup(group) } label: {
+        return Button {
+            previewGroup = group
+            showGroupPreview = true
+        } label: {
             HStack(spacing: 10) {
                 VStack(alignment: .leading, spacing: 1) {
                     Text(groupName(group)).font(StrandFont.body).fontWeight(.semibold).foregroundStyle(theme.ink)
-                    Text("\(routineCountText(templates.count)) · \(String(localized: "Ready to edit"))")
+                    Text(routineCountText(templates.count))
                         .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -125,9 +134,8 @@ struct CrearPlanScreen: View {
             .padding(.horizontal, 14).frame(minHeight: 56).contentShape(Rectangle())
         }
         .buttonStyle(EntrenarPressStyle())
-        .disabled(applyingGroup != nil)
-        .opacity(applyingGroup != nil && applyingGroup != group ? StrandOpacity.dim : 1)
         .accessibilityElement(children: .combine)
+        .accessibilityHint(Text("Show the plan"))
     }
 
     // MARK: - «Desde cero» — nueva rutina o importar de tu IA
@@ -195,60 +203,7 @@ struct CrearPlanScreen: View {
         }
     }
 
-    // Mismo vocabulario que `StarterTemplatesSheet.templateName` (claves únicas a propósito: un
-    // «Push» pelón colisionaría con otras claves del catálogo).
-    private func templateName(_ id: String) -> LocalizedStringResource {
-        switch id {
-        case "ppl-push":  return "Push day"
-        case "ppl-pull":  return "Pull day"
-        case "ppl-legs":  return "Leg day"
-        case "full-body": return "Full body"
-        case "upper":     return "Upper body"
-        case "lower":     return "Lower body"
-        case "home":      return "At home"
-        case "mobility":  return "Mobility & light cardio"
-        default:          return "Routine"
-        }
-    }
-
     // MARK: - Data
-
-    /// Días de la semana en orden lunes→domingo (convención `Calendar.component(.weekday)`,
-    /// 1 = domingo … 7 = sábado), para llenar la semana en un orden legible.
-    private static let mondayFirstWeekdays = [2, 3, 4, 5, 6, 7, 1]
-
-    /// Copia CADA rutina del grupo (`StarterTemplate.makeRoutine`, ya probado en `StrandTraining`)
-    /// y asigna cada una al primer día LIBRE de la semana — nunca pisa un día que el usuario ya
-    /// asignó a mano, así que tocar «Plantillas» nunca destruye trabajo previo, solo lo completa.
-    private func applyTemplateGroup(_ group: StarterTemplate.Group) {
-        guard applyingGroup == nil else { return }
-        applyingGroup = group
-        Task {
-            guard let store = await repo.storeHandle() else {
-                applyingGroup = nil; saveError = true; return
-            }
-            do {
-                let existing = (try? await store.routineSchedule()) ?? []
-                let taken = Set(existing.map(\.weekday))
-                var freeWeekdays = Self.mondayFirstWeekdays.filter { !taken.contains($0) }
-                let now = Int(Date().timeIntervalSince1970)
-                for t in StarterTemplates.inGroup(group) {
-                    let name = String(localized: templateName(t.id))
-                    let (routine, exercises) = t.makeRoutine(name: name, now: now)
-                    try await repo.saveRoutine(routine, exercises: exercises)
-                    if !freeWeekdays.isEmpty {
-                        try? await store.setRoutineSchedule(weekday: freeWeekdays.removeFirst(), routineId: routine.id)
-                    }
-                }
-                await onChange()
-                onApplied()
-                dismiss()
-            } catch {
-                applyingGroup = nil
-                saveError = true
-            }
-        }
-    }
 
     /// «＋ Nueva rutina»: mismo flujo unificado que la landing (FER-952) — la Biblioteca entrega los
     /// ejercicios, aquí se materializa la rutina con los valores por omisión del builder (3×8) y se
