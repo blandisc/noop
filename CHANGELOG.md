@@ -20,6 +20,10 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **«Tu cuerpo» al vidrio El Eje / Body screen moves to El Eje glass** (FER-206).
+  **ES** — La última superficie de Entrenar en tarjetas de papel legacy migra al sistema de módulos y teselas de cristal del hub; contenido e interacciones intactos.
+  **EN** — The last Training surface on legacy paper cards moves to the hub's glass module/tile system; content and interactions unchanged.
+
 - **Fondo blanco consistente en Entrenar / Consistent white background in Training** (FER-205).
   **ES** — Abrir una sesión desde el historial ya no salta de blanco a papel; seis pantallas de Entrenar declaran el fondo blanco explícito.
   **EN** — Opening a session from history no longer flips from white to paper; six Training screens declare the explicit white background.
