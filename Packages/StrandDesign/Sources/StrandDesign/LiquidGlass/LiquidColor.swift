@@ -245,8 +245,8 @@ public enum LiquidColor {
     /// de la métrica. Medido contra WCAG AA, **solo el índigo de Sueño pasa**: el rótulo al 85 %
     /// da 4.62:1 sobre índigo pero 3.16:1 sobre el ámbar de Esfuerzo, y sobre rosa, verde y
     /// ámbar **no pasa ni a opacidad plena** — o sea, subir el alfa no puede arreglarlo. La
-    /// única salida es bajar la luminancia del tono. (El mismo defecto vive hoy en el papel,
-    /// con `OnFieldOpacity.secondary` = .75 en los 15 call sites de `HeroInvertido`.)
+    /// única salida es bajar la luminancia del tono. (El mismo defecto vivía en el papel del
+    /// héroe invertido, ya retirado en FER-164.)
     ///
     /// Mezcla negro en pasos de 1 % hasta que el rótulo pase 4.5:1, y se detiene ahí — no
     /// aplica un factor fijo. Así **el índigo de Sueño sale intacto** (necesita 0 %) y cada
