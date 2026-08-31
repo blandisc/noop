@@ -709,9 +709,9 @@ extension HojaSesionViva {
         // FER-250: sin reloj el motor ya cayó a fijo — no regañar «sin reloj» en el trailing de CADA
         // descanso. El aviso «descanso por tiempo (sin reloj)» sale UNA vez vía `shownNoWatchRestNote`.
         let oneShotNoWatch = sheet.model.watchBpm == nil && !shownNoWatchRestNote
-        let note: String? = {
-            if oneShotNoWatch { return String(localized: "rest by time (no watch)") }
-            if noStrapFallback { return String(localized: "resting by clock: connect your Apple Watch for rest by heart rate") }
+        let note: LocalizedStringKey? = {
+            if oneShotNoWatch { return "rest by time (no watch)" }
+            if noStrapFallback { return "resting by clock: connect your Apple Watch for rest by heart rate" }
             return nil
         }()
         return RestBand(kicker: restBandKicker(esRonda: esRonda),
