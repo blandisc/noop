@@ -20,6 +20,11 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **El detalle de ejercicio termina de pasar a vidrio / Exercise detail finishes its move to glass** (migración · «Un solo vidrio · El Eje»).
+  **ES** — Las últimas superficies de papel del detalle de ejercicio (chips de músculos asistentes, chips de peso×reps del historial, el cuadro del ícono de YouTube) dejan el gris papel (`patternBlock` #EFEAE0) y pasan a la pastilla sólida de El Eje (`.liquidGlass(.pastillaSolida)`, la misma superficie que `LiquidChipSeleccion`). El músculo principal conserva el tono de su familia de movimiento (identidad); tipografía, tinta, el segmentado y el marco del hero no cambian.
+  **EN** — The exercise detail's last paper surfaces (assisting-muscle chips, the history's weight×reps chips, the YouTube icon square) leave the paper gray (`patternBlock`) for El Eje's solid pastille (`.liquidGlass(.pastillaSolida)`, the same surface `LiquidChipSeleccion` uses). The primary muscle keeps its movement-family hue (identity); type, ink, the segmented control and the hero frame are untouched.
+  ([ExerciseDetailScreen.swift](Cenit/Screens/ExerciseDetailScreen.swift))
+
 - **Primer uso de Entrenar honesto / Honest Training first-run** (FER-251).
   **ES** — Los tres chips de split ahora abren su plantilla real con los ejercicios a la vista y un solo botón «Usar este plan»; «Desde cero» e «Importar» quedan a un tap; ya no hay puertas duplicadas ni plantillas que se apliquen a ciegas. La pantalla «Tres caminos» se archivó.
   **EN** — The three split chips now open their real template with exercises visible and a single “Use this plan” button; “From scratch” and “Import” stay one tap away; no more duplicate doors or templates applied blindly. The “Three paths” screen was archived.
