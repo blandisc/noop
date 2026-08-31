@@ -359,13 +359,13 @@ struct TrainingBodyScreen: View {
     }
 
     /// The mini load indicator for the peeked muscle — a tap target into the full detail. Kept in its
-    /// own bordered card (unlike the plain `ranking` rows) so the atlas's active selection still reads
-    /// as a callout, not just another list row.
+    /// own `EntrenarModulo` (unlike the plain `ranking` rows) so the atlas's active selection still
+    /// reads as a callout, not just another list row.
     private func peekCard(_ muscle: String) -> some View {
-        loadRow(muscle)
-            .padding(.horizontal, 11).padding(.vertical, 3)
-            .instrumentoCard(.inset, theme: theme, fill: theme.paper, stroke: theme.hairlineStrong)
-            .padding(.horizontal, 4)
+        EntrenarModulo(tono: .neutro) {
+            loadRow(muscle)
+        }
+        .padding(.horizontal, 4)
     }
 
     private var resetRow: some View {
@@ -1004,13 +1004,13 @@ private struct MuscleDetailView: View {
     }
 
     private func tile(title: LocalizedStringKey, value: LocalizedStringKey, color: Color? = nil) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            Text(value).font(InstrumentoType.groteskTileValue).foregroundStyle(color ?? theme.ink)
+        EntrenarTile(tono: .neutro) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                Text(value).font(InstrumentoType.groteskTileValue).foregroundStyle(color ?? theme.ink)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(CenitMetrics.gap)
-        .instrumentoCard(.control, theme: theme)
     }
 
     private var lastText: LocalizedStringKey {
