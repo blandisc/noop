@@ -170,7 +170,7 @@ struct RoutineSheet: View {
                 Spacer()
             }
         }
-        .pantallaFondo()
+        .entrenarHojaFondo(tono: .indigo)
         .onDisappear { if dirty, !isOrphan { persist() } }
         .saveErrorToast(isPresented: $saveError)
         .instrumentoConfirm(

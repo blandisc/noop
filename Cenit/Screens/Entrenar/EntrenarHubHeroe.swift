@@ -100,7 +100,7 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
                     .overlay {
                         Text(verbatim: "↑")
                             .font(EntrenarHubMetrics.subPillGlifo)
-                            .foregroundStyle(LiquidColor.verdeProfundo)
+                            .foregroundStyle(LiquidTono.verde.rotulo)
                     }
                     .accessibilityHidden(true)   // decorativo — la palabra «subes» ya lo dice
                 line.font(.system(size: subPillTextoSize)).foregroundStyle(LiquidColor.tinta700)
@@ -110,7 +110,7 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
             .padding(.trailing, EntrenarHubMetrics.subPillPaddingTrailing)
             .padding(.vertical, EntrenarHubMetrics.subPillPaddingV)
             .background {
-                Capsule().fill(LiquidColor.verdePrimario.opacity(EntrenarHubMetrics.subPillFondoAlfa))
+                Capsule().fill(LiquidColor.verdeCarga.opacity(EntrenarHubMetrics.subPillFondoAlfa))
             }
             .overlay {
                 Capsule().strokeBorder(LiquidColor.papelTarjeta.opacity(EntrenarHubMetrics.subPillHighlightAlfa), lineWidth: 1)
@@ -120,9 +120,9 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
                     .padding(1)
             }
             .overlay {
-                Capsule().stroke(LiquidColor.verdePrimario.opacity(EntrenarHubMetrics.subPillCantoAlfa), lineWidth: 0.5)
+                Capsule().stroke(LiquidColor.verdeCarga.opacity(EntrenarHubMetrics.subPillCantoAlfa), lineWidth: 0.5)
             }
-            .liquidShadow([.init(color: LiquidColor.verdePrimario.opacity(EntrenarHubMetrics.subPillShadowAlfa),
+            .liquidShadow([.init(color: LiquidColor.verdeCarga.opacity(EntrenarHubMetrics.subPillShadowAlfa),
                                  radius: EntrenarHubMetrics.subPillShadowRadius, y: EntrenarHubMetrics.subPillShadowY)])
         }
         .buttonStyle(.liquidPress)
@@ -138,18 +138,10 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
     }
 
     private var empezarPill: some View {
-        Button(action: onStart) {
-            // La MISMA clave que `EntrenarLanding.empezarLabel` (catálogo «Empezar» → en «Start»):
-            // reutiliza la traducción existente en vez de una clave nueva idéntica.
-            Text("Empezar")
-                .font(EntrenarHubMetrics.heroCTATexto)
-                .foregroundStyle(LiquidColor.tintaSobreVerde)
-                .frame(minWidth: EntrenarHubMetrics.heroCTAMinWidth, minHeight: EntrenarMetrics.row)
-                .background(LiquidColor.verdePrimario, in: Capsule())
-                .liquidShadow([.init(color: LiquidColor.verdePrimario.opacity(EntrenarHubMetrics.heroCTAShadowAlfa),
-                                     radius: EntrenarHubMetrics.heroCTAShadowRadius, y: EntrenarHubMetrics.heroCTAShadowY)])
-        }
-        .buttonStyle(.liquidPress)
+        // La MISMA clave que `EntrenarLanding.empezarLabel` (catálogo «Empezar» → en «Start»):
+        // reutiliza la traducción existente en vez de una clave nueva idéntica.
+        LiquidGlassButton("Empezar", variant: .primary,
+                          minWidth: EntrenarHubMetrics.heroCTAMinWidth, action: onStart)
     }
 
     private var otraFormaPill: some View {

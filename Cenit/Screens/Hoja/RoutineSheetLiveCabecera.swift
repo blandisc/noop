@@ -145,15 +145,9 @@ enum HojaCabeceraSesion {
     /// que ya no hay ninguna fila activa que capturar (mapa B16).
     static func ctaTerminar(vivo: HojaSesionViva) -> some View {
         VStack(spacing: LiquidSpace.s150) {
-            Button {
+            LiquidGlassButton("Finish and save", variant: .primary, expands: true) {
                 vivo.confirmFinish = true
-            } label: {
-                Text("Finish and save")
-                    .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
-                    .foregroundStyle(vivo.sheet.theme.paper).frame(maxWidth: .infinity).padding(.vertical, LiquidSpace.s400)
-                    .background(LiquidColor.verdePrimario, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
             }
-            .buttonStyle(.plain)
             Text("Your receipt is waiting on the other side")
                 .font(StrandFont.caption).foregroundStyle(vivo.sheet.theme.inkTertiary)
         }

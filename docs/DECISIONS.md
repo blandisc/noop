@@ -30,6 +30,10 @@ el mismo PR** que la implementa (una línea basta: fecha, decisión, por qué).
   sin celdas de la tarjeta activa (thumb + nombre; no las filas/TapZones de peso-reps) entra
   a foco; (b) arrastre del grabber ⌄ hacia abajo sale. El DragGesture vive SOLO en el
   grabber de `FocoCabecera`, nunca sobre el ScrollView de Foco.
+- **2026-08-30 · CTA de arranque = una sola voz** (FER-249). Verde de marca vía
+  `LiquidGlassButton(.primary)` en TODOS los contextos, incluido día de descanso. El ámbar
+  `dataStrain` queda como excepción nombrada SOLO en el pill «+ Serie». «Hoy subes» habla en
+  `verdeCarga` (identidad de carga), nunca `verdePrimario`.
 
 ## Proceso
 
