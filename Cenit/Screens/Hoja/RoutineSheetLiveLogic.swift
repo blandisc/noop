@@ -706,12 +706,15 @@ extension HojaSesionViva {
         let cappedEnd = noStrapFallback ? min(end ?? now, started.addingTimeInterval(300)) : end
         let totalS = cappedEnd.map { max(0, Int($0.timeIntervalSince(started))) } ?? 0
         let elapsed = max(0, min(totalS, Int(now.timeIntervalSince(started))))
-        // FER-250: sin reloj el motor ya cayó a fijo — no regañar «sin reloj» en el trailing de CADA
-        // descanso. El aviso «descanso por tiempo (sin reloj)» sale UNA vez vía `shownNoWatchRestNote`.
-        let oneShotNoWatch = sheet.model.watchBpm == nil && !shownNoWatchRestNote
+        // FER-250 / FER-257 D2: sin reloj el motor ya cayó a fijo — no regañar en CADA descanso.
+        // Ambas rutas (degradación al registrar + noStrapFallback a mitad de un descanso por FC)
+        // comparten `shownNoWatchRestNote`: la PRIMERA vez se dice UNA nota; después, silencio.
         let note: LocalizedStringKey? = {
-            if oneShotNoWatch { return "rest by time (no watch)" }
-            if noStrapFallback { return "resting by clock: connect your Apple Watch for rest by heart rate" }
+            guard !shownNoWatchRestNote else { return nil }
+            if sheet.model.watchBpm == nil { return "rest by time (no watch)" }
+            if noStrapFallback {
+                return "resting by clock: connect your Apple Watch for rest by heart rate"
+            }
             return nil
         }()
         return RestBand(kicker: restBandKicker(esRonda: esRonda),

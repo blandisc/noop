@@ -154,9 +154,12 @@ struct HojaSesionViva: View {
         .task { await loadPersonalRecords() }   // R16
         .saveErrorToast(isPresented: $routineWriteError)   // B8: falló persistir a la rutina (no la sesión)
         .onChange(of: session.phase) { previous, phase in
-            // FER-250: al salir del primer descanso sin reloj, bloquea el aviso one-shot para el resto
-            // de la sesión (se mostró mientras `!shownNoWatchRestNote` y `watchBpm == nil`).
-            if previous == .resting, phase != .resting, restStartBpm == nil, !shownNoWatchRestNote {
+            // FER-250 / FER-257 D2: al salir del primer descanso caído a reloj, bloquea el aviso
+            // one-shot. Cubrir ambas rutas con la misma bandera: sin pulso al entrar
+            // (`restStartBpm == nil`) y pulso muerto a mitad de un descanso por FC
+            // (`watchBpm == nil` al salir — rama noStrapFallback).
+            if previous == .resting, phase != .resting, !shownNoWatchRestNote,
+               (restStartBpm == nil || sheet.model.watchBpm == nil) {
                 shownNoWatchRestNote = true
             }
             restStartBpm = phase == .resting ? sheet.model.watchBpm : nil

@@ -625,6 +625,9 @@ final class StrengthSessionModel: ObservableObject {
         guard rest.mode == .heartRate else { currentRestMode = .fixed; currentRestTarget = nil; return }
         // FER-250: descanso por FC pedido, pero sin pulso vivo AHORA (el caso más común, sin reloj) →
         // temporizador fijo. Así el auto-skip corre y no se regaña «sin reloj» en cada descanso.
+        // FER-257 D5 (deliberado, no fix): si este descanso ya degradó a fijo y el Watch conecta
+        // a mitad, NO se re-promueve a FC — el reloj es mejora, no requisito. Se re-evalúa al
+        // siguiente registro (`registerCurrentSet` vuelve a pasar `hasLivePulse`).
         guard hasLivePulse else { currentRestMode = .fixed; currentRestTarget = nil; return }
         let peak = hrSamples.filter { $0.ts >= doneTs - 90 && $0.ts <= doneTs }.map(\.bpm).max()
         let target = RestTarget.resolve(reference: rest.hrReference.restTargetReference,

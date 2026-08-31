@@ -960,4 +960,14 @@ final class StrengthSessionModelTests: XCTestCase {
         s.registerCurrentSet(now: Date(timeIntervalSince1970: 5000), restingHR: 60, hasLivePulse: true)
         XCTAssertEqual(s.currentRestMode, .heartRate, "con pulso vivo, el descanso por FC se preserva")
     }
+
+    /// FER-257 D4: contrato del espejo del Watch — debe pasar `hasLivePulse: watchBpm != nil`.
+    /// Contra el default viejo (`true`), un registro sin pulso vivo dejaría `.heartRate` colgado.
+    func testMirrorContractHeartRateRestDegradesWithoutExplicitLivePulse() {
+        let s = make([StrengthSessionModel.PlanSlot(re: hrEx("a", exerciseId: "bench", sets: 3, restSeconds: 120),
+                                                    exercise: ex("bench", "Bench"), lastSets: [])])
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 5000), restingHR: 60, hasLivePulse: false)
+        XCTAssertEqual(s.currentRestMode, .fixed,
+                       "espejo sin watchBpm debe degradar a fijo (no asumir hasLivePulse: true)")
+    }
 }
