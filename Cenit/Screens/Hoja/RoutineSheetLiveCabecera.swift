@@ -24,7 +24,8 @@ enum HojaCabeceraSesion {
                 StrandIcon.back.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold))
                     .foregroundStyle(vivo.sheet.theme.inkSecondary)
-                    .frame(width: 34, height: EntrenarMetrics.secondaryButton).contentShape(Rectangle().inset(by: -LiquidSpace.s125))
+                    .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)   // 44 pt de toque
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(Text("Minimize session"))
@@ -32,22 +33,27 @@ enum HojaCabeceraSesion {
             EntrenarFamilyDot(vivo.familyTint, size: EntrenarMetrics.familyDotCompact)
 
             VStack(alignment: .leading, spacing: LiquidSpace.s025) {
-                Text(vivo.session.routineName).font(StrandFont.headline).foregroundStyle(vivo.sheet.theme.ink).lineLimit(1)
+                Text(vivo.session.routineName).font(StrandFont.headline).foregroundStyle(vivo.sheet.theme.ink)
+                    .lineLimit(1).minimumScaleFactor(0.8)
                 Text(vivo.session.paused ? String(localized: "Paused") : vivo.serieSubtitle)
-                    .instrumentoOverline().foregroundStyle(vivo.sheet.theme.inkTertiary).lineLimit(1)
+                    .instrumentoOverline().foregroundStyle(vivo.sheet.theme.inkTertiary)
+                    .lineLimit(1).minimumScaleFactor(0.8)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
             heartRate(vivo: vivo)
 
             TimelineView(.periodic(from: Date(), by: 1)) { ctx in
-                let texto = SessionClock.format(vivo.session.elapsedSeconds(now: ctx.date))
+                let elapsed = vivo.session.elapsedSeconds(now: ctx.date)
+                let texto = SessionClock.format(elapsed)
                 Text(texto)
                     .font(InstrumentoType.groteskNumber(15))
                     .foregroundStyle(vivo.sheet.theme.inkSecondary)
                     .numeroVivo(value: texto)
+                    // Misma clave que LiveStrengthSheet (reloj vivo): «Elapsed %@» / «Paused at %@».
+                    .accessibilityLabel(Text(vivo.session.paused ? "Paused at \(texto)" : "Elapsed \(texto)"))
+                    .accessibilityAddTraits(.updatesFrequently)
             }
-            .accessibilityHidden(true)
 
             // FER-250: «Terminar» secundario SIEMPRE visible a media sesión (criterio 1: con 0 series
             // el confirm ya es honesto — «Aún no registras ninguna serie.» + Seguir/Descartar). El CTA
@@ -62,7 +68,8 @@ enum HojaCabeceraSesion {
                     Image(systemName: "arrow.up.left.and.arrow.down.right")
                         .font(StrandFont.glyph(.inline, weight: .semibold))
                         .foregroundStyle(vivo.sheet.theme.inkSecondary)
-                        .frame(width: 34, height: EntrenarMetrics.secondaryButton).contentShape(Rectangle().inset(by: -LiquidSpace.s125))
+                        .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)   // 44 pt de toque
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Focus"))
@@ -73,7 +80,8 @@ enum HojaCabeceraSesion {
                     Image(systemName: vivo.session.paused ? "play.fill" : "pause.fill")
                         .font(StrandFont.glyph(.inline, weight: .semibold))
                         .foregroundStyle(vivo.sheet.theme.inkSecondary)
-                        .frame(width: 34, height: EntrenarMetrics.secondaryButton).contentShape(Rectangle().inset(by: -LiquidSpace.s125))
+                        .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)   // 44 pt de toque
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(vivo.session.paused ? Text("Resume session") : Text("Pause session"))
@@ -130,7 +138,7 @@ enum HojaCabeceraSesion {
         .frame(height: EntrenarMetrics.progressBar)
         .padding(.horizontal, CenitMetrics.screenPadding)
         .padding(.top, CenitMetrics.rowVPad)
-        .accessibilityHidden(true)
+        .accessibilityLabel(Text(verbatim: vivo.serieSubtitle))
     }
 
     /// B16 — sesión llena: CTA prominente «Terminar y guardar», la ÚNICA acción que queda una vez
