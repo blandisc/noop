@@ -188,6 +188,7 @@ struct TrainingBodyScreen: View {
         // plano. Conserva el hilo Liquid (`EntrenarHilo`), siluetas, `MuscleLoadRow` y la navegación
         // ambiente del stack; no se duplica el hilo ni se toca la apertura de `VeredictoActaSheet`.
         .entrenarHojaFondo(tono: .neutro)
+        .pantallaFondo()
         .task {
             async let mapLoad: () = load()
             async let volumeLoad: () = loadVolume()

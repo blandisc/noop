@@ -52,6 +52,6 @@ extension Optional where Wrapped == RoutineRegion {
         }
     }
     .padding(20)
-    .background(t.paper)
+    .background(CenitColor.pantalla)
 }
 #endif

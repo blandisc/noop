@@ -100,7 +100,7 @@ struct WorkoutDetailScreen: View {
             if experimentalMetrics { await loadHRR() }
             await loadVolume()
         }
-        .background(theme.paper.ignoresSafeArea())
+        .pantallaFondo()
         .navigationTitle(Text(routineTitle ?? WorkoutSource.displaySport(row.sport)))
         .navigationBarTitleDisplayMode(.inline)
         // FER-998: el disco de papel en lugar del botón nativo. Ojo: `navigationBarBackButtonHidden`

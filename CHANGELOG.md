@@ -20,6 +20,10 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- **Fondo blanco consistente en Entrenar / Consistent white background in Training** (FER-205).
+  **ES** — Abrir una sesión desde el historial ya no salta de blanco a papel; seis pantallas de Entrenar declaran el fondo blanco explícito.
+  **EN** — Opening a session from history no longer flips from white to paper; six Training screens declare the explicit white background.
+
 - **El acuerdo entre fuentes pasa a Liquid Glass · El Eje / Source-agreement row moves to Liquid Glass · El Eje** (FER-254).
   **ES** — La nota bajo pasos / sueño total / kcal activas (cuando hay ≥2 fuentes) deja tipografía y colores Instrumento y se dibuja con `LiquidNotaLine`: veredicto + ambos valores (nunca un promedio), regla lateral de 2 pt; en conflicto la regla y el veredicto pasan a atención.
   **EN** — The note under steps / sleep total / active kcal (when ≥2 sources report) leaves Instrumento type and colors for `LiquidNotaLine`: verdict + both values (never an average), 2 pt side rule; on conflict the rule and verdict shift to attention.

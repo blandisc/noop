@@ -151,6 +151,7 @@ struct WorkoutHistoryScreen: View {
         // FER-202 (épico «Entrenar en vidrio»): suelo de cristal El Eje en vez del papel plano — la
         // misma receta de la familia que las hojas ya migradas (v1). El héroe/tiles se posan encima.
         .entrenarHojaFondo(tono: .neutro)
+        .pantallaFondo()
         // FER-202: cuando esta pantalla es la RAÍZ de la capa de Cuerpo (no llega empujada), el toolbar
         // dibuja «‹ Tendencias» — no hay «‹» del sistema que la cierre. En la puerta de Entrenar `onClose`
         // es nil y este item no aparece (el stack ya trae su propio back).

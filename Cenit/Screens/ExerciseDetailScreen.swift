@@ -126,6 +126,7 @@ struct ExerciseDetailScreen: View {
         // trae `NavigationStack` propio (lo pone el caller, ver `.sheet(item:$variant)` abajo, que
         // se CONSERVA tal cual con su toolbar «Done»); solo cambia el papel plano de su raíz.
         .entrenarHojaFondo(tono: .neutro)
+        .pantallaFondo()
         .saveErrorToast(isPresented: $saveError)
         // Keyed to the repository pass too (FER-82): the cycle line reads today's verdict, so a visit
         // opened during a cold start corrects itself the moment the verdict lands.

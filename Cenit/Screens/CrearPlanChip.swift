@@ -34,7 +34,7 @@ struct CrearPlanChip: View {
         CrearPlanChip(onTemplates: {}, onImport: {})
     }
     .padding(24)
-    .background(InstrumentoTheme.base.paper)
+    .background(CenitColor.pantalla)
     .environment(\.instrumentoTheme, .base)
     .preferredColorScheme(.light)
 }

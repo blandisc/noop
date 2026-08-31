@@ -125,7 +125,7 @@ struct TrainingLoadStrip: View {
         TrainingLoadStrip(model: TrainingLoadModel(acwr: nil, series: [], days: []), theme: .base, onTap: {})
         TrainingLoadStrip(model: TrainingLoadModel(acwr: 1.62, series: [], days: []), theme: .base, onTap: {})
     }
-    .padding(24).background(InstrumentoTheme.base.paper)
+    .padding(24).background(CenitColor.pantalla)
 }
 #endif
 #endif

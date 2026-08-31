@@ -90,6 +90,7 @@ struct ExerciseLibraryScreen: View {
         // no trae `NavigationStack` propio en ninguno de sus call sites (push/destination puros);
         // su kicker («Biblioteca · N ejercicios») se queda tal cual, no gana control de salida.
         .entrenarHojaFondo(tono: .neutro)
+        .pantallaFondo()
         .safeAreaInset(edge: .bottom) { if addMode { addBar } }
         .task { await reload() }
         .onChange(of: search) {
