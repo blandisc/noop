@@ -176,11 +176,11 @@ struct WorkoutHistoryScreen: View {
         .overlay(alignment: .top) {
             if saveError {
                 Text("Couldn't save the workout. Try again.")
-                    .font(.system(size: 13))   // token-exempt: cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)
+                    .font(LiquidType.cuerpoBanner)
                     .foregroundStyle(theme.ink)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .patternBlock(theme, bar: theme.critical)
-                    .padding(.horizontal, 16)  // token-exempt: sin token exacto en mapa FER-207 (cardPadding candidato)
+                    .padding(.horizontal, CenitMetrics.cardPadding)
                     .transition(LiquidMotion.fallingFadeTransition)
                     .task {
                         try? await Task.sleep(for: .seconds(4))
@@ -652,7 +652,7 @@ struct WorkoutHistoryScreen: View {
         .font(InstrumentoType.grotesk(11, weight: .bold))
         // §8.7: valence en texto <24pt usa positiveText (5.0:1), no el hue del dato.
         .foregroundStyle(valence)
-        .padding(.horizontal, 9).padding(.vertical, 3)  // token-exempt: sin token exacto (horizontal/chip handoff)
+        .padding(.horizontal, LiquidSpace.chipHorizontal).padding(.vertical, LiquidSpace.s075)
         .background(valence.opacity(StrandOpacity.tintFill),
                     in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
     }
@@ -1606,11 +1606,11 @@ struct WorkoutSessionDetailScreen: View {
         .overlay(alignment: .top) {
             if saveError {
                 Text("Couldn't delete the workout. Try again.")
-                    .font(.system(size: 13))   // token-exempt: cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)
+                    .font(LiquidType.cuerpoBanner)
                     .foregroundStyle(theme.ink)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .patternBlock(theme, bar: theme.critical)
-                    .padding(.horizontal, 16)  // token-exempt: sin token exacto en mapa FER-207 (cardPadding candidato)
+                    .padding(.horizontal, CenitMetrics.cardPadding)
                     .transition(LiquidMotion.fallingFadeTransition)
                     .task {
                         try? await Task.sleep(for: .seconds(4))

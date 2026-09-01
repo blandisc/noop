@@ -1069,7 +1069,7 @@ struct LiveStrengthSheet: View {
                 // over an empty list) rather than a section with nothing under it.
                 if let suggestions = freshSuggestions, !suggestions.isEmpty {
                     Text("Fresh today").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                        .padding(.top, 10)  // token-exempt: sin token exacto (edge ≠ rowVPad)
+                        .padding(.top, LiquidSpace.seccionCanto)
                     VStack(spacing: CenitMetrics.space2) {
                         ForEach(suggestions) { s in freshSuggestionChip(s) }
                     }
@@ -1084,15 +1084,15 @@ struct LiveStrengthSheet: View {
                     }
                 }
 
-                Divider().overlay(theme.hairline).padding(.top, 10)  // token-exempt: sin token exacto (edge ≠ rowVPad)
+                Divider().overlay(theme.hairline).padding(.top, LiquidSpace.seccionCanto)
                 Text("You'll be able to save this as a routine when you finish · it doesn't touch your plan.")
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .multilineTextAlignment(.center)
-                    .padding(.top, 10)  // token-exempt: sin token exacto (edge ≠ rowVPad)
+                    .padding(.top, LiquidSpace.seccionCanto)
             }
             .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.top, 16)  // token-exempt: sin token exacto en mapa FER-207 (cardPadding candidato)
+            .padding(.top, CenitMetrics.cardPadding)
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }

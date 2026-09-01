@@ -94,7 +94,7 @@ struct WorkoutImportView: View {
                     .foregroundStyle(theme.ink)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .patternBlock(theme, bar: theme.critical)
-                    .padding(.horizontal, 16)  // token-exempt: sin token exacto en mapa FER-207 (cardPadding candidato)
+                    .padding(.horizontal, CenitMetrics.cardPadding)
                     .transition(LiquidMotion.fallingFadeTransition)
                     .task {
                         try? await Task.sleep(for: .seconds(4))
@@ -582,7 +582,7 @@ struct WorkoutImportView: View {
                         .frame(maxWidth: .infinity)
                 }
             }
-            .padding(.trailing, 44)  // token-exempt: 44 del handoff / touchTarget
+            .padding(.trailing, LiquidSpace.handoff44)
             HStack(spacing: CenitMetrics.space2) {
                 ForEach(0..<labels.count, id: \.self) { i in
                     Text(labels[i])
@@ -596,7 +596,7 @@ struct WorkoutImportView: View {
             // El MISMO carril cedido que las barras: sin este padding las etiquetas se reparten el ancho
             // completo y las barras `ancho − 44`, así que cada etiqueta se centraba en una celda más ancha
             // que su barra y el desfase crecía hacia la derecha.
-            .padding(.trailing, 44)  // token-exempt: 44 del handoff / touchTarget
+            .padding(.trailing, LiquidSpace.handoff44)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("Step \(currentIndex + 1) of 4"))
