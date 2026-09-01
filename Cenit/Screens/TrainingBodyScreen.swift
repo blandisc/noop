@@ -180,7 +180,7 @@ struct TrainingBodyScreen: View {
                 }
             }
             .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.top, 20)  // token-exempt: sin token exacto
+            .padding(.top, 20)  // token-exempt(optico): tope de scroll deliberadamente menor que screenPadding (24) para acercar el contenido al nav bar — sin paso exacto en LiquidSpace/CenitMetrics
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -285,9 +285,9 @@ struct TrainingBodyScreen: View {
             }
             if let p = peeked {
                 peekCard(p).padding(.top, CenitMetrics.space1)
-                resetRow.padding(.top, 7)  // token-exempt: ajuste óptico / sin token exacto
+                resetRow.padding(.top, 7)  // token-exempt(optico): aire entre peekCard y resetRow, entre space1 (4) y space2 (8) — afinado a ojo, sin paso exacto
             } else {
-                legend.padding(.top, 6)  // token-exempt: ajuste óptico / sin token exacto
+                legend.padding(.top, LiquidSpace.s150)
                 Text("Tap a muscle to see its load")
                     .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     .padding(.top, 10)  // token-exempt: sin token exacto (edge ≠ rowVPad)
@@ -427,7 +427,7 @@ struct TrainingBodyScreen: View {
                 Text("Loaded").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
             }
         }
-        .padding(.horizontal, 6)  // token-exempt: ajuste óptico / sin token exacto
+        .padding(.horizontal, LiquidSpace.s150)
     }
 
     // MARK: - Ranking
@@ -667,14 +667,14 @@ struct TrainingBodyScreen: View {
             volumeSpanPicker
                 .padding(.top, CenitMetrics.gap)
             if volumes.isEmpty {
-                volumeEmptyState.padding(.top, 20)  // token-exempt: sin token exacto
+                volumeEmptyState.padding(.top, 20)  // token-exempt(optico): aire entre el picker de rango y el estado vacío de volumen, mayor que gap (12) para dar espacio al icono — sin paso exacto
             } else {
-                volumeRows.padding(.top, 6)  // token-exempt: ajuste óptico / sin token exacto
+                volumeRows.padding(.top, LiquidSpace.s150)
                 volumeRailAxisMarks.padding(.top, CenitMetrics.space1)
                 volumeInsightLine.padding(.top, CenitMetrics.gap)
             }
         }
-        .padding(.top, 20)  // token-exempt: sin token exacto
+        .padding(.top, 20)  // token-exempt(optico): aire bajo el separador que abre la sección de volumen — mismo valor que el tope de scroll de la pantalla (línea 183), sin paso exacto en la escala
         .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 1) }
     }
 
@@ -1045,7 +1045,7 @@ private struct MuscleDetailView: View {
                     Text(hit.primary ? "primary" : "secondary")
                         .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                 }
-                .padding(.vertical, 7)  // token-exempt: ajuste óptico / sin token exacto
+                .padding(.vertical, 7)  // token-exempt(optico): pad vertical de la fila ejercicio-etiqueta, entre space2 (8) y rowVPad (10) — sin paso exacto
                 .overlay(alignment: .bottom) {
                     if hit.exerciseId != hits.prefix(6).last?.exerciseId {
                         Rectangle().fill(theme.hairline).frame(height: 0.5)
