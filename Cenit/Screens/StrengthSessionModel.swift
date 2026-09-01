@@ -848,7 +848,12 @@ final class StrengthSessionModel: ObservableObject {
     func skipExercise(_ index: Int) {
         guard runs.indices.contains(index) else { return }
         runs[index].skipped = true
-        if index == currentIndex { phase = .capturing; clearRest(); timerStart = nil; advanceToNextPending(fromStart: true) }
+        if index == currentIndex {
+            // Nancy · ronda 9: mover el foco también cierra el contexto que un toque remoto encolado
+            // pudo estar viendo — el ancla de staleness se re-arma igual que en un cierre de serie.
+            lastRestStartedAt = Date()
+            phase = .capturing; clearRest(); timerStart = nil; advanceToNextPending(fromStart: true)
+        }
     }
 
     /// Swap the exercise at `ei` for a different movement mid-session (FER-894 · «Cómo llego a Cambiar»).
@@ -902,6 +907,7 @@ final class StrengthSessionModel: ObservableObject {
         }
         if wasCurrent {
             currentIndex = doneSets.isEmpty ? ei : ei + 1
+            lastRestStartedAt = Date()   // Nancy · ronda 9: sustituir el foco cierra su contexto
             phase = .capturing; clearRest(); timerStart = nil
         }
     }
@@ -928,7 +934,10 @@ final class StrengthSessionModel: ObservableObject {
                 runs[idx].supersetGroup = nil
             }
         }
-        if wasCurrent { phase = .capturing; clearRest(); timerStart = nil; advanceToNextPending(fromStart: true) }
+        if wasCurrent {
+            lastRestStartedAt = Date()   // Nancy · ronda 9: quitar el foco cierra su contexto
+            phase = .capturing; clearRest(); timerStart = nil; advanceToNextPending(fromStart: true)
+        }
     }
 
     /// B8 (FER-169) «Saltar ejercicio · vuelve al final»: sends this exercise to the END of the plan,
@@ -941,7 +950,10 @@ final class StrengthSessionModel: ObservableObject {
         let run = runs.remove(at: index)
         runs.append(run)
         if index < currentIndex { currentIndex -= 1 }
-        if wasCurrent { phase = .capturing; clearRest(); timerStart = nil; advanceToNextPending(fromStart: true) }
+        if wasCurrent {
+            lastRestStartedAt = Date()   // Nancy · ronda 9: diferir el foco cierra su contexto
+            phase = .capturing; clearRest(); timerStart = nil; advanceToNextPending(fromStart: true)
+        }
     }
 
     /// Move an exercise one slot earlier in the plan (reorder), keeping the current exercise focused.
@@ -1192,7 +1204,7 @@ final class StrengthSessionModel: ObservableObject {
             currentRestTarget: currentRestTarget, currentRestMode: currentRestMode,
             timerStart: timerStart,
             paused: paused, pausedAccumulatedS: pausedAccumulatedS, pausedAt: pausedAt,
-            updatedTs: now, restOwnerSetId: restOwnerSetId)
+            updatedTs: now, restOwnerSetId: restOwnerSetId, lastRestStartedAt: lastRestStartedAt)
     }
 
     /// Rebuild a live session from a persisted snapshot (FER-798). Re-derives `phase` from the rest state;
@@ -1235,9 +1247,12 @@ final class StrengthSessionModel: ObservableObject {
         model.currentIndex = snap.currentIndex
         model.restEndsAt = snap.restEndsAt
         model.restStartedAt = snap.restStartedAt
-        // El ancla de staleness re-nace del descanso restaurado; si no había, el primer descanso
-        // nuevo la fija. Un snapshot viejo no puede dejar pasar toques anteriores a su propio rescate.
-        model.lastRestStartedAt = snap.restStartedAt
+        // Nancy · ronda 9: el ancla viaja en el snapshot — derivarla de `restStartedAt` (que se limpia
+        // fuera del descanso) dejaba el candado MUERTO tras relanzar sin descanso activo, y un toque
+        // encolado pre-muerte registraba la serie equivocada. Snapshot viejo sin el campo → ancla = el
+        // momento del rescate (conservador: un toque anterior al relanzamiento se descarta, nunca
+        // se aplica a ciegas).
+        model.lastRestStartedAt = snap.lastRestStartedAt ?? snap.restStartedAt ?? Date()
         model.currentRestTarget = snap.currentRestTarget
         model.currentRestMode = snap.currentRestMode
         model.restOwnerSetId = snap.restOwnerSetId

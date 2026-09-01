@@ -890,6 +890,51 @@ final class StrengthSessionModelTests: XCTestCase {
         XCTAssertEqual(s.lastRestStartedAt, t1, "…pero el cierre de la serie re-arma el ancla")
     }
 
+    /// Nancy · ronda 9a: el ancla VIAJA en el snapshot — derivarla de `restStartedAt` (que se limpia
+    /// fuera del descanso) dejaba el candado muerto tras relanzar sin descanso activo, y un toque
+    /// encolado pre-muerte registraba la serie equivocada.
+    func testStalenessAnchorSurvivesSnapshotRestoreWithoutActiveRest() {
+        let slot = StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 3, rest: 0),
+                                                 exercise: ex("bench", "Bench"), lastSets: [])
+        let s = make([slot])
+        let t1 = Date(timeIntervalSince1970: 1_700_000_000)
+        s.registerCurrentSet(now: t1)   // «Sin descanso»: ancla = t1, restStartedAt = nil
+        XCTAssertNil(s.restStartedAt)
+        let restored = StrengthSessionModel.restore(from: s.snapshot())
+        XCTAssertEqual(restored.lastRestStartedAt, t1, "el ancla sobrevive al relanzamiento")
+    }
+
+    /// Nancy · ronda 9a: un snapshot VIEJO sin el campo no puede renacer con el candado muerto — el
+    /// restore cae al momento del rescate (conservador), nunca a nil.
+    func testStalenessAnchorFallsBackToRestoreTimeOnLegacySnapshot() throws {
+        let slot = StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 3),
+                                                 exercise: ex("bench", "Bench"), lastSets: [])
+        let s = make([slot])
+        var snap = s.snapshot()
+        snap.lastRestStartedAt = nil   // como decodifica un snapshot pre-ronda-9
+        snap.restStartedAt = nil
+        let before = Date()
+        let restored = StrengthSessionModel.restore(from: snap)
+        let anchor = try XCTUnwrap(restored.lastRestStartedAt, "nunca nil tras restore")
+        XCTAssertGreaterThanOrEqual(anchor, before)
+    }
+
+    /// Nancy · ronda 9b: mover el foco (saltar/quitar/sustituir/diferir el ejercicio enfocado) cierra
+    /// el contexto igual que un cierre de serie — el ancla se re-arma para que un toque remoto
+    /// encolado antes de la navegación no se aplique al ejercicio equivocado.
+    func testStalenessAnchorAdvancesOnFocusNavigation() throws {
+        let slots = ["a", "b"].map {
+            StrengthSessionModel.PlanSlot(re: re($0, exerciseId: $0, sets: 2),
+                                          exercise: ex($0, $0.uppercased()), lastSets: [])
+        }
+        let s = make(slots)
+        let old = Date(timeIntervalSince1970: 1_000)
+        s.startRest(seconds: 60, now: old)
+        s.skipExercise(0)
+        let anchor = try XCTUnwrap(s.lastRestStartedAt)
+        XCTAssertGreaterThan(anchor, old, "saltar el ejercicio enfocado re-arma el ancla")
+    }
+
     /// Nancy · ronda 4: un historial con `reps = 0` (dejado por el bug que las rondas 1-2 cerraron)
     /// no puede sembrar en 0 la serie de un ejercicio agregado a media sesión — las DOS rutas de
     /// «＋ Agregar ejercicio» llevan el mismo piso `max(1, …)` que la siembra del plan y `addSet`.

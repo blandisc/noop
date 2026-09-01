@@ -472,6 +472,11 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
     /// The in-flight rest, preserved so a crash mid-rest doesn't drop the countdown/target.
     public var restEndsAt: Date?
     public var restStartedAt: Date?
+    /// The staleness anchor for durable remote channels (Live Activity inbox / watch queue) — the last
+    /// time a set closed or the focus moved. Unlike `restStartedAt` it is NOT cleared outside a rest, so
+    /// it must survive a restore or a queued stale tap applies to the wrong context after a relaunch.
+    /// Optional so an older snapshot (key absent) still decodes; the restorer falls back conservatively.
+    public var lastRestStartedAt: Date?
     public var currentRestTarget: Int?
     public var currentRestMode: RestMode
     /// The `WorkingSet.id` that opened the in-flight rest above (FER-167) — the descanso en vuelo needs
@@ -492,10 +497,11 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
                 restStartedAt: Date? = nil, currentRestTarget: Int? = nil,
                 currentRestMode: RestMode = .fixed, timerStart: Date? = nil,
                 paused: Bool = false, pausedAccumulatedS: Int = 0, pausedAt: Date? = nil,
-                updatedTs: Int, restOwnerSetId: String? = nil) {
+                updatedTs: Int, restOwnerSetId: String? = nil, lastRestStartedAt: Date? = nil) {
         self.id = id; self.routineId = routineId; self.routineName = routineName
         self.startTs = startTs; self.runs = runs; self.currentIndex = currentIndex
         self.restEndsAt = restEndsAt; self.restStartedAt = restStartedAt
+        self.lastRestStartedAt = lastRestStartedAt
         self.currentRestTarget = currentRestTarget; self.currentRestMode = currentRestMode
         self.timerStart = timerStart
         self.paused = paused; self.pausedAccumulatedS = pausedAccumulatedS; self.pausedAt = pausedAt
