@@ -280,7 +280,7 @@ struct TrainingBodyScreen: View {
                 BodyFiguresView(theme: theme, loadByMuscle: loadByMuscle,
                                 maxLoad: loads.first?.load ?? 0,
                                 highlight: focused?.muscle) { tapMuscle($0) }
-                    .padding(.top, 10)  // token-exempt: sin token exacto (edge ≠ rowVPad)
+                    .padding(.top, LiquidSpace.seccionCanto)
                 if let f = focused { floatingLabel(f) }
             }
             if let p = peeked {
@@ -330,7 +330,7 @@ struct TrainingBodyScreen: View {
             Text(MuscleAtlas.name(m.muscle)).font(StrandFont.caption).fontWeight(.semibold).foregroundStyle(theme.paper)
             Text(stateSuffix(m.state)).font(StrandFont.caption).foregroundStyle(theme.paper.opacity(StrandOpacity.muted))
         }
-        .padding(.horizontal, 11).padding(.vertical, 5)  // token-exempt: sin token exacto (horizontal/chip handoff)
+        .padding(.horizontal, LiquidChip.compactoHorizontal).padding(.vertical, LiquidChip.compactoVertical)
         .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
         .accessibilityElement(children: .combine)
     }

@@ -233,7 +233,7 @@ struct ExerciseDetailScreen: View {
                 // círculo — padding + contentShape + padding negativo se cancelan en layout (mismo
                 // principio que `PaperStepper.hitTarget`, FER-947, StrandDesign).
                 .padding(8).contentShape(Rectangle()).padding(-8)  // token-exempt: hit slop pair (±8)
-                .padding(10)  // token-exempt: sin token exacto (edge ≠ rowVPad)
+                .padding(LiquidSpace.filaRespiro)
                 .accessibilityLabel(Text(isLoopPlaying ? "Pause preview" : "Play preview"))
             }
             // Handoff: the hero carries a 2px frame in the movement family's hue — the same frame
@@ -451,7 +451,7 @@ struct ExerciseDetailScreen: View {
 
     private var measurementSection: some View {
         VStack(alignment: .leading, spacing: CenitMetrics.space2) {
-            Divider().overlay(theme.hairline).padding(.bottom, 10)  // token-exempt: sin token exacto (edge ≠ rowVPad)
+            Divider().overlay(theme.hairline).padding(.bottom, LiquidSpace.seccionCanto)
             Text("Measured by").instrumentoOverline().foregroundStyle(theme.inkTertiary)
             HStack(spacing: CenitMetrics.gap) {
                 Button { showTypeMenu = true } label: {
@@ -786,7 +786,7 @@ struct ExerciseDetailScreen: View {
                     recordRow(Text("Progression cycle"), cycle)
                 }
             }
-            .padding(.top, 14)  // token-exempt: 14 del handoff (mismo aire que las mini-tarjetas retiradas)
+            .padding(.top, LiquidSpace.handoff14)
         }
     }
 
