@@ -21,7 +21,7 @@ struct CrearPlanChip: View {
         InstrumentoToolChip(systemImage: "rectangle.stack.badge.plus", label: Text("Create plan")) {
             showMenu = true
         }
-        .paperMenu(isPresented: $showMenu, items: [
+        .liquidMenu(isPresented: $showMenu, items: [
             .init(String(localized: "Template"), systemImage: "square.stack.3d.up", action: onTemplates),
             .init(String(localized: "Import"), systemImage: "square.and.arrow.down", action: onImport)
         ])

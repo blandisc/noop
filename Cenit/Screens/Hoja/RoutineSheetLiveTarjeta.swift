@@ -68,7 +68,7 @@ struct HojaTarjetaEjercicioSesion: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel(Text("More options for \(run.name)"))
-            .paperMenu(
+            .liquidMenu(
                 isPresented: Binding(get: { vivo.menuExerciseIndex == ei }, set: { if !$0 { vivo.menuExerciseIndex = nil } }),
                 items: vivo.exerciseMenuItems(ei: ei, run: run)
             )
@@ -621,7 +621,7 @@ struct HojaTarjetaSuperserieSesion: View {
         .liquidEntrada()
         // R1 (ronda 2 del gate FER-168, bloqueante): menú CONSCIENTE de superserie, no el de un
         // ejercicio suelto aplicado a `members[0]` — ver `menuItemsSuperserie`.
-        .paperMenu(
+        .liquidMenu(
             isPresented: Binding(get: { vivo.menuExerciseIndex == primerMiembro }, set: { if !$0 { vivo.menuExerciseIndex = nil } }),
             items: menuItemsSuperserie
         )
@@ -640,8 +640,8 @@ struct HojaTarjetaSuperserieSesion: View {
     // de la sesión) — paridad con el patrón que ya usa `HojaTarjetaSuperserieCompuesta` en edición.
     // «Mover» se RETIRA del menú vivo (decisión, spec R1): mover el bloque como unidad es F4/B8,
     // fuera de esta ronda; no hay «mover a medias» aquí.
-    private var menuItemsSuperserie: [PaperMenuItem] {
-        var rows: [PaperMenuItem] = []
+    private var menuItemsSuperserie: [LiquidMenuItem] {
+        var rows: [LiquidMenuItem] = []
         if vivo.puedeEnfocar {
             rows.append(.init(String(localized: "Focus"), systemImage: "arrow.up.left.and.arrow.down.right") {
                 vivo.enterFoco()

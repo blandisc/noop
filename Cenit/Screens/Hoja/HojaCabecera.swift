@@ -100,10 +100,10 @@ enum HojaCabecera {
         .buttonStyle(.plain)
         .accessibilityLabel(Text("Day options"))
         .disabled(sheet.locked)
-        .paperMenu(isPresented: Binding(get: { sheet.showDayMenu }, set: { sheet.showDayMenu = $0 }), items: [
+        .liquidMenu(isPresented: Binding(get: { sheet.showDayMenu }, set: { sheet.showDayMenu = $0 }), items: [
             .init(String(localized: "Change routine"), systemImage: "arrow.left.arrow.right",
                   children: sheet.allRoutines.map { r in
-                      PaperMenuItem(r.name, systemImage: r.id == sheet.routine?.id ? "checkmark" : nil) { sheet.changeRoutine(to: r) }
+                      LiquidMenuItem(r.name, systemImage: r.id == sheet.routine?.id ? "checkmark" : nil) { sheet.changeRoutine(to: r) }
                   }),
             .init(String(localized: "Mark as rest day"), systemImage: StrandIcon.sleep.systemName, isDestructive: true) { sheet.markRest() }
         ])

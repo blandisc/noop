@@ -216,7 +216,7 @@ struct WorkoutEditSheet: View {
             Button { showRoutineMenu = true } label: {
                 HStack(spacing: 6) {
                     // El punto vive solo junto a la rutina YA elegida (Alcance punto 5) — el picker
-                    // (`PaperMenuItem`) es un componente general de la app, sin swatch por opción.
+                    // (`LiquidMenuItem`) es un componente general de la app, sin swatch por opción.
                     if let region = routineId.flatMap({ routineRegions[$0] }) {
                         EntrenarFamilyDot(region.tint(theme))
                     }
@@ -226,11 +226,11 @@ struct WorkoutEditSheet: View {
                 }
             }
             .buttonStyle(.plain)
-            .paperMenu(isPresented: $showRoutineMenu, items:
-                [PaperMenuItem(String(localized: "No routine"),
+            .liquidMenu(isPresented: $showRoutineMenu, items:
+                [LiquidMenuItem(String(localized: "No routine"),
                                systemImage: routineId == nil ? "checkmark" : nil) { routineId = nil }]
                 + routines.map { r in
-                    PaperMenuItem(r.name, systemImage: routineId == r.id ? "checkmark" : nil) { routineId = r.id }
+                    LiquidMenuItem(r.name, systemImage: routineId == r.id ? "checkmark" : nil) { routineId = r.id }
                 })
         }
     }

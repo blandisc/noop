@@ -86,7 +86,7 @@ struct HojaTarjetaEjercicio: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("More options"))   // R12 (QA D13 = Grok G9)
-        .paperMenu(
+        .liquidMenu(
             isPresented: Binding(get: { sheet.menuExerciseIndex == idx },
                                  set: { if !$0 { sheet.menuExerciseIndex = nil } }),
             items: sheet.exerciseMenuItems(idx)

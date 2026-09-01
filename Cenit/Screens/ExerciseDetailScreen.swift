@@ -461,8 +461,8 @@ struct ExerciseDetailScreen: View {
                     }
                 }
                 .buttonStyle(EntrenarPressStyle())
-                .paperMenu(isPresented: $showTypeMenu, items: ExerciseType.allCases.map { t in
-                    PaperMenuItem(StrengthDisplay.typeName(t),
+                .liquidMenu(isPresented: $showTypeMenu, items: ExerciseType.allCases.map { t in
+                    LiquidMenuItem(StrengthDisplay.typeName(t),
                                   systemImage: t == effectiveType ? "checkmark" : nil) { setType(t) }
                 })
                 Spacer(minLength: CenitMetrics.space2)

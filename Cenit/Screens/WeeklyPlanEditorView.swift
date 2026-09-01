@@ -219,7 +219,7 @@ struct WeeklyPlanEditorView: View {
         } else {
             Button { assignMenuDay = wd } label: { rowLabel(wd, chevron: "chevron.down") }
                 .buttonStyle(.plain)
-                .paperMenu(
+                .liquidMenu(
                     isPresented: Binding(get: { assignMenuDay == wd },
                                          set: { if !$0 { assignMenuDay = nil } }),
                     items: assignMenuItems(wd)
@@ -229,8 +229,8 @@ struct WeeklyPlanEditorView: View {
 
     /// The assign menu rows (empty days): pick a routine — folders become submenus — or keep it as
     /// rest (FER-837, mock 4b).
-    private func assignMenuItems(_ wd: Int) -> [PaperMenuItem] {
-        var rows: [PaperMenuItem] = [
+    private func assignMenuItems(_ wd: Int) -> [LiquidMenuItem] {
+        var rows: [LiquidMenuItem] = [
             .init(String(localized: "Rest"),
                   systemImage: schedule[wd] == nil ? "checkmark" : "moon.zzz") { clear(wd) }
         ]
@@ -299,7 +299,7 @@ struct WeeklyPlanEditorView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Change this day's routine"))
-                .paperMenu(
+                .liquidMenu(
                     isPresented: Binding(get: { assignMenuDay == wd },
                                          set: { if !$0 { assignMenuDay = nil } }),
                     items: assignMenuItems(wd)
@@ -315,8 +315,8 @@ struct WeeklyPlanEditorView: View {
         }
     }
 
-    private func routinePickItem(_ wd: Int, _ r: Routine) -> PaperMenuItem {
-        PaperMenuItem(r.name, systemImage: schedule[wd] == r.id ? "checkmark" : nil) { assign(wd, r.id) }
+    private func routinePickItem(_ wd: Int, _ r: Routine) -> LiquidMenuItem {
+        LiquidMenuItem(r.name, systemImage: schedule[wd] == r.id ? "checkmark" : nil) { assign(wd, r.id) }
     }
 
     private func rowLabel(_ wd: Int, chevron: String) -> some View {
@@ -557,7 +557,7 @@ struct WeeklyPlanEditorView: View {
                     .foregroundStyle(theme.inkTertiary).frame(width: 44, height: 44).contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .paperMenu(
+            .liquidMenu(
                 isPresented: Binding(get: { menuFolderId == f.id },
                                      set: { if !$0 { menuFolderId = nil } }),
                 items: [
@@ -635,9 +635,9 @@ struct WeeklyPlanEditorView: View {
 
     /// The row's actions as the «···» paper menu (FER-837). The native long-press `contextMenu` was
     /// retired (FER-951): iOS draws it as a system balloon that ignores the theme — one menu, one look.
-    private func routinePaperItems(_ r: Routine) -> [PaperMenuItem] {
-        var move: [PaperMenuItem] = folders.map { f in
-            PaperMenuItem(f.name, systemImage: r.folderId == f.id ? "checkmark" : "folder") { self.move(r, to: f.id) }
+    private func routineLiquidItems(_ r: Routine) -> [LiquidMenuItem] {
+        var move: [LiquidMenuItem] = folders.map { f in
+            LiquidMenuItem(f.name, systemImage: r.folderId == f.id ? "checkmark" : "folder") { self.move(r, to: f.id) }
         }
         if r.folderId != nil {
             move.append(.init(String(localized: "Remove from folder"), systemImage: "folder.badge.minus") { self.move(r, to: nil) })
@@ -687,10 +687,10 @@ struct WeeklyPlanEditorView: View {
                         .foregroundStyle(theme.inkTertiary).frame(width: 32, height: 48).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .paperMenu(
+                .liquidMenu(
                     isPresented: Binding(get: { menuRoutineId == r.id },
                                          set: { if !$0 { menuRoutineId = nil } }),
-                    items: routinePaperItems(r)
+                    items: routineLiquidItems(r)
                 )
             }
         }
