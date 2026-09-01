@@ -20,6 +20,8 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- Los menús «···» de Entrenar (rutinas, ejercicios, historial, editores) pasan al vidrio Liquid: misma estructura y acciones, ahora sobre vidrio con la tipografía del sistema El Eje (FER-281, FER-283).
+
 - **Entrenar aguanta que le piquen todo / Training survives hostile tapping** (FER-260 · loop adversarial, 13 rondas).
   **ES** — Un agente adversarial atacó los flujos de Entrenar hasta la convergencia; 17 defectos reales cazados y arreglados. Los grandes: una serie de 0 repeticiones ya no puede nacer, palomearse ni registrarse por NINGUNA puerta (tabla, Foco, Live Activity, reloj); un toque tardío del reloj o de la pantalla bloqueada (las colas son durables — pueden entregar minutos después) ya no extiende el descanso equivocado ni registra una serie que no estabas viendo, ni siquiera tras relanzar la app; agregar un ejercicio a media sesión ya no roba el foco ni parte una superserie en la rutina guardada; y «Terminar entreno» siempre cierra el acta con lo que de verdad hiciste.
   **EN** — An adversarial agent attacked the training flows to convergence; 17 real defects caught and fixed. Highlights: a 0-rep set can no longer be born, checked, or logged through ANY door (table, Focus, Live Activity, watch); a late tap from the watch or lock screen (queues are durable — they can deliver minutes later) no longer extends the wrong rest or logs a set you weren't looking at, even across app relaunches; adding an exercise mid-session no longer steals focus or splits a superset in the saved routine; and "Finish workout" always closes the receipt with what you actually did.
