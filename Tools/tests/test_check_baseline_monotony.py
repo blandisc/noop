@@ -52,6 +52,12 @@ class Monotony(unittest.TestCase):
         pr = {"no-spacing-literal": {"A.swift": 3, "Nuevo.swift": 1}, "token-exempt": {"B.swift": 2}}
         self.assertEqual(_run(BASE, pr), 1)
 
+    def test_extra_regla_nueva_completa_es_alta_estructural_legal(self):
+        # FER-276: estrenar un gate congela deuda vieja bajo una clave nueva — no es subida.
+        pr = {"no-spacing-literal": {"A.swift": 3}, "token-exempt": {"B.swift": 2},
+              "no-raw-color": {"X.swift": 6}}
+        self.assertEqual(_run(BASE, pr), 0)
+
     def test_extra_label_sin_diff_files_no_bypassa(self):
         pr = {"no-spacing-literal": {"A.swift": 9}}
         self.assertEqual(_run(BASE, pr, ["--labels", "baseline-alta"]), 1)

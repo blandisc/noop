@@ -40,6 +40,12 @@ def _load(path):
 def rises(base, pr):
     out = []
     for rule, files in pr.items():
+        if rule not in base:
+            # Alta ESTRUCTURAL (FER-276): una regla que no existía en la base está naciendo — su
+            # baseline inicial congela deuda vieja, no crea nueva; sin esto, estrenar un gate
+            # exigiría un baile de 3 PRs. La garantía protege las reglas EXISTENTES: un archivo
+            # nuevo dentro de una regla vigente sigue siendo subida.
+            continue
         for f, count in files.items():
             before = base.get(rule, {}).get(f, 0)
             if count > before:

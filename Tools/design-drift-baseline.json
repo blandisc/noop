@@ -1,4 +1,10 @@
 {
+  "no-adhoc-font": {
+    "Cenit/App/AppMap.swift": 2
+  },
+  "no-edgeinsets-literal": {
+    "Cenit/Screens/WorkoutEditSheet.swift": 1
+  },
   "no-legacy-api": {
     "Cenit/App/AppMap.swift": 1,
     "Cenit/App/ContentView.swift": 2,
@@ -54,6 +60,24 @@
     "Cenit/Screens/WorkoutImportView.swift": 2,
     "Cenit/Screens/WorkshopTricksScreen.swift": 3,
     "Cenit/System/RoutineDragAndDrop.swift": 2
+  },
+  "no-opacity-literal": {
+    "Cenit/App/AppMap.swift": 1,
+    "Cenit/App/AppMapSerieActiva.swift": 1,
+    "Cenit/App/ContentView.swift": 1,
+    "Cenit/System/RoutineDragAndDrop.swift": 1
+  },
+  "no-radius-literal": {
+    "Cenit/App/AppMap.swift": 2,
+    "Cenit/App/AppMapSerieActiva.swift": 2
+  },
+  "no-raw-color": {
+    "Cenit/App/AppMap.swift": 1,
+    "Cenit/App/AppMapSerieActiva.swift": 1,
+    "Cenit/Screens/DataSourcesView.swift": 1,
+    "Cenit/Screens/Entrenar/EntrenarHubDosis.swift": 1,
+    "Cenit/Screens/ExerciseDetailScreen.swift": 1,
+    "Cenit/Screens/Hoja/RoutineSheetLiveTarjeta.swift": 1
   },
   "no-spacing-literal": {
     "Cenit/App/AppMap.swift": 6,
@@ -130,6 +154,10 @@
     "Cenit/Screens/WorkoutImportView.swift": 10,
     "Cenit/Screens/WorkshopTricksScreen.swift": 4,
     "Cenit/System/RoutineDragAndDrop.swift": 1
+  },
+  "no-token-arithmetic": {
+    "Cenit/Screens/Entrenar/EntrenarHubConstancia.swift": 1,
+    "Cenit/Screens/EntrenarView.swift": 1
   },
   "token-exempt": {
     "Cenit/Onboarding/OnboardingPiezas.swift": 1,

@@ -38,8 +38,10 @@ jobs:
         run: python3 Tools/check-gate-parity.py
       - name: Design-drift linter — no raw hex (all roots)
         run: python3 Tools/check-design-drift.py --rules no-hex
-      - name: Design-drift linter — no ad-hoc font/radius/opacity (migrated screens)
-        run: python3 Tools/check-design-drift.py --rules no-adhoc-font,no-radius-literal,no-opacity-literal Cenit/Screens Cenit/Onboarding
+      - name: Design-drift linter — no ad-hoc font/radius/opacity, ratchet (FER-276)
+        run: python3 Tools/check-design-drift.py --rules no-adhoc-font,no-radius-literal,no-opacity-literal --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App
+      - name: Design-drift linter — anti-evasión del colador, ratchet (FER-276)
+        run: python3 Tools/check-design-drift.py --rules no-raw-color,no-edgeinsets-literal,no-token-arithmetic --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media
       - name: Design-drift linter — no em-dash in copy (FER-879, app-wide)
         run: python3 Tools/check-design-drift.py --rules no-emdash-string Cenit/Screens Cenit/Onboarding
       - name: Design-drift linter — no raw shadow, use StrandElevation (migrated screens)
@@ -66,19 +68,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Baseline y guardia de la base del PR
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: |
-          git fetch --depth=1 origin ${{ github.event.pull_request.base.sha }}
-          git show ${{ github.event.pull_request.base.sha }}:Tools/design-drift-baseline.json > /tmp/base.json || echo '{}' > /tmp/base.json
+          # La punta ACTUAL de la rama base — no base.sha, que es una foto de cuando se abrió el
+          # PR y se queda stale cuando la base avanza (FER-276: dejaba corriendo un guardián viejo).
+          git fetch --depth=1 origin "$BASE_REF"
+          git show "origin/$BASE_REF:Tools/design-drift-baseline.json" > /tmp/base.json || echo '{}' > /tmp/base.json
           # El guardia se ejecuta desde la BASE, no desde el PR: un PR no puede traer su propio
           # check-baseline-monotony.py parchado (Grok r1 #2). Fallback al del PR solo mientras el
           # script aún no exista en iOS (primer aterrizaje).
-          git show ${{ github.event.pull_request.base.sha }}:Tools/check-baseline-monotony.py > /tmp/check-monotony.py \
+          git show "origin/$BASE_REF:Tools/check-baseline-monotony.py" > /tmp/check-monotony.py \
             || cp Tools/check-baseline-monotony.py /tmp/check-monotony.py
       - name: El baseline solo baja
         env:
           PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
         run: |
-          # diff de dos puntos (no tres): el checkout es shallow y HEAD ya es el merge del PR sobre la base
-          DIFF_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} HEAD | tr '\n' ',')
+          # diff de dos puntos (no tres): el checkout es shallow y HEAD ya es el merge del PR
+          # sobre la punta ACTUAL de la base — misma referencia que el guardia de arriba.
+          DIFF_FILES=$(git diff --name-only "origin/${{ github.event.pull_request.base.ref }}" HEAD | tr '\n' ',')
           python3 /tmp/check-monotony.py /tmp/base.json Tools/design-drift-baseline.json \
             --labels "$PR_LABELS" --diff-files "$DIFF_FILES"
