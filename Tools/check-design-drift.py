@@ -13,16 +13,23 @@ Rules (each activated in the PR that finishes its migration — pass `--rules` t
     no-radius-literal  `cornerRadius: <number>` not using a CenitMetrics token (after task 01)
     no-opacity-literal `.opacity(<number>)` not using StrandOpacity/helpers   (after task 03)
     no-emdash-string   em-dash (—) inside a Swift string literal (copy rule)   (FER-878/879; on for Screens+Onboarding)
-    no-spacing-literal `.padding(<n>)`, `spacing: <n>`, `lineWidth: <n>`       (FER-258; ratchet over Cenit/Screens)
+    no-spacing-literal `.padding(<n>)`, `spacing: <n>`, `lineWidth: <n>`       (FER-258; ratchet over Cenit/Screens…App)
+    no-legacy-api      call-site of a retired-generation symbol (Instrumento*/Paper*/…) (FER-263; ratchet)
+    token-exempt       pseudo-rule: counts the escape hatches themselves        (FER-263; ratchet — an exemption
+                       is frozen debt too, so a NEW `token-exempt` fails unless its budget allows it)
 
 Per-line escape: a trailing `// token-exempt: <reason>` silences every rule on that line (geometry of
 data — bars, legends, swatches, keypad, Dynamic-Island widget — that legitimately needs a literal).
+New exemptions use `// token-exempt(<categoria>): <reason>` where <categoria> is one of
+dato · sistema · falta-pieza · optico · paridad · unico (CONTRATO.md) so the ×3 rule is auditable;
+the bare legacy form is still matched (the 248 pre-existing ones are grandfathered, not rewritten).
 
 Ratchet: `--baseline <json>` grandfathers the hits a rule already has, per file. A file may keep the
 count the baseline records for it; one hit MORE fails. That is how a rule turns on green over a tree
 that is only partly migrated (FER-258): the debt stops growing while the sweeps continue. When a file
 drops below its allowance the run stays green and prints a note to re-record the baseline (tighten it),
-so the number can only go down. `--write-baseline <json>` records the current tree.
+so the number can only go down. `--write-baseline <json>` records the current tree for the rules that
+ran, MERGING into the existing file — keys of rules not in `--rules` survive untouched (FER-263).
 
 Usage:
     python3 Tools/check-design-drift.py                       # scan default roots, all rules
@@ -37,7 +44,7 @@ DEFAULT_ROOTS = ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App
 DESIGN_PKG = "Packages/StrandDesign"
 EXEMPT = re.compile(r"//\s*token-exempt\b")
 
-ALL_RULES = ["no-hex", "no-adhoc-font", "no-radius-literal", "no-opacity-literal", "no-emdash-string", "no-raw-shadow", "no-sheet-glass", "no-spacing-literal"]
+ALL_RULES = ["no-hex", "no-adhoc-font", "no-radius-literal", "no-opacity-literal", "no-emdash-string", "no-raw-shadow", "no-sheet-glass", "no-spacing-literal", "no-legacy-api", "token-exempt"]
 
 # no-emdash-string: an em-dash (—, U+2014) inside a user-facing Swift string literal. ADN copy rule
 # (FER-878): on-screen copy uses «:», «·» or a comma, never an em-dash. Scoped to STRING LITERALS so the
@@ -90,6 +97,19 @@ RE_SPACING = re.compile(
     r"|\blineWidth:\s*[0-9]"                   # .stroke(_, lineWidth: 2)
 )
 
+# no-legacy-api: a NEW call-site of a retired visual generation (FER-263, épico FER-261). The symbols
+# are the papel-cálido / dark-legacy surface still consumed by the app; each one that reaches 0 in the
+# gated roots leaves this list and becomes a plain prohibition. Definitions inside Packages/StrandDesign
+# are exempt (same guard as no-hex): the package still IS the implementation while the debt drains.
+# CenitWidgets/CenitWatch are NOT gated roots for this rule (FER-219: `InstrumentoTheme` is the
+# canonical Live-Activity/watch theme there); CenitShared never imports StrandDesign.
+RE_LEGACY_API = re.compile(
+    r"\b(InstrumentoTheme|InstrumentoFlowTitle|InstrumentoToolChip|InstrumentoTabHeader"
+    r"|PaperMenu|PaperMenuItem|PaperStepper|SectionBand|InstrumentoSectionBand|StrandPalette)\b"
+    r"|\.instrumentoTheme\("
+    r"|\.paperMenu\("
+)
+
 RULE_PATTERNS = {
     "no-hex": RE_HEX,
     "no-adhoc-font": RE_FONT,
@@ -98,6 +118,7 @@ RULE_PATTERNS = {
     "no-raw-shadow": RE_SHADOW,
     "no-sheet-glass": RE_SHEET_GLASS,
     "no-spacing-literal": RE_SPACING,
+    "no-legacy-api": RE_LEGACY_API,
 }
 
 
@@ -116,7 +137,12 @@ def check(paths, rules):
     hits = []
     for path in iter_swift_files(paths):
         # no-hex only applies OUTSIDE the design package (the package is where hex is allowed).
-        in_design_pkg = DESIGN_PKG in path.replace("\\", "/")
+        norm = path.replace("\\", "/")
+        in_design_pkg = DESIGN_PKG in norm
+        # FER-219 carve-out, enforced HERE and not only by invocation: CenitWidgets/CenitWatch keep
+        # `InstrumentoTheme` as their canonical Live-Activity/watch theme and their fixed-geometry
+        # exemptions. A default-roots run must not paint them red for the two FER-263 rules.
+        in_widget_watch = "CenitWidgets/" in norm or "CenitWatch/" in norm
         try:
             lines = open(path, encoding="utf-8").read().splitlines()
         except FileNotFoundError:
@@ -126,9 +152,16 @@ def check(paths, rules):
             if stripped.startswith("//") or stripped.startswith("*") or stripped.startswith("/*"):
                 continue
             if EXEMPT.search(line):
+                # token-exempt is itself ratcheted debt (FER-263): count the hatch, then skip the rules.
+                if "token-exempt" in rules and not in_widget_watch:
+                    hits.append((path, i, "token-exempt", stripped[:100]))
                 continue
             for rule in rules:
-                if rule == "no-hex" and in_design_pkg:
+                if rule == "token-exempt":
+                    continue
+                if rule in ("no-hex", "no-legacy-api") and in_design_pkg:
+                    continue
+                if rule == "no-legacy-api" and in_widget_watch:
                     continue
                 if rule == "no-emdash-string":
                     if _emdash_string_hit(line):
@@ -152,9 +185,11 @@ def tally(hits):
     return out
 
 
-def apply_baseline(hits, baseline):
+def apply_baseline(hits, baseline, walked=None):
     """Split hits into (over-budget, stale-note). A file keeps the count the baseline allows it;
-    the hits above that allowance are what fails."""
+    the hits above that allowance are what fails. A stale note is only honest for a file this run
+    actually WALKED (FER-263): a partial scan (e.g. the Screens-only CI step) must not report
+    "fewer" for files that simply were not looked at."""
     allowed = {r: dict(f) for r, f in baseline.items()}
     over = []
     for hit in hits:
@@ -164,7 +199,8 @@ def apply_baseline(hits, baseline):
             allowed[rule][_key(path)] = budget - 1
         else:
             over.append(hit)
-    stale = [(rule, f, left) for rule, files in allowed.items() for f, left in files.items() if left > 0]
+    stale = [(rule, f, left) for rule, files in allowed.items() for f, left in files.items()
+             if left > 0 and (walked is None or f in walked)]
     return over, stale
 
 
@@ -195,11 +231,31 @@ def main(argv):
         return 2
     roots = files or DEFAULT_ROOTS
     hits = check(roots, rules)
+    walked = {_key(p) for p in iter_swift_files(roots)}
     if write_baseline:
+        # Merge-write (FER-263), per FILE and not just per rule: a partial scan re-records only the
+        # files it actually walked; budgets of un-walked files survive, deleted files drop out, and a
+        # walked file that came back clean drops its key. A corrupt JSON is refused, never clobbered.
+        merged = {}
+        if os.path.exists(write_baseline):
+            try:
+                merged = json.load(open(write_baseline, encoding="utf-8"))
+            except json.JSONDecodeError as e:
+                print(f"refusing to write: {write_baseline} is not valid JSON ({e}) — fix it first")
+                return 2
+        fresh = tally(hits)
+        for rule in rules:
+            kept = {f: c for f, c in merged.get(rule, {}).items()
+                    if f not in walked and os.path.exists(f)}
+            kept.update(fresh.get(rule, {}))
+            if kept:
+                merged[rule] = kept
+            else:
+                merged.pop(rule, None)  # a rule with no debt left drops its key
         with open(write_baseline, "w", encoding="utf-8") as fh:
-            json.dump(tally(hits), fh, indent=2, sort_keys=True, ensure_ascii=False)
+            json.dump(merged, fh, indent=2, sort_keys=True, ensure_ascii=False)
             fh.write("\n")
-        print(f"📝 baseline recorded in {write_baseline} ({len(hits)} grandfathered hits)")
+        print(f"📝 baseline recorded in {write_baseline} ({len(hits)} grandfathered hits for {', '.join(rules)})")
         return 0
     stale = []
     if baseline_path:
@@ -208,10 +264,21 @@ def main(argv):
         except FileNotFoundError:
             print(f"baseline not found: {baseline_path}")
             return 2
-        hits, stale = apply_baseline(hits, {r: v for r, v in baseline.items() if r in rules})
+        hits, stale = apply_baseline(hits, {r: v for r, v in baseline.items() if r in rules}, walked)
     if hits:
-        print("❌ design-system drift — promote the value to a StrandDesign token, "
-              "or annotate the line with `// token-exempt: <reason>`:")
+        # The remedy depends on the rule (FER-263): suggesting a token for a legacy call-site, or an
+        # exemption for an over-budget exemption, would prescribe exactly the wrong medicine.
+        rules_hit = {r for _p, _i, r, _s in hits}
+        print("❌ design-system drift:")
+        if rules_hit - {"no-legacy-api", "token-exempt"}:
+            print("   → promote the value to a StrandDesign token, "
+                  "or annotate the line with `// token-exempt(<categoria>): <reason>`")
+        if "no-legacy-api" in rules_hit:
+            print("   → no-legacy-api: API de una generación retirada — "
+                  "la pieza vigente está en docs/design-system/CATALOGO.md")
+        if "token-exempt" in rules_hit:
+            print("   → token-exempt: una exención nueva es deuda congelada — "
+                  "el alta legal va por carve-out o issue dedicado (docs/design-system/CONTRATO.md)")
         for path, i, rule, snippet in hits:
             print(f"   {path}:{i}: {rule} — {snippet}")
         if baseline_path:
