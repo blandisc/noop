@@ -44,7 +44,7 @@ DEFAULT_ROOTS = ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App
 DESIGN_PKG = "Packages/StrandDesign"
 EXEMPT = re.compile(r"//\s*token-exempt\b")
 
-ALL_RULES = ["no-hex", "no-adhoc-font", "no-radius-literal", "no-opacity-literal", "no-emdash-string", "no-raw-shadow", "no-sheet-glass", "no-spacing-literal", "no-legacy-api", "token-exempt", "no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic"]
+ALL_RULES = ["no-hex", "no-adhoc-font", "no-radius-literal", "no-opacity-literal", "no-emdash-string", "no-raw-shadow", "no-sheet-glass", "no-spacing-literal", "no-legacy-api", "token-exempt", "no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic", "no-motion-literal", "no-dt-cap-adhoc"]
 
 # no-emdash-string: an em-dash (—, U+2014) inside a user-facing Swift string literal. ADN copy rule
 # (FER-878): on-screen copy uses «:», «·» or a comma, never an em-dash. Scoped to STRING LITERALS so the
@@ -126,6 +126,18 @@ RE_EDGEINSETS = re.compile(r"EdgeInsets\([^)]*:\s*[0-9]")
 # o deuda disfrazada (CONTRATO.md prohíbe resolverlo minteando roles basura).
 RE_TOKEN_ARITH = re.compile(r"\b(?:LiquidSpace|LiquidRadius|CenitMetrics|WidgetMetrics)\.[A-Za-z0-9]+\s*[-+]\s*[0-9]")
 
+# no-motion-literal (FER-269, Fase 3): una curva/duración de animación escrita a mano — el set
+# cerrado vive en LiquidMotion (brief/soft/measured, ambient/settle/dismiss y las transiciones por
+# rol). Un `.easeInOut(0.3)` o un `.spring(response: 0.4, …)` suelto es el mismo defecto que un
+# `padding(14)`: deuda que el trinquete congela. Los ya envueltos por FER-269a pasan (token = nombre).
+RE_MOTION = re.compile(r"\.ease(?:In|Out|InOut)\(\s*(?:duration:\s*)?[0-9.]|\.spring\([^)]*[0-9]")
+# no-dt-cap-adhoc (FER-269, oráculo de Dynamic Type): la app CAPA Dynamic Type a propósito
+# (decisión FER-118) y el cap bendecido es UNO: `.dynamicTypeSize(.accessibility5)` — los 6 usos
+# del árbol son exactamente ese. Cualquier otro argumento (un cap más chico, un rango ad-hoc, un
+# tamaño fijo) es una restricción de accesibilidad nueva que requiere veredicto del dueño, no un
+# default de agente. Cero deuda al estreno: prohibición pura, sin baseline.
+RE_DT_CAP = re.compile(r"\.dynamicTypeSize\(\s*(?!\.accessibility5\s*\))")
+
 RULE_PATTERNS = {
     "no-hex": RE_HEX,
     "no-adhoc-font": RE_FONT,
@@ -138,6 +150,8 @@ RULE_PATTERNS = {
     "no-raw-color": RE_RAW_COLOR,
     "no-edgeinsets-literal": RE_EDGEINSETS,
     "no-token-arithmetic": RE_TOKEN_ARITH,
+    "no-motion-literal": RE_MOTION,
+    "no-dt-cap-adhoc": RE_DT_CAP,
 }
 
 
@@ -231,7 +245,7 @@ def check(paths, rules):
                     continue
                 if rule in ("no-hex", "no-legacy-api", "no-raw-color", "no-token-arithmetic") and in_design_pkg:
                     continue
-                if rule in ("no-legacy-api", "no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic") and in_widget_watch:
+                if rule in ("no-legacy-api", "no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic", "no-motion-literal") and in_widget_watch:
                     continue
                 if rule == "no-emdash-string":
                     if _emdash_string_hit(code):

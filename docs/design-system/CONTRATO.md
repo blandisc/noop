@@ -131,6 +131,8 @@ Tabla humana (resumen) — la verdad máquina-legible es el bloque JSON de abajo
 | no-legacy-api (trinquete) | árbol 7 raíces | árbol 7 raíces | árbol 7 raíces |
 | token-exempt (trinquete) | árbol 7 raíces + StrandDesign | árbol 7 raíces + StrandDesign | árbol 7 raíces + StrandDesign |
 | no-raw-color / no-edgeinsets-literal / no-token-arithmetic (trinquete, FER-276) | árbol 7 raíces | árbol 7 raíces | árbol 7 raíces |
+| no-motion-literal (trinquete, FER-269) | árbol 4 raíces | árbol 4 raíces | árbol 4 raíces |
+| no-dt-cap-adhoc (prohibición pura, FER-269) | árbol 9 raíces UI | árbol 9 raíces UI | árbol 9 raíces UI |
 | monotonía del baseline | — (hook delgado) | espejo vs origin/iOS | job `baseline-monotony` |
 
 ¹ divergencia declarada: local corre sobre los archivos tocados (más estricto en Watch); CI usa las
@@ -144,6 +146,7 @@ raíces explícitas donde vive el defecto (incluye el paquete, excluye CenitWatc
     "spacing": ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App"],
     "legacy": ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media"],
     "exempt": ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "Packages/StrandDesign/Sources"],
+    "dtcap": ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "CenitWidgets", "CenitWatch"],
     "sheet_glass_ci": ["Packages/StrandDesign/Sources", "Cenit", "CenitApp", "CenitShared", "CenitWidgets"]
   },
   "rules": {
@@ -159,7 +162,9 @@ raíces explícitas donde vive el defecto (incluye el paquete, excluye CenitWatc
     "token-exempt":       {"pre-commit": "tree:exempt+baseline", "verify-quick": "tree:exempt+baseline", "design-lint": "tree:exempt+baseline"},
     "no-raw-color":         {"pre-commit": "tree:legacy+baseline", "verify-quick": "tree:legacy+baseline", "design-lint": "tree:legacy+baseline"},
     "no-edgeinsets-literal": {"pre-commit": "tree:legacy+baseline", "verify-quick": "tree:legacy+baseline", "design-lint": "tree:legacy+baseline"},
-    "no-token-arithmetic":  {"pre-commit": "tree:legacy+baseline", "verify-quick": "tree:legacy+baseline", "design-lint": "tree:legacy+baseline"}
+    "no-token-arithmetic":  {"pre-commit": "tree:legacy+baseline", "verify-quick": "tree:legacy+baseline", "design-lint": "tree:legacy+baseline"},
+    "no-motion-literal":    {"pre-commit": "tree:spacing+baseline", "verify-quick": "tree:spacing+baseline", "design-lint": "tree:spacing+baseline"},
+    "no-dt-cap-adhoc":      {"pre-commit": "tree:dtcap", "verify-quick": "tree:dtcap", "design-lint": "tree:dtcap"}
   }
 }
 ```

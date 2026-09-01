@@ -43,8 +43,9 @@ class GateParity(unittest.TestCase):
     def test_2_regla_nueva_sin_fila_en_matriz(self):
         with tempfile.TemporaryDirectory() as tmp:
             _copy_tree(tmp)
+            # Ancla al INICIO de la lista (la cola crece con cada regla nueva y ya rompió 2 veces).
             _mutate(tmp, "Tools/check-design-drift.py",
-                    '"no-token-arithmetic"]', '"no-token-arithmetic", "no-regla-nueva"]')
+                    'ALL_RULES = ["no-hex"', 'ALL_RULES = ["no-regla-nueva", "no-hex"')
             problems = parity.check(tmp)
             self.assertTrue(any("no-regla-nueva" in p and "ALL_RULES" in p for p in problems), problems)
 

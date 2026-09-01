@@ -271,3 +271,20 @@ class AntiEvasionRules(unittest.TestCase):
             self.assertEqual(drift.check([w], rules), [], "Widgets/Watch: geometría de sistema")
             self.assertEqual([h for h in drift.check([pkg], rules) if h[2] != "no-edgeinsets-literal"],
                              [], "el paquete define colores y compone su escala legítimamente")
+
+
+class Fase3Rules(unittest.TestCase):
+    """FER-269 — movimiento y oráculo de Dynamic Type."""
+
+    def test_motion_positivos_y_negativos(self):
+        for line in ["Animation.easeInOut(0.3)", ".easeOut(duration: 0.15)",
+                     ".spring(response: 0.4, dampingFraction: 0.8)"]:
+            self.assertTrue(drift.RE_MOTION.search(line), line)
+        for line in ["LiquidMotion.soft", ".animation(LiquidMotion.ambient(LiquidMotion.brief))",
+                     ".spring()", ".easeInOut"]:
+            self.assertFalse(drift.RE_MOTION.search(line), line)
+
+    def test_dt_solo_el_cap_bendecido(self):
+        self.assertTrue(drift.RE_DT_CAP.search(".dynamicTypeSize(.accessibility3)"))
+        self.assertTrue(drift.RE_DT_CAP.search(".dynamicTypeSize(...DynamicTypeSize.large)"))
+        self.assertFalse(drift.RE_DT_CAP.search(".dynamicTypeSize(.accessibility5)"))
