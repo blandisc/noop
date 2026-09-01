@@ -532,6 +532,10 @@ public let catalogEntries: [CatalogEntry] = [
                  archivo: "LiquidGlass/UndoToast.swift",
                  cuandoUsarlo: "Snack de tinta «X borrado · Deshacer» tras un delete reversible (rutina/carpeta/sesión) — receta de WeeklyPlanEditor.",
                  cuandoNo: "No para error de escritura (usa `.saveErrorToast`); no aviso Liquid de lectura (usa `LiquidAviso`); no confirmación (usa `.instrumentoConfirm`)."),
+    CatalogEntry(rol: "Aviso Liquid", simbolo: "LiquidAviso",
+                 archivo: "LiquidGlass/LiquidAviso.swift",
+                 cuandoUsarlo: "Heads-up / desconexión / nudge en pantalla Liquid — `LiquidPatternBlock` + `liquidTarjetaSeccion` (receta HealthAlertBanner); icono/CTA opcionales.",
+                 cuandoNo: "No snack de deshacer (`UndoToast`); no error de escritura (`.saveErrorToast`); no banner Instrumento de Hoy aún sin migrar (`TodayBanner`)."),
 ]
 
 func catalogoTable() -> String {
