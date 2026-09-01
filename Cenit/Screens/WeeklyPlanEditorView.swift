@@ -193,7 +193,7 @@ struct WeeklyPlanEditorView: View {
     private var weekSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             // Handoff: the sunken section band, with the «tap a day» hint riding its trailing slot.
-            InstrumentoSectionBand("The week") {
+            LiquidSectionHeader("The week") {
                 Text("tap a day to edit it").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
             }
             VStack(spacing: 0) {
@@ -381,7 +381,7 @@ struct WeeklyPlanEditorView: View {
         let vol = weeklyVolume
         let maxV = MuscleGroup.allCases.map { vol[$0] ?? 0 }.max() ?? 1
         return VStack(alignment: .leading, spacing: 10) {
-            InstrumentoSectionBand("Weekly volume by group")
+            LiquidSectionHeader("Weekly volume by group")
             HStack(alignment: .bottom, spacing: 14) {
                 ForEach(Array(MuscleGroup.allCases.enumerated()), id: \.element) { i, g in
                     let v = vol[g] ?? 0
@@ -424,7 +424,7 @@ struct WeeklyPlanEditorView: View {
     private var routinesSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             // Handoff: the band carries «＋ Nueva» as its trailing action — the in-list row is gone.
-            InstrumentoSectionBand("My routines") {
+            LiquidSectionHeader("My routines") {
                 Button { showBuilder = true } label: {
                     (Text(verbatim: "＋ ") + Text("New"))
                         .font(StrandFont.subhead).foregroundStyle(theme.ink)
