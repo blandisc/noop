@@ -80,7 +80,7 @@ struct StarterTemplatesSheet: View {
         .overlay(alignment: .top) {
             if saveError {
                 Text("Couldn't save. Try again.")
-                    .font(.system(size: 13))   // token-exempt: cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)
+                    .font(LiquidType.cuerpoBanner)
                     .foregroundStyle(theme.ink)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .patternBlock(theme, bar: theme.critical)
