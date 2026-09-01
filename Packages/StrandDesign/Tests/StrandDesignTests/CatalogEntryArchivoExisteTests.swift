@@ -50,9 +50,13 @@ final class CatalogEntryArchivoExisteTests: XCTestCase {
 
         let fm = FileManager.default
         for archivo in archivos {
-            let path = sourcesRoot.appendingPathComponent(archivo).path
+            // FER-280·1a: el índice ahora también lista piezas VIVAS de la capa app (SaveErrorToast,
+            // HealthAlertBanner…) — sus rutas empiezan con `Cenit/` y se resuelven contra la raíz
+            // del repo; el resto sigue viviendo bajo Sources/StrandDesign.
+            let base = archivo.hasPrefix("Cenit/") ? repoRoot : sourcesRoot
+            let path = base.appendingPathComponent(archivo).path
             XCTAssertTrue(fm.fileExists(atPath: path),
-                          "el índice de CATALOGO.md apunta a `\(archivo)`, que no existe bajo Sources/StrandDesign/")
+                          "el índice de CATALOGO.md apunta a `\(archivo)`, que no existe (raíz: \(base.lastPathComponent))")
         }
     }
 }
