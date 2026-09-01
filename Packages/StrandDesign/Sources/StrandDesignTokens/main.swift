@@ -515,6 +515,10 @@ public let catalogEntries: [CatalogEntry] = [
                  archivo: "OutlineCapsule.swift",
                  cuandoUsarlo: "Acción secundaria en cápsula con `hairlineStrong` ± fill (raise, Start/Stop, filtro, Use, Match…) — sm/md + press.",
                  cuandoNo: "No CTA de tinta a lo ancho (`StrandCTAButton`); no pill Liquid de hoja (`LiquidGlassButton`); no acción de header (`HeaderActionButton`)."),
+    CatalogEntry(rol: "Pastilla de estado Liquid", simbolo: "LiquidStatePill",
+                 archivo: "LiquidGlass/LiquidStatePill.swift",
+                 cuandoUsarlo: "Estado vivo/listo sobre cristal (`.pastillaSolida`) o chip de valencia Δ% — sustituye `statusPill` a mano y chips de signo.",
+                 cuandoNo: "No pastilla Instrumento de chrome (`StatePill`); no procedencia (`LiquidOrigenChip`/`SourceBadge`); no filtro removible (`LiquidChipSeleccion`)."),
 ]
 
 func catalogoTable() -> String {
