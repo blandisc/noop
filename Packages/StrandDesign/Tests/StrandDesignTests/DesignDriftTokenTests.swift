@@ -4,22 +4,10 @@ import SwiftUI
 
 /// Auditoría jul-2026 (cierre de deriva del sistema de diseño). Ancla los tokens nuevos que absorben
 /// la deriva de las pantallas para que un cambio accidental de valor rompa CI en vez de derivar en
-/// silencio: los radios semánticos de tarjeta (H3), la escala de glifos (H1) y la escala de
-/// opacidades (H4). No renderiza — son aserciones baratas y deterministas.
+/// silencio: la escala de glifos (H1) y la escala de opacidades (H4) (H3, los radios semánticos de
+/// tarjeta, se podó junto con `InstrumentoCard.swift`/`.instrumentoCard()`, FER-280·3c — 0 usos
+/// reales). No renderiza — son aserciones baratas y deterministas.
 final class DesignDriftTokenTests: XCTestCase {
-
-    // H3 — radios de tarjeta: cada rol mapea a su token de CenitMetrics, sin literales fantasma.
-    func test_cardRadiusRolesMapToTokens() {
-        XCTAssertEqual(InstrumentoCardRadius.card.value,    CenitMetrics.cardRadius)
-        XCTAssertEqual(InstrumentoCardRadius.cta.value,     CenitMetrics.ctaRadius)
-        XCTAssertEqual(InstrumentoCardRadius.control.value, CenitMetrics.controlRadius)
-        XCTAssertEqual(InstrumentoCardRadius.inset.value,   CenitMetrics.insetRadius)
-        // Los cuatro radios son distintos y ordenados inset < control < cta < card.
-        XCTAssertLessThan(InstrumentoCardRadius.inset.value, InstrumentoCardRadius.control.value)
-        XCTAssertLessThan(InstrumentoCardRadius.control.value, InstrumentoCardRadius.cta.value)
-        XCTAssertLessThan(InstrumentoCardRadius.cta.value, InstrumentoCardRadius.card.value)
-        XCTAssertEqual(CenitMetrics.insetRadius, 10)
-    }
 
     // H1 — escala de glifos: cuatro escalones fijos, crecientes.
     func test_glyphScaleIsFixedAndOrdered() {
@@ -207,53 +195,11 @@ final class LiquidSectionHeaderTests: XCTestCase {
     }
 }
 
-#if os(macOS)
-import AppKit
-
-/// Harness de render del modifier `.instrumentoCard()` en sus 4 radios — para eyeball antes de que
-/// compile la app (no es aserción de CI; los PNG caen en /tmp/noop-audit/).
-/// Run: swift test --filter InstrumentoCardRenderTests
-final class InstrumentoCardRenderTests: XCTestCase {
-    @MainActor func test_renderFourRadii() throws {
-        let t = InstrumentoTheme.base
-        let demo = VStack(spacing: 16) {
-            card("card", .card, t)
-            card("cta", .cta, t)
-            card("control", .control, t)
-            card("inset", .inset, t)
-        }
-        .padding(24)
-        .frame(width: 320)
-        .background(t.paper)
-        .instrumentoTheme(t)
-
-        let renderer = ImageRenderer(content: demo)
-        renderer.scale = 2
-        guard let image = renderer.nsImage, let tiff = image.tiffRepresentation,
-              let rep = NSBitmapImageRep(data: tiff),
-              let png = rep.representation(using: .png, properties: [:]) else {
-            XCTFail("ImageRenderer produced no image"); return
-        }
-        let url = URL(fileURLWithPath: "/tmp/noop-audit/instrumento_card.png")
-        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try png.write(to: url)
-        print("WROTE \(url.path) — \(image.size)")
-    }
-
-    @MainActor private func card(_ name: String, _ r: InstrumentoCardRadius, _ t: InstrumentoTheme) -> some View {
-        Text(name)
-            .font(StrandFont.caption)
-            .foregroundStyle(t.inkSecondary)
-            .frame(maxWidth: .infinity, minHeight: 56)
-            .padding(CenitMetrics.cardPadding)
-            .instrumentoCard(r)
-    }
-
-    // FER-275 punto 3 (veredicto del dueño: los «20» son roles, no colisión — cero pixel):
+// FER-275 punto 3 (veredicto del dueño: los «20» son roles, no colisión — cero pixel):
+final class LiquidSpaceFase1Tests: XCTestCase {
     func test_fase1_rolesVeinteSonValorNeutral() {
         XCTAssertEqual(LiquidSpace.seccionAire, 20)
         XCTAssertEqual(LiquidSpace.tarjetaAmplia, 20)
         XCTAssertEqual(LiquidSpace.pastillaHorizontal, 20)
     }
 }
-#endif
