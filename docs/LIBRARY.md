@@ -306,16 +306,16 @@ print("Apple daily rows:", daily.count)
 ## StrandDesign
 
 The SwiftUI design system — the only UI package. Palette, type scale, motion
-presets, and the signature data components (Recovery Ring, Strain Gauge,
-Hypnogram, trend/sparkline charts, year heat strip, cards, status pills). Builds
-on **both iOS and macOS**; it imports only `SwiftUI` and bridges to
-`UIColor`/`NSColor` for color-component extraction under `#if canImport(UIKit)` /
-`#if canImport(AppKit)`.
+presets, and the signature data components (Hypnogram, trend/sparkline charts,
+year heat strip, cards, status pills). Builds on **both iOS and macOS**; it
+imports only `SwiftUI` and bridges to `UIColor`/`NSColor` for color-component
+extraction under `#if canImport(UIKit)` / `#if canImport(AppKit)`.
 
 **Sources:** `Palette.swift`, `Typography.swift`, `Motion.swift`, plus the
-component views `RecoveryRing.swift`, `StrainGauge.swift`, `Hypnogram.swift`,
-`TrendChart.swift`, `Sparkline.swift`, `YearHeatStrip.swift`, `StrandCard.swift`,
-`StatePill.swift`, `ChartHover.swift`, `Components.swift`.
+component views `Hypnogram.swift`, `TrendChart.swift`, `Sparkline.swift`,
+`YearHeatStrip.swift`, `StatePill.swift`, `Components.swift` — the full
+rol → símbolo → archivo index is generated into
+[CATALOGO.md](design-system/CATALOGO.md).
 
 ### Depend on it
 
@@ -349,14 +349,15 @@ targets: [
 
 | View | Role |
 |---|---|
-| `RecoveryRing` | 240° open gauge arc; the signature recovery read-out |
-| `StrainGauge` | 0–21 strain gauge |
 | `Hypnogram` | sleep-stage timeline |
-| `TrendChart`, `Sparkline`, `ChartHover` | line/area charts + hover read-out |
+| `TrendChart`, `Sparkline` | line/area charts |
 | `YearHeatStrip` | year-at-a-glance heat strip |
 | `liquidGlass(_:)` | card/pill/dock surface (the dark-legacy card primitives were retired in FER-444) — see [CATALOGO.md](design-system/CATALOGO.md) |
 | `StatePill`, `ConnectionDot`, `SourceBadge` | status chips / source labels |
-| `SectionHeader`, `StatTile`, `ChartFooter`, `SegmentedPillControl` | layout primitives |
+| `StatTile`, `SegmentedPillControl` | layout primitives |
+
+Full index (rol → símbolo → archivo → cuándo usarlo → cuándo no): see
+[CATALOGO.md](design-system/CATALOGO.md).
 
 ### Minimal usage
 
@@ -364,13 +365,12 @@ targets: [
 import SwiftUI
 import StrandDesign
 
-struct RecoveryHeader: View {
+struct TodayHeader: View {
     let score: Double
+    let theme: InstrumentoTheme
     var body: some View {
         VStack(spacing: 16) {
-            RecoveryRing(score: score,
-                         supporting: "HRV 62ms · RHR 51",
-                         diameter: 240, lineWidth: 16)
+            StatTile(label: "Recuperación", value: "\(Int(score))", unit: "%", theme: theme)
             Text("Today")
                 .font(StrandFont.overline)
                 .foregroundStyle(StrandPalette.textSecondary)

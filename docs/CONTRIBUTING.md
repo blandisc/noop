@@ -246,19 +246,9 @@ labels, use the `Text.strandOverline()` helper rather than styling by hand.
 From `Components.swift`, the chart files, and `LiquidGlass/`. The full rol → símbolo → archivo →
 cuándo usarlo → cuándo no index is **generated** into
 [`docs/design-system/CATALOGO.md`](design-system/CATALOGO.md) — start there when looking for a
-component. The card surface for Liquid Glass screens is `liquidGlass(_:)` (the dark-legacy card
-primitive it replaced was retired in FER-444). A few of the shared pieces:
-
-| Component | Use |
-|---|---|
-| `liquidGlass(_:)` | The card/pill/dock surface for Liquid Glass screens — see CATALOGO.md. |
-| `StatTile` | Uniform fixed-height metric tile (`CenitMetrics.tileHeight`), with optional sparkline + delta. |
-| `ChartCard` / `ChartFooter` | Header + fixed-height chart body + optional footer stats. |
-| `SectionHeader` | Overline + title + optional trailing. |
-| `InsightCard` | Category / status / detail insight block. |
-| `SegmentedPillControl` | The one range/segmented control (used everywhere). |
-| `SourceBadge` | "MY-WHOOP" / "APPLE HEALTH" provenance chip. |
-| `RecoveryRing`, `StrainGauge`, `Hypnogram`, `Sparkline`, `TrendChart`, `YearHeatStrip`, `StatePill` | Charts/indicators. |
+component; it's the source of truth, this file doesn't duplicate it. The card surface for Liquid
+Glass screens is `liquidGlass(_:)` (the dark-legacy card primitive it replaced was retired in
+FER-444).
 
 Spacing and sizing come from `CenitMetrics` (`cardRadius`, `cardPadding`, `gap`, `sectionGap`,
 `screenPadding`, `tileHeight`, `chartHeight`) and animation from `StrandMotion`

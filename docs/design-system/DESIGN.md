@@ -199,16 +199,17 @@ Physiological motion — **breathe / pulse / flow, no cartoon bounce.**
 |---|---|---|
 | *(the old dark-legacy card surface, retired FER-444)* | The current card surface for Liquid Glass screens is `liquidGlass(_:)` — see [CATALOGO.md](CATALOGO.md) for the full index | — |
 | `StrandCardHover` | Hover-lift `ViewModifier` (shadow-md + translateY(-1px) + border emphasis) for any card-like surface | `cornerRadius:` |
-| `SectionHeader` | Section title with optional overline + trailing text | `(_ title, overline:, trailing:)` |
+| `LiquidSectionHeader` (Liquid) / `InstrumentoSectionBand` (Instrumento, not migrated) | Section title with optional overline + trailing text — see [CATALOGO.md](CATALOGO.md) | — |
 
 ### 5.2 Metric & content cards
 
 | Component | Purpose | Key API |
 |---|---|---|
 | `StatTile` | Uniform fixed-height (104pt) metric tile: overline label, big tabular value, optional sparkline, caption + delta | `label:`, `value:`, `caption:`, `accent:`, `delta:`, `deltaColor:`, `sparkline:`, `sparkColor:` |
-| `ChartCard` | Uniform chart container: header (overline + subtitle + trailing) → fixed chart body → optional divided footer | `title:`, `subtitle:`, `trailing:`, `height:`, `@ViewBuilder chart`, `@ViewBuilder footer` |
-| `ChartFooter` | Row of small "LABEL / value" stats for `ChartCard` | `[(LocalizedStringKey, String)]` |
-| `InsightCard` | Category overline + large colored status word + supporting detail | `category:`, `status:`, `detail:`, `statusColor:` |
+
+Chart containers and insight callouts no longer use a dedicated card type — they compose
+`liquidGlass(_:)` (Liquid Glass) or `.instrumentoCard(_:)` (Instrumento, not migrated) directly
+around a chart or status text. Full index: [CATALOGO.md](CATALOGO.md).
 
 ### 5.3 Controls & chrome
 
@@ -225,9 +226,8 @@ Physiological motion — **breathe / pulse / flow, no cartoon bounce.**
 
 | Component | Purpose | Key API / notes |
 |---|---|---|
-| `RecoveryRing` | **THE** signature component. 240° open gauge (gap at bottom, 150°→390°), thick rounded stroke filled to `score/100`, draws in with `gentle` spring, soft outer bloom scaled by score, leading bead, center read-out + state word | `score:` (0–100), `supporting:`, `diameter:` (240), `lineWidth:` (16), `showsLabel:`, `showsHover:`, `valueFormat:`. Tip color = `recoveryColor(score)` |
+| `RecoveryZoneGauge` | **THE** signature recovery component (Instrumento diurno; replaced the retired dark-legacy open-gauge ring). Full-circle gauge: outer fixed zone arcs (red/amber/green) as reference scale, inner value ring sweeping to `score%`, centre numeral | `score:` (0–100, optional), `label:`, `theme:`, `diameter:` (128) |
 | `RecoveryArc` | The reusable open-gauge `Shape` powering the ring | `startAngle:`, `spanDegrees:`, `fraction:`, `lineWidth:` |
-| `StrainGauge` | Strain analogue of the ring, using the strain ramp (0…21) | `strain:`, `supporting:`, `diameter:`, `lineWidth:`, `showsLabel:`, `showsHover:`, `valueFormat:` |
 | `Sparkline` | Tiny inline trend line (Today / live-HR tile): optional area fill, head dot, hover read-out, optional **reference band** (p25–p75 typical range, in ink — FER-155) | `values:`, `gradient:`, `range:`, `referenceBand:`, `bandColor:`, `lineWidth:`, `showsArea:`, `showsHead:`, `showsHover:`, `valueFormat:`, `indexLabel:` |
 | `TrendChart` | Full trend line over `[TrendPoint]` (date, value): gradient stroke, optional area, hover crosshair + tooltip | `points:`, `gradient:`, `valueRange:`, `showsArea:`, `height:`, `showsHover:`, `valueFormat:`, `dateFormat:` |
 | `Hypnogram` | Sleep-stage bands over `[SleepInterval]` (stage, start/end secs), stage axis, hover | `intervals:`, `height:`, `showsStageAxis:`, `showsHover:`, `nightStart:` |
