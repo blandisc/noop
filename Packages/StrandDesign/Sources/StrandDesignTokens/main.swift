@@ -510,6 +510,11 @@ public let catalogEntries: [CatalogEntry] = [
                  archivo: "LiquidGlass/LiquidCalendario90.swift",
                  cuandoUsarlo: "Mosaico de 90 días en hojas Liquid (Stress/Strain/Sleep).",
                  cuandoNo: "No usar `Calendario90`/`YearHeatStrip` del índice viejo (0 call-sites APP)."),
+    // —— FER-280 · piezas que matan clases (ola 2p) ——
+    CatalogEntry(rol: "Cápsula outline de acción", simbolo: "OutlineCapsule",
+                 archivo: "OutlineCapsule.swift",
+                 cuandoUsarlo: "Acción secundaria en cápsula con `hairlineStrong` ± fill (raise, Start/Stop, filtro, Use, Match…) — sm/md + press.",
+                 cuandoNo: "No CTA de tinta a lo ancho (`StrandCTAButton`); no pill Liquid de hoja (`LiquidGlassButton`); no acción de header (`HeaderActionButton`)."),
 ]
 
 func catalogoTable() -> String {
