@@ -5,15 +5,17 @@ import SwiftUI
 // Physiological motion — breathe / pulse / flow, no cartoon bounce.
 // Ring draw-in, per-beat ripple, hover lift, sliding sidebar indicator.
 //
-// Two languages, one catalog (FER-131 handoff · 03). The «Instrumento diurno» light language
-// keeps ONLY the physical springs — `interactive` (resp 0.28 / damp 0.82), `gentle` (0.50 / 0.80),
-// `hero` (0.85 / 0.85) — plus `breathe` (3.2 s) for loading/listening states (no spinner, no color).
-// The AMBIENT-GLOW effects (the RecoveryRing bloom, the additive plus-lighter halos on chart dots /
-// the connection dot) are black-screen effects that only muddy a glyph's edge on warm paper, so the
-// daytime views drop them: the glow lives in the COMPONENTS, gated off by `\.instrumentoFlat` (which
-// `.instrumentoTheme(_:)` sets), not in a motion preset here. The remaining curves below
-// (`drawIn` / `fade`) serve the legacy dark system and specific shipped affordances; they are
-// maintained, not extended. FER-280·3c podó `pulse`/`spin`/`bob`/`livePulse` — 0 usos reales.
+// One catalog: `LiquidMotion` is the live language. `StrandMotion` is legado en migración —
+// its three physical springs (`interactive` / `gentle` / `hero`) are `@available(deprecated)`
+// aliases of `LiquidMotion.toque` / `.suave` / `.heroe` (same values; FER-280·2e); `breathe`
+// (3.2 s) still has no Liquid twin and stays here for loading/listening states (no spinner, no
+// color). The AMBIENT-GLOW effects (the RecoveryRing bloom, the additive plus-lighter halos on
+// chart dots / the connection dot) are black-screen effects that only muddy a glyph's edge on
+// warm paper, so the daytime views drop them: the glow lives in the COMPONENTS, gated off by
+// `\.instrumentoFlat` (which `.instrumentoTheme(_:)` sets), not in a motion preset here. The
+// remaining curves below (`drawIn` / `fade`) serve the legacy dark system and specific shipped
+// affordances; they are maintained, not extended. FER-280·3c podó `pulse`/`spin`/`bob`/`livePulse`
+// — 0 usos reales.
 
 public enum StrandMotion {
 

@@ -12,7 +12,7 @@
 
 Conteos con `rg --glob '*.swift'` (hits / archivos distintos). Formato reportado: `N hits / F files`.
 
-Familias censadas: `LiquidColor.`, `StrandPalette.`, `InstrumentoTheme`, `theme.(paper|ink|…)`, `CenitColor.`, `LiquidSpace.`, `CenitMetrics.`, `LiquidRadius.`, `LiquidChip.`, `LiquidControl.`, `LiquidElevation.`, `liquidShadow(`, `StrandElevation.`, `strandElevation(`, `LiquidType.`, `StrandFont.`, `InstrumentoType.`, `LiquidMotion.`, `StrandMotion.`, `LiquidHaptica`, `EntrenarHaptic`, `ChartHaptics`, `StrandOpacity.`, `StrandLayer.`, `WidgetMetrics.`, `HomeWidgetMetrics.`, `WatchMetrics.`, más ~110 componentes/APIs (`liquidGlass(`, `PaperMenu`, `StatTile`, …) y miembros sueltos de `LiquidSpace` / `CenitMetrics` / `StrandMotion` / `LiquidMotion` / `LiquidElevation`.
+Familias censadas: `LiquidColor.`, `StrandPalette.`, `InstrumentoTheme`, `theme.(paper|ink|…)`, `CenitColor.`, `LiquidSpace.`, `CenitMetrics.`, `LiquidRadius.`, `LiquidChip.`, `LiquidControl.`, `LiquidElevation.`, `liquidShadow(`, `StrandElevation.`, `strandElevation(`, `LiquidType.`, `StrandFont.`, `InstrumentoType.`, `LiquidMotion.`, `StrandMotion.`, `LiquidHaptica`, `EntrenarHaptic`, `ChartHaptics`, `StrandOpacity.`, `WidgetMetrics.`, `HomeWidgetMetrics.`, `WatchMetrics.`, más ~110 componentes/APIs (`liquidGlass(`, `PaperMenu`, `StatTile`, …) y miembros sueltos de `LiquidSpace` / `CenitMetrics` / `StrandMotion` / `LiquidMotion` / `LiquidElevation`.
 
 **Tamaño del paquete:** 207 archivos `.swift` · ~48.8k LOC · ~338 tipos `public` (enum/struct/class/…) en 196 archivos.
 
@@ -34,7 +34,7 @@ Leyenda de **ruta**: **fusionar** (alias → un nombre) · **renombrar** · **de
 | **Motion** | `LiquidMotion` (`LiquidMotion.swift:21`) + recetas press/entrada/sheet | `StrandMotion` (`Motion.swift:18`) + keyframes `rec*` en el mismo archivo | `LiquidMotion` **82/36** | `StrandMotion` **59/25** | **Liquid gana** para features nuevas (gate `no-motion-literal` ya empuja tokens). Fusionar springs/duraciones solapadas vía typealias; `StrandMotion.interactive/gentle/fade` aún calientes en APP — migrar call-sites luego borrar. Ambientales (`drift`/`flow`) solo PKG: OK. |
 | **Hápticos** | `LiquidHaptica` (`LiquidHaptica.swift:20`) | `EntrenarHaptic` (sesión); `ChartHaptics` (scrub) | `LiquidHaptica` **8/4** | `EntrenarHaptic` **11/5**; `ChartHaptics` **1/1** APP (+ **12/9** PKG) | **Tres catálogos con rol distinto — decidido en comentarios del propio código** (`LiquidHaptica.swift:14–16`). No fusionar; sí documentar el mapa en CATALOGO. |
 | **Opacidad** | (vidrio en `LiquidColor.vidrio*`) | `StrandOpacity` (`Palette.swift:200`) — compartido | — | `StrandOpacity` **15/9** APP / **19/9** PKG | Neutral compartido útil. Se queda. Corregir docs que hablan de `opacity.disabled` → el token real es `StrandOpacity.dim` (`:208`). |
-| **Z-index** | — | `StrandLayer` (`StrandLayer.swift:4`) | **0/0** | **0/0** (solo su archivo) | **Dejar morir** — huérfano total. |
+| **Z-index** | — | *(capa z-index huérfana — archivo ya ausente del árbol)* | **0/0** | **0/0** | **Ya muerto** — no reintroducir. |
 | **Widgets / Watch** | — | `WidgetMetrics`, `HomeWidgetMetrics`, `WatchMetrics` (`Components.swift:66+`) | `WidgetMetrics` vía typealias en Live Activity; `HomeWidgetMetrics` vía `typealias M` en home widgets; `WatchMetrics` **13/2** | carve-out CONTRATO | **Decidido:** fuera de varios gates. No mezclar con `LiquidSpace`. |
 | **Superficie** | `liquidGlass(_:)` / `liquidGlass(tono:regimen:)` (`LiquidGlassRecipes.swift:18`, `:132`) | `.instrumentoCard` (`InstrumentoCard.swift:68`); Paper* | `liquidGlass(` **33/17** APP (+ **61/40** PKG) | `instrumentoCard(` **0** APP (solo PKG); `PaperMenu` **26/10** | Vidrio Liquid gana. Paper/`InstrumentoTheme` en `/migracion`. `instrumentoCard` ya sin consumidor APP → candidato a borrar tras quitar previews. |
 
@@ -132,7 +132,7 @@ Criterio: **0 consumidores en APP**. Se subdividen.
 
 | Símbolo | Evidencia |
 |---|---|
-| `StrandLayer` / `strandLayer` | Solo `StrandLayer.swift` |
+| Capa z-index huérfana | Archivo ya ausente del árbol (0 usos) |
 | `StrandElevation` (casi) | APP 0; PKG definición + previews (`Elevation.swift`) |
 | `HeroInvertido` | 0 en todo el árbol (ya borrado; docs aún lo nombran `DESIGN.md:283`) |
 | `StrandFontScaled` | 0 archivos |
@@ -186,7 +186,7 @@ Dónde el sistema hace difícil lo correcto.
 
 ### 4.4 Defaults que invitan al literal / al dialecto viejo
 
-- `DESIGN.md:26` lista entry points **Strand\*** / `CenitMetrics` / `StrandElevation` / `StrandLayer` — el agente lee eso primero y escribe Instrumento.  
+- `DESIGN.md:26` lista entry points **Strand\*** / `CenitMetrics` / `StrandElevation` — el agente lee eso primero y escribe Instrumento.  
 - `DESIGN.md:152`: «The **one** spacing scale» = `CenitMetrics` — **falso** hoy.  
 - `Motion.swift` y `StrandMotion.gentle` vs `LiquidMotion.gentle` — mismo nombre, distinta curva.
 
@@ -209,7 +209,7 @@ Dónde el sistema hace difícil lo correcto.
 
 | Afirmación | Dónde | Realidad |
 |---|---|---|
-| Entry points = `StrandPalette`, `StrandFont`, `StrandMotion`, `CenitMetrics`, `StrandElevation`, `StrandLayer` | `DESIGN.md:26` | Canónicos reales: `LiquidColor`, `LiquidType`, `LiquidSpace`/`LiquidRadius`, `LiquidElevation`, `LiquidMotion`, `liquidGlass`. Varios Strand\* están muertos o residuales. |
+| Entry points = `StrandPalette`, `StrandFont`, `StrandMotion`, `CenitMetrics`, `StrandElevation` | `DESIGN.md:26` | Canónicos reales: `LiquidColor`, `LiquidType`, `LiquidSpace`/`LiquidRadius`, `LiquidElevation`, `LiquidMotion`, `liquidGlass`. Varios Strand\* están muertos o residuales. |
 | «Dark-only. … There is no light theme.» | `DESIGN.md:260` | Lienzo blanco + Liquid; dark retirado salvo Watch OLED (`DECISIONS.md:111–112`). |
 | «The **one** spacing scale» = `CenitMetrics` | `DESIGN.md:152–155` | Convivencia 660 vs 577 hits. |
 | Entrenar / Ajustes / Bucle / Dieta «siguen siendo canónicos» Instrumento; Entrenar consumidor vivo de papel | `DESIGN.md:281–286` | Entrenar es **mosaico Liquid** (`liquidGlass(tono:regimen:)`, `EntrenarModulo` APP **28/14`). Ajustes usa `LiquidColor` intensivo (p.ej. `AjustesView` en el censo de color). |
@@ -279,7 +279,7 @@ Cada una es un issue proponible. **Sin implementar aquí.**
 ### 4 — Lote de poda de huérfanos públicos (dolor medio × costo bajo–medio)
 
 **Problema:** ~40 símbolos públicos APP0 ensucian CATALOGO y el autocomplete.  
-**Issue:** «Poda StrandLayer + StrandElevation + componentes APP0 solo-preview; regenerar CATALOGO/CENSO».  
+**Issue:** «Poda capa z-index huérfana + StrandElevation + componentes APP0 solo-preview; regenerar CATALOGO/CENSO».  
 **Criterios:**
 
 1. Lista §3.1 + subset acordado de §3.2 eliminados del target.  
@@ -322,7 +322,6 @@ Cada una es un issue proponible. **Sin implementar aquí.**
 | `InstrumentoSectionBand` | 15/4 | 9/2 |
 | `LiquidElevation.` | 3/1 | 12/6 |
 | `StrandElevation.` / `strandElevation(` | 0/0 | 1/1 · 4/3 |
-| `StrandLayer.` | 0/0 | 0/0 |
 | `StrandOpacity.` | 15/9 | 19/9 |
 | `.instrumentoTheme` | 76 inyecciones | — |
 | `liquidEntrada` / `liquidPress` | 39/12 · 31/17 | 7/5 · 33/21 |
@@ -330,7 +329,7 @@ Cada una es un issue proponible. **Sin implementar aquí.**
 ## Apéndice B — Orden sugerido de issues (no implementado)
 
 1. Docs truth (mejora §6.1) — desbloquea a todos los agentes.  
-2. Poda huérfanos seguros (§6.4 subset StrandLayer/Elevation + docs fantasmas).  
+2. Poda huérfanos seguros (§6.4 subset Elevation + docs fantasmas).  
 3. Puente espacio (§6.2).  
 4. Motion (§6.3).  
 5. Piezas API (§6.5) en paralelo a `/migracion` de Paper/InstrumentoTheme.

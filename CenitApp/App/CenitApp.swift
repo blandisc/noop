@@ -3,21 +3,6 @@ import SwiftUI
 import UIKit
 import StrandDesign
 
-/// Re-skins the native `UISegmentedControl` to the «Instrumento» language (FER-408): a warm selected
-/// pill in ink text instead of the system's pure-white pill. `.pickerStyle(.segmented)` ignores SwiftUI
-/// `.tint`, so this UIKit appearance pass is the contained, app-wide way to theme every segmented
-/// picker at once. Safe because the app anchors to the single light `.base` theme everywhere (FER-398),
-/// so there is no dark segmented control to mis-theme. (Toggles use `InstrumentoToggleStyle`; steppers
-/// keep `.tint`.)
-@MainActor private func configureInstrumentoControlAppearance() {
-    let t = InstrumentoTheme.base
-    let seg = UISegmentedControl.appearance()
-    seg.selectedSegmentTintColor = UIColor(t.surface)        // warm pill, never pure white
-    seg.backgroundColor = UIColor(t.hairline)                // warm track behind the segments
-    seg.setTitleTextAttributes([.foregroundColor: UIColor(t.inkSecondary)], for: .normal)
-    seg.setTitleTextAttributes([.foregroundColor: UIColor(t.ink)], for: .selected)
-}
-
 /// iOS entry point. A single `WindowGroup`; the glanceable role is filled by the Home/Lock-Screen
 /// widget.
 @main
@@ -103,7 +88,7 @@ struct CenitApp: App {
                 // FER-394: cap Dynamic Type at xxxLarge — reading text scales with the user's
                 // text-size setting, but we don't promise the 5 giant Accessibility sizes (they'd
                 // break the dense glanceable layouts). Sheets inherit this clamp.
-                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)  // token-exempt(unico): tope global de la app (FER-394); distinto del cap bendecido por pantalla (.accessibility5)
                 .environment(model)
                 .environmentObject(model.repo)
                 .environmentObject(model.profile)

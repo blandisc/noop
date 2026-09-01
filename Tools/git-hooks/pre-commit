@@ -39,18 +39,18 @@ if [ -n "$swift_staged" ] && [ -f "$root/Tools/check-design-drift.py" ]; then
   # entero se ve una literal / call-site legacy / exención de más.
   if [ -f "$root/Tools/design-drift-baseline.json" ]; then
     (cd "$root" && python3 Tools/check-design-drift.py --rules no-spacing-literal \
-      --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App) || fail=1
+      --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App CenitApp) || fail=1
     (cd "$root" && python3 Tools/check-design-drift.py --rules no-adhoc-font,no-radius-literal,no-opacity-literal \
-      --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App) || fail=1
+      --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App CenitApp) || fail=1
     (cd "$root" && python3 Tools/check-design-drift.py --rules no-raw-color,no-edgeinsets-literal,no-token-arithmetic \
-      --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media) || fail=1
+      --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media CenitApp) || fail=1
     (cd "$root" && python3 Tools/check-design-drift.py --rules no-motion-literal \
-      --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App) || fail=1
-    (cd "$root" && python3 Tools/check-design-drift.py --rules no-dt-cap-adhoc Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media CenitWidgets CenitWatch) || fail=1
+      --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App CenitApp) || fail=1
+    (cd "$root" && python3 Tools/check-design-drift.py --rules no-dt-cap-adhoc Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media CenitWidgets CenitWatch CenitApp) || fail=1
     (cd "$root" && python3 Tools/check-design-drift.py --rules no-legacy-api \
-      --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media) || fail=1
+      --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media CenitApp) || fail=1
     (cd "$root" && python3 Tools/check-design-drift.py --rules token-exempt \
-      --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media Packages/StrandDesign/Sources) || fail=1
+      --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media Packages/StrandDesign/Sources CenitApp) || fail=1
   fi
   if [ "$fail" -ne 0 ]; then
     echo ""

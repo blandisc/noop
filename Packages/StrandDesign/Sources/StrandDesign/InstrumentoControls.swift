@@ -1,4 +1,7 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 // MARK: - «Instrumento» native-control styling (FER-408)
 //
@@ -13,9 +16,22 @@ import SwiftUI
 // still announces the label + on/off and toggles on activate; the visual just slides the knob. The
 // hit area is padded to ≥44pt tall.
 //
-// The segmented control and steppers are tinted separately (the segmented via a UIKit appearance
-// pass in the app layer, since `.pickerStyle(.segmented)` ignores `.tint`; steppers keep the native
-// `.tint`, standardized to `inkSecondary`).
+// The segmented control is tinted via `configureInstrumentoControlAppearance()` (UIKit appearance —
+// `.pickerStyle(.segmented)` ignores SwiftUI `.tint`). Steppers keep the native `.tint`,
+// standardized to `inkSecondary`.
+
+#if canImport(UIKit) && os(iOS)
+/// Re-skins the native `UISegmentedControl` to warm paper/ink (FER-408). Call once at app launch.
+/// Lives in StrandDesign so the app shell never spells `InstrumentoTheme` at the call site (FER-282).
+@MainActor public func configureInstrumentoControlAppearance() {
+    let t = InstrumentoTheme.base
+    let seg = UISegmentedControl.appearance()
+    seg.selectedSegmentTintColor = UIColor(t.surface)        // warm pill, never pure white
+    seg.backgroundColor = UIColor(t.hairline)                // warm track behind the segments
+    seg.setTitleTextAttributes([.foregroundColor: UIColor(t.inkSecondary)], for: .normal)
+    seg.setTitleTextAttributes([.foregroundColor: UIColor(t.ink)], for: .selected)
+}
+#endif
 
 public struct InstrumentoToggleStyle: ToggleStyle {
     public init() {}
