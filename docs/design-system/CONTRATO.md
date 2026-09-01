@@ -64,6 +64,30 @@ antes. No hay atajo en un solo PR, por diseño.
 **Ajustes del repo que esto asume** (los aplica el dueño en GitHub, no son archivos):
 `baseline-monotony` como *required check* de `iOS`, y la label `baseline-alta` restringida.
 
+## Carve-outs (dónde los gates NO aplican, por decisión)
+
+- **CenitWidgets / CenitWatch**: fuera de `no-legacy-api` y `token-exempt` (y del spacing hasta que
+  cierre FER-219) — geometría fija de Dynamic Island / watch face; `InstrumentoTheme` es el tema
+  **canónico** de la Live Activity. El carve-out vive en `check()` del linter, no solo en la
+  invocación.
+- **CenitShared**: no importa `StrandDesign` a propósito (frontera de paquetes: Codable no puede
+  depender del paquete de UI) — no hay nada que gatear ahí.
+- **Watch OLED**: la excepción viva del sistema oscuro; es su propio contexto de arbitraje, no
+  deuda.
+
+## Checklist Fase 1 — wrapping valor-neutral (cero pixel)
+
+Todo issue de lote de wrapping **copia estos 5 puntos como criterios de aceptación**:
+
+1. **Igualdad exacta**: el token elegido vale exactamente el literal que envuelve (`14` jamás se
+   envuelve en `s400 = 16`). Sin token exacto → el sitio va a la lista de `/migracion`, no se
+   envuelve.
+2. **Check mecánico del diff**: `git diff -U0 | grep -E '^[+-].*[0-9]'` — cada línea `-` con número
+   tiene su `+` con símbolo; ningún cambio dígito→dígito.
+3. La descripción del PR lista cada par `literal → token`.
+4. **Test de valor en el mismo PR**: `DesignDriftTokenTests` asevera `token == literal envuelto`.
+5. `/qa` re-corre el punto 2 sobre el diff completo — check literal, no narrativa.
+
 ## Regla de arbitraje de colisiones
 
 Cuando N valores compiten por el mismo rol: gana **Liquid Glass · El Eje**, en su contexto — hay

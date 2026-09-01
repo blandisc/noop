@@ -294,7 +294,11 @@ Both are honest about current gaps (e.g. plurals are used on 2 keys out of ~939 
    `.font(.system(size:))`, a literal `cornerRadius:`, or a magic `.opacity(0.NN)` in a screen is
    rejected by `Tools/check-design-drift.py` (run in `design-tokens.yml` CI and the pre-commit hook).
    Geometry of data that genuinely needs a literal (chart bars, legends, keypad, the Dynamic-Island
-   widget) is silenced per-line with a trailing `// token-exempt: <reason>`.
+   widget) is silenced per-line with a trailing `// token-exempt(<categoria>): <reason>` — and the
+   exemption itself is ratcheted debt. **The full enforcement contract — gate matrix across the three
+   legs, the exemption taxonomy and ×3 rule, the only legal way to raise the baseline, the collision
+   arbitration policy — lives in [docs/design-system/CONTRATO.md](design-system/CONTRATO.md)**;
+   `Tools/check-gate-parity.py` fails CI if the legs drift from it.
 
 The linter's rules turn on incrementally as each migration sweep lands. `no-hex` runs on every root;
 the font/radius/opacity rules are now ON for `Cenit/Screens` + `Cenit/Onboarding` (fully migrated).
