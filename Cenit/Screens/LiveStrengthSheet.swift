@@ -1648,7 +1648,7 @@ struct LiveStrengthSheet: View {
             if reflow {
                 VStack(alignment: .leading, spacing: CenitMetrics.gap) { cells }
             } else {
-                HStack(alignment: .top, spacing: 20) { cells; Spacer(minLength: 0) }
+                HStack(alignment: .top, spacing: LiquidSpace.seccionAire) { cells; Spacer(minLength: 0) }
             }
         }
         .padding(.bottom, CenitMetrics.gap)

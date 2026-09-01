@@ -149,7 +149,7 @@ struct ManualWorkoutSheet: View {
                     Text(editing == nil ? "Add" : "Save")
                         .font(StrandFont.headline)
                         .foregroundStyle(theme.paper)
-                        .padding(.horizontal, 20).padding(.vertical, 9)
+                        .padding(.horizontal, LiquidSpace.pastillaHorizontal).padding(.vertical, 9)
                         .background(theme.verdict, in: Capsule(style: .continuous))
                 } else {
                     // FER-220: la cápsula deshabilitada ya no es `theme.surface` a mano — el
@@ -159,7 +159,7 @@ struct ManualWorkoutSheet: View {
                     Text(editing == nil ? "Add" : "Save")
                         .font(StrandFont.headline)
                         .foregroundStyle(theme.inkTertiary)
-                        .padding(.horizontal, 20).padding(.vertical, 9)
+                        .padding(.horizontal, LiquidSpace.pastillaHorizontal).padding(.vertical, 9)
                         .liquidGlass(.pastillaSolida)
                 }
             }

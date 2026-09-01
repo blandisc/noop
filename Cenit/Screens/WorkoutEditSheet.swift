@@ -241,7 +241,7 @@ struct WorkoutEditSheet: View {
         if session.strain != nil || session.avgHr != nil {
             VStack(alignment: .leading, spacing: 6) {
                 Text("From your body").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                HStack(spacing: 20) {
+                HStack(spacing: LiquidSpace.seccionAire) {
                     if let strain = session.strain {
                         readonlyStat(StrengthHistoryFormat.strain(strain), label: "Effort")
                     }
