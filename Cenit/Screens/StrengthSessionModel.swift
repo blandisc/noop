@@ -752,8 +752,13 @@ final class StrengthSessionModel: ObservableObject {
                               lastWeightKg: lastWeightKg, lastReps: lastReps,
                               lastTimeS: nil, lastDistanceM: nil, lastRPE: nil,
                               sets: [set], currentSet: 0, skipped: false)
-        runs.insert(run, at: min(after + 1, runs.count))
-        if after < currentIndex { currentIndex += 1 }
+        // Nancy · ronda 11: la pertenencia a superserie es ADYACENCIA por índice — insertar en
+        // `after+1` cuando `after` es miembro no-terminal partía el bloque en silencio (en vivo y,
+        // vía persistInsertedExercises, para siempre en la rutina). El insert cae tras el ÚLTIMO
+        // miembro del bloque: la superserie queda intacta y «después de X» sigue siendo verdad.
+        let insertionPoint = (supersetMembers(at: after).last ?? after) + 1
+        runs.insert(run, at: min(insertionPoint, runs.count))
+        if insertionPoint <= currentIndex { currentIndex += 1 }
     }
 
     /// Pair this exercise with the NEXT one as a superset (canvas pass 2026-07-15, menú «Superserie

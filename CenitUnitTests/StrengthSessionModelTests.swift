@@ -956,6 +956,16 @@ final class StrengthSessionModelTests: XCTestCase {
         XCTAssertNotNil(s.restEndsAt)
     }
 
+    /// Nancy · ronda 11: insertar tras un miembro NO-terminal de una superserie no la parte — la
+    /// pertenencia es adyacencia por índice, así que el insert cae tras el ÚLTIMO miembro del bloque.
+    func testInsertExerciseAfterSupersetMemberLandsAfterBlock() {
+        let s = supersetSession()   // A1-A2 agrupados (helper existente)
+        let a1 = s.runs[0].id
+        s.insertExercise(ex("row", "Row"), afterRunId: a1)
+        XCTAssertEqual(s.runs[2].exerciseId, "row", "el nuevo cae DESPUÉS de A2, no en medio")
+        XCTAssertEqual(s.supersetMembers(at: 0), [0, 1], "la superserie sigue entera")
+    }
+
     /// Nancy · ronda 4: un historial con `reps = 0` (dejado por el bug que las rondas 1-2 cerraron)
     /// no puede sembrar en 0 la serie de un ejercicio agregado a media sesión — las DOS rutas de
     /// «＋ Agregar ejercicio» llevan el mismo piso `max(1, …)` que la siembra del plan y `addSet`.

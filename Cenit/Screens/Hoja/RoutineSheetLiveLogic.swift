@@ -338,7 +338,17 @@ extension HojaSesionViva {
             guard let store = await sheet.repo.storeHandle(),
                   var res = try? await store.routineExercises(routineId: rid),
                   let routine = (try? await store.routines())?.first(where: { $0.id == rid }) else { return }
-            var insertAt = res.firstIndex(where: { $0.id == afterRunId }).map { $0 + 1 } ?? res.count
+            // Nancy · ronda 11: misma regla que session.insertExercise — si `afterRunId` es miembro
+            // no-terminal de una superserie (adyacencia por posición), insertar dentro la partía para
+            // siempre en la rutina guardada. Se salta al final del bloque.
+            var insertAt = res.count
+            if let idx = res.firstIndex(where: { $0.id == afterRunId }) {
+                var hi = idx
+                if let g = res[idx].supersetGroup {
+                    while hi + 1 < res.count, res[hi + 1].supersetGroup == g { hi += 1 }
+                }
+                insertAt = hi + 1
+            }
             for ex in picks {
                 let re = RoutineExercise(routineId: rid, exerciseId: ex.id, position: insertAt,
                                          targetSets: 1, targetReps: 8,
