@@ -314,11 +314,13 @@ extension HojaSesionViva {
                     let last = lasts[ex.id]
                     session.addExercise(ex, lastWeightKg: last?.0, lastReps: last?.1)
                 }
-            } else if let afterRunId, let after = session.runs.firstIndex(where: { $0.id == afterRunId }) {
-                session.currentIndex = after   // `insertExerciseAfterCurrent` inserta a `currentIndex + 1`
+            } else if let afterRunId, session.runs.contains(where: { $0.id == afterRunId }) {
+                // Nancy · ronda 10: insertar tras CUALQUIER fila sin robar el foco — la reasignación
+                // cruda de `currentIndex` dejaba el descanso en vuelo huérfano y esquivaba el candado.
                 for ex in picks.reversed() {
                     let last = lasts[ex.id]
-                    session.insertExerciseAfterCurrent(ex, lastWeightKg: last?.0, lastReps: last?.1)
+                    session.insertExercise(ex, afterRunId: afterRunId,
+                                           lastWeightKg: last?.0, lastReps: last?.1)
                 }
                 if session.routineId != nil { persistInsertedExercises(picks, afterRunId: afterRunId) }
             } else {

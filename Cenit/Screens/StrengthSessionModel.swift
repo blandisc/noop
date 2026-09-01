@@ -727,6 +727,20 @@ final class StrengthSessionModel: ObservableObject {
     /// picks in reverse order keeps a multi-pick batch contiguous and in the user's chosen order, since
     /// each call lands its run at the same `currentIndex + 1` slot, pushing the previous insert one further.
     func insertExerciseAfterCurrent(_ exercise: Exercise, lastWeightKg: Double? = nil, lastReps: Int? = nil) {
+        guard runs.indices.contains(currentIndex) else { return }
+        insertExercise(exercise, afterRunId: runs[currentIndex].id,
+                       lastWeightKg: lastWeightKg, lastReps: lastReps)
+    }
+
+    /// Insert an exercise right after the run with `afterRunId`, WITHOUT touching the guided focus
+    /// (Nancy · ronda 10): «＋ Agregar» desde el menú «···» de CUALQUIER fila insertaba reasignando
+    /// `currentIndex` en crudo — robaba el foco al ejercicio de esa fila, dejaba el descanso en vuelo
+    /// huérfano, y esquivaba el candado de staleness (un toque remoto encolado registraba la serie
+    /// del ejercicio equivocado). Aquí la identidad enfocada se conserva: si el insert cae antes del
+    /// foco, el índice se corre; el foco nunca cambia de run.
+    func insertExercise(_ exercise: Exercise, afterRunId: String,
+                        lastWeightKg: Double? = nil, lastReps: Int? = nil) {
+        guard let after = runs.firstIndex(where: { $0.id == afterRunId }) else { return }
         let usesReps = exercise.type == .weightReps || exercise.type == .bodyweight
         let weight = lastWeightKg ?? 0
         let reps = usesReps ? max(1, lastReps ?? 8) : 0   // Nancy · ronda 4: historial con reps 0 no siembra en 0
@@ -738,7 +752,8 @@ final class StrengthSessionModel: ObservableObject {
                               lastWeightKg: lastWeightKg, lastReps: lastReps,
                               lastTimeS: nil, lastDistanceM: nil, lastRPE: nil,
                               sets: [set], currentSet: 0, skipped: false)
-        runs.insert(run, at: min(currentIndex + 1, runs.count))
+        runs.insert(run, at: min(after + 1, runs.count))
+        if after < currentIndex { currentIndex += 1 }
     }
 
     /// Pair this exercise with the NEXT one as a superset (canvas pass 2026-07-15, menú «Superserie

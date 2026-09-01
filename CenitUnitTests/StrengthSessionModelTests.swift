@@ -935,6 +935,27 @@ final class StrengthSessionModelTests: XCTestCase {
         XCTAssertGreaterThan(anchor, old, "saltar el ejercicio enfocado re-arma el ancla")
     }
 
+    /// Nancy · ronda 10: «＋ Agregar ejercicio» desde el menú «···» de OTRA fila inserta en su lugar
+    /// SIN robar el foco — la reasignación cruda de `currentIndex` dejaba el descanso en vuelo
+    /// huérfano y esquivaba el candado de staleness de las rondas 6-9.
+    func testInsertExerciseAfterOtherRowKeepsFocusAndRest() throws {
+        let slots = ["a", "b", "c"].map {
+            StrengthSessionModel.PlanSlot(re: re($0, exerciseId: $0, sets: 2),
+                                          exercise: ex($0, $0.uppercased()), lastSets: [])
+        }
+        let s = make(slots)
+        s.currentIndex = 2   // foco en C, descansando
+        s.startRest(seconds: 60)
+        let focusedId = s.runs[2].id
+
+        s.insertExercise(ex("row", "Row"), afterRunId: s.runs[0].id)   // insertar tras A
+
+        XCTAssertEqual(s.runs[1].exerciseId, "row", "el nuevo cae tras A")
+        XCTAssertEqual(s.current?.id, focusedId, "el foco sigue en C (identidad, no índice)")
+        XCTAssertEqual(s.phase, .resting, "el descanso en vuelo sigue vivo")
+        XCTAssertNotNil(s.restEndsAt)
+    }
+
     /// Nancy · ronda 4: un historial con `reps = 0` (dejado por el bug que las rondas 1-2 cerraron)
     /// no puede sembrar en 0 la serie de un ejercicio agregado a media sesión — las DOS rutas de
     /// «＋ Agregar ejercicio» llevan el mismo piso `max(1, …)` que la siembra del plan y `addSet`.
