@@ -209,6 +209,36 @@ class Ratchet(unittest.TestCase):
             self.assertEqual(stale, [("no-spacing-literal", drift._key(src), 1)])
 
 
+class Fer271CommentGaps(unittest.TestCase):
+    """Huecos medios del review de FER-263: los 3 deben FALLAR contra el linter pre-FER-271."""
+
+    def test_block_comment_prefix_does_not_evade_spacing(self):
+        # (a) `/* x */ .padding(99)` escapaba porque stripped.startswith('/*') saltaba la línea.
+        with tempfile.TemporaryDirectory() as tmp:
+            src = _swift(tmp, "Cenit/Screens/X.swift", ["/* x */ .padding(99)"])
+            hits = drift.check([src], ["no-spacing-literal"])
+            self.assertEqual(len(hits), 1, hits)
+            self.assertEqual(hits[0][2], "no-spacing-literal")
+
+    def test_orphan_token_exempt_comment_counts(self):
+        # (b) `// token-exempt:` en línea-comentario propia no silencia nada, pero SÍ cuenta.
+        with tempfile.TemporaryDirectory() as tmp:
+            src = _swift(tmp, "Cenit/Screens/X.swift", [
+                "// token-exempt: huérfana — no hay código en esta línea",
+                ".padding(1)",
+            ])
+            hits = drift.check([src], ["token-exempt", "no-spacing-literal"])
+            rules = sorted(r for _p, _i, r, _s in hits)
+            self.assertEqual(rules, ["no-spacing-literal", "token-exempt"], hits)
+
+    def test_trailing_comment_legacy_symbol_is_not_a_hit(self):
+        # (c) `import StrandDesign // InstrumentoTheme` era falso positivo de no-legacy-api.
+        with tempfile.TemporaryDirectory() as tmp:
+            src = _swift(tmp, "Cenit/System/RoutineDragAndDrop.swift",
+                         ["import StrandDesign   // InstrumentoTheme, CenitMetrics, StrandMotion"])
+            self.assertEqual(drift.check([src], ["no-legacy-api"]), [])
+
+
 if __name__ == "__main__":
     unittest.main()
 

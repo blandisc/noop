@@ -152,6 +152,53 @@ def iter_swift_files(paths):
             yield p
 
 
+def _strip_line_comments(line):
+    """Remove same-line comments so rules match code only (FER-271).
+
+    Deletes every complete `/* … */` span that opens and closes on this line, and everything
+    from a `//` that is not inside a string literal. Character scan (no regex): a leading
+    `/* x */` must not let the rest of the line escape every rule, and a trailing
+    `// InstrumentoTheme` must not count as a legacy call-site.
+    """
+    out = []
+    i = 0
+    n = len(line)
+    in_string = False
+    escape = False
+    while i < n:
+        c = line[i]
+        if in_string:
+            out.append(c)
+            if escape:
+                escape = False
+            elif c == "\\":
+                escape = True
+            elif c == '"':
+                in_string = False
+            i += 1
+            continue
+        if c == '"':
+            in_string = True
+            out.append(c)
+            i += 1
+            continue
+        if c == "/" and i + 1 < n:
+            nxt = line[i + 1]
+            if nxt == "/":
+                break
+            if nxt == "*":
+                end = line.find("*/", i + 2)
+                if end == -1:
+                    out.append(c)
+                    i += 1
+                    continue
+                i = end + 2
+                continue
+        out.append(c)
+        i += 1
+    return "".join(out)
+
+
 def check(paths, rules):
     hits = []
     for path in iter_swift_files(paths):
@@ -168,12 +215,16 @@ def check(paths, rules):
             continue
         for i, line in enumerate(lines, 1):
             stripped = line.strip()
-            if stripped.startswith("//") or stripped.startswith("*") or stripped.startswith("/*"):
-                continue
+            # token-exempt is itself ratcheted debt (FER-263): count the hatch on the ORIGINAL
+            # line (the annotation lives in the comment on purpose). A comment-only
+            # `// token-exempt:` is an orphan — it silences nothing, but still counts (FER-271).
             if EXEMPT.search(line):
-                # token-exempt is itself ratcheted debt (FER-263): count the hatch, then skip the rules.
                 if "token-exempt" in rules and not in_widget_watch:
                     hits.append((path, i, "token-exempt", stripped[:100]))
+                continue
+            code = _strip_line_comments(line)
+            code_stripped = code.strip()
+            if not code_stripped or code_stripped.startswith("*"):
                 continue
             for rule in rules:
                 if rule == "token-exempt":
@@ -183,10 +234,10 @@ def check(paths, rules):
                 if rule in ("no-legacy-api", "no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic") and in_widget_watch:
                     continue
                 if rule == "no-emdash-string":
-                    if _emdash_string_hit(line):
+                    if _emdash_string_hit(code):
                         hits.append((path, i, rule, stripped[:100]))
                     continue
-                m = RULE_PATTERNS[rule].search(line)
+                m = RULE_PATTERNS[rule].search(code)
                 if m:
                     hits.append((path, i, rule, stripped[:100]))
     return hits
