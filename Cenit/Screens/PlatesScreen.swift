@@ -254,17 +254,10 @@ struct PlatesScreen: View {
     }
 
     private var insertButton: some View {
-        Button {
+        StrandCTAButton("Insert warm-up into the session") {
             onInsertWarmup(warmup.map { (weightKg: $0.weightKg, reps: $0.reps) })
-        } label: {
-            Text("Insert warm-up into the session")
-                .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
-                .foregroundStyle(theme.paper)
-                .frame(maxWidth: .infinity).padding(.vertical, LiquidSpace.ctaVertical)
-                .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
         }
-        // FER-89: adopta el press de la sección en vez de `.plain` (sin feedback de toque).
-        .buttonStyle(EntrenarPressStyle()).padding(.top, 6)
+        .padding(.top, 6)
     }
 
     // MARK: Formatting
