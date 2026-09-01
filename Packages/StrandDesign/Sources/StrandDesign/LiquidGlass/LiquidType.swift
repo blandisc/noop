@@ -153,6 +153,16 @@ public enum LiquidType {
     /// Aproximación del line-height 1.55 de la spec (12.5 × 1.55 ≈ 19.4 pt de línea).
     public static let cuerpoLineSpacing: CGFloat = 4
 
+    /// `cuerpo/banner` — SF 400 13. El cuerpo de un banner/toast a sangre (SaveErrorToast,
+    /// StarterTemplatesSheet, WeeklyPlanEditorView, WorkoutHistoryScreen): la MISMA cifra
+    /// que ya usa el mensaje de `ConfirmCard` (`clausulaCampo`, 13) — comparten tamaño, no
+    /// familia (`clausulaCampo` es Grotesk; el banner es SF, como ya está en código). El
+    /// token ancla la CIFRA para que un cambio accidental de tamaño rompa CI (FER-273,
+    /// CONTRATO.md — checklist Fase 1). CENSO «cuerpo de banner (13pt, igual que el mensaje
+    /// de ConfirmCard)» (6 sitios).
+    public static let cuerpoBannerTamano: CGFloat = 13
+    public static let cuerpoBanner = Font.system(size: cuerpoBannerTamano)
+
     /// `cuerpo/lectura` — la variante que ESCALA con Dynamic Type del mismo 12.5.
     ///
     /// `Font.system(size:)` es de tamaño fijo (SF no acepta `relativeTo:`), así que la

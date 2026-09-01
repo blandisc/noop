@@ -44,6 +44,57 @@ final class DesignDriftTokenTests: XCTestCase {
                                StrandOpacity.strokeSoft, StrandOpacity.dim, StrandOpacity.muted]
         XCTAssertEqual(scale, scale.sorted())
     }
+
+    // MARK: - FER-273 (Fase 1a, CONTRATO.md checklist Fase 1) — igualdad exacta de las 5 piezas
+    // token minteadas del censo (docs/design-system/CENSO.md §clusters). Ninguna se aplica a un
+    // call-site en este PR — estos tests solo anclan la CIFRA para que un cambio accidental
+    // rompa CI, igual que el resto de este archivo.
+
+    // (2) respiro horizontal de chip — CENSO «horizontal/chip handoff» (10 sitios, moda 9).
+    func test_chipHorizontalMatchesCensusMode() {
+        XCTAssertEqual(LiquidSpace.chipHorizontal, 9)
+    }
+
+    // (3) borde-de-tarjeta / respiro-de-fila — CENSO «edge ≠ rowVPad»: misma cifra (10) que
+    // `CenitMetrics.rowVPad`, dos roles nuevos y distintos entre sí, ninguno el legacy.
+    func test_seccionCantoAndFilaRespiroMatchCensusValueButNotRowVPadRole() {
+        XCTAssertEqual(LiquidSpace.seccionCanto, 10)
+        XCTAssertEqual(LiquidSpace.filaRespiro, 10)
+        XCTAssertEqual(LiquidSpace.seccionCanto, CenitMetrics.rowVPad,
+                        "misma CIFRA por diseño — el rol es lo que los distingue, no el número")
+    }
+
+    // (4) tipográfico cuerpo-de-banner 13pt — CENSO «cuerpo de banner (13pt, igual que el
+    // mensaje de ConfirmCard)»: comparte CIFRA con `LiquidType.clausulaCampo` (13), no familia.
+    func test_cuerpoBannerMatchesConfirmCardMessageSize() {
+        XCTAssertEqual(LiquidType.cuerpoBannerTamano, 13)
+    }
+
+    // (5) handoff 14 y handoff 44 (== mínimo táctil HIG, nombre propio) — CENSO «14 del
+    // handoff» / «44 del handoff».
+    func test_handoffSpacingTokens() {
+        XCTAssertEqual(LiquidSpace.handoff14, 14)
+        XCTAssertEqual(LiquidSpace.handoff44, 44)
+        XCTAssertEqual(LiquidSpace.handoff44, LiquidControl.hitTarget,
+                        "misma CIFRA que el mínimo táctil por diseño — el rol (gap de layout, no toque) es lo que los distingue")
+    }
+
+    // (6) chip compacto 11/5 — CENSO «chip 11/5 del handoff» (3 sitios, 2 exactos).
+    func test_chipCompactoMatchesCensusValue() {
+        XCTAssertEqual(LiquidChip.compactoHorizontal, 11)
+        XCTAssertEqual(LiquidChip.compactoVertical, 5)
+    }
+}
+
+/// (1) `LiquidSectionHeader` — el componente Liquid que reemplaza `InstrumentoSectionBand`
+/// (sin banda de papel). Test barato de existencia/forma: el kicker reusa `LiquidType.kicker`
+/// y el `Trailing == EmptyView` sigue disponible cuando no hay acción — no renderiza, solo
+/// prueba que el API se construye con el mismo patrón que `InstrumentoSectionBand`.
+final class LiquidSectionHeaderTests: XCTestCase {
+    @MainActor func test_initWithAndWithoutTrailingCompiles() {
+        _ = LiquidSectionHeader("Título")
+        _ = LiquidSectionHeader("Título") { Text("acción") }
+    }
 }
 
 #if os(macOS)

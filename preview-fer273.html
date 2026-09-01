@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>FER-273 · Fase 1a — 6 piezas</title>
+<style>
+  :root{
+    --papel-alto:#F8F6EF; --papel-bajo:#F0EDE4;
+    --tinta-900:#221D16; --tinta-700:#5C5648; --tinta-500:#6F6857;
+    --tinta-10: rgba(34,29,22,0.10); --tinta-07: rgba(34,29,22,0.07);
+    --verde:#0C8F62;
+    --vidrio-borde: rgba(34,29,22,0.10);
+    --vidrio-relleno: rgba(255,255,255,0.55);
+    --vidrio-especular: rgba(255,255,255,0.70);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; padding:0;
+    background:linear-gradient(180deg, var(--papel-alto), var(--papel-bajo));
+    font-family:-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+    color:var(--tinta-900);
+    min-height:100vh;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:48px 28px 96px;}
+  header.top{margin-bottom:40px;}
+  .eyebrow{
+    font-size:11.5px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase;
+    color:var(--tinta-700); margin:0 0 8px;
+  }
+  h1{font-size:28px; font-weight:700; letter-spacing:-0.5px; margin:0 0 10px;}
+  .sub{font-size:14px; color:var(--tinta-700); line-height:1.5; max-width:640px; margin:0;}
+  .sub b{color:var(--tinta-900);}
+
+  .piece{
+    background:var(--vidrio-relleno);
+    border:1px solid var(--vidrio-borde);
+    border-radius:20px;
+    padding:28px 28px 24px;
+    margin-bottom:24px;
+    box-shadow: 0 2px 8px rgba(34,29,22,0.05), 0 10px 24px rgba(34,29,22,0.06);
+    position:relative;
+    overflow:hidden;
+  }
+  .piece::before{
+    content:""; position:absolute; top:0; left:0; right:0; height:1px;
+    background:linear-gradient(90deg, transparent, var(--vidrio-especular), transparent);
+  }
+  .piece-head{display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin-bottom:6px; flex-wrap:wrap;}
+  .piece-name{font-size:17px; font-weight:700; letter-spacing:-0.2px;}
+  .piece-tag{
+    font-size:10.5px; font-weight:600; letter-spacing:1px; text-transform:uppercase;
+    color:var(--verde); background:rgba(12,143,98,0.10);
+    padding:3px 9px; border-radius:999px; white-space:nowrap;
+  }
+  .piece-desc{font-size:13px; color:var(--tinta-700); line-height:1.5; margin:6px 0 18px; max-width:600px;}
+  .piece-demo{
+    background:rgba(255,255,255,0.5);
+    border:1px solid var(--tinta-10);
+    border-radius:14px;
+    padding:20px;
+  }
+  .piece-values{
+    display:flex; flex-wrap:wrap; gap:10px; margin-top:16px;
+  }
+  .value-chip{
+    font-size:12px; font-weight:600; color:var(--tinta-900);
+    background:rgba(34,29,22,0.06); border:1px solid var(--tinta-10);
+    padding:5px 11px; border-radius:8px;
+    font-variant-numeric: tabular-nums;
+  }
+  .value-chip code{font-weight:700; color:var(--verde);}
+
+  /* Piece 1 — LiquidSectionHeader demo */
+  .section-header{
+    display:flex; align-items:baseline; gap:8px;
+    padding:16px 0 8px;
+  }
+  .kicker{
+    font-size:11.5px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase;
+    color:var(--tinta-700);
+  }
+  .section-header .fill{flex:1;}
+  .section-action{font-size:13px; color:var(--tinta-700); font-weight:500;}
+  .section-body{font-size:13px; color:var(--tinta-500); padding:2px 0 12px; border-bottom:1px solid var(--tinta-10); margin-bottom:2px;}
+  .old-band{
+    background: rgba(34,29,22,0.045);
+    margin: 0 -20px 4px; padding:9px 20px;
+    font-size:11px; font-weight:600; letter-spacing:1.4px; text-transform:uppercase; color:var(--tinta-700);
+  }
+  .compare-label{font-size:10.5px; color:var(--tinta-500); text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; font-weight:600;}
+
+  /* Piece 2 — chip horizontal breathing */
+  .chip-row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  .chip{
+    display:inline-flex; align-items:center; gap:6px;
+    background:var(--tinta-900); color:#fff;
+    border-radius:999px; font-size:12px; font-weight:600;
+  }
+  .chip.h9{padding:5px 9px;}
+  .measure{position:relative;}
+  .measure .bracket{
+    position:absolute; top:-14px; left:0; right:0; text-align:center;
+    font-size:9px; color:var(--verde); font-weight:700;
+  }
+
+  /* Piece 3 — canto / fila */
+  .divider-demo{border-top:1px solid var(--tinta-10); }
+  .edge-row{padding-top:10px; padding-bottom:0; font-size:12px; color:var(--tinta-500);}
+  .fila-demo{
+    display:flex; justify-content:space-between; padding:5px 10px;
+    background:rgba(255,255,255,0.6); border-radius:10px; font-size:12px; margin-top:8px;
+  }
+
+  /* Piece 4 — banner body */
+  .banner{
+    background:rgba(220, 90, 90, 0.10);
+    border-left:3px solid #C24A4A;
+    border-radius:8px;
+    padding:10px 16px;
+    font-size:13px;
+    color:var(--tinta-900);
+  }
+
+  /* Piece 5 — handoff 14/44 */
+  .handoff-card{
+    background:rgba(255,255,255,0.65); border:1px solid var(--tinta-10); border-radius:14px;
+    padding:14px; display:inline-block; font-size:12px; color:var(--tinta-700);
+  }
+  .heart-pair{display:flex; gap:44px; align-items:flex-start;}
+  .heart-stat .lbl{font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--tinta-500); font-weight:600;}
+  .heart-stat .val{font-size:22px; font-weight:700; margin-top:2px;}
+
+  /* Piece 6 — chip compacto */
+  .variant-chip{
+    display:inline-block; padding:5px 11px; border:1px solid var(--tinta-10);
+    border-radius:999px; font-size:13px; color:var(--tinta-900); background:rgba(255,255,255,0.5);
+  }
+
+  footer{margin-top:48px; padding-top:24px; border-top:1px solid var(--tinta-10); font-size:12px; color:var(--tinta-500);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <p class="eyebrow">Cénit · Sistema de diseño</p>
+    <h1>FER-273 — Fase 1a: 6 piezas</h1>
+    <p class="sub">
+      Piezas <b>minteadas</b> en <code>Packages/StrandDesign</code> — ninguna se aplica todavía a
+      una pantalla (cero cambio de pixel en el app). Este preview es el gate de aprobación antes
+      del merge. Habla <b>Liquid Glass · El Eje</b>: papel cálido, vidrio, kicker en mayúsculas
+      chicas — nada de dialecto nuevo.
+    </p>
+  </header>
+
+  <!-- PIEZA 1 -->
+  <section class="piece">
+    <div class="piece-head">
+      <div class="piece-name">1 · LiquidSectionHeader</div>
+      <div class="piece-tag">Componente</div>
+    </div>
+    <p class="piece-desc">
+      Reemplazo Liquid de <code>InstrumentoSectionBand</code>: kicker + aire, <b>SIN banda de
+      papel</b>. Reusa <code>LiquidType.kicker</code> (11.5/600, tracking +1.5, MAYÚSCULAS) — el
+      mismo kicker que ya usan las cabeceras Liquid.
+    </p>
+    <div class="piece-demo">
+      <div class="compare-label">Antes — InstrumentoSectionBand (banda de papel)</div>
+      <div class="old-band">Tu plan</div>
+      <div class="section-body" style="border:none; margin-bottom:20px;">El contenido vive bajo la banda gris.</div>
+
+      <div class="compare-label">Ahora — LiquidSectionHeader (sin banda)</div>
+      <div class="section-header">
+        <span class="kicker">Tu plan</span>
+        <span class="fill"></span>
+        <span class="section-action">Editar semana</span>
+      </div>
+      <div class="section-body">El contenido vive aquí, directo sobre el papel/vidrio de la pantalla.</div>
+    </div>
+  </section>
+
+  <!-- PIEZA 2 -->
+  <section class="piece">
+    <div class="piece-head">
+      <div class="piece-name">2 · LiquidSpace.chipHorizontal</div>
+      <div class="piece-tag">Token</div>
+    </div>
+    <p class="piece-desc">
+      Respiro horizontal de un chip/pastilla chica. CENSO «horizontal/chip handoff» (10 sitios) —
+      moda del cluster: <b>9</b>.
+    </p>
+    <div class="piece-demo">
+      <div class="chip-row">
+        <span class="chip h9">Búsqueda de biblioteca</span>
+      </div>
+      <div class="piece-values">
+        <span class="value-chip">horizontal = <code>9pt</code></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- PIEZA 3 -->
+  <section class="piece">
+    <div class="piece-head">
+      <div class="piece-name">3 · LiquidSpace.seccionCanto / .filaRespiro</div>
+      <div class="piece-tag">Token ×2</div>
+    </div>
+    <p class="piece-desc">
+      CENSO «edge ≠ rowVPad» (10 sitios): misma cifra (10) que <code>CenitMetrics.rowVPad</code>,
+      pero <b>dos roles nuevos y distintos</b> — canto de sección (dividers) vs. respiro de fila —
+      ninguno es el token legacy de «Instrumento».
+    </p>
+    <div class="piece-demo">
+      <div class="compare-label">seccionCanto — respiro antes/después de un Divider</div>
+      <div class="divider-demo"></div>
+      <div class="edge-row">Medido por</div>
+
+      <div class="compare-label" style="margin-top:18px;">filaRespiro — respiro vertical de fila/chip</div>
+      <div class="fila-demo"><span>65 kg × 8</span><span style="color:var(--tinta-500)">Serie 3</span></div>
+
+      <div class="piece-values">
+        <span class="value-chip">seccionCanto = <code>10pt</code></span>
+        <span class="value-chip">filaRespiro = <code>10pt</code></span>
+        <span class="value-chip" style="opacity:0.6">CenitMetrics.rowVPad = 10pt (legacy, otro rol)</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- PIEZA 4 -->
+  <section class="piece">
+    <div class="piece-head">
+      <div class="piece-name">4 · LiquidType.cuerpoBanner</div>
+      <div class="piece-tag">Token tipográfico</div>
+    </div>
+    <p class="piece-desc">
+      Cuerpo de un banner/toast a sangre. CENSO «cuerpo de banner (13pt, igual que el mensaje de
+      ConfirmCard)» — comparte tamaño (13pt) con <code>LiquidType.clausulaCampo</code>, no familia.
+    </p>
+    <div class="piece-demo">
+      <div class="banner">No se pudo guardar. Intenta de nuevo.</div>
+      <div class="piece-values">
+        <span class="value-chip">tamaño = <code>13pt</code></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- PIEZA 5 -->
+  <section class="piece">
+    <div class="piece-head">
+      <div class="piece-name">5 · LiquidSpace.handoff14 / .handoff44</div>
+      <div class="piece-tag">Token ×2</div>
+    </div>
+    <p class="piece-desc">
+      «14 del handoff» (3 sitios: panel del scrub de carga, «Marcar todo recuperado», toast de
+      deshacer) y «44 del handoff» — el gap entre dos bloques de dato gemelos, la misma cifra que
+      el mínimo táctil HIG pero <b>con nombre propio</b> (no es un objetivo de toque, es un
+      espaciado de layout).
+    </p>
+    <div class="piece-demo">
+      <div class="compare-label">handoff14 — padding de tarjeta/control chico</div>
+      <div class="handoff-card">Marcar todo recuperado</div>
+
+      <div class="compare-label" style="margin-top:18px;">handoff44 — gap entre bloques gemelos</div>
+      <div class="heart-pair">
+        <div class="heart-stat"><div class="lbl">FC media</div><div class="val">142</div></div>
+        <div class="heart-stat"><div class="lbl">FC máx</div><div class="val">178</div></div>
+      </div>
+
+      <div class="piece-values">
+        <span class="value-chip">handoff14 = <code>14pt</code></span>
+        <span class="value-chip">handoff44 = <code>44pt</code></span>
+        <span class="value-chip" style="opacity:0.6">LiquidControl.hitTarget = 44pt (mismo número, rol distinto)</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- PIEZA 6 -->
+  <section class="piece">
+    <div class="piece-head">
+      <div class="piece-name">6 · LiquidChip.compactoHorizontal / .compactoVertical</div>
+      <div class="piece-tag">Token ×2</div>
+    </div>
+    <p class="piece-desc">
+      Chip compacto del handoff (variantes de ejercicio, atlas muscular). CENSO «chip 11/5 del
+      handoff» (3 sitios, 2 exactos).
+    </p>
+    <div class="piece-demo">
+      <div class="chip-row">
+        <span class="variant-chip">Press de banca</span>
+        <span class="variant-chip">Press inclinado</span>
+      </div>
+      <div class="piece-values">
+        <span class="value-chip">horizontal = <code>11pt</code></span>
+        <span class="value-chip">vertical = <code>5pt</code></span>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    FER-273 · rama <code>fer-273-seis-piezas</code> · las 6 piezas nacen en
+    <code>Packages/StrandDesign</code> — su adopción en pantallas (13 call-sites de
+    <code>InstrumentoSectionBand</code> + los clusters del censo) es trabajo del lote de
+    <code>/migracion</code> que sigue, no de este issue.
+  </footer>
+</div>
+</body>
+</html>
