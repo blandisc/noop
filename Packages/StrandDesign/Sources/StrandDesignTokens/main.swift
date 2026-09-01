@@ -443,7 +443,7 @@ public let catalogEntries: [CatalogEntry] = [
     CatalogEntry(rol: "Menú «···»", simbolo: "LiquidMenu",
                  archivo: "LiquidGlass/LiquidMenu.swift",
                  cuandoUsarlo: "El menú contextual de un «···» en pantalla Liquid: filas con icono, subtítulo de estado, destructiva al final y un nivel de submenú.",
-                 cuandoNo: "No en pantallas aún Instrumento (usa `PaperMenu` hasta que migren); no para una acción única (usa un botón)."),
+                 cuandoNo: "No para una acción única (usa un botón); no reinventar el popover a mano."),
     CatalogEntry(rol: "Cabecera de hoja", simbolo: "LiquidSheetHeader",
                  archivo: "LiquidGlass/LiquidSheetHeader.swift",
                  cuandoUsarlo: "El encabezado estándar de cualquier hoja/sheet Liquid (título + cierre).",

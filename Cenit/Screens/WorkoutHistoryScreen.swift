@@ -1594,7 +1594,7 @@ struct WorkoutSessionDetailScreen: View {
                     Image(systemName: "ellipsis").foregroundStyle(theme.ink)
                 }
                 .accessibilityLabel(Text("More options"))
-                .paperMenu(isPresented: $showMoreMenu, items: [
+                .liquidMenu(isPresented: $showMoreMenu, items: [
                     // Both actions wait for the full row to load.
                     .init(String(localized: "Edit"), systemImage: "pencil") {
                         if fullSession != nil { showEdit = true }

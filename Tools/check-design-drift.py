@@ -138,9 +138,8 @@ RE_SPACING = re.compile(
 # canonical Live-Activity/watch theme there); CenitShared never imports StrandDesign.
 RE_LEGACY_API = re.compile(
     r"\b(InstrumentoTheme|InstrumentoFlowTitle|InstrumentoToolChip|InstrumentoTabHeader"
-    r"|PaperMenu|PaperMenuItem|PaperStepper|SectionBand|InstrumentoSectionBand|StrandPalette)\b"
+    r"|PaperStepper|SectionBand|InstrumentoSectionBand|StrandPalette)\b"
     r"|\.instrumentoTheme\("
-    r"|\.paperMenu\("
     # FER-280·1b — el contrabando tipográfico que la auditoría B2 midió fuera del gate:
     # el sistema de tipos Instrumento (130 usos) y sus helpers de composición. `theme.*`
     # queda al censo (regex ambiguo). instrumentoCard tiene 0 usos: prohibición gratis.

@@ -185,13 +185,13 @@ struct ExerciseLibraryScreen: View {
     private func filterMenu(title: String, isPresented: Binding<Bool>, selection: Binding<String?>,
                             options: [String], label: @escaping (String) -> String) -> some View {
         let active = selection.wrappedValue
-        var rows: [PaperMenuItem] = [
-            PaperMenuItem(String(localized: "All"), systemImage: active == nil ? "checkmark" : nil) {
+        var rows: [LiquidMenuItem] = [
+            LiquidMenuItem(String(localized: "All"), systemImage: active == nil ? "checkmark" : nil) {
                 selection.wrappedValue = nil
             }
         ]
         rows += options.map { opt in
-            PaperMenuItem(label(opt), systemImage: active == opt ? "checkmark" : nil) {
+            LiquidMenuItem(label(opt), systemImage: active == opt ? "checkmark" : nil) {
                 selection.wrappedValue = opt
             }
         }
@@ -209,7 +209,7 @@ struct ExerciseLibraryScreen: View {
         // vertical (mismo truco que `PaperStepper.hitTarget`, FER-947 en StrandDesign) para no
         // invadir al chip vecino del mismo renglón.
         .verticalHitTarget(visible: 28)
-        .paperMenu(isPresented: isPresented, items: rows)
+        .liquidMenu(isPresented: isPresented, items: rows)
     }
 
     // MARK: - List
@@ -626,8 +626,8 @@ struct CreateExerciseSheet: View {
                 }
             }
             .buttonStyle(EntrenarPressStyle())
-            .paperMenu(isPresented: isPresented, items: options.map { opt in
-                PaperMenuItem(label(opt), systemImage: selection.wrappedValue == opt ? "checkmark" : nil) {
+            .liquidMenu(isPresented: isPresented, items: options.map { opt in
+                LiquidMenuItem(label(opt), systemImage: selection.wrappedValue == opt ? "checkmark" : nil) {
                     selection.wrappedValue = opt
                 }
             })

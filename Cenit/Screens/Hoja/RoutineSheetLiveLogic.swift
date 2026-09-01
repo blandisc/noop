@@ -776,8 +776,8 @@ extension HojaSesionViva {
     /// esa tarjeta ya ofrece arriba (`breakSupersetBlock`). Foco tampoco es por-miembro: abre sobre
     /// el foco REAL del motor (`focusMode`, sin `ei`), así que vive en el nivel de bloque, no aquí.
     /// `true` (default) preserva el menú de siempre para la tarjeta de un ejercicio suelto.
-    func exerciseMenuItems(ei: Int, run: StrengthSessionModel.ExerciseRun, incluirEstructura: Bool = true) -> [PaperMenuItem] {
-        var rows: [PaperMenuItem] = []
+    func exerciseMenuItems(ei: Int, run: StrengthSessionModel.ExerciseRun, incluirEstructura: Bool = true) -> [LiquidMenuItem] {
+        var rows: [LiquidMenuItem] = []
         if incluirEstructura {
             if ei > 0 {
                 rows.append(.init(String(localized: "Move up"), systemImage: "arrow.up") {

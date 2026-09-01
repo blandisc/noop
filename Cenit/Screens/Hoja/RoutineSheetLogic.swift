@@ -549,9 +549,9 @@ extension RoutineSheet {
     /// ejercicio con rampa que se agrupa después vía «Superserie con el siguiente» la conserva
     /// intacta (los filtros por `kind == .work` de arriba la protegen), y deshacer la superserie
     /// la deja editable como antes, tarjeta sola.
-    func exerciseMenuItems(_ idx: Int, includeWarmup: Bool = true) -> [PaperMenuItem] {
+    func exerciseMenuItems(_ idx: Int, includeWarmup: Bool = true) -> [LiquidMenuItem] {
         let item = items[idx]
-        var rows: [PaperMenuItem] = []
+        var rows: [LiquidMenuItem] = []
         if includeWarmup, !hasWarmups(idx) {
             rows.append(.init(String(localized: "Add warm-up"), systemImage: "flame") {
                 addWarmupRamp(idx)

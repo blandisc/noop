@@ -336,17 +336,17 @@ struct WorkoutDetailScreen: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Session actions")
-        .paperMenu(isPresented: $showActionMenu, items: actionMenuItems)
+        .liquidMenu(isPresented: $showActionMenu, items: actionMenuItems)
     }
 
     /// The «···» actions as paper-menu rows, per source (FER-837).
-    private var actionMenuItems: [PaperMenuItem] {
+    private var actionMenuItems: [LiquidMenuItem] {
         switch WorkoutSource.classify(row.source) {
         case .detected:
             return [
                 .init(String(localized: "Re-label as"), systemImage: "tag",
                       children: WorkoutSource.relabelSports.map { sport in
-                          PaperMenuItem(sport) { mutate { try await repo.relabelDetected(row, sport: sport) } }
+                          LiquidMenuItem(sport) { mutate { try await repo.relabelDetected(row, sport: sport) } }
                       }),
                 .init(String(localized: "Edit details…"), systemImage: "pencil") { editTarget = EditTarget(row: row) },
                 .init(String(localized: "Dismiss (not a workout)"), systemImage: "xmark.circle", isDestructive: true) {

@@ -59,7 +59,7 @@ struct HojaTarjetaSuperserieCompuesta: View {
             }
         }
         .liquidEntrada()
-        .paperMenu(
+        .liquidMenu(
             isPresented: Binding(get: { sheet.menuExerciseIndex == members[0] },
                                  set: { if !$0 { sheet.menuExerciseIndex = nil } }),
             items: menuItems
@@ -156,8 +156,8 @@ struct HojaTarjetaSuperserieCompuesta: View {
 
     // MARK: - «···» — reordenar en bloque, deshacer, ＋ ronda, y el menú completo de cada miembro
 
-    private var menuItems: [PaperMenuItem] {
-        var rows: [PaperMenuItem] = []
+    private var menuItems: [LiquidMenuItem] {
+        var rows: [LiquidMenuItem] = []
         rows.append(.init(String(localized: "Reorder exercises"), systemImage: "line.3.horizontal") {
             sheet.activeCell = nil
             withAnimation(.snappy) { sheet.reordering = true }
