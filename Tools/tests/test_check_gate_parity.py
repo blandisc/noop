@@ -53,7 +53,7 @@ class GateParity(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             _copy_tree(tmp)
             _mutate(tmp, "Tools/verify.sh",
-                    "--baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App ||",
+                    "--baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App CenitApp ||",
                     "--baseline Tools/design-drift-baseline.json Cenit/Screens ||")
             problems = parity.check(tmp)
             self.assertTrue(any("no-spacing-literal" in p and "verify-quick" in p for p in problems), problems)
@@ -64,10 +64,10 @@ class GateParity(unittest.TestCase):
             _copy_tree(tmp)
             _mutate(tmp, "Tools/verify.sh",
                     "python3 Tools/check-design-drift.py --rules no-spacing-literal \\",
-                    "# python3 Tools/check-design-drift.py --rules no-spacing-literal --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App\n"
+                    "# python3 Tools/check-design-drift.py --rules no-spacing-literal --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App CenitApp\n"
                     "      python3 Tools/check-design-drift.py --rules no-spacing-literal \\")
             _mutate(tmp, "Tools/verify.sh",
-                    "--baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App || ok=1",
+                    "--baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App CenitApp || ok=1",
                     "--baseline Tools/design-drift-baseline.json Cenit/Screens || ok=1")
             problems = parity.check(tmp)
             self.assertTrue(any("no-spacing-literal" in p and "verify-quick" in p for p in problems),

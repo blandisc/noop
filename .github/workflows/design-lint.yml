@@ -39,9 +39,9 @@ jobs:
       - name: Design-drift linter — no raw hex (all roots)
         run: python3 Tools/check-design-drift.py --rules no-hex
       - name: Design-drift linter — no ad-hoc font/radius/opacity, ratchet (FER-276)
-        run: python3 Tools/check-design-drift.py --rules no-adhoc-font,no-radius-literal,no-opacity-literal --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App
+        run: python3 Tools/check-design-drift.py --rules no-adhoc-font,no-radius-literal,no-opacity-literal --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App CenitApp
       - name: Design-drift linter — anti-evasión del colador, ratchet (FER-276)
-        run: python3 Tools/check-design-drift.py --rules no-raw-color,no-edgeinsets-literal,no-token-arithmetic --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media
+        run: python3 Tools/check-design-drift.py --rules no-raw-color,no-edgeinsets-literal,no-token-arithmetic --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media CenitApp
       - name: Design-drift linter — no em-dash in copy (FER-879, app-wide)
         run: python3 Tools/check-design-drift.py --rules no-emdash-string Cenit/Screens Cenit/Onboarding
       - name: Design-drift linter — no raw shadow, use StrandElevation (migrated screens)
@@ -49,15 +49,15 @@ jobs:
       - name: Linter self-tests (FER-263/264/265)
         run: python3 -m unittest discover -s Tools/tests -p 'test_*.py'
       - name: Design-drift linter — no spacing/stroke literal, ratchet (FER-258/263)
-        run: python3 Tools/check-design-drift.py --rules no-spacing-literal --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App
+        run: python3 Tools/check-design-drift.py --rules no-spacing-literal --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App CenitApp
       - name: Design-drift linter — no motion literal, ratchet (FER-269)
-        run: python3 Tools/check-design-drift.py --rules no-motion-literal --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App
+        run: python3 Tools/check-design-drift.py --rules no-motion-literal --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App CenitApp
       - name: Oráculo de Dynamic Type — solo el cap bendecido (FER-269/FER-118)
-        run: python3 Tools/check-design-drift.py --rules no-dt-cap-adhoc Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media CenitWidgets CenitWatch
+        run: python3 Tools/check-design-drift.py --rules no-dt-cap-adhoc Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media CenitWidgets CenitWatch CenitApp
       - name: Design-drift linter — no legacy API, ratchet (FER-263)
-        run: python3 Tools/check-design-drift.py --rules no-legacy-api --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media
+        run: python3 Tools/check-design-drift.py --rules no-legacy-api --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media CenitApp
       - name: Design-drift linter — token-exempt es deuda, ratchet (FER-263)
-        run: python3 Tools/check-design-drift.py --rules token-exempt --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media Packages/StrandDesign/Sources
+        run: python3 Tools/check-design-drift.py --rules token-exempt --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media Packages/StrandDesign/Sources CenitApp
       - name: Sin vidrio dentro de una hoja (papel opaco)
         run: python3 Tools/check-design-drift.py --rules no-sheet-glass Packages/StrandDesign/Sources Cenit CenitApp CenitShared CenitWidgets
 

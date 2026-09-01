@@ -123,16 +123,16 @@ Tabla humana (resumen) — la verdad máquina-legible es el bloque JSON de abajo
 | Regla | pre-commit | verify quick | design-lint (CI) |
 |---|---|---|---|
 | no-hex | staged (todos) | changed (todos) | árbol (raíces default) |
-| no-adhoc-font / no-radius-literal / no-opacity-literal (trinquete) | árbol 4 raíces | árbol 4 raíces | árbol 4 raíces |
+| no-adhoc-font / no-radius-literal / no-opacity-literal (trinquete) | árbol 5 raíces | árbol 5 raíces | árbol 5 raíces |
 | no-emdash-string | staged Screens+Onboarding | changed Screens+Onboarding | árbol Screens+Onboarding |
 | no-raw-shadow | staged Screens | changed Screens | árbol Screens |
 | no-sheet-glass | staged (todos)¹ | changed (todos)¹ | árbol StrandDesign+Cenit+CenitApp+CenitShared+CenitWidgets |
-| no-spacing-literal (trinquete) | árbol 4 raíces | árbol 4 raíces | árbol 4 raíces |
-| no-legacy-api (trinquete) | árbol 7 raíces | árbol 7 raíces | árbol 7 raíces |
-| token-exempt (trinquete) | árbol 7 raíces + StrandDesign | árbol 7 raíces + StrandDesign | árbol 7 raíces + StrandDesign |
-| no-raw-color / no-edgeinsets-literal / no-token-arithmetic (trinquete, FER-276) | árbol 7 raíces | árbol 7 raíces | árbol 7 raíces |
-| no-motion-literal (trinquete, FER-269) | árbol 4 raíces | árbol 4 raíces | árbol 4 raíces |
-| no-dt-cap-adhoc (prohibición pura, FER-269) | árbol 9 raíces UI | árbol 9 raíces UI | árbol 9 raíces UI |
+| no-spacing-literal (trinquete) | árbol 5 raíces | árbol 5 raíces | árbol 5 raíces |
+| no-legacy-api (trinquete) | árbol 8 raíces | árbol 8 raíces | árbol 8 raíces |
+| token-exempt (trinquete) | árbol 8 raíces + StrandDesign | árbol 8 raíces + StrandDesign | árbol 8 raíces + StrandDesign |
+| no-raw-color / no-edgeinsets-literal / no-token-arithmetic (trinquete, FER-276) | árbol 8 raíces | árbol 8 raíces | árbol 8 raíces |
+| no-motion-literal (trinquete, FER-269) | árbol 5 raíces | árbol 5 raíces | árbol 5 raíces |
+| no-dt-cap-adhoc (prohibición pura, FER-269) | árbol 10 raíces UI | árbol 10 raíces UI | árbol 10 raíces UI |
 | monotonía del baseline | — (hook delgado) | espejo vs origin/iOS | job `baseline-monotony` |
 
 ¹ divergencia declarada: local corre sobre los archivos tocados (más estricto en Watch); CI usa las
@@ -143,10 +143,10 @@ raíces explícitas donde vive el defecto (incluye el paquete, excluye CenitWatc
 {
   "baseline_path": "Tools/design-drift-baseline.json",
   "tree_roots": {
-    "spacing": ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App"],
-    "legacy": ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media"],
-    "exempt": ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "Packages/StrandDesign/Sources"],
-    "dtcap": ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "CenitWidgets", "CenitWatch"],
+    "spacing": ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "CenitApp"],
+    "legacy": ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "CenitApp"],
+    "exempt": ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "Packages/StrandDesign/Sources", "CenitApp"],
+    "dtcap": ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "CenitWidgets", "CenitWatch", "CenitApp"],
     "sheet_glass_ci": ["Packages/StrandDesign/Sources", "Cenit", "CenitApp", "CenitShared", "CenitWidgets"]
   },
   "rules": {

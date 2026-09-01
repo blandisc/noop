@@ -293,3 +293,66 @@ class Fase3Rules(unittest.TestCase):
         self.assertTrue(drift.RE_DT_CAP.search(".dynamicTypeSize(.accessibility3)"))
         self.assertTrue(drift.RE_DT_CAP.search(".dynamicTypeSize(...DynamicTypeSize.large)"))
         self.assertFalse(drift.RE_DT_CAP.search(".dynamicTypeSize(.accessibility5)"))
+
+
+class DefaultRootsByRule(unittest.TestCase):
+    """FER-282 — sin roots CLI, cada regla usa la matriz del workflow (no la lista plana vieja)."""
+
+    def test_bare_run_does_not_scan_widgets_for_spacing(self):
+        # no-spacing-literal en CI nunca recibe CenitWidgets; un hit ahí no debe salir en
+        # la corrida default (antes DEFAULT_ROOTS plano lo pintaba de rojo).
+        with tempfile.TemporaryDirectory() as tmp:
+            cwd = os.getcwd()
+            try:
+                os.chdir(tmp)
+                _swift(tmp, "CenitWidgets/RestLiveActivity.swift", ["VStack(spacing: 14) {}"])
+                _swift(tmp, "Cenit/Screens/Clean.swift", ["Text(\"hola\")"])
+                # Empty baseline so any hit fails.
+                baseline = os.path.join(tmp, "baseline.json")
+                with open(baseline, "w", encoding="utf-8") as fh:
+                    json.dump({}, fh)
+                rc = drift.main(["--rules", "no-spacing-literal", "--baseline", baseline])
+                self.assertEqual(rc, 0, "CenitWidgets no está en los roots default de no-spacing-literal")
+            finally:
+                os.chdir(cwd)
+
+    def test_bare_run_does_not_scan_app_for_emdash(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cwd = os.getcwd()
+            try:
+                os.chdir(tmp)
+                _swift(tmp, "Cenit/App/X.swift", ['Text("foo — bar")'])
+                _swift(tmp, "Cenit/Screens/Clean.swift", ["Text(\"hola\")"])
+                baseline = os.path.join(tmp, "baseline.json")
+                with open(baseline, "w", encoding="utf-8") as fh:
+                    json.dump({}, fh)
+                rc = drift.main(["--rules", "no-emdash-string", "--baseline", baseline])
+                self.assertEqual(rc, 0, "Cenit/App no está en los roots default de no-emdash-string")
+            finally:
+                os.chdir(cwd)
+
+    def test_explicit_roots_still_apply_to_all_requested_rules(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src = _swift(tmp, "CenitWidgets/X.swift", [
+                "VStack(spacing: 14) {}",
+                'Text("foo — bar")',
+            ])
+            hits = drift.check([src], ["no-spacing-literal", "no-emdash-string"])
+            # check() itself doesn't know about DEFAULT_ROOTS_BY_RULE — explicit paths win.
+            rules = sorted({r for _p, _i, r, _s in hits})
+            self.assertEqual(rules, ["no-emdash-string", "no-spacing-literal"])
+            # And main() with explicit roots applies them to every rule in the invocation.
+            cwd = os.getcwd()
+            try:
+                os.chdir(tmp)
+                baseline = os.path.join(tmp, "baseline.json")
+                with open(baseline, "w", encoding="utf-8") as fh:
+                    json.dump({}, fh)
+                rc = drift.main([
+                    "--rules", "no-spacing-literal,no-emdash-string",
+                    "--baseline", baseline,
+                    "CenitWidgets",
+                ])
+                self.assertEqual(rc, 1, "roots explícitos cubren todas las rules de la invocación")
+            finally:
+                os.chdir(cwd)

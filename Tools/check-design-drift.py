@@ -40,12 +40,45 @@ Exits non-zero on any hit.
 """
 import re, sys, os, json
 
-DEFAULT_ROOTS = ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "CenitWidgets", "CenitWatch"]
+# Broad default list — used by `no-hex` (workflow invokes it with no explicit roots) and as
+# fallback for any rule missing from DEFAULT_ROOTS_BY_RULE. Includes CenitApp (FER-282).
+DEFAULT_ROOTS = [
+    "Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App",
+    "CenitApp", "CenitWidgets", "CenitWatch",
+]
 DESIGN_PKG = "Packages/StrandDesign"
 EXEMPT = re.compile(r"//\s*token-exempt\b")
 
 ALL_RULES = ["no-hex", "no-adhoc-font", "no-radius-literal", "no-opacity-literal", "no-emdash-string", "no-raw-shadow", "no-sheet-glass", "no-spacing-literal", "no-legacy-api", "token-exempt", "no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic", "no-motion-literal", "no-dt-cap-adhoc"]
 
+# Per-rule default roots — mirrors `.github/workflows/design-lint.yml` exactly (FER-282).
+# A bare `python3 Tools/check-design-drift.py --baseline …` (no roots) must not paint red on
+# files/roots CI never scans for that rule (e.g. no-spacing-literal over CenitWidgets).
+_ROOTS_FONT_RADIUS_OPACITY = ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "CenitApp"]
+_ROOTS_ANTI_EVASION = ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "CenitApp"]
+_ROOTS_SPACING_MOTION = ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "CenitApp"]
+_ROOTS_DT = ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "CenitWidgets", "CenitWatch", "CenitApp"]
+_ROOTS_LEGACY = ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "CenitApp"]
+_ROOTS_TOKEN_EXEMPT = ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "Packages/StrandDesign/Sources", "CenitApp"]
+_ROOTS_SHEET_GLASS = ["Packages/StrandDesign/Sources", "Cenit", "CenitApp", "CenitShared", "CenitWidgets"]
+
+DEFAULT_ROOTS_BY_RULE = {
+    "no-hex": list(DEFAULT_ROOTS),
+    "no-adhoc-font": list(_ROOTS_FONT_RADIUS_OPACITY),
+    "no-radius-literal": list(_ROOTS_FONT_RADIUS_OPACITY),
+    "no-opacity-literal": list(_ROOTS_FONT_RADIUS_OPACITY),
+    "no-raw-color": list(_ROOTS_ANTI_EVASION),
+    "no-edgeinsets-literal": list(_ROOTS_ANTI_EVASION),
+    "no-token-arithmetic": list(_ROOTS_ANTI_EVASION),
+    "no-emdash-string": ["Cenit/Screens", "Cenit/Onboarding"],
+    "no-raw-shadow": ["Cenit/Screens"],
+    "no-spacing-literal": list(_ROOTS_SPACING_MOTION),
+    "no-motion-literal": list(_ROOTS_SPACING_MOTION),
+    "no-dt-cap-adhoc": list(_ROOTS_DT),
+    "no-legacy-api": list(_ROOTS_LEGACY),
+    "token-exempt": list(_ROOTS_TOKEN_EXEMPT),
+    "no-sheet-glass": list(_ROOTS_SHEET_GLASS),
+}
 # no-emdash-string: an em-dash (—, U+2014) inside a user-facing Swift string literal. ADN copy rule
 # (FER-878): on-screen copy uses «:», «·» or a comma, never an em-dash. Scoped to STRING LITERALS so the
 # thousands of legitimate em-dashes in comments/doc-comments are ignored, and the bare «—» no-data
@@ -318,9 +351,24 @@ def main(argv):
     if unknown:
         print(f"unknown rule(s): {', '.join(unknown)} (known: {', '.join(ALL_RULES)})")
         return 2
-    roots = files or DEFAULT_ROOTS
-    hits = check(roots, rules)
-    walked = {_key(p) for p in iter_swift_files(roots)}
+    # Explicit CLI roots (CI per-step, pre-commit paths) apply to every requested rule —
+    # same as before. With no roots, group by DEFAULT_ROOTS_BY_RULE so a bare local run
+    # matches the workflow matrix (FER-282).
+    if files:
+        root_groups = [(files, rules)]
+        roots_label = files
+    else:
+        grouped = {}
+        for rule in rules:
+            key = tuple(DEFAULT_ROOTS_BY_RULE.get(rule, DEFAULT_ROOTS))
+            grouped.setdefault(key, []).append(rule)
+        root_groups = [(list(roots), group_rules) for roots, group_rules in grouped.items()]
+        roots_label = sorted({r for roots, _ in root_groups for r in roots})
+    hits = []
+    walked = set()
+    for group_roots, group_rules in root_groups:
+        hits.extend(check(group_roots, group_rules))
+        walked |= {_key(p) for p in iter_swift_files(group_roots)}
     if write_baseline:
         # Merge-write (FER-263), per FILE and not just per rule: a partial scan re-records only the
         # files it actually walked; budgets of un-walked files survive, deleted files drop out, and a
@@ -373,7 +421,7 @@ def main(argv):
         if baseline_path:
             print(f"   (these are ABOVE the debt {baseline_path} grandfathers — the baseline never grows)")
         return 1
-    print(f"✅ no design drift ({', '.join(rules)}) in {', '.join(roots)}")
+    print(f"✅ no design drift ({', '.join(rules)}) in {', '.join(roots_label)}")
     for rule, f, left in sorted(stale):
         print(f"   ↓ {f}: {left} fewer {rule} — re-record with --write-baseline {baseline_path}")
     return 0
