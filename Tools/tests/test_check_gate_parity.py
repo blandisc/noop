@@ -97,6 +97,28 @@ class GateParity(unittest.TestCase):
             "python3 Tools/check-design-drift.py --rules=no-hex --baseline=Tools/x.json Cenit/App")
         self.assertEqual(invs, [(["no-hex"], "Tools/x.json", ["Cenit/App"], False)])
 
+    def test_10_senuelo_en_name_de_yaml_ya_no_existe_para_el_parser(self):
+        # FER-272: el YAML se parsea como YAML — un name: con la invocación canónica no es run:.
+        with tempfile.TemporaryDirectory() as tmp:
+            _copy_tree(tmp)
+            _mutate(tmp, ".github/workflows/design-lint.yml",
+                    "run: python3 Tools/check-design-drift.py --rules no-raw-shadow Cenit/Screens",
+                    "run: python3 Tools/check-design-drift.py --rules no-raw-shadow Cenit/Onboarding")
+            _mutate(tmp, ".github/workflows/design-lint.yml",
+                    "      - name: Design-drift linter — no raw shadow, use StrandElevation (migrated screens)",
+                    "      - name: python3 Tools/check-design-drift.py --rules no-raw-shadow Cenit/Screens")
+            problems = parity.check(tmp)
+            self.assertTrue(any("no-raw-shadow" in p for p in problems),
+                            f"el name-señuelo no debe satisfacer la raíz declarada: {problems}")
+
+    def test_11_yaml_roto_falla_cerrado(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            _copy_tree(tmp)
+            p = os.path.join(tmp, ".github/workflows/design-lint.yml")
+            open(p, "a", encoding="utf-8").write("\n\t- esto: [no cierra\n")
+            problems = parity.check(tmp)
+            self.assertTrue(any("fail-closed" in p2 for p2 in problems), problems)
+
     def test_9_all_rules_no_literal_falla_cerrado(self):
         with tempfile.TemporaryDirectory() as tmp:
             _copy_tree(tmp)
