@@ -65,6 +65,9 @@ class LegacyApiRule(unittest.TestCase):
             ".paperMenu(isPresented: $show, items: items)",
             "InstrumentoSectionBand(\"By sport\")",
             "view.instrumentoTheme(.dia)",
+            "InstrumentoType.titulo",
+            "Text(\"x\").instrumentoOverline(theme)",
+            ".instrumentoConfirm(",
             "StrandPalette.ink",
         ]:
             self.assertTrue(drift.RE_LEGACY_API.search(line), line)
@@ -74,6 +77,8 @@ class LegacyApiRule(unittest.TestCase):
             "InstrumentoThemeEngine.shared",   # \b guard: longer identifier is a different symbol
             "LiquidColor.hierro",
             "liquidGlass(.superficieSolida)",
+            ".liquidKicker()",
+            "InstrumentoTypeface",
         ]:
             self.assertFalse(drift.RE_LEGACY_API.search(line), line)
 

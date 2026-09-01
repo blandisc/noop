@@ -108,6 +108,11 @@ RE_LEGACY_API = re.compile(
     r"|PaperMenu|PaperMenuItem|PaperStepper|SectionBand|InstrumentoSectionBand|StrandPalette)\b"
     r"|\.instrumentoTheme\("
     r"|\.paperMenu\("
+    # FER-280·1b — el contrabando tipográfico que la auditoría B2 midió fuera del gate:
+    # el sistema de tipos Instrumento (130 usos) y sus helpers de composición. `theme.*`
+    # queda al censo (regex ambiguo). instrumentoCard tiene 0 usos: prohibición gratis.
+    r"|\bInstrumentoType\b"
+    r"|\.instrumento(?:Overline|OverlineProminent|Confirm|Hero|Input|Card)\("
 )
 
 # FER-276 — reglas anti-evasión del colador del censo (CENSO.md §1). Solo las regex-ables con
