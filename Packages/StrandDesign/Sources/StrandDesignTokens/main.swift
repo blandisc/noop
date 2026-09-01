@@ -527,6 +527,15 @@ public let catalogEntries: [CatalogEntry] = [
                  archivo: "LiquidGlass/LiquidStatePill.swift",
                  cuandoUsarlo: "Estado vivo/listo sobre cristal (`.pastillaSolida`) o chip de valencia Δ% — sustituye `statusPill` a mano y chips de signo.",
                  cuandoNo: "No pastilla Instrumento de chrome (`StatePill`); no procedencia (`LiquidOrigenChip`/`SourceBadge`); no filtro removible (`LiquidChipSeleccion`)."),
+    // —— FER-280 · piezas que matan clases (ola 2q · avisos) ——
+    CatalogEntry(rol: "Toast de deshacer", simbolo: "UndoToast",
+                 archivo: "LiquidGlass/UndoToast.swift",
+                 cuandoUsarlo: "Snack de tinta «X borrado · Deshacer» tras un delete reversible (rutina/carpeta/sesión) — receta de WeeklyPlanEditor.",
+                 cuandoNo: "No para error de escritura (usa `.saveErrorToast`); no aviso Liquid de lectura (usa `LiquidAviso`); no confirmación (usa `.instrumentoConfirm`)."),
+    CatalogEntry(rol: "Aviso Liquid", simbolo: "LiquidAviso",
+                 archivo: "LiquidGlass/LiquidAviso.swift",
+                 cuandoUsarlo: "Heads-up / desconexión / nudge en pantalla Liquid — `LiquidPatternBlock` + `liquidTarjetaSeccion` (receta HealthAlertBanner); icono/CTA opcionales.",
+                 cuandoNo: "No snack de deshacer (`UndoToast`); no error de escritura (`.saveErrorToast`); no banner Instrumento de Hoy aún sin migrar (`TodayBanner`)."),
 ]
 
 func catalogoTable() -> String {
