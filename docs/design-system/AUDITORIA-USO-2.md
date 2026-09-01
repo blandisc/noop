@@ -166,7 +166,7 @@ Además del par **decidido** `seccionCanto` / `filaRespiro` / `rowVPad` (misma c
 
 #### C4-5 · BAJO — Huérfanos ya reportados en Auditoría C (no re-auditar)
 
-`StrandLayer` (0 usos), `StrandElevation` (casi solo PKG: `TodayBanner.swift:90`, `InputCard.swift:143`). Ruta: dejar morir. Sin hallazgo nuevo.
+Capa z-index huérfana (archivo ya ausente del árbol), `StrandElevation` (casi solo PKG: `TodayBanner.swift:90`, `InputCard.swift:143`). Ruta: dejar morir. Sin hallazgo nuevo.
 
 #### C4-6 · BAJO — Tres opacidades «disabled» distintas
 

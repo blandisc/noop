@@ -23,7 +23,7 @@
 - **Source of truth:** the `StrandDesign` Swift package — `Packages/StrandDesign/Sources/StrandDesign/`
 - **Package version:** `0.1.0` (`StrandDesign.version`)
 - **Token entry points (canónicos — Liquid Glass · El Eje):** `LiquidColor` · `LiquidType` · `LiquidSpace` / `LiquidRadius` · `LiquidElevation` · `LiquidMotion` · `LiquidHaptica` · `liquidGlass(_:)` / `liquidGlass(tono:regimen:)` — mapa completo en [`LIQUID-GLASS.md`](LIQUID-GLASS.md); índice de componentes en [`CATALOGO.md`](CATALOGO.md)
-- **Legado en migración (no usar en pantallas nuevas):** `StrandPalette` · `StrandFont` · `StrandMotion` · `CenitMetrics` · `StrandElevation` · `StrandLayer` · `InstrumentoTheme` / `theme.*` — inventario aún en tránsito en **[§8](#8-instrumento-diurno--generación-anterior-absorbida--en-migración)**; `StrandIcon` sigue vivo para glifos (ver [`ICONOGRAFIA.md`](ICONOGRAFIA.md))
+- **Legado en migración (no usar en pantallas nuevas):** `StrandPalette` · `StrandFont` · `StrandMotion` · `CenitMetrics` · `StrandElevation` (retirado — sin consumidores de pantalla activos; solo su definición en `Elevation.swift`) · `InstrumentoTheme` / `theme.*` — inventario aún en tránsito en **[§8](#8-instrumento-diurno--generación-anterior-absorbida--en-migración)**; `StrandIcon` sigue vivo para glifos (ver [`ICONOGRAFIA.md`](ICONOGRAFIA.md))
 - **Machine-readable tokens:** [`tokens/design-tokens.json`](tokens/design-tokens.json) (W3C Design Tokens format)
 - **Assets:** [`assets/`](assets/) — app icons + brand marks
 - **Voz y contenido:** [`LENGUAJE.md`](LENGUAJE.md) — cómo suena el sistema: tono, escritura es-MX, microcopy y glosario canónico (compañero de este doc)
@@ -190,8 +190,9 @@ Helpers:
 
 ## 5. Components
 
-> Every screen composes **only** these. Fixed dimensions + one spacing scale guarantee
-> the uniform look. Don't invent ad-hoc cards.
+> Every screen composes **only** these. Fixed dimensions + the spacing scale (two names,
+> same values: `CenitMetrics` legado and `LiquidSpace` canónico, puente valor-neutral)
+> guarantee the uniform look. Don't invent ad-hoc cards.
 
 ### 5.1 Surfaces & layout
 
