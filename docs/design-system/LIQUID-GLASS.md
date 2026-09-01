@@ -25,9 +25,9 @@
 - **Código canónico:** `Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/` (+
   `Entrenar/` para `LiquidTono` / contenedores mosaico)
 - **Entry points:** `LiquidColor` · `LiquidType` · `LiquidSpace` / `LiquidRadius` ·
-  `LiquidElevation` · `liquidGlass(_:)` (7 recetas de forma) ·
-  `liquidGlass(tono:regimen:)` · `LiquidTono` · `LiquidRegimen` · `LiquidMotion` ·
-  `LiquidIcon`
+  `LiquidElevation` · `LiquidMotion` · `LiquidHaptica` · `liquidGlass(_:)` (7 recetas de
+  forma) · `liquidGlass(tono:regimen:)` · `LiquidTono` · `LiquidRegimen` · `LiquidIcon`
+  · (`Strand*` / `CenitMetrics` = legado en migración — ver `DESIGN.md`)
 - **Pantalla de referencia:** `LiquidHoyScreen` (régimen sobrio) · hub Entrenar
   (`EntrenarModulo` / `EntrenarTile`, régimen mosaico por construcción)
 - **Relación con Instrumento:** marco retirado, en migración. Las pantallas/componentes de
@@ -78,10 +78,11 @@ handoff apilando líneas con `displayXLLineSpacing` (−17) y `cuerpo` aproxima 
 
 Escala cerrada base 4 con medios pasos: `s050`=2 · `s100`=4 · `s150`=6 · `s200`=8 · `s300`=12 ·
 `s400`=16 · `s550`=22 (**margen H de pantalla**) · `s800`=32 · `s1400`=56 (**safe-area top**);
-dock: `dockSide`=16, `dockBottom`=14. `ecosistemaAlto`=324 (la zona del héroe FER-10; sustituye a `senalGap`/`senalesAlto`, retirados con la fila de orbes).
+dock: `dockSide`=16, `dockBottom`=−22. `ecosistemaAlto`=320 (la zona del héroe FER-10; sustituye a `senalGap`/`senalesAlto`, retirados con la fila de orbes).
 
-Cinco radios, ninguno más: `control`=12 · `tarjeta`=18 · `hoja`=28 (reservado sheets) ·
-`pastilla`=999 (`Capsule`) · orbe=50 % (`Circle`). **Un radio nuevo es un cambio al sistema.**
+Radios canónicos (`LiquidRadius`): `hairline`=0.5 · `chip`=8 · `control`=12 · `tarjeta`=18 ·
+`hoja`=28 (reservado sheets) · `pastilla`=999 (`Capsule`) · orbe=50 % (`Circle`). **Un radio
+nuevo es un cambio al sistema.**
 
 ## 4. Vidrio — dos puertas (forma + tono)
 
@@ -154,7 +155,7 @@ propio es blanco. Plan B si el vidrio real no sostiene 60 fps sobre Metal: sóli
 
 | | Tokens |
 |---|---|
-| Duraciones | `instant` 120 ms · `quick` 240 ms · `gentle` 420 ms · `sheetDuration` 560 ms · `flowPeriod` 9 s · `driftPeriods` 16–26 s |
+| Duraciones | `instant` 120 ms · `quick` 240 ms · `gentle` 420 ms · `sheetDuration` 560 ms · `flowPeriod` 6 s · `driftPeriods` 16–26 s |
 | Easings | `glassOut(_:)` cubic-bezier(0.2, 0.6, 0.2, 1) · `glassSpring(_:)` (0.34, 1.4, 0.4, 1) · `ambient(_:)` ease-in-out · `flowLinear(_:)` linear (SOLO pulsos que viajan) |
 
 Recetas (las pantallas solo consumen esto):
@@ -167,11 +168,11 @@ Recetas (las pantallas solo consumen esto):
 - **ring progress** — `ringProgress` (gentle): SignalOrb y el knob de CargaBar animan a su
   valor al entrar, con `Shape.trim` / `animatableData` — nunca Core Animation.
 - **drift** — `driftProgress(time:period:reverse:)` sobre `TimelineView`: orbes de fondo,
-  translate(28, 20) + scale 1.1, alternate, 16–26 s. Nunca por debajo de 9 s.
-- **flow** — `flowPulseProgress(time:delay:)`: el pulso viaja el cable cada 9 s (delays
-  0/0.8/1.6) dibujado con `trim`. *Desviación deliberada:* el `stroke-dash` animado del
-  prototipo se reemplazó por `trim` — el dash de CoreGraphics renderea segmentos falsos
-  sobre estas béziers y `trim` es la gramática nativa equivalente.
+  translate(28, 20) + scale 1.1, alternate, 16–26 s. Nunca por debajo del piso del rango.
+- **flow** — `flowPulseProgress(time:delay:)`: el pulso viaja el cable cada `flowPeriod`
+  (6 s; delays 0/0.8/1.6) dibujado con `trim`. *Desviación deliberada:* el `stroke-dash`
+  animado del prototipo se reemplazó por `trim` — el dash de CoreGraphics renderea
+  segmentos falsos sobre estas béziers y `trim` es la gramática nativa equivalente.
 
 - **Ecosistema (FER-10)** — `LiquidEcosistemaMotion` + `EcosistemaSimulacion` (física pura,
   testeable): **fusión** (viaje 1.55 s back-out s=1.35, stretch direccional 16 %, destello con
