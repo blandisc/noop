@@ -195,7 +195,8 @@ struct ExerciseLibraryScreen: View {
                 selection.wrappedValue = opt
             }
         }
-        return Button { isPresented.wrappedValue = true } label: {
+        return OutlineCapsule(theme: theme, size: .md, filled: active != nil,
+                              action: { isPresented.wrappedValue = true }) {
             HStack(spacing: CenitMetrics.space1) {
                 Text(active.map(label) ?? title)
                     .font(StrandFont.subhead)
@@ -203,12 +204,7 @@ struct ExerciseLibraryScreen: View {
                 StrandIcon.down.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                     .foregroundStyle(active == nil ? theme.inkTertiary : theme.paper)
             }
-            .padding(.horizontal, CenitMetrics.gap).padding(.vertical, 6)  // token-exempt: chip 6pt del handoff
-            .background(active == nil ? Color.clear : theme.ink,
-                        in: Capsule(style: .continuous))
-            .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: active == nil ? 1 : 0))
         }
-        .buttonStyle(EntrenarPressStyle())
         // FER-121: el chip visible mide ~28pt de alto; el toque real crece a 44 (HIG) SOLO en
         // vertical (mismo truco que `PaperStepper.hitTarget`, FER-947 en StrandDesign) para no
         // invadir al chip vecino del mismo renglón.
