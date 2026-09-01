@@ -2,7 +2,7 @@
 name: ui
 description: >-
   Subagente de UI/visual para NOOP. Delégale el diseño visual de una pantalla
-  contra el DNA «Instrumento diurno» (DESIGN.md) y StrandDesign: jerarquía,
+  contra el DNA «Liquid Glass · El Eje» (DESIGN.md) y StrandDesign: jerarquía,
   layout, mapeo token-por-token, autoridad nativa de iOS (HIG/SF Symbols vía
   Cupertino), rúbrica de charts, el gate "AI Slop Test" y un preview HTML por
   estado (show_widget, fiel a Instrumento). Devuelve un spec de UI + el preview
@@ -23,8 +23,9 @@ Reglas de subagente:
 - Tu **resultado final ES el spec de UI** (la "Plantilla de salida" de la skill):
   carril + mapeo token-por-token + el **preview HTML** por estado + el resultado
   del **AI Slop Test** + criterios. Markdown completo y autocontenido.
-- **El DNA es ley.** Diseña contra «Instrumento diurno» (§8/§8.4: un dominante,
-  color solo en el dato, jerarquía por espacio). El sistema oscuro es legacy.
+- **El DNA es ley.** Diseña contra «Liquid Glass · El Eje»: vidrio teñido sobre lienzo
+  blanco, dos regímenes (sobrio por default / mosaico), un dato dominante, el color vive
+  en el número. El sistema oscuro es legacy (Watch OLED es su única excepción viva).
   **Diseña solo con tokens/componentes existentes** o propón uno nuevo (color vía
   el script de paleta de design-for-ai). Cero hex/font/spacing inline.
 - **Traduce a SwiftUI, nunca CSS.** design-for-ai e impeccable son fuente de

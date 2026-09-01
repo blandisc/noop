@@ -74,6 +74,22 @@ el mismo PR** que la implementa (una línea basta: fecha, decisión, por qué).
   hace OTRA familia — Grok nunca se auto-revisa. Revierte parcialmente el punto
   «Grok SOLO revisando» del contrato 2026-08-25; la falla de agosto tenía causa
   raíz de tooling (hook-discovery + acceptEdits), resuelta por el wrapper.
+- **2026-08-31 · Reparto afinado: implementa siempre Sonnet o Grok, Grok primero.** Quien
+  teclea es SIEMPRE Sonnet o Grok, con **preferencia a Grok** (más barato, buen implementador,
+  otra familia de modelos). **El carril pesado-delicado** (BLE/protocolo, migración DB,
+  motor/mates, concurrencia, invariantes, safe-trim) **se queda en Claude** — esto CONFIRMA el
+  2026-08-27, no lo revierte. **DeepSeek sale del reparto por defecto**: deja de ser carril
+  estándar y queda como opción experimental solo si el dueño lo pide (`deepseek-lane.sh` sigue
+  vivo). Afina el 2026-08-27; se implementa en la skill `/orquesta`.
+- **2026-08-31 · Dos agentes nuevos + retro que aprende sin frenar.** (a) `criterio` —
+  subagente-espejo del dueño (lee DECISIONS.md + CLAUDE.md + memoria) que el loop consulta para
+  dudas de gusto reversibles en vez de adivinar o frenar; marca 🚩 lo que sí requiere al dueño.
+  (b) `componente` — subagente-autor del sistema de diseño: crea la pieza nueva en `StrandDesign`
+  (verifica CATÁLOGO, preview + OK, `#Preview`, regenera CATÁLOGO/CENSO) en vez de inventarla
+  inline. (c) `retro` — Fase 5 de `/orquesta`, **post-entrega y en background, NUNCA gate**: el
+  código se entrega y se anuncia hecho ANTES de retro. Destila aprendizajes con **vara alta**
+  (general + accionable + nuevo), prefiere gate/lint sobre nota, cap de 3, y descartar es lo
+  sano. Objetivo: hacer de `/orquesta` un loop que mejora sin acumular basura ni ralentizarse.
 - **2026-08-26 · Build del iPhone:** sigue siendo manual y al ritmo del dueño — no se
   agenda ni se automatiza.
 - **2026-08-30 · El build del iPhone es OPCIONAL, no un paso del flujo (aclara 2026-08-26).**
