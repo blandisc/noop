@@ -45,7 +45,7 @@ public enum LiquidMotion {
     /// 350 ms — crossfade de los gates de arranque (onboarding completado, términos aceptados).
     /// Censo FER-269 (2 sitios).
     public static let measured: Double = 0.35
-    /// 9 s — pulsos por cables, dashes.
+    /// 6 s — pulsos por cables, dashes.
     public static let flowPeriod: Double = 6
     /// 16–26 s — orbes de fondo (16, 21, 24 y 26 s usados en los ensambles).
     public static let driftPeriods: ClosedRange<Double> = 16...26
@@ -241,7 +241,7 @@ public enum LiquidMotion {
     public static let driftScaleMax: CGFloat = 1.1
 
     /// Progreso 0–1 del pulso que viaja por un cable: un recorrido completo cada
-    /// `flowPeriod` (9 s), lineal y continuo, con el delay de su cable (0 / 0.8 / 1.6).
+    /// `flowPeriod` (6 s), lineal y continuo, con el delay de su cable (0 / 0.8 / 1.6).
     /// Es el equivalente en `trim` del `flowDash` de CSS (dash 2.5/93.5 → −96); en
     /// SwiftUI el pulso se dibuja con `Shape.trim`, no con stroke-dash.
     public static func flowPulseProgress(time t: TimeInterval, delay: Double = 0) -> Double {

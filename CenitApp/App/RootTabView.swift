@@ -170,7 +170,7 @@ struct RootTabView: View {
                         .pantallaFondo()
                         .barReservation(barHeight)
                         .navigationBarTitleDisplayMode(.inline)
-                        .toolbarBackground(InstrumentoTheme.base.paper, for: .navigationBar)
+                        .toolbarBackground(LiquidColor.papelAlto, for: .navigationBar)
                 }
         }
         .toolbar(.hidden, for: .tabBar)
@@ -206,7 +206,7 @@ struct RootTabView: View {
         // `.tint` no longer paints the tab bar (it's hidden below; the custom
         // `InstrumentTabBar` sets its own ink), but it still tints links/controls
         // inside the screens — kept for those.
-        .tint(StrandPalette.accent)
+        .tint(LiquidColor.verdePrimario)
         // The «Barra de instrumento» (FER-163): the native bar is hidden per page
         // (see `lazyTab` and the per-hub NavigationStacks) and this custom bar takes its place.
         //
@@ -269,7 +269,7 @@ struct RootTabView: View {
         // entrenando»/«Descartar sesión» — no «Cancelar»/«Descartar» a secas — porque `ConfirmCard`
         // (StrandDesign, FER-836) documenta como ley que esos dos genéricos no existen en este
         // sistema; cada acción nombra lo que hace.
-        .instrumentoConfirm(
+        .liquidConfirm(
             isPresented: $confirmDiscardSession,
             title: String(localized: "Discard the workout?"),
             context: String(localized: "SESSION · IN PROGRESS"),
@@ -281,8 +281,8 @@ struct RootTabView: View {
                 }
             ]
         )
-        .animation(StrandMotion.gentle, value: appModel.strengthSheetPresented)
-        .animation(StrandMotion.gentle, value: appModel.strengthSession == nil)
+        .animation(LiquidMotion.suave, value: appModel.strengthSheetPresented)
+        .animation(LiquidMotion.suave, value: appModel.strengthSession == nil)
         // The guided strength session (FER-347/716): a full-screen cover so it covers the dock with no
         // grabber, opened from any tab. The session lives in AppModel, so dismissing the cover only hides
         // it (the pill re-opens); the summary is ended by `closeStrengthSummary` on its «Listo».
@@ -434,7 +434,7 @@ struct RootTabView: View {
             .pantallaFondo()
             .barReservation(barHeight)
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(InstrumentoTheme.base.paper, for: .navigationBar)
+            .toolbarBackground(LiquidColor.papelAlto, for: .navigationBar)
             .toolbarColorScheme(.light, for: .navigationBar)
     }
 
@@ -526,7 +526,7 @@ private extension View {
     /// (where the inset reaches scroll views), never on the `TabView` — see
     /// `RootTabView.body`.
     func barReservation(_ height: CGFloat) -> some View {
-        safeAreaInset(edge: .bottom, spacing: 0) {
+        safeAreaInset(edge: .bottom, spacing: .zero) {
             Color.clear.frame(height: height)
         }
     }
@@ -542,9 +542,11 @@ private struct ActiveSessionPillHost: View {
     /// Decisión Fer (2026-07-16): el ✕ del pill DESCARTA — destructivo, así que siempre confirma.
     /// El ConfirmCard vive en el RootTabView (pantalla completa); aquí solo se dispara.
     @Binding var confirmDiscard: Bool
+    /// SessionPill still takes the Instrumento theme; read it from the environment so this
+    /// file never spells `InstrumentoTheme` (no-legacy-api, FER-282).
+    @Environment(\.instrumentoTheme) private var theme
     var body: some View {
         if let session = model.strengthSession {
-            let theme = InstrumentoTheme.base
             TimelineView(.periodic(from: .now, by: 1)) { context in
                 // FER-952: pause-aware clock (the raw now−start kept ticking while paused).
                 let elapsed = SessionClock.format(session.elapsedSeconds(now: context.date))
@@ -562,7 +564,7 @@ private struct ActiveSessionPillHost: View {
                     bpm: model.watchBpm,
                     detail: detail,
                     paused: session.paused,
-                    hue: theme.dataSleep,
+                    hue: LiquidColor.indigo,
                     theme: theme,
                     accessibilityLabel: pillLabel(session.routineName, elapsed, model.watchBpm),
                     accessibilityHint: Text("Returns to the session"),

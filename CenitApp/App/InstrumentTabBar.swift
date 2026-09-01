@@ -57,10 +57,10 @@ struct InstrumentTabBar<Tag: Hashable>: View {
     private var nowDotColor: Color { theme.dataRecovery }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 0) {
+        HStack(alignment: .top, spacing: .zero) {
             ForEach(items, id: \.tag) { item in tab(item) }
         }
-        .padding(.top, 8)
+        .padding(.top, LiquidSpace.s200)
         // Baja el contenido de la barra ~10pt hacia la zona del home-indicator (FER-490): los iconos/labels
         // se apoyaban arriba y dejaban un hueco vacío grande debajo, así que la barra «se veía muy arriba».
         // El padding negativo reduce la altura medida (`BarHeightKey`) → la reserva por pestaña (`barReservation`)
@@ -77,8 +77,8 @@ struct InstrumentTabBar<Tag: Hashable>: View {
             }
             .ignoresSafeArea(edges: .bottom)
         }
-        .strandAnimation(StrandMotion.interactive, value: isLight)
-        .strandAnimation(StrandMotion.interactive, value: selection)
+        .strandAnimation(LiquidMotion.toque, value: isLight)
+        .strandAnimation(LiquidMotion.toque, value: selection)
     }
 
     private func tab(_ item: Item) -> some View {
@@ -87,7 +87,7 @@ struct InstrumentTabBar<Tag: Hashable>: View {
         return Button {
             selection = item.tag
         } label: {
-            VStack(spacing: 5) {
+            VStack(spacing: LiquidSpace.s125) {
                 glyph(item.icon, ink: ink).frame(height: 23)
                 // `StrandFont.footnote` (11pt) is the app's quiet-label token; the
                 // whole app is fixed-size, so the bar matches it and degrades with
@@ -112,15 +112,19 @@ struct InstrumentTabBar<Tag: Hashable>: View {
         switch icon {
         case .system(let name):
             Image(systemName: name)
-                .font(.system(size: 21, weight: .regular))
+                // StrandFont.tabTitle is 21pt (semibold); .weight(.regular) keeps the dock glyph
+                // at the same size/weight as before — no LiquidType/StrandFont token is 21/regular.
+                .font(StrandFont.tabTitle.weight(.regular))
                 .symbolRenderingMode(.monochrome)
                 .foregroundStyle(ink)
         case .dial:
             DialTabGlyph(size: 23, color: ink)
         case .linkedCircles:
-            PatronesGlyph(color: ink, lineWidth: 1.9).frame(width: 22, height: 22)
+            // Default lineWidth is 1.9 — omit the literal (no-spacing-literal).
+            PatronesGlyph(color: ink).frame(width: 22, height: 22)
         case .curveNodes:
-            TendenciasGlyph(color: ink, lineWidth: 1.8).frame(width: 23, height: 23)
+            // Default lineWidth is 1.8 — omit the literal (no-spacing-literal).
+            TendenciasGlyph(color: ink).frame(width: 23, height: 23)
         }
     }
 }
@@ -142,7 +146,7 @@ private struct NowDot: View {
             .scaleEffect(active ? (breathing ? 1.15 : 0.9) : 0.2)
             .opacity(active ? 1 : 0)
             .animation(animates && active ? StrandMotion.breathe : nil, value: breathing)
-            .animation(StrandMotion.interactive, value: active)
+            .animation(LiquidMotion.toque, value: active)
             .onAppear { breathing = animates }
             .onChange(of: active) { _, now in if now { breathing = animates } }
             .accessibilityHidden(true)

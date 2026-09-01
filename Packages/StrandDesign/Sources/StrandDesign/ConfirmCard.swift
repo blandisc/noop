@@ -59,6 +59,22 @@ public extension View {
             message: message, actions: actions
         ))
     }
+
+    /// Nombre Liquid Glass del mismo modifier (FER-282). Misma implementación que
+    /// `.instrumentoConfirm` — ConfirmCard ya es cristal El Eje (FER-196); el prefijo
+    /// `instrumento*` es el nombre legado del call-site.
+    func liquidConfirm(
+        isPresented: Binding<Bool>,
+        title: String,
+        context: String,
+        message: String? = nil,
+        actions: [InstrumentoConfirmAction]
+    ) -> some View {
+        instrumentoConfirm(
+            isPresented: isPresented, title: title, context: context,
+            message: message, actions: actions
+        )
+    }
 }
 
 private struct InstrumentoConfirmModifier: ViewModifier {
