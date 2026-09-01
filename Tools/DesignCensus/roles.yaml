@@ -1,0 +1,36 @@
+# roles.yaml — el mapa sitio→rol [ETIQUETADO A MANO] (FER-266 §c)
+#
+# El AST no ve roles: `LiquidRadius.tarjeta = 18` y `.modulo = 20` son dos roles que el DNA
+# «Liquid Glass · El Eje» ya separó a propósito — no una colisión. Este archivo es el insumo
+# etiquetado que el árbitro (Arbiter.swift) usa para distinguir «roles distintos, ya nombrados»
+# de «colisión real» (dos+ valores compitiendo por el MISMO sitio sin que ninguno tenga rol).
+#
+# Formato: una línea por rol, `dimension.rol: valor  # contexto`. `contexto` es uno de
+# mosaico | sobrio | watch_oled | global (global = aplica a los tres). Sin contexto → global.
+#
+# Fuente de los valores: Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/LiquidLayout.swift
+# (LiquidRadius, LiquidSpace) — el DNA vigente. Mantenerlo a mano cuando el DNA cambie: el AST no
+# puede inferir "esto es un rol" de un `public static let`, solo que existe.
+
+# --- Radios (LiquidRadius) ---
+radius.hairline: 0.5   # global — antialiasing de trazo, no layout
+radius.control: 12     # global — swatches, chips de día, inputs
+radius.tarjeta: 18     # global — tiles, tarjetas, contenedores de lista
+radius.modulo: 20      # mosaico — módulos de vidrio de «El Tablero»
+radius.hoja: 28        # global — sheets y modales
+
+# --- Espaciado (LiquidSpace, pasos con uso frecuente en calls con `spacing:`/`padding(`) ---
+spacing.s025: 1
+spacing.s050: 2
+spacing.s075: 3
+spacing.s100: 4
+spacing.s125: 5
+spacing.s150: 6
+spacing.s200: 8
+spacing.s225: 9
+spacing.s250: 10
+spacing.s300: 12
+spacing.s400: 16
+spacing.s550: 22
+spacing.s600: 24    # mosaico — margen lateral de «El Tablero»
+spacing.s800: 32
