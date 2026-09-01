@@ -1682,7 +1682,7 @@ struct LiveStrengthSheet: View {
     /// Replaces the retired Diet block (FER-92/E11 already turned Diet into a dead route from Entrenar).
     private func receiptHealthSaved(_ s: StrengthSummary) -> some View {
         HStack(spacing: 6) {
-            Image(systemName: "checkmark.seal.fill")
+            Image(systemName: "checkmark")
                 .font(StrandFont.glyph(.inline, weight: .semibold))
                 .foregroundStyle(theme.dataRecovery)
                 .accessibilityHidden(true)

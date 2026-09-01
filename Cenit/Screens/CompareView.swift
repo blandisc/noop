@@ -355,7 +355,7 @@ struct CompareView: View {
             showPicker = true
         } label: {
             HStack(spacing: LiquidSpace.s150) {
-                Image(systemName: "plus.circle.fill")
+                Image(systemName: "plus")
                     .font(LiquidType.iconSF(size: 14))
                 Text(atMax ? String(localized: "Max 4") : String(localized: "Add metric"))
                     .font(LiquidType.boton)

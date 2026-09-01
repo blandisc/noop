@@ -1624,7 +1624,7 @@ struct WorkoutSessionDetailScreen: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button { showMoreMenu = true } label: {
-                    Image(systemName: "ellipsis.circle").foregroundStyle(theme.ink)
+                    Image(systemName: "ellipsis").foregroundStyle(theme.ink)
                 }
                 .accessibilityLabel(Text("More options"))
                 .paperMenu(isPresented: $showMoreMenu, items: [

@@ -219,7 +219,7 @@ struct ProgressionSetupScreen: View {
     private func connectionBlock(_ text: Text, accented: Bool) -> some View {
         text.font(StrandFont.caption).foregroundStyle(accented ? theme.ink : theme.inkSecondary)
             .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, 13).padding(.vertical, 11)
+            .padding(.horizontal, LiquidChip.compactoHorizontal).padding(.vertical, LiquidChip.compactoVertical)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(theme.surface.opacity(0.001)) // token-exempt: hit-testing dentro del ScrollView
             .background(
