@@ -5,8 +5,7 @@ import SwiftUI
 // The Entrenar flow's non-metric screens (Historial, Rutina de hoy, Detalle de sesión, Editor de
 // descanso) titled themselves four ways: `title1` bare, overline + `title1`, and a raw `groteskScreenTitle`.
 // This is the single header for them: an optional section overline above the session's `groteskScreenTitle`.
-// (Metric screens keep `InstrumentoScreenTitle` with its `MetricGlyph`; this is the sibling for screens
-// that carry no metric icon.) The overline uses the one canonical helper, `instrumentoOverline` (EST-3).
+// The overline uses the one canonical helper, `instrumentoOverline` (EST-3).
 //
 // Takes `Text` for both slots so callers pass a localized key (`Text("Rutina de hoy")`) or a runtime
 // string (`Text(verbatim: routineName)`); the component owns the font, tracking and ink.

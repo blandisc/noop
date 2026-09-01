@@ -443,7 +443,7 @@ public let catalogEntries: [CatalogEntry] = [
     CatalogEntry(rol: "Cabecera de hoja", simbolo: "LiquidSheetHeader",
                  archivo: "LiquidGlass/LiquidSheetHeader.swift",
                  cuandoUsarlo: "El encabezado estándar de cualquier hoja/sheet Liquid (título + cierre).",
-                 cuandoNo: "No para el título en pantalla completa (header propio o `InstrumentoScreenTitle` si aún es Instrumento)."),
+                 cuandoNo: "No para el título en pantalla completa (header propio de la pantalla)."),
     CatalogEntry(rol: "Pie de hoja — método", simbolo: "LiquidMetodo",
                  archivo: "LiquidGlass/LiquidSheetFoot.swift",
                  cuandoUsarlo: "El bloque «cómo se calcula» al pie de una hoja de detalle.",
