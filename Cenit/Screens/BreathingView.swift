@@ -157,11 +157,11 @@ struct BreathingView: View {
 
     private var statusRow: some View {
         HStack(spacing: LiquidSpace.s250) {
-            statusPill(
+            LiquidStatePill(
                 running
                     ? String(localized: "breath.status.live", defaultValue: "Session live")
                     : String(localized: "breath.status.ready", defaultValue: "Ready"),
-                showDot: running)
+                dot: running ? LiquidStatePillMetrics.dotVivoDefault : nil)
 
             Spacer()
 
@@ -176,23 +176,6 @@ struct BreathingView: View {
                     .foregroundStyle(LiquidColor.tinta700)
             }
         }
-    }
-
-    /// Píldora de estado opaca El Eje — `.pastillaSolida` sobre el cristal de hoja.
-    private func statusPill(_ text: String, showDot: Bool) -> some View {
-        HStack(spacing: LiquidSpace.s150) {
-            if showDot {
-                Circle()
-                    .fill(LiquidColor.verdePrimario)
-                    .frame(width: LiquidSpace.s150, height: LiquidSpace.s150)
-            }
-            Text(verbatim: text)
-                .font(LiquidType.captionLectura)
-                .foregroundStyle(LiquidColor.tinta900)
-        }
-        .padding(.horizontal, LiquidSpace.s300)
-        .padding(.vertical, LiquidSpace.s150)
-        .liquidGlass(.pastillaSolida)
     }
 
     // MARK: - Pace selector
