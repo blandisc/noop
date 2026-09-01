@@ -164,11 +164,11 @@ struct HojaTarjetaEjercicio: View {
             }
             .simultaneousGesture(LongPressGesture(minimumDuration: 0.4).onEnded { _ in
                 guard !sheet.locked, item.re.sets.count > 1 else { return }
-                withAnimation(StrandMotion.gentle) { sheet.armedDeleteSetId = setId }
+                withAnimation(LiquidMotion.suave) { sheet.armedDeleteSetId = setId }
             })
             .simultaneousGesture(TapGesture().onEnded {
                 if sheet.armedDeleteSetId != nil {
-                    withAnimation(StrandMotion.gentle) { sheet.armedDeleteSetId = nil }
+                    withAnimation(LiquidMotion.suave) { sheet.armedDeleteSetId = nil }
                 }
             })
             .accessibilityActions {

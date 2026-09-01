@@ -164,6 +164,58 @@ public enum LiquidMotion {
     /// (0.18 s glass-spring; «más responsivo», pedido del dueño /inject).
     public static let selector = glassSpring(selectorDuration)
 
+    // MARK: Puente valor-neutral desde StrandMotion (FER-280·2e)
+    //
+    // Alta mecánica: mismos valores exactos que los presets de `StrandMotion` aún calientes
+    // en `Cenit/**`. Cero rediseño de tempo — solo un dialecto (`LiquidMotion`) y nombres
+    // es-MX por rol. `gentle` (Strand) NO se llama `gentle` aquí: `LiquidMotion.gentle` ya
+    // es la duración 420 ms; el spring de casa para cambios de valor/estado es `suave`.
+    //
+    // Mapa viejo → nuevo (valores congelados):
+    //   StrandMotion.fade         easeInOut(0.30)                         → fundido
+    //   StrandMotion.gentle       spring(response: 0.5, damping: 0.8)      → suave
+    //   StrandMotion.interactive  interactiveSpring(0.28, 0.82, blend 0.1) → toque
+    //   StrandMotion.hero         spring(response: 0.85, damping: 0.85)    → heroe
+    //   StrandMotion.countUp      easeOut(0.75)                           → conteo
+    //   StrandMotion.gated(_:_)   helper Reduce Motion                    → condicionado(_:_:)
+
+    /// 300 ms — fundido estándar de tarjetas / filtros / overlays.
+    /// Origen: `StrandMotion.durationStandard` / `StrandMotion.fade` (Motion.swift).
+    public static let fundidoDuration: Double = 0.30
+
+    /// 750 ms — conteo 0→valor del recibo (una sola vez al guardar).
+    /// Origen: `StrandMotion.countUp` (Motion.swift).
+    public static let conteoDuration: Double = 0.75
+
+    /// `fundido` — ease-in-out 300 ms. Origen: `StrandMotion.fade`.
+    public static let fundido = Animation.easeInOut(duration: fundidoDuration)
+
+    /// `suave` — spring de casa para cambios de valor/estado (hojas, foco, barras).
+    /// Origen: `StrandMotion.gentle` = spring(response: 0.5, dampingFraction: 0.8).
+    /// No se llama `gentle`: ese nombre ya es la duración Liquid de 420 ms.
+    public static let suave = Animation.spring(response: 0.5, dampingFraction: 0.8)
+
+    /// `toque` — interactive spring para manipulación directa (press, selección, drag).
+    /// Origen: `StrandMotion.interactive` =
+    /// interactiveSpring(response: 0.28, dampingFraction: 0.82, blendDuration: 0.1).
+    public static let toque = Animation.interactiveSpring(
+        response: 0.28, dampingFraction: 0.82, blendDuration: 0.1
+    )
+
+    /// `heroe` — spring deliberado para materializar un héroe (p. ej. celebración de import).
+    /// Origen: `StrandMotion.hero` = spring(response: 0.85, dampingFraction: 0.85).
+    public static let heroe = Animation.spring(response: 0.85, dampingFraction: 0.85)
+
+    /// `conteo` — ease-out 750 ms del numeral 0→valor del recibo.
+    /// Origen: `StrandMotion.countUp`.
+    public static let conteo = Animation.easeOut(duration: conteoDuration)
+
+    /// Devuelve `animation`, o `nil` cuando Reduce Motion está activo.
+    /// Origen: `StrandMotion.gated(_:_)` (ReduceMotion.swift).
+    public static func condicionado(_ animation: Animation?, _ reduceMotion: Bool) -> Animation? {
+        reduceMotion ? nil : animation
+    }
+
     // MARK: Springs nombrados (censo FER-278 — mismos response/damping que el literal crudo)
 
     /// Spring del swipe-to-reveal de una fila del plan semanal (abre/cierra el offset al soltar

@@ -20,13 +20,16 @@ public enum StrandMotion {
     // MARK: Spring presets
 
     /// Interactive spring — snappy, for direct manipulation (hover, press, sidebar slide).
+    @available(*, deprecated, message: "usa LiquidMotion.toque (mismo valor; FER-280·2e)")
     public static let interactive = Animation.interactiveSpring(response: 0.28, dampingFraction: 0.82, blendDuration: 0.1)
 
     /// Gentle spring — the house style for value changes (ring draw-in, gauges).
     /// spring(response: 0.5, damping: 0.8) per the brief.
+    @available(*, deprecated, message: "usa LiquidMotion.suave (mismo valor; FER-280·2e)")
     public static let gentle = Animation.spring(response: 0.5, dampingFraction: 0.8)
 
     /// A slower, more deliberate spring for hero transitions (e.g. first ring materialize).
+    @available(*, deprecated, message: "usa LiquidMotion.heroe (mismo valor; FER-280·2e)")
     public static let hero = Animation.spring(response: 0.85, dampingFraction: 0.85)
 
     // MARK: Durations
@@ -54,6 +57,7 @@ public enum StrandMotion {
     public static let pulse = Animation.easeOut(duration: 0.6)
 
     /// Standard fade.
+    @available(*, deprecated, message: "usa LiquidMotion.fundido (mismo valor; FER-280·2e)")
     public static let fade = Animation.easeInOut(duration: durationStandard)
 
     /// Continuous linear spin for indeterminate progress (e.g. the sync dial arc,
@@ -80,6 +84,7 @@ public enum StrandMotion {
 
     /// The receipt's numerals counting 0 → value, ONCE, on save (paired with
     /// `.contentTransition(.numericText())` and an "already-played" flag so re-opening never re-animates).
+    @available(*, deprecated, message: "usa LiquidMotion.conteo (mismo valor; FER-280·2e)")
     public static let countUp = Animation.easeOut(duration: 0.75)
 }
 

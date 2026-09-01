@@ -98,7 +98,7 @@ private struct EdgeSwipeBack: ViewModifier {
                             // trailing slide-out, continuing the motion under the finger (never a snap back).
                             onClose()
                         } else {
-                            withAnimation(StrandMotion.interactive) { dragX = 0 }
+                            withAnimation(LiquidMotion.toque) { dragX = 0 }
                         }
                     }
             )
@@ -335,7 +335,7 @@ private struct CuerpoLanding: View {
                     .zIndex(1)
             }
         }
-        .animation(StrandMotion.interactive, value: detailPresented)
+        .animation(LiquidMotion.toque, value: detailPresented)
         .task(id: repo.refreshSeq) { await loadAll() }
         .sheet(item: $darkSheet) { sheet in darkSheetContent(sheet) }
         .sheet(isPresented: $showCompare) {

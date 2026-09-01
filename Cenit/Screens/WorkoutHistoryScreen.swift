@@ -206,7 +206,7 @@ struct WorkoutHistoryScreen: View {
                         coordinator.bumpReload()
                         // El registro a mano guarda un `WorkoutRow` (aparece bajo «Todo»): si estás en
                         // «Fuerza» al guardar, salta a «Todo» para que la entrada nunca «desaparezca».
-                        withAnimation(StrandMotion.fade) { filtro = .all }
+                        withAnimation(LiquidMotion.fundido) { filtro = .all }
                     } catch {
                         saveError = true
                     }
@@ -267,7 +267,7 @@ struct WorkoutHistoryScreen: View {
     private var segSelection: Binding<SegTab> {
         Binding(
             get: { isStrengthFilter ? .fuerza : .todo },
-            set: { tab in withAnimation(StrandMotion.fade) { filtro = (tab == .fuerza) ? .strength : .all } }
+            set: { tab in withAnimation(LiquidMotion.fundido) { filtro = (tab == .fuerza) ? .strength : .all } }
         )
     }
 
@@ -383,7 +383,7 @@ struct WorkoutHistoryScreen: View {
 
     /// El chip removible del deporte estrechado — tocarlo suelta el filtro de vuelta a «Todo».
     private func sportChip(_ name: String) -> some View {
-        Button { withAnimation(StrandMotion.fade) { filtro = .all } } label: {
+        Button { withAnimation(LiquidMotion.fundido) { filtro = .all } } label: {
             HStack(spacing: 6) {
                 Text(verbatim: WorkoutSource.displaySport(name))
                     .font(StrandFont.caption).foregroundStyle(theme.ink)
@@ -448,14 +448,14 @@ struct WorkoutHistoryScreen: View {
                 if strengthCount > 0 {
                     porDeporteRow(symbol: "dumbbell.fill", name: String(localized: "Strength"),
                                   count: strengthCount) {
-                        withAnimation(StrandMotion.fade) { filtro = .strength }
+                        withAnimation(LiquidMotion.fundido) { filtro = .strength }
                     }
                 }
                 ForEach(sports, id: \.self) { sport in
                     let n = base.filter { if case .cardio(let r) = $0 { return r.sport == sport }; return false }.count
                     porDeporteRow(symbol: WorkoutSource.sfSymbol(for: sport),
                                   name: WorkoutSource.displaySport(sport), count: n) {
-                        withAnimation(StrandMotion.fade) { filtro = .sport(sport) }
+                        withAnimation(LiquidMotion.fundido) { filtro = .sport(sport) }
                     }
                 }
             }
@@ -652,7 +652,7 @@ struct WorkoutHistoryScreen: View {
                         .frame(height: barH)
                         .frame(maxWidth: .infinity)
                         .contentShape(Rectangle())
-                        .onTapGesture { withAnimation(StrandMotion.interactive) { selectedWeek = w.id } }
+                        .onTapGesture { withAnimation(LiquidMotion.toque) { selectedWeek = w.id } }
                 }
             }
             .frame(height: 58, alignment: .bottom)

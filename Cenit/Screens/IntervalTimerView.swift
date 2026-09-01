@@ -444,7 +444,7 @@ struct IntervalTimerView: View {
     }
 
     private func finishSession() {
-        withAnimation(StrandMotion.gated(.snappy, reduceMotion)) {
+        withAnimation(LiquidMotion.condicionado(.snappy, reduceMotion)) {
             phase = .done
             remaining = 0
             running = false

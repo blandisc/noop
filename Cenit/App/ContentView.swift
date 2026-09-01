@@ -164,7 +164,7 @@ struct ContentView: View {
                     }
             }
         }
-        .animation(StrandMotion.fade, value: showRestoreResult)
+        .animation(LiquidMotion.fundido, value: showRestoreResult)
         #endif
         .enableInjection()   // Inject: activa la recarga en caliente para esta vista (no-op en Release)
     }

@@ -3,6 +3,7 @@ import SwiftUI
 public extension StrandMotion {
     /// Returns `animation`, or `nil` when Reduce Motion is on (so callers can pass this
     /// straight into `withAnimation(_:)` or `.animation(_:value:)`).
+    @available(*, deprecated, message: "usa LiquidMotion.condicionado(_:_) (mismo comportamiento; FER-280·2e)")
     static func gated(_ animation: Animation?, _ reduceMotion: Bool) -> Animation? {
         reduceMotion ? nil : animation
     }

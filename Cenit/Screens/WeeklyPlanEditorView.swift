@@ -393,7 +393,7 @@ struct WeeklyPlanEditorView: View {
                             // Handoff `recGrow`: each bar grows from its base on entry, staggered
                             // left→right (150→330 ms). Reduce Motion skips it (bars appear settled).
                             .scaleEffect(y: volumeBarsGrown || reduceMotion ? 1 : 0.001, anchor: .bottom)
-                            .animation(StrandMotion.gentle.delay(0.15 + 0.06 * Double(i)), value: volumeBarsGrown)
+                            .animation(LiquidMotion.suave.delay(0.15 + 0.06 * Double(i)), value: volumeBarsGrown)
                         Text(g.label).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                     }
                 }
@@ -569,7 +569,7 @@ struct WeeklyPlanEditorView: View {
     }
 
     private func toggleCollapse(_ id: String) {
-        withAnimation(StrandMotion.interactive) {
+        withAnimation(LiquidMotion.toque) {
             if collapsedFolders.contains(id) { collapsedFolders.remove(id) } else { collapsedFolders.insert(id) }
         }
     }

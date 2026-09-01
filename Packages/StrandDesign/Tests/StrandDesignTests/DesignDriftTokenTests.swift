@@ -142,6 +142,30 @@ final class DesignDriftTokenTests: XCTestCase {
                        String(describing: Animation.spring(response: 0.15, dampingFraction: 0.35)))
     }
 
+    // FER-280·2e: puente valor-neutral StrandMotion → LiquidMotion (paridad congelada).
+    // Animation no es Equatable; igualdad por descripción del toolchain.
+    func test_strandMotionLiquidMotionParityFrozen() {
+        XCTAssertEqual(LiquidMotion.fundidoDuration, StrandMotion.durationStandard)
+        XCTAssertEqual(LiquidMotion.conteoDuration, 0.75)
+        XCTAssertEqual(String(describing: LiquidMotion.fundido),
+                       String(describing: StrandMotion.fade))
+        XCTAssertEqual(String(describing: LiquidMotion.suave),
+                       String(describing: StrandMotion.gentle))
+        XCTAssertEqual(String(describing: LiquidMotion.toque),
+                       String(describing: StrandMotion.interactive))
+        XCTAssertEqual(String(describing: LiquidMotion.heroe),
+                       String(describing: StrandMotion.hero))
+        XCTAssertEqual(String(describing: LiquidMotion.conteo),
+                       String(describing: StrandMotion.countUp))
+        XCTAssertNil(LiquidMotion.condicionado(.snappy, true))
+        XCTAssertNotNil(LiquidMotion.condicionado(.snappy, false))
+        XCTAssertNil(LiquidMotion.condicionado(nil, false))
+        XCTAssertEqual(
+            String(describing: LiquidMotion.condicionado(.snappy, false)!),
+            String(describing: StrandMotion.gated(.snappy, false)!)
+        )
+    }
+
     // Transiciones nuevas: cada receta debe describir EXACTAMENTE igual que el `AnyTransition`
     // crudo que envuelve.
     func test_movimientoTransicionesMatchRawEquivalents() {

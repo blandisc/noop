@@ -30,7 +30,7 @@ struct PlanAppliedToast: ViewModifier {
                         }
                 }
             }
-            .animation(StrandMotion.fade, value: isPresented)
+            .animation(LiquidMotion.fundido, value: isPresented)
     }
 }
 

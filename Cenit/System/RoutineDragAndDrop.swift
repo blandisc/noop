@@ -55,7 +55,7 @@ extension View {
                             .strokeBorder(active ? theme.hairlineStrong : .clear, lineWidth: 1.5)
                     )
             )
-            .animation(StrandMotion.fade, value: active)
+            .animation(LiquidMotion.fundido, value: active)
             .dropDestination(for: RoutineID.self) { items, _ in
                 guard let first = items.first else { return false }
                 return onDrop(first.id)
