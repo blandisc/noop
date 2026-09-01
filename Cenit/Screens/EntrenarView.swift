@@ -1227,7 +1227,7 @@ private struct EntrenarLanding: View {
             templatesGroup = group
             showTemplates = true
         } label: {
-            // token-exempt: 1 pt es el hairline entre nombre y conteo dentro del chip, más chico
+            // 1 pt es el hairline entre nombre y conteo dentro del chip, más chico
             // que `CenitMetrics.space1` (4). El archivo ya tiene otros gaps sin token.
             VStack(alignment: .leading, spacing: 1) {
                 Text(LocalizedStringKey(name)).font(StrandFont.body).fontWeight(.semibold).foregroundStyle(theme.ink)
