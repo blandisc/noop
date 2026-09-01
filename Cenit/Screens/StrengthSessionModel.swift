@@ -261,9 +261,10 @@ final class StrengthSessionModel: ObservableObject {
     /// When the current rest started — the anchor for `elapsedS` in the HR readiness rule (FER-506). Set
     /// alongside `restEndsAt`; not moved by ±15 so the floor counts from the real start.
     @Published var restStartedAt: Date?
-    /// El inicio del ÚLTIMO descanso que haya arrancado en la sesión — a diferencia de `restStartedAt`,
-    /// NO se limpia al salir del descanso (Nancy · ronda 6): es el ancla de staleness para el inbox de
-    /// la Live Activity. Un toque encolado antes de esta fecha pertenece a un contexto ya cerrado.
+    /// La última vez que una serie cerró su descanso — o lo omitió («Sin descanso»): `startRest` la
+    /// re-arma SIEMPRE, y a diferencia de `restStartedAt` NO se limpia al salir del descanso (Nancy ·
+    /// rondas 6–7). Es el ancla de staleness de los canales durables (inbox de la Live Activity y cola
+    /// del reloj): un toque encolado antes de esta fecha pertenece a un contexto ya cerrado.
     private(set) var lastRestStartedAt: Date?
     /// The HR «ready» target (bpm) for this rest, computed once on entry (FER-495/506). nil = use FER-348's
     /// resting+margin default (when `currentRestMode == .heartRate`).
@@ -948,10 +949,12 @@ final class StrengthSessionModel: ObservableObject {
     // MARK: Rest (fixed — FER-348 adds the HR-driven variant)
 
     func startRest(seconds: Int, now: Date = Date()) {
+        // El ancla se re-arma aunque NO haya descanso («Sin descanso»): cerrar una serie también cierra
+        // el contexto que un toque encolado (Live Activity / reloj) pudo estar viendo (Nancy · ronda 7).
+        lastRestStartedAt = now
         guard seconds > 0 else { phase = .capturing; clearRest(); return }
         restEndsAt = now.addingTimeInterval(TimeInterval(seconds))
         restStartedAt = now
-        lastRestStartedAt = now
         phase = .resting
         reprogramarAviso()
     }

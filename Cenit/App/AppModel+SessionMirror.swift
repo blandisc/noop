@@ -335,8 +335,14 @@ extension AppModel {
     /// both the wrist and the Live Activity. Each case is gated to the phase its wrist affordance lives in:
     /// `completeSet` fires from the capture face (guarded to `.capturing` so a late/queued message can't
     /// double-advance a set mid-rest); skip/adjust apply only while resting, mirroring `applyRestAction`.
-    func applyWatchWorkoutAction(_ action: WatchWorkoutAction, sessionId: String) {
+    func applyWatchWorkoutAction(_ action: WatchWorkoutAction, sessionId: String, requestedAt: Date? = nil) {
         guard let s = strengthSession, s.id == sessionId else { return }
+        // Nancy · ronda 7: `transferUserInfo` es una cola DURABLE — un toque de muñeca hecho fuera de
+        // alcance Bluetooth puede entregarse minutos después, cuando el descanso/serie que la usuaria
+        // veía ya no existe. Mismo candado que el inbox de la Live Activity (ronda 6): si ALGÚN
+        // descanso arrancó después del toque, el toque es de un contexto cerrado y se descarta.
+        // `requestedAt` nil = reloj viejo sin `ts` → sin candado, como antes (degradación honesta).
+        if let requestedAt, let anchor = s.lastRestStartedAt, requestedAt < anchor { return }
         switch action {
         case .completeSet:
             guard s.phase == .capturing else { return }

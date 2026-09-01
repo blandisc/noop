@@ -47,7 +47,7 @@ final class WorkoutMirroringBridge: NSObject, ObservableObject {
     var onWatchWillNotSave: ((_ sessionId: String) -> Void)?
     /// FER-808: the user logged a set / skipped or adjusted a rest from the wrist → apply it to the live
     /// session exactly as the lock-screen actions do (`AppModel` routes to the shared session mutators).
-    var onWatchAction: ((_ sessionId: String, _ action: WatchWorkoutAction) -> Void)?
+    var onWatchAction: ((_ sessionId: String, _ action: WatchWorkoutAction, _ requestedAt: Date?) -> Void)?
     /// FER-810: «Ver recibo en iPhone» from the wrist summary → open the saved workout's history detail.
     var onOpenReceipt: ((_ sessionId: String) -> Void)?
     /// FER-96: «Empezar» tapped on the wrist's idle face, OUTSIDE any session → resolve + start today's
@@ -299,12 +299,12 @@ final class WorkoutMirroringBridge: NSObject, ObservableObject {
         case let .watchWillNotSave(sessionId, reason):
             log.log("Watch won't save \(sessionId, privacy: .public): \(reason.rawValue, privacy: .public)")
             onWatchWillNotSave?(sessionId)
-        case let .completeSet(sessionId):
-            onWatchAction?(sessionId, .completeSet)
-        case let .skipRest(sessionId):
-            onWatchAction?(sessionId, .skipRest)
-        case let .adjustRest(sessionId, deltaS):
-            onWatchAction?(sessionId, .adjustRest(deltaS: deltaS))
+        case let .completeSet(sessionId, ts):
+            onWatchAction?(sessionId, .completeSet, ts)
+        case let .skipRest(sessionId, ts):
+            onWatchAction?(sessionId, .skipRest, ts)
+        case let .adjustRest(sessionId, deltaS, ts):
+            onWatchAction?(sessionId, .adjustRest(deltaS: deltaS), ts)
         case let .openReceipt(sessionId):
             onOpenReceipt?(sessionId)
         case let .watchPulse(bpm):

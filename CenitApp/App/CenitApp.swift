@@ -69,8 +69,8 @@ struct CenitApp: App {
             model?.endStrengthSessionFromWatch(sessionId: sid, save: save)
         }
         // FER-808: wrist-initiated set log / rest skip / ±30 → the same live-session path as the lock screen.
-        mirroring.onWatchAction = { [weak model] sid, action in
-            model?.applyWatchWorkoutAction(action, sessionId: sid)
+        mirroring.onWatchAction = { [weak model] sid, action, requestedAt in
+            model?.applyWatchWorkoutAction(action, sessionId: sid, requestedAt: requestedAt)
         }
         // FER-810: «Ver recibo en iPhone» from the wrist → open the saved workout's history detail.
         mirroring.onOpenReceipt = { [weak model] sid in

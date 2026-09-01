@@ -29,10 +29,10 @@ final class WorkoutMirrorContractTests: XCTestCase {
             .watchDidSaveWorkout(sessionId: "s1", externalUUID: "noop:strength:s1"),
             .watchWillNotSave(sessionId: "s1", reason: .noPermission),
             // FER-808 — wrist-initiated actions (watch → iPhone).
-            .completeSet(sessionId: "s1"),
-            .skipRest(sessionId: "s1"),
-            .adjustRest(sessionId: "s1", deltaS: 30),
-            .adjustRest(sessionId: "s1", deltaS: -30),
+            .completeSet(sessionId: "s1", ts: Date(timeIntervalSince1970: 1_700_000_000)),
+            .skipRest(sessionId: "s1", ts: nil),
+            .adjustRest(sessionId: "s1", deltaS: 30, ts: Date(timeIntervalSince1970: 1_700_000_000)),
+            .adjustRest(sessionId: "s1", deltaS: -30, ts: nil),
             // FER-809 — capture context (iPhone → watch), with and without a load.
             .capture(WorkoutCaptureSnapshot(sessionId: "s1", routineName: "Empuje", setNumber: 3, setTotal: 4,
                                             exerciseName: "Press banca", returnDetail: "60 kg × 8", bpm: 118,
@@ -62,6 +62,18 @@ final class WorkoutMirrorContractTests: XCTestCase {
     }
 
     // MARK: INV-2 — RestActivitySnapshot is Codable and round-trips (it left the ActivityKit gate)
+
+    /// Nancy · ronda 7: un reloj viejo manda las acciones SIN `ts` — deben decodificar con `ts = nil`
+    /// (el iPhone aplica sin candado de staleness, como antes), nunca fallar el decode.
+    func testLegacyWatchActionsWithoutTsDecodeToNil() throws {
+        let legacy = #"{"adjustRest":{"sessionId":"s1","deltaS":30}}"#
+        let decoded = WorkoutMirrorMessage.decode(Data(legacy.utf8))
+        XCTAssertEqual(decoded, .adjustRest(sessionId: "s1", deltaS: 30, ts: nil))
+
+        let legacyComplete = #"{"completeSet":{"sessionId":"s1"}}"#
+        XCTAssertEqual(WorkoutMirrorMessage.decode(Data(legacyComplete.utf8)),
+                       .completeSet(sessionId: "s1", ts: nil))
+    }
 
     func testRestSnapshotCodable() throws {
         let snapshot = RestActivitySnapshot(

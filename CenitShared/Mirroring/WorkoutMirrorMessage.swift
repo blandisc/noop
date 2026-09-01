@@ -50,15 +50,19 @@ public enum WorkoutMirrorMessage: Codable, Equatable {
     /// watch → iPhone: the user logged the current set from the wrist (FER-808). The iPhone runs the
     /// SAME path as the Live Activity's `RestCompleteSetIntent` (`registerCurrentSet`) and re-emits the
     /// next snapshot — the wrist and the lock screen share one source of truth, no duplicated logic.
-    case completeSet(sessionId: String)
+    /// `ts` (Nancy · ronda 7) = cuándo tocó la usuaria en la muñeca. `transferUserInfo` es una cola
+    /// DURABLE (entrega minutos después, o tras relanzar), así que el iPhone lo necesita para descartar
+    /// un toque de un contexto ya cerrado — mismo candado que el inbox de la Live Activity. Opcional:
+    /// un reloj viejo que no lo manda decodifica a nil y el iPhone aplica sin el candado (como antes).
+    case completeSet(sessionId: String, ts: Date?)
 
     /// watch → iPhone: skip the current rest from the wrist (FER-808). Same path as the LA's `RestSkipIntent`.
-    case skipRest(sessionId: String)
+    case skipRest(sessionId: String, ts: Date?)
 
     /// watch → iPhone: nudge the current rest ceiling by `deltaS` (±30) from the wrist (FER-808). Same path
     /// as the LA's `RestAddThirtyIntent` / `RestRemoveThirtyIntent`. A negative delta is gated by the
     /// sender (the «−30» affordance is hidden once the rest has expired), and `extendRest` floors at «now».
-    case adjustRest(sessionId: String, deltaS: Int)
+    case adjustRest(sessionId: String, deltaS: Int, ts: Date?)
 
     /// watch → iPhone: «Ver recibo en iPhone» on the wrist summary (FER-810) → the iPhone opens the saved
     /// workout's history detail (`WorkoutSessionDetailScreen`) for this session. The wrist summary stays
