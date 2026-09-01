@@ -1446,14 +1446,7 @@ struct LiveStrengthSheet: View {
 
             // copy.md «Acta»: «Listo» va en verde (quisquilloso ronda 4) — mismo token `positiveText`
             // que ya marca «hecho» en el resto del acta (raise, PRs, etc.), no tinta.
-            Button { model.closeStrengthSummary() } label: {
-                Text("Done")
-                    .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
-                    .foregroundStyle(theme.paper)
-                    .frame(maxWidth: .infinity).padding(.vertical, LiquidSpace.ctaVertical)
-                    .background(theme.positiveText, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
-            }
-            .buttonStyle(.plain)
+            StrandCTAButton("Done", tint: theme.positiveText) { model.closeStrengthSummary() }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .onAppear { playReceiptCountUp() }
