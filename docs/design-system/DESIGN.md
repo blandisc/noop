@@ -22,11 +22,12 @@
 
 - **Source of truth:** the `StrandDesign` Swift package — `Packages/StrandDesign/Sources/StrandDesign/`
 - **Package version:** `0.1.0` (`StrandDesign.version`)
-- **Token entry points:** `StrandPalette` (color), `StrandFont` (type), `StrandMotion` (motion), `CenitMetrics` (spacing/sizing), `StrandElevation` (shadow), `StrandLayer` (z-index), `StrandIcon` (icons)
+- **Token entry points (canónicos — Liquid Glass · El Eje):** `LiquidColor` · `LiquidType` · `LiquidSpace` / `LiquidRadius` · `LiquidElevation` · `LiquidMotion` · `LiquidHaptica` · `liquidGlass(_:)` / `liquidGlass(tono:regimen:)` — mapa completo en [`LIQUID-GLASS.md`](LIQUID-GLASS.md); índice de componentes en [`CATALOGO.md`](CATALOGO.md)
+- **Legado en migración (no usar en pantallas nuevas):** `StrandPalette` · `StrandFont` · `StrandMotion` · `CenitMetrics` · `StrandElevation` · `StrandLayer` · `InstrumentoTheme` / `theme.*` — inventario aún en tránsito en **[§8](#8-instrumento-diurno--generación-anterior-absorbida--en-migración)**; `StrandIcon` sigue vivo para glifos (ver [`ICONOGRAFIA.md`](ICONOGRAFIA.md))
 - **Machine-readable tokens:** [`tokens/design-tokens.json`](tokens/design-tokens.json) (W3C Design Tokens format)
 - **Assets:** [`assets/`](assets/) — app icons + brand marks
 - **Voz y contenido:** [`LENGUAJE.md`](LENGUAJE.md) — cómo suena el sistema: tono, escritura es-MX, microcopy y glosario canónico (compañero de este doc)
-- **«Liquid Glass v1» (rediseño 2026-07):** [`LIQUID-GLASS.md`](LIQUID-GLASS.md) — la evolución del ADN para pantallas rediseñadas: tokens `Liquid*` (color/tipo/espacio/radios), 4 recetas de vidrio, contrato de motion (`LiquidMotion`) y los 7 componentes + la pantalla Hoy de referencia (`LiquidHoyScreen`), todo en `Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/`
+- **«Liquid Glass · El Eje» (marco canónico):** [`LIQUID-GLASS.md`](LIQUID-GLASS.md) — tokens `Liquid*`, recetas de vidrio, regímenes mosaico/sobrio, motion y hápticos; pantalla de referencia `LiquidHoyScreen` (sobrio) · hub Entrenar (`EntrenarModulo` / `EntrenarTile`, mosaico)
 - **Guías compañeras:** [`ACCESIBILIDAD.md`](ACCESIBILIDAD.md) (contraste, Dynamic Type, VoiceOver, reduce-motion, 44pt) · [`I18N.md`](I18N.md) (locales, plurales, formato) · [`ICONOGRAFIA.md`](ICONOGRAFIA.md) (catálogo `StrandIcon`, glifos, naming)
 
 > ⚠️ This document is **generated from code**. The Swift package is canonical — if a
@@ -41,7 +42,7 @@
 
 Surfaces and text still carry the **«Instrumento diurno»** roles while paper screens migrate — see **[§8](#8-instrumento-diurno--generación-anterior-absorbida--en-migración)** for `paper`, `surface`, `hairline`, `hairlineStrong`, `ink`, `inkSecondary`, `inkTertiary`. The dark `surface.*` / `text.*` / `glow` tokens were **retired in FER-430**. The canonical frame is Liquid Glass · El Eje (manifiesto de apertura).
 
-`opacity.disabled = 0.45` — shared dim value for disabled sections (don't invent your own).
+`StrandOpacity.dim = 0.45` — shared dim value for disabled sections (don't invent your own; the old name `opacity.disabled` / `StrandPalette.disabledOpacity` is legado).
 
 ### 1.3 Color — accent (chrome, **not** data)
 
@@ -149,10 +150,9 @@ Helpers:
 
 ---
 
-## 3. Spacing & sizing (`CenitMetrics`)
+## 3. Spacing & sizing (`CenitMetrics` — legado en migración)
 
-The **one** spacing scale. Every screen composes from these — fixed dimensions are
-what guarantee the uniform, instrument-grade look. Do not invent ad-hoc values.
+**Pantallas nuevas / Liquid usan `LiquidSpace` / `LiquidRadius`** (ver [`LIQUID-GLASS.md`](LIQUID-GLASS.md) §3). `CenitMetrics` sigue vivo en pantallas e Instrumento aún sin migrar — no es la escala canónica. Fixed dimensions still guarantee the instrument-grade look; do not invent ad-hoc values in either dialect.
 
 | Token | Value | Use |
 |---|---|---|
@@ -166,9 +166,9 @@ what guarantee the uniform, instrument-grade look. Do not invent ad-hoc values.
 
 ---
 
-## 4. Motion (`StrandMotion`)
+## 4. Motion (`StrandMotion` — legado en migración)
 
-Physiological motion — **breathe / pulse / flow, no cartoon bounce.**
+**Pantallas nuevas / Liquid usan `LiquidMotion`** (ver [`LIQUID-GLASS.md`](LIQUID-GLASS.md) §5). `StrandMotion` queda para consumidores aún sin migrar. Physiological motion — **breathe / pulse / flow, no cartoon bounce.**
 
 **Spring presets:**
 
@@ -257,9 +257,9 @@ See [`assets/`](assets/) (and its [README](assets/README.md)):
 
 ## 7. Usage notes
 
-- **Dark-only.** All previews force `.preferredColorScheme(.dark)`. There is no light theme.
+- **Lienzo canónico = blanco (Liquid Glass · El Eje).** El sistema oscuro se retiró (FER-430); la única excepción viva es Watch OLED. Previews Liquid no fuerzan `.dark`.
 - **Data colors come from scales, chrome comes from `accent`.** Never tint a metric with `accent`; never reuse a status color as a recovery color.
-- **Numerics are tabular.** Any live value uses a `*Number` font or `StrandFont.number(...)` so digits don't shift.
+- **Numerics are tabular.** Any live value uses a `*Number` font — en Liquid, `LiquidType.valor*` / helpers; en legado Instrumento, `StrandFont.number(...)` — so digits don't shift.
 - **Compose from the locked set (retired).** This dark-legacy set was retired in FER-444; new cards
   use `liquidGlass(_:)` — see [CATALOGO.md](CATALOGO.md) for the current index.
 - **Regenerating tokens:** this doc and [`tokens/design-tokens.json`](tokens/design-tokens.json) are derived from the Swift package; re-derive them when `Palette` / `Typography` / `Motion` / `Components` change. The «Instrumento» color blocks (§8.2 + `color.instrumento`) are emitted from `Instrumento.swift` by `swift run StrandDesignTokens` (run it in `Packages/StrandDesign`); CI fails if they drift (FER-131 handoff · 01).
@@ -278,12 +278,18 @@ paralelo. Origen: FER-131; retiro del marco: épico FER-229.
 > **2026-08 · Tendencias salió del inventario Instrumento (épico FER-97).** Toda la pestaña
 > Tendencias — su aterrizaje (`CuerpoView`, FER-100), las gemelas, el detalle de vital, Sueño,
 > Comparar/Explorador, longevidad y «Fuentes de datos»/«Apple Health» — migró a **Liquid Glass**
-> (§ LIQUID-GLASS.md). «Instrumento diurno» sigue siendo canónico para lo que aún es papel:
-> **Entrenar** (WorkoutsView / WorkoutHistoryScreen / RestEditor), **Ajustes**, **Bucle**, **Dieta**.
-> Los componentes de papel compartidos (`HeroInvertido`, `TileSurface`, `BarraAncla`, `SeccionBloque`,
-> `PieMetodo`, `GraficaRangos`, …) NO se borraron: los detalles migrados los conservan como
-> *rollback* deliberado y Entrenar todavía es su consumidor vivo. Su retiro espera a que Entrenar
-> migre (FER-106 lo dejó documentado; borrado diferido).
+> ([LIQUID-GLASS.md](LIQUID-GLASS.md)).
+>
+> **Entrenar ya no es papel Instrumento:** es régimen **mosaico** Liquid
+> (`liquidGlass(tono:regimen:)`, `EntrenarModulo` / `EntrenarTile`). **Ajustes** consume
+> `LiquidColor` de forma intensiva. Lo que sigue abajo es el inventario Instrumento/papel aún
+> en tránsito (tokens `InstrumentoTheme`, tipografía `InstrumentoType`, helpers `instrumento*`,
+> algunas hojas de entrenamiento que aún leen `theme.*`) — **no** un marco canónico paralelo
+> ni una lista de pantallas «todavía Instrumento por definición».
+>
+> Componentes de papel listados históricamente (`HeroInvertido`, `PieMetodo`, …) ya no existen
+> o tienen 0 call-sites en APP; el rollback deliberado vive en el paquete donde aún hace falta
+> (p. ej. `TendenciasDetalle` / `GraficaRangos`). No reinventar papel en pantallas nuevas.
 
 > **Source of truth:** `Instrumento.swift` (theme + type) and `InstrumentoStates.swift`
 > (scaffold + states) in the `StrandDesign` package. Renderable proof of every state:
