@@ -325,7 +325,7 @@ struct ExerciseDetailScreen: View {
                                 .font(InstrumentoType.grotesk(10, weight: .bold)).tracking(0.5)
                                 .foregroundStyle(theme.paper)
                                 .padding(.horizontal, 7).padding(.vertical, 2)  // token-exempt: badge del handoff
-                                .background(familyTint, in: RoundedRectangle(cornerRadius: 7, style: .continuous))  // token-exempt: radio 7 del handoff
+                                .background(familyTint, in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
                         }
                     }
                     historyDaySubtitle(day)
@@ -335,7 +335,7 @@ struct ExerciseDetailScreen: View {
                             Text(verbatim: "\(StrengthDisplay.weightNumber(s.kg, system: system)) × \(s.reps)")
                                 .font(InstrumentoType.grotesk(13, weight: .semibold)).monospacedDigit()
                                 .foregroundStyle(theme.ink)
-                                .padding(.horizontal, 9).padding(.vertical, 4)  // token-exempt: chip 9/4 del handoff
+                                .padding(.horizontal, LiquidChip.compactoHorizontal).padding(.vertical, LiquidChip.compactoVertical)
                                 .liquidGlass(.pastillaSolida)
                         }
                     }
@@ -545,7 +545,7 @@ struct ExerciseDetailScreen: View {
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             }
         }
-        .padding(.horizontal, 11).padding(.vertical, 5)  // token-exempt: chip 11/5 del handoff
+        .padding(.horizontal, LiquidChip.compactoHorizontal).padding(.vertical, LiquidChip.compactoVertical)
         // El principal es el dato: lleva el tono de la familia (identidad). El asistente queda quieto
         // sobre la superficie sólida de El Eje (`.pastillaSolida`), no el gris papel legacy.
         .modifier(MuscleChipSurface(primary: primary, familyTint: familyTint))
@@ -589,7 +589,7 @@ struct ExerciseDetailScreen: View {
         Button { variant = ex } label: {
             Text(StrengthDisplay.name(ex))
                 .font(StrandFont.subhead).foregroundStyle(theme.ink)
-                .padding(.horizontal, 11).padding(.vertical, 5)  // token-exempt: chip 11/5 del handoff
+                .padding(.horizontal, LiquidChip.compactoHorizontal).padding(.vertical, LiquidChip.compactoVertical)
                 .overlay(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
                     .strokeBorder(theme.hairlineStrong, lineWidth: 1))
         }
@@ -1051,7 +1051,7 @@ private struct TrendAxisChart: View {
             chartPlot
             xCaptions
         }
-        .padding(.top, CenitMetrics.cardPadding).padding(.horizontal, 14).padding(.bottom, CenitMetrics.gap)  // token-exempt: 14 del handoff
+        .padding(.top, CenitMetrics.cardPadding).padding(.horizontal, LiquidSpace.handoff14).padding(.bottom, CenitMetrics.gap)
         .liquidGlass(.superficieSolida)
     }
 }

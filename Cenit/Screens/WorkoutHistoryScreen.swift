@@ -143,7 +143,7 @@ struct WorkoutHistoryScreen: View {
                     manualEntryRow
                 }
             }
-            .padding(.top, 20)  // token-exempt(optico): tope de scroll deliberadamente menor que screenPadding (24) para acercar el contenido al nav bar — sin paso exacto en LiquidSpace/CenitMetrics
+            .padding(.top, LiquidSpace.topeScroll)
             .padding(.horizontal, CenitMetrics.screenPadding)
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -1319,7 +1319,7 @@ struct WorkoutHistoryScreen: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 18).padding(.vertical, 14)  // token-exempt: 14 del handoff
+        .padding(.horizontal, 18).padding(.vertical, LiquidSpace.handoff14)  // token-exempt(falta-pieza): el 14 vertical ya es LiquidSpace.handoff14 (FER-275); el 18 horizontal queda sin token exacto, fuera de alcance de este lote
         .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
         .padding(.horizontal, CenitMetrics.screenPadding)
         .padding(.bottom, CenitMetrics.space2)
@@ -1591,7 +1591,7 @@ struct WorkoutSessionDetailScreen: View {
                     actions
                 }
             }
-            .padding(.top, 20)  // token-exempt(optico): tope de scroll deliberadamente menor que screenPadding (24) para acercar el contenido al nav bar — sin paso exacto en LiquidSpace/CenitMetrics
+            .padding(.top, LiquidSpace.topeScroll)
             .padding(.horizontal, CenitMetrics.screenPadding)
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -1921,7 +1921,7 @@ struct WorkoutSessionDetailScreen: View {
 
     /// «FC MEDIA / FC MÁX» — the wine-hued pair (handoff): Grotesk 19 numerals, unit quiet.
     private var heartBlock: some View {
-        HStack(spacing: 44) {  // token-exempt: 44 del handoff
+        HStack(spacing: LiquidSpace.handoff44) {
             if let hr = dispAvgHr {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Avg HR").instrumentoOverline().foregroundStyle(theme.inkTertiary)

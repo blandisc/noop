@@ -1365,7 +1365,7 @@ struct LiveStrengthSheet: View {
     /// The «Nothing to save · your history stays clean» result card (FER-894). Terminal state for an
     /// empty-session discard: no numbers to celebrate, just reassurance that nothing was recorded.
     private var nothingToSaveCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: LiquidSpace.estadoVacioAire) {
             Image(systemName: "checkmark.seal")
                 .font(StrandFont.glyph(.empty)).foregroundStyle(theme.inkSecondary)
                 .accessibilityHidden(true)
@@ -1376,7 +1376,7 @@ struct LiveStrengthSheet: View {
             Button { model.endStrengthSession(save: false) } label: {
                 Text("Got it")
                     .font(InstrumentoType.groteskHeadline(17)).foregroundStyle(theme.paper)
-                    .frame(maxWidth: .infinity).padding(.vertical, 15)  // token-exempt(optico): pad vertical del CTA, mismo 15 repetido en PlatesScreen/StarterTemplatesSheet/CuerpoView — candidato a pieza (no minteada aquí)
+                    .frame(maxWidth: .infinity).padding(.vertical, LiquidSpace.ctaVertical)
                     .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
             }
             .buttonStyle(.plain).padding(.top, CenitMetrics.space1)
@@ -1450,7 +1450,7 @@ struct LiveStrengthSheet: View {
                 Text("Done")
                     .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
                     .foregroundStyle(theme.paper)
-                    .frame(maxWidth: .infinity).padding(.vertical, 15)  // token-exempt(optico): pad vertical del CTA, mismo 15 repetido en PlatesScreen/StarterTemplatesSheet/CuerpoView — candidato a pieza (no minteada aquí)
+                    .frame(maxWidth: .infinity).padding(.vertical, LiquidSpace.ctaVertical)
                     .background(theme.positiveText, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
             }
             .buttonStyle(.plain)

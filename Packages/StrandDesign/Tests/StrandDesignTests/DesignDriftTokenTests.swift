@@ -84,6 +84,28 @@ final class DesignDriftTokenTests: XCTestCase {
         XCTAssertEqual(LiquidChip.compactoHorizontal, 11)
         XCTAssertEqual(LiquidChip.compactoVertical, 5)
     }
+
+    // MARK: - FER-275 (Lote Uno, aprobación del dueño 2026-09-01) — igualdad exacta de las
+    // piezas minteadas en este lote.
+
+    func test_topeScrollMatchesCensusValue() {
+        XCTAssertEqual(LiquidSpace.topeScroll, 20)
+    }
+
+    func test_ctaVerticalMatchesCensusValue() {
+        XCTAssertEqual(LiquidSpace.ctaVertical, 15)
+    }
+
+    func test_liquidRadiusChipMatchesOwnerApprovedPixel() {
+        XCTAssertEqual(LiquidRadius.chip, 8)
+    }
+
+    func test_estadoVacioAireAndBloqueAjusteMatchCensusValueButAreDistinctRoles() {
+        XCTAssertEqual(LiquidSpace.estadoVacioAire, 14)
+        XCTAssertEqual(LiquidSpace.bloqueAjuste, 14)
+        XCTAssertEqual(LiquidSpace.estadoVacioAire, LiquidSpace.handoff14,
+                        "misma CIFRA por diseño — el rol (spacing de VStack, no padding de tarjeta) es lo que los distingue")
+    }
 }
 
 /// (1) `LiquidSectionHeader` — el componente Liquid que reemplaza `InstrumentoSectionBand`

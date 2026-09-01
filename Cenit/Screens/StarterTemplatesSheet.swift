@@ -217,7 +217,7 @@ struct StarterTemplatesSheet: View {
                         Text("Add to my routines")
                             .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
                             .foregroundStyle(theme.paper)
-                            .frame(maxWidth: .infinity).padding(.vertical, 15)
+                            .frame(maxWidth: .infinity).padding(.vertical, LiquidSpace.ctaVertical)
                             .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
                     }
                     .buttonStyle(.plain)
@@ -241,7 +241,7 @@ struct StarterTemplatesSheet: View {
                 Text("Use this plan")
                     .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
                     .foregroundStyle(theme.paper)
-                    .frame(maxWidth: .infinity).padding(.vertical, 15)
+                    .frame(maxWidth: .infinity).padding(.vertical, LiquidSpace.ctaVertical)
                     .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
             }
             .buttonStyle(.plain)
