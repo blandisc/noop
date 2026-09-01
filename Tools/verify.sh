@@ -70,18 +70,21 @@ run_lint() {
         --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media || ok=1
       python3 Tools/check-design-drift.py --rules token-exempt \
         --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media Packages/StrandDesign/Sources || ok=1
-      # FER-264 espejo local del job de monotonía: el baseline solo baja respecto a origin/iOS.
-      # El PR de alta legal corre con CENIT_BASELINE_ALTA=1 (ver docs/design-system/CONTRATO.md).
-      if [ "${CENIT_BASELINE_ALTA:-0}" != "1" ] && [ -f Tools/check-baseline-monotony.py ] \
-         && git rev-parse --verify -q origin/iOS >/dev/null; then
-        base_json=$(mktemp)
-        if git show origin/iOS:Tools/design-drift-baseline.json > "$base_json" 2>/dev/null; then
-          python3 Tools/check-baseline-monotony.py "$base_json" Tools/design-drift-baseline.json || ok=1
-        fi
-        rm -f "$base_json"
-      fi
     fi
     [ "$ok" -ne 0 ] && fail "deriva del sistema de diseño (token de StrandDesign o « // token-exempt(<categoria>): <motivo> »)."
+  fi
+  # FER-264 espejo local del job de monotonía: el baseline solo baja respecto a origin/iOS.
+  # Corre SIEMPRE (fuera del guard de .swift cambiados): el PR furtivo que solo engorda el JSON
+  # no toca Swift — QA D1. El PR de alta legal corre con CENIT_BASELINE_ALTA=1 (CONTRATO.md).
+  if [ "${CENIT_BASELINE_ALTA:-0}" != "1" ] && [ -f Tools/check-baseline-monotony.py ] \
+     && [ -f Tools/design-drift-baseline.json ] \
+     && git rev-parse --verify -q origin/iOS >/dev/null; then
+    base_json=$(mktemp)
+    if git show origin/iOS:Tools/design-drift-baseline.json > "$base_json" 2>/dev/null; then
+      python3 Tools/check-baseline-monotony.py "$base_json" Tools/design-drift-baseline.json \
+        || fail "el baseline de deuda de diseño SUBIÓ respecto a origin/iOS (alta legal: CONTRATO.md)."
+    fi
+    rm -f "$base_json"
   fi
   if changed_files | grep -qE 'Localizable\.xcstrings$' && [ -f Tools/check-xcstrings-cycles.py ]; then
     python3 Tools/check-xcstrings-cycles.py || fail "ciclo en un String Catalog (FER-395)."
