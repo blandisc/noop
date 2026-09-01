@@ -13,16 +13,23 @@ Rules (each activated in the PR that finishes its migration — pass `--rules` t
     no-radius-literal  `cornerRadius: <number>` not using a CenitMetrics token (after task 01)
     no-opacity-literal `.opacity(<number>)` not using StrandOpacity/helpers   (after task 03)
     no-emdash-string   em-dash (—) inside a Swift string literal (copy rule)   (FER-878/879; on for Screens+Onboarding)
-    no-spacing-literal `.padding(<n>)`, `spacing: <n>`, `lineWidth: <n>`       (FER-258; ratchet over Cenit/Screens)
+    no-spacing-literal `.padding(<n>)`, `spacing: <n>`, `lineWidth: <n>`       (FER-258; ratchet over Cenit/Screens…App)
+    no-legacy-api      call-site of a retired-generation symbol (Instrumento*/Paper*/…) (FER-263; ratchet)
+    token-exempt       pseudo-rule: counts the escape hatches themselves        (FER-263; ratchet — an exemption
+                       is frozen debt too, so a NEW `token-exempt` fails unless its budget allows it)
 
 Per-line escape: a trailing `// token-exempt: <reason>` silences every rule on that line (geometry of
 data — bars, legends, swatches, keypad, Dynamic-Island widget — that legitimately needs a literal).
+New exemptions use `// token-exempt(<categoria>): <reason>` where <categoria> is one of
+dato · sistema · falta-pieza · optico · paridad · unico (CONTRATO.md) so the ×3 rule is auditable;
+the bare legacy form is still matched (the 248 pre-existing ones are grandfathered, not rewritten).
 
 Ratchet: `--baseline <json>` grandfathers the hits a rule already has, per file. A file may keep the
 count the baseline records for it; one hit MORE fails. That is how a rule turns on green over a tree
 that is only partly migrated (FER-258): the debt stops growing while the sweeps continue. When a file
 drops below its allowance the run stays green and prints a note to re-record the baseline (tighten it),
-so the number can only go down. `--write-baseline <json>` records the current tree.
+so the number can only go down. `--write-baseline <json>` records the current tree for the rules that
+ran, MERGING into the existing file — keys of rules not in `--rules` survive untouched (FER-263).
 
 Usage:
     python3 Tools/check-design-drift.py                       # scan default roots, all rules
@@ -37,7 +44,7 @@ DEFAULT_ROOTS = ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App
 DESIGN_PKG = "Packages/StrandDesign"
 EXEMPT = re.compile(r"//\s*token-exempt\b")
 
-ALL_RULES = ["no-hex", "no-adhoc-font", "no-radius-literal", "no-opacity-literal", "no-emdash-string", "no-raw-shadow", "no-sheet-glass", "no-spacing-literal"]
+ALL_RULES = ["no-hex", "no-adhoc-font", "no-radius-literal", "no-opacity-literal", "no-emdash-string", "no-raw-shadow", "no-sheet-glass", "no-spacing-literal", "no-legacy-api", "token-exempt"]
 
 # no-emdash-string: an em-dash (—, U+2014) inside a user-facing Swift string literal. ADN copy rule
 # (FER-878): on-screen copy uses «:», «·» or a comma, never an em-dash. Scoped to STRING LITERALS so the
@@ -90,6 +97,18 @@ RE_SPACING = re.compile(
     r"|\blineWidth:\s*[0-9]"                   # .stroke(_, lineWidth: 2)
 )
 
+# no-legacy-api: a NEW call-site of a retired visual generation (FER-263, épico FER-261). The symbols
+# are the papel-cálido / dark-legacy surface still consumed by the app; each one that reaches 0 in the
+# gated roots leaves this list and becomes a plain prohibition. Definitions inside Packages/StrandDesign
+# are exempt (same guard as no-hex): the package still IS the implementation while the debt drains.
+# CenitWidgets/CenitWatch are NOT gated roots for this rule (FER-219: `InstrumentoTheme` is the
+# canonical Live-Activity/watch theme there); CenitShared never imports StrandDesign.
+RE_LEGACY_API = re.compile(
+    r"\b(InstrumentoTheme|InstrumentoFlowTitle|InstrumentoToolChip|InstrumentoTabHeader"
+    r"|PaperMenu|PaperStepper|SectionBand|StrandPalette)\b"
+    r"|\.instrumentoTheme\("
+)
+
 RULE_PATTERNS = {
     "no-hex": RE_HEX,
     "no-adhoc-font": RE_FONT,
@@ -98,6 +117,7 @@ RULE_PATTERNS = {
     "no-raw-shadow": RE_SHADOW,
     "no-sheet-glass": RE_SHEET_GLASS,
     "no-spacing-literal": RE_SPACING,
+    "no-legacy-api": RE_LEGACY_API,
 }
 
 
@@ -126,9 +146,14 @@ def check(paths, rules):
             if stripped.startswith("//") or stripped.startswith("*") or stripped.startswith("/*"):
                 continue
             if EXEMPT.search(line):
+                # token-exempt is itself ratcheted debt (FER-263): count the hatch, then skip the rules.
+                if "token-exempt" in rules:
+                    hits.append((path, i, "token-exempt", stripped[:100]))
                 continue
             for rule in rules:
-                if rule == "no-hex" and in_design_pkg:
+                if rule == "token-exempt":
+                    continue
+                if rule in ("no-hex", "no-legacy-api") and in_design_pkg:
                     continue
                 if rule == "no-emdash-string":
                     if _emdash_string_hit(line):
@@ -196,10 +221,24 @@ def main(argv):
     roots = files or DEFAULT_ROOTS
     hits = check(roots, rules)
     if write_baseline:
+        # Merge-write (FER-263): only the rules that RAN are re-recorded; the other rules' keys
+        # survive byte-for-byte. Before this, `--rules no-spacing-literal --write-baseline` would
+        # silently clobber every other rule's budget.
+        merged = {}
+        try:
+            merged = json.load(open(write_baseline, encoding="utf-8"))
+        except (FileNotFoundError, json.JSONDecodeError):
+            pass
+        fresh = tally(hits)
+        for rule in rules:
+            if rule in fresh:
+                merged[rule] = fresh[rule]
+            else:
+                merged.pop(rule, None)  # a rule that ran clean drops its key (debt reached 0)
         with open(write_baseline, "w", encoding="utf-8") as fh:
-            json.dump(tally(hits), fh, indent=2, sort_keys=True, ensure_ascii=False)
+            json.dump(merged, fh, indent=2, sort_keys=True, ensure_ascii=False)
             fh.write("\n")
-        print(f"📝 baseline recorded in {write_baseline} ({len(hits)} grandfathered hits)")
+        print(f"📝 baseline recorded in {write_baseline} ({len(hits)} grandfathered hits for {', '.join(rules)})")
         return 0
     stale = []
     if baseline_path:
