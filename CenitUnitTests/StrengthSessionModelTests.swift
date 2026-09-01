@@ -861,6 +861,22 @@ final class StrengthSessionModelTests: XCTestCase {
         XCTAssertNil(s.runs[0].supersetGroup, "swapping the exercise breaks its superset membership")
     }
 
+    /// Nancy · ronda 6: `lastRestStartedAt` es el ancla de staleness del inbox de la Live Activity —
+    /// nace con cada descanso y, a diferencia de `restStartedAt`, SOBREVIVE a salir del descanso
+    /// (saltarlo lo limpia todo vía `clearRest`). Un toque encolado antes del ancla se descarta.
+    func testLastRestStartAnchorSurvivesLeavingRest() {
+        let slot = StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 3),
+                                                 exercise: ex("bench", "Bench"), lastSets: [])
+        let s = make([slot])
+        XCTAssertNil(s.lastRestStartedAt, "sin descanso aún, no hay ancla")
+        let t0 = Date()
+        s.startRest(seconds: 90, now: t0)
+        XCTAssertEqual(s.lastRestStartedAt, t0)
+        s.skipRest()
+        XCTAssertNil(s.restStartedAt, "salir del descanso limpia el estado vivo…")
+        XCTAssertEqual(s.lastRestStartedAt, t0, "…pero el ancla de staleness queda")
+    }
+
     /// Nancy · ronda 4: un historial con `reps = 0` (dejado por el bug que las rondas 1-2 cerraron)
     /// no puede sembrar en 0 la serie de un ejercicio agregado a media sesión — las DOS rutas de
     /// «＋ Agregar ejercicio» llevan el mismo piso `max(1, …)` que la siembra del plan y `addSet`.

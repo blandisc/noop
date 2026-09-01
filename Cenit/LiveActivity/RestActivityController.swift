@@ -35,7 +35,9 @@ final class RestActivityController {
     private let activeStaleWindow: TimeInterval = 60 * 60   // 1 h — comfortably longer than any rest
 
     /// Installed by `AppModel`: applies a lock-screen action (+30 s / Saltar) to the live session.
-    var onAction: ((RestActivityBridge.Action) -> Void)?
+    /// The `Date` is when the user actually tapped (the `ts` the intent enqueued) — the inbox is durable
+    /// and can drain late, so the receiver needs it to discard actions from a rest that already ended.
+    var onAction: ((RestActivityBridge.Action, Date) -> Void)?
 
     private var darwinObserverInstalled = false
 
@@ -107,7 +109,7 @@ final class RestActivityController {
     private func drainInbox() {
         let pending = RestActivityBridge.drain()
         guard !pending.isEmpty, let onAction else { return }
-        for item in pending { onAction(item.action) }
+        for item in pending { onAction(item.action, item.ts) }
     }
 
     private func installDarwinObserverIfNeeded() {

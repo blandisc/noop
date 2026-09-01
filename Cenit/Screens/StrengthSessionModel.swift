@@ -261,6 +261,10 @@ final class StrengthSessionModel: ObservableObject {
     /// When the current rest started — the anchor for `elapsedS` in the HR readiness rule (FER-506). Set
     /// alongside `restEndsAt`; not moved by ±15 so the floor counts from the real start.
     @Published var restStartedAt: Date?
+    /// El inicio del ÚLTIMO descanso que haya arrancado en la sesión — a diferencia de `restStartedAt`,
+    /// NO se limpia al salir del descanso (Nancy · ronda 6): es el ancla de staleness para el inbox de
+    /// la Live Activity. Un toque encolado antes de esta fecha pertenece a un contexto ya cerrado.
+    private(set) var lastRestStartedAt: Date?
     /// The HR «ready» target (bpm) for this rest, computed once on entry (FER-495/506). nil = use FER-348's
     /// resting+margin default (when `currentRestMode == .heartRate`).
     @Published var currentRestTarget: Int?
@@ -522,6 +526,7 @@ final class StrengthSessionModel: ObservableObject {
         pausedAccumulatedS += Int(delta)
         if let r = restEndsAt { restEndsAt = r.addingTimeInterval(delta) }
         if let r = restStartedAt { restStartedAt = r.addingTimeInterval(delta) }
+        if let r = lastRestStartedAt { lastRestStartedAt = r.addingTimeInterval(delta) }
         if let t = timerStart { timerStart = t.addingTimeInterval(delta) }
         pausedAt = nil
         paused = false
@@ -946,6 +951,7 @@ final class StrengthSessionModel: ObservableObject {
         guard seconds > 0 else { phase = .capturing; clearRest(); return }
         restEndsAt = now.addingTimeInterval(TimeInterval(seconds))
         restStartedAt = now
+        lastRestStartedAt = now
         phase = .resting
         reprogramarAviso()
     }
@@ -1220,6 +1226,9 @@ final class StrengthSessionModel: ObservableObject {
         model.currentIndex = snap.currentIndex
         model.restEndsAt = snap.restEndsAt
         model.restStartedAt = snap.restStartedAt
+        // El ancla de staleness re-nace del descanso restaurado; si no había, el primer descanso
+        // nuevo la fija. Un snapshot viejo no puede dejar pasar toques anteriores a su propio rescate.
+        model.lastRestStartedAt = snap.restStartedAt
         model.currentRestTarget = snap.currentRestTarget
         model.currentRestMode = snap.currentRestMode
         model.restOwnerSetId = snap.restOwnerSetId
