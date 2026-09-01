@@ -332,7 +332,7 @@ struct WorkoutDetailScreen: View {
 
     @ViewBuilder private var actionMenu: some View {
         Button { showActionMenu = true } label: {
-            Image(systemName: "ellipsis.circle").foregroundStyle(theme.ink)
+            Image(systemName: "ellipsis").foregroundStyle(theme.ink)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Session actions")
