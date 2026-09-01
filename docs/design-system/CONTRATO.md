@@ -2,8 +2,12 @@
 
 > **Escrito a mano** (FER-265, épico FER-261). Este archivo es proceso, no tokens: DESIGN.md tiene
 > bloques que `StrandDesignTokens` regenera y por eso el contrato NO puede vivir ahí. La matriz de
-> gates de abajo la valida `Tools/check-gate-parity.py` en CI — si editas una pata sin editar la
-> matriz (o al revés), `design-lint` falla.
+> gates de abajo la valida `Tools/check-gate-parity.py` cada vez que `design-lint` corre (editar
+> cualquiera de las patas, el validador o este archivo dispara el workflow) y en `verify.sh quick`.
+> Límite honesto: el validador contrasta **texto**, no ejecución — para las patas de árbol compara
+> reglas, raíces y baseline exactos; para las patas staged/changed verifica presencia de la regla,
+> no sus raíces (viven en variables de shell). Un PR que sabotee el propio tooling es visible en su
+> diff y lo rechaza el review, no este script.
 
 ## Qué es qué
 
@@ -32,11 +36,14 @@
 
 ## Cómo se anota una excepción
 
-- Forma nueva (obligatoria): `// token-exempt(<categoria>): <motivo>` con `<categoria>` ∈
+- Forma nueva (requerida para anotaciones NUEVAS; el linter acepta ambas formas y el censo audita
+  la adopción): `// token-exempt(<categoria>): <motivo>` con `<categoria>` ∈
   `dato` (geometría de datos: barras, legends, keypad) · `sistema` (Dynamic Island / watch face) ·
   `falta-pieza` (no hay token exacto — **candidata a pieza**, la audita la regla ×3) ·
   `optico` (ajuste óptico deliberado) · `paridad` (espejo de un valor privado) · `unico` (rareza
-  genuina). Las 248 anotaciones legacy sin categoría están congeladas, no se reescriben.
+  genuina). Las anotaciones legacy sin categoría no se reescriben: **215** están congeladas en el
+  baseline (las raíces gateadas, fuente: `token-exempt` de `design-drift-baseline.json`); las de
+  Widgets/Watch quedan fuera del trinquete por el carve-out FER-219.
 - **Una exención nueva es deuda**: la pseudo-regla `token-exempt` la cuenta y el trinquete la
   rechaza sin alta legal. `padding(0)` y la geometría de datos no son deuda conceptual, pero pagan
   la misma anotación para que el censo las clasifique.

@@ -49,7 +49,7 @@ if [ -n "$swift_staged" ] && [ -f "$root/Tools/check-design-drift.py" ]; then
   if [ "$fail" -ne 0 ]; then
     echo ""
     echo "✋ Commit bloqueado: deriva del sistema de diseño (usa un token de StrandDesign,"
-    echo "   o anota la línea con « // token-exempt: <motivo> »)."
+    echo "   o anota la línea con « // token-exempt(<categoria>): <motivo> » — ver docs/design-system/CONTRATO.md)."
     exit 1
   fi
 fi

@@ -30,6 +30,8 @@ on:
       - 'Tools/tests/**'
       - 'Tools/verify.sh'
       - 'Tools/git-hooks/pre-commit'
+      - 'Tools/check-gate-parity.py'
+      - 'docs/design-system/CONTRATO.md'
       - '.github/workflows/design-lint.yml'
   workflow_dispatch:
 

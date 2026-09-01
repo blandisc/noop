@@ -838,7 +838,8 @@ scroll (parallax). The hero is **not** part of the background: it scrolls with t
 ### Design-system enforcement (gates, baseline, censo) — épico FER-261
 
 `StrandDesign` is the source of visual truth **in fact, not just on paper**, because a tooling layer
-makes debt unable to grow:
+stops the gated debt classes from growing (a PR that sabotages the tooling itself is caught by its
+own diff in review, not by the tooling — no text-level check can guard its own executor):
 
 - **One linter, three legs.** `Tools/check-design-drift.py` (pure Python/regex, milliseconds) runs
   the same rules in the pre-commit hook, `Tools/verify.sh quick` and `.github/workflows/design-lint.yml`

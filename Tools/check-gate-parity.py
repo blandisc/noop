@@ -55,9 +55,33 @@ def parse_matrix(text):
     return json.loads(m.group(1))
 
 
-def parse_invocations(text):
-    """[(rules, baseline_or_None, literal_paths, has_var_paths)] por archivo, con `\\`-continuaciones unidas."""
+def _strip_dead_text(text, is_yaml):
+    """Quita el texto NO ejecutable antes de parsear (review Grok FER-265: una invocación canónica
+    en un comentario bash o en un `name:` de YAML era un señuelo que satisfacía la matriz mientras
+    el `run:` real corría otra cosa)."""
     text = re.sub(r"\\\s*\n", " ", text)
+    kept = []
+    for line in text.splitlines():
+        s = line.strip()
+        if not is_yaml and s.startswith("#"):
+            continue
+        if is_yaml and (s.startswith("- name:") or s.startswith("name:") or s.startswith("#")):
+            continue
+        kept.append(line)
+    return "\n".join(kept)
+
+
+# En el YAML, estas llaves convierten un step canónico en teatro: `if: false` no corre,
+# `continue-on-error` no gatea, `working-directory` escanea otra carpeta. Se prohíben, con la
+# única excepción del guard del job de monotonía.
+YML_FORBIDDEN = re.compile(r"continue-on-error|working-directory\s*:")
+YML_IF_ALLOWED = re.compile(r"if:\s*github\.event_name\s*==\s*'pull_request'")
+
+
+def parse_invocations(text, is_yaml=False):
+    """[(rules, baseline_or_None, literal_paths, has_var_paths)] por archivo. Acepta las MISMAS
+    formas de flag que el linter (`--rules x` y `--rules=x`; ídem `--baseline`)."""
+    text = _strip_dead_text(text, is_yaml)
     out = []
     for m in RE_INVOKE.finditer(text):
         args = m.group("args")
@@ -65,20 +89,23 @@ def parse_invocations(text):
         args = re.split(r"\)|\|\||&&|>", args)[0]
         toks = args.split()
         rules, baseline, paths, has_var = [], None, [], False
-        it = iter(range(len(toks)))
         i = 0
         while i < len(toks):
             t = toks[i]
             if t == "--rules" and i + 1 < len(toks):
                 rules = toks[i + 1].split(",")
                 i += 2
+            elif t.startswith("--rules="):
+                rules = t.split("=", 1)[1].split(",")
+                i += 1
             elif t == "--baseline" and i + 1 < len(toks):
                 baseline = toks[i + 1]
                 i += 2
+            elif t.startswith("--baseline="):
+                baseline = t.split("=", 1)[1]
+                i += 1
             elif t.startswith("--"):
                 i += 2 if t in ("--write-baseline",) else 1
-            elif t in (")", "||", "&&"):
-                i += 1
             else:
                 if "$" in t or t.startswith('"'):
                     has_var = True
@@ -115,7 +142,12 @@ def check(root):
     canonical = matrix["baseline_path"]
 
     m = RE_ALL_RULES.search(linter)
-    all_rules = ast.literal_eval(m.group(1)) if m else []
+    if not m:
+        # Si ALL_RULES deja de ser una lista literal, este check quedaría ciego a reglas nuevas —
+        # falla cerrado (review Grok FER-265, hallazgo 5).
+        return problems + ["ALL_RULES del linter ya no es una lista literal parseable — el check de "
+                           "reglas nuevas quedaría ciego; restaurar la forma `ALL_RULES = [...]`"]
+    all_rules = ast.literal_eval(m.group(1))
     for r in all_rules:
         if r not in mrules:
             problems.append(f"regla `{r}` existe en ALL_RULES del linter y NO tiene fila en la matriz")
@@ -125,8 +157,20 @@ def check(root):
         if text is None:
             problems.append(f"falta la pata {leg} ({rel})")
             continue
+        is_yaml = rel.endswith((".yml", ".yaml"))
+        if is_yaml:
+            # Un step canónico con `if:` raro, `continue-on-error` o `working-directory` es teatro,
+            # no gate (review Grok FER-265, casos A/D/F).
+            if YML_FORBIDDEN.search(text):
+                problems.append(f"{leg}: usa continue-on-error/working-directory — prohibido en este workflow")
+            for line in text.splitlines():
+                s = line.strip()
+                if s.startswith("if:") and not YML_IF_ALLOWED.search(s):
+                    problems.append(f"{leg}: `{s}` — el único if: permitido es el guard de pull_request")
+            if "check-baseline-monotony.py" not in _strip_dead_text(text, True):
+                problems.append(f"{leg}: el job de monotonía no invoca check-baseline-monotony.py")
         found = {}
-        for rules, baseline, paths, has_var in parse_invocations(text):
+        for rules, baseline, paths, has_var in parse_invocations(text, is_yaml):
             for r in rules:
                 if r not in mrules:
                     problems.append(f"{leg}: invoca `{r}`, que la matriz no declara")
@@ -146,15 +190,14 @@ def check(root):
                         problems.append(f"{leg}: `{r}` declarado tree-default pero toda invocación pasa paths")
                     continue
                 roots, needs_baseline = resolve_roots(matrix, spec)
-                ok = False
-                for baseline, paths, has_var in found[r]:
-                    if has_var:
-                        continue
-                    if paths == roots and (baseline == canonical) == needs_baseline:
-                        ok = True
-                if not ok:
+                # TODAS las invocaciones ejecutables de la regla deben coincidir, no «alguna»:
+                # un duplicado débil junto al canónico debe fallar (review Grok FER-265, caso A).
+                literal = [(b, p) for b, p, hv in found[r] if not hv]
+                bad = [p for b, p in literal
+                       if not (p == roots and (b == canonical) == needs_baseline)]
+                if not literal or bad:
                     problems.append(
-                        f"{leg}: `{r}` declarado `{spec}` pero ninguna invocación literal coincide "
+                        f"{leg}: `{r}` declarado `{spec}` pero hay invocaciones que no coinciden "
                         f"(esperaba raíces {roots}{' + --baseline canónico' if needs_baseline else ''})")
     return problems
 

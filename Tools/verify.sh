@@ -74,9 +74,9 @@ run_lint() {
     [ "$ok" -ne 0 ] && fail "deriva del sistema de diseño (token de StrandDesign o « // token-exempt(<categoria>): <motivo> »)."
   fi
   # FER-265: la matriz de CONTRATO.md y las tres patas no pueden divergir (verde local = verde CI).
-  if [ -f Tools/check-gate-parity.py ]; then
-    python3 Tools/check-gate-parity.py || fail "paridad de gates rota (matriz en docs/design-system/CONTRATO.md)."
-  fi
+  # Sin guard de existencia a propósito: si el validador desaparece, esto FALLA en vez de callar
+  # (review Grok FER-265, caso E).
+  python3 Tools/check-gate-parity.py || fail "paridad de gates rota (matriz en docs/design-system/CONTRATO.md)."
   # FER-264 espejo local del job de monotonía: el baseline solo baja respecto a origin/iOS.
   # Corre SIEMPRE (fuera del guard de .swift cambiados): el PR furtivo que solo engorda el JSON
   # no toca Swift — QA D1. El PR de alta legal corre con CENIT_BASELINE_ALTA=1 (CONTRATO.md).
