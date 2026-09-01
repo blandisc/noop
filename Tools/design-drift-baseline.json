@@ -223,6 +223,7 @@
     "Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/LiquidMotion.swift": 1,
     "Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/LiquidStageBar.swift": 8,
     "Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/LiquidTiempoZonas.swift": 4,
-    "Packages/StrandDesign/Sources/StrandDesign/PreparacionComponents.swift": 1
+    "Packages/StrandDesign/Sources/StrandDesign/PreparacionComponents.swift": 1,
+    "CenitApp/App/CenitApp.swift": 1
   }
 }
