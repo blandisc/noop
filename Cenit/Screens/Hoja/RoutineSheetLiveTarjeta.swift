@@ -221,7 +221,7 @@ struct HojaTarjetaEjercicioSesion: View {
                 .buttonStyle(.plain)
             }
         }
-        .transition(vivo.reduceMotion ? .identity : .opacity)
+        .transition(LiquidMotion.fadeOrIdentity(reduceMotion: vivo.reduceMotion))
     }
 
     private func filaSerie(si: Int, set: StrengthSessionModel.WorkingSet, esPrimera: Bool) -> some View {
@@ -287,7 +287,7 @@ struct HojaTarjetaEjercicioSesion: View {
             if vivo.prFlash?.setId == set.id {
                 RoundedRectangle(cornerRadius: HojaMetrics.activaRadius, style: .continuous)
                     .fill(LiquidColor.rosa.opacity(0.16))   // token-exempt: destello breve R16, sin token de opacidad para «molde rosa» transitorio todavía
-                    .transition(vivo.reduceMotion ? .identity : .opacity)
+                    .transition(LiquidMotion.fadeOrIdentity(reduceMotion: vivo.reduceMotion))
             }
         }
         .animation(vivo.reduceMotion ? nil : .easeOut(duration: 0.4), value: vivo.prFlash)
@@ -376,7 +376,7 @@ struct HojaTarjetaEjercicioSesion: View {
             RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
                 .strokeBorder(LiquidColor.rosa.opacity(0.30), lineWidth: 0.5)   // token-exempt: mismo molde rosa transitorio que el destello R16, arriba
         )
-        .transition(vivo.reduceMotion ? .identity : .opacity)
+        .transition(LiquidMotion.fadeOrIdentity(reduceMotion: vivo.reduceMotion))
         .accessibilityElement(children: .combine)
     }
 
@@ -415,7 +415,7 @@ struct HojaTarjetaEjercicioSesion: View {
                 }
             }
         }
-        .transition(vivo.reduceMotion ? .identity : .opacity)
+        .transition(LiquidMotion.fadeOrIdentity(reduceMotion: vivo.reduceMotion))
     }
 
     @ViewBuilder private var footer: some View {

@@ -98,10 +98,10 @@ private struct WatchFaceMetrics: View {
     private func logSet() {
         manager.completeSetFromWrist()
         WatchHaptic.actionTapped.play()
-        withAnimation(.easeOut(duration: 0.15)) { loggedCheck = true }
+        withAnimation(LiquidMotion.settle(LiquidMotion.brief)) { loggedCheck = true }
         Task {
             try? await Task.sleep(nanoseconds: 400_000_000)
-            withAnimation(.easeIn(duration: 0.15)) { loggedCheck = false }
+            withAnimation(LiquidMotion.dismiss(LiquidMotion.brief)) { loggedCheck = false }
         }
     }
 

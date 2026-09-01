@@ -322,12 +322,12 @@ private struct CuerpoLanding: View {
                 // nothing nests (FER-171). The back-swipe stands down once a session is pushed — from
                 // there the stack runs the system's own interactive pop off the same edge.
                 workoutsLayer
-                    .transition(.move(edge: .trailing))
+                    .transition(LiquidMotion.trailingTransition)
                     .recEntranceGate()
                     .zIndex(1)
             } else if detailPresented {
                 DetailChrome(theme: theme, onClose: dismissDetail) { detailOverlayContent }
-                    .transition(.move(edge: .trailing))
+                    .transition(LiquidMotion.trailingTransition)
                     // The entrance keyframes wait for the slide to land: a detail that already has its
                     // datum (Estrés / Temp. de piel / Carga) built its hero on the first frame, so its
                     // rise played under the panel's own motion and never read as an animation.

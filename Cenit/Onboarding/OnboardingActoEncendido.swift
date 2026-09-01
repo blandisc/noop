@@ -240,7 +240,7 @@ struct OnbActoEncendido: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.liquidPress)
-                    .transition(.opacity)
+                    .transition(LiquidMotion.fadeTransition)
                     .accessibilityLabel(Text(OnbCopy.actaOverline))
                 }
             }
@@ -267,7 +267,7 @@ struct OnbActoEncendido: View {
         if mostrarRotulo {
             OnbCuerpo(OnbCopy.lecturaRotuloInfo, tono: LiquidColor.tinta500)
                 .padding(.top, LiquidSpace.s300)
-                .transition(.opacity)
+                .transition(LiquidMotion.fadeTransition)
                 .onTapGesture { esconderRotulo() }
         }
 

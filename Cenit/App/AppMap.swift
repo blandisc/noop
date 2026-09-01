@@ -241,7 +241,7 @@ private struct RoutineEditorMapCell: View {
             if model.strengthSession != nil && !model.strengthSheetPresented {
                 MapSessionPillHost(model: model)
                     .padding(.bottom, CenitMetrics.space2)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .transition(LiquidMotion.risingFadeTransition)
             }
         }
         .animation(StrandMotion.gentle, value: model.strengthSheetPresented)
@@ -353,7 +353,7 @@ private struct NewRoutineFlowMapCell: View {
             if model.strengthSession != nil && !model.strengthSheetPresented {
                 MapSessionPillHost(model: model)
                     .padding(.bottom, CenitMetrics.space2)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .transition(LiquidMotion.risingFadeTransition)
             }
         }
         .animation(StrandMotion.gentle, value: model.strengthSheetPresented)
@@ -440,7 +440,7 @@ private struct EntrenarFlowsMapCell: View {
             if model.strengthSession != nil && !model.strengthSheetPresented {
                 MapSessionPillHost(model: model)
                     .padding(.bottom, CenitMetrics.space2)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .transition(LiquidMotion.risingFadeTransition)
             }
         }
         .animation(StrandMotion.gentle, value: model.strengthSheetPresented)

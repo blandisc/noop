@@ -250,7 +250,7 @@ struct RootTabView: View {
                 ActiveSessionPillHost(model: appModel, confirmDiscard: $confirmDiscardSession)
                     .padding(.horizontal, CenitMetrics.screenPadding)
                     .padding(.bottom, barHeight + CenitMetrics.space2)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .transition(LiquidMotion.risingFadeTransition)
             }
         }
     }

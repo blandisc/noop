@@ -102,7 +102,7 @@ struct DataSourcesView: View {
                     .padding(.horizontal, LiquidSpace.s550)
                     .padding(.top, LiquidSpace.s300)
                     .onTapGesture { showBackupAlert = false }
-                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .transition(LiquidMotion.fallingFadeTransition)
                     .task {
                         try? await Task.sleep(for: .seconds(8))
                         showBackupAlert = false

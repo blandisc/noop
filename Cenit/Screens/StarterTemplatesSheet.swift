@@ -85,7 +85,7 @@ struct StarterTemplatesSheet: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .patternBlock(theme, bar: theme.critical)
                     .padding(.horizontal, 16)
-                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .transition(LiquidMotion.fallingFadeTransition)
                     .task {
                         try? await Task.sleep(for: .seconds(4))
                         saveError = false

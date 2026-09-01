@@ -129,7 +129,7 @@ struct WeeklyPlanEditorView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .patternBlock(theme, bar: theme.critical)
                     .padding(.horizontal, 16)
-                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .transition(LiquidMotion.fallingFadeTransition)
                     .task {
                         try? await Task.sleep(for: .seconds(4))
                         saveError = false
@@ -758,7 +758,7 @@ struct WeeklyPlanEditorView: View {
         .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
         .padding(.horizontal, CenitMetrics.screenPadding)
         .padding(.bottom, 8)
-        .transition(.move(edge: .bottom).combined(with: .opacity))
+        .transition(LiquidMotion.risingFadeTransition)
         .task(id: d.id) {
             try? await Task.sleep(nanoseconds: 4_000_000_000)
             withAnimation { if pendingUndo?.id == d.id { pendingUndo = nil } }
@@ -881,7 +881,7 @@ struct WeeklyPlanEditorView: View {
         .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
         .padding(.horizontal, CenitMetrics.screenPadding)
         .padding(.bottom, 8)
-        .transition(.move(edge: .bottom).combined(with: .opacity))
+        .transition(LiquidMotion.risingFadeTransition)
         .task(id: d.id) {
             try? await Task.sleep(nanoseconds: 4_000_000_000)
             withAnimation { if pendingFolderUndo?.id == d.id { pendingFolderUndo = nil } }

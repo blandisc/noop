@@ -36,6 +36,15 @@ public enum LiquidMotion {
     /// 200 ms — el crossfade simple de la entrada bajo Reduce Motion (sin viaje ni stagger).
     /// Nombrado (FER-31).
     public static let entradaReduce: Double = 0.2
+    /// 150 ms — blips brevísimos de estado (Watch: check-toggle). Censo FER-269 (2 sitios).
+    public static let brief: Double = 0.15
+    /// 200 ms — toggle suave de estado que NO es la entrada (fase de respiración, reveal del
+    /// héroe de arranque). Comparte cifra con `entradaReduce` por coincidencia real del censo —
+    /// el rol es distinto (esto no es un fallback de Reduce Motion). Censo FER-269 (3 sitios).
+    public static let soft: Double = 0.2
+    /// 350 ms — crossfade de los gates de arranque (onboarding completado, términos aceptados).
+    /// Censo FER-269 (2 sitios).
+    public static let measured: Double = 0.35
     /// 9 s — pulsos por cables, dashes.
     public static let flowPeriod: Double = 6
     /// 16–26 s — orbes de fondo (16, 21, 24 y 26 s usados en los ensambles).
@@ -79,6 +88,19 @@ public enum LiquidMotion {
         .linear(duration: duration)
     }
 
+    /// `settle` — ease-out crudo para apariciones puntuales que no vienen de una lista con
+    /// stagger (un blip, un toggle de estado). La contraparte de `ambient` (easeInOut) cuando el
+    /// sitio real usa `.easeOut(duration:)`, no `.easeInOut`. Censo FER-269.
+    public static func settle(_ duration: Double) -> Animation {
+        .easeOut(duration: duration)
+    }
+
+    /// `dismiss` — ease-in crudo, SOLO para desvanecer algo que se retira (arranca lento, acelera
+    /// al salir) — el opuesto de `settle`. Censo FER-269 (Watch: ocultar el check tras el delay).
+    public static func dismiss(_ duration: Double) -> Animation {
+        .easeIn(duration: duration)
+    }
+
     // MARK: Recetas (transiciones compuestas)
 
     /// `press` — scale(0.97) · dur/instant · glass-out. Todo elemento tappable.
@@ -107,6 +129,33 @@ public enum LiquidMotion {
     public static let sheet = glassSpring(sheetDuration)
     /// La transición hermana del sheet, para `.transition(_:)`.
     public static var sheetTransition: AnyTransition { .move(edge: .bottom) }
+
+    /// `fade` — aparición simple sin desplazamiento (gates a pantalla completa, overlays).
+    /// Censo FER-269: el patrón dominante de `.transition(_:)` en el árbol (10 sitios).
+    public static var fadeTransition: AnyTransition { .opacity }
+
+    /// `risingFade` — entra desde abajo con fundido (pills, toasts, banners de éxito/aviso).
+    /// Censo FER-269 (9 sitios).
+    public static var risingFadeTransition: AnyTransition {
+        .move(edge: .bottom).combined(with: .opacity)
+    }
+
+    /// `fallingFade` — entra desde arriba con fundido (banners de error, alertas de guardado).
+    /// Censo FER-269 (8 sitios).
+    public static var fallingFadeTransition: AnyTransition {
+        .move(edge: .top).combined(with: .opacity)
+    }
+
+    /// `trailing` — entra/sale desde el borde derecho, sin fundido (paneles de detalle que
+    /// deslizan como un push de navegación). Censo FER-269 (2 sitios, Cuerpo).
+    public static var trailingTransition: AnyTransition { .move(edge: .trailing) }
+
+    /// `fadeOrIdentity` — el fundido se apaga bajo Reduce Motion (queda colocado sin viaje).
+    /// Centraliza el ternario `reduceMotion ? .identity : .opacity` que el censo encontró repetido
+    /// 4 veces en un mismo archivo (FER-269) en vez de que cada sitio lo repita a mano.
+    public static func fadeOrIdentity(reduceMotion: Bool) -> AnyTransition {
+        reduceMotion ? .identity : .opacity
+    }
 
     /// `ring progress` — el anillo/knob anima a su valor al entrar (dur/gentle · glass-out).
     public static let ringProgress = glassOut(gentle)

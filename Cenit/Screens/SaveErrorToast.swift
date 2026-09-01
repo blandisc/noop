@@ -35,7 +35,7 @@ struct SaveErrorToast: ViewModifier {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .patternBlock(theme, bar: theme.critical)
                         .padding(.horizontal, 16)
-                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .transition(LiquidMotion.fallingFadeTransition)
                         .task {
                             try? await Task.sleep(for: .seconds(seconds))
                             isPresented = false

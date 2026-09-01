@@ -982,7 +982,7 @@ private struct EntrenarLanding: View {
                     .padding(.top, CenitMetrics.rowVPad)
             }
             .padding(.top, CenitMetrics.space2)
-            .transition(.opacity)
+            .transition(LiquidMotion.fadeTransition)
             .accessibilityElement(children: .contain)
         }
     }
