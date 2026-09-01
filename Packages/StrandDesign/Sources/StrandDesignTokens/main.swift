@@ -36,6 +36,24 @@ func hex(_ c: Color) -> String {
     return String(format: "#%02X%02X%02X",
                   Int((p.r * 255).rounded()), Int((p.g * 255).rounded()), Int((p.b * 255).rounded()))
 }
+/// sRGB alpha component (0…1). NSColor keeps it even after `.usingColorSpace(.sRGB)`.
+func alpha(_ c: Color) -> Double {
+    #if canImport(AppKit)
+    let ns = NSColor(c).usingColorSpace(.sRGB) ?? NSColor(c)
+    return Double(ns.alphaComponent)
+    #else
+    return 1
+    #endif
+}
+/// Hex for an opaque color, `rgba(r,g,b,a)` for a translucent one (the Liquid vidrio/tinta
+/// family is defined as fixed alphas of white/tinta — a bare hex would silently drop the alpha).
+func value(_ c: Color) -> String {
+    let a = alpha(c)
+    if a >= 0.999 { return hex(c) }
+    let p = srgb(c)
+    return String(format: "rgba(%d,%d,%d,%.2f)",
+                  Int((p.r * 255).rounded()), Int((p.g * 255).rounded()), Int((p.b * 255).rounded()), a)
+}
 func linearize(_ v: Double) -> Double { v <= 0.04045 ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4) }
 func luminance(_ c: Color) -> Double {
     let p = srgb(c)
@@ -215,12 +233,304 @@ let paletteScales: [(String, String?, [PEntry])] = [
     ]),
 ]
 
+// MARK: - Liquid Glass (FER-267 — «catálogo Liquid generado»)
+//
+// El tope de vocabulario del sistema Liquid: `LiquidColor` (color.liquid), `LiquidSpace` +
+// los mixtos de `LiquidLayout` (space.liquid) y `LiquidRadius` (radius.liquid), leídos del
+// API público — igual disciplina que `roles`/`paletteScales` arriba, el código gana. Los
+// alfas fijos de `#FFFFFF`/tinta (la familia «vidrio») se emiten como `rgba(...)` (ver
+// `value(_:)`) para no perder el dato que los define.
+
+struct PEntry2 { let name: String; let color: Color; let desc: String? }
+
+func liquidColorBlock(_ key: String, _ entries: [PEntry2]) -> String {
+    let pad = (entries.map { $0.name.count }.max() ?? 0) + 3
+    var lines = ["\"\(key)\": {"]
+    for (i, e) in entries.enumerated() {
+        let keyField = "\"\(e.name)\":".padding(toLength: pad, withPad: " ", startingAt: 0)
+        let comma = i == entries.count - 1 ? "" : ","
+        let descPart = e.desc.map { ", \"$description\": \"\($0)\"" } ?? ""
+        lines.append("      \(keyField) { \"$value\": \"\(value(e.color))\"\(descPart) }\(comma)")
+    }
+    lines.append("    }")
+    return lines.joined(separator: "\n")
+}
+
+let lc = LiquidColor.self
+/// Los estáticos «hoja» de `LiquidColor` (no las escalas plasta*/ParticulaRGB, que son arrays/
+/// tuplas, no un tono único — ver el comentario del propio archivo).
+let liquidColorEntries: [PEntry2] = [
+    PEntry2(name: "tinta900", color: lc.tinta900, desc: "texto principal, iconos activos"),
+    PEntry2(name: "tinta700", color: lc.tinta700, desc: "texto secundario, kickers de fecha"),
+    PEntry2(name: "tinta500", color: lc.tinta500, desc: "labels, captions neutros, iconos inactivos"),
+    PEntry2(name: "tinta10", color: lc.tinta10, desc: "tracks de anillos, divisores de lista"),
+    PEntry2(name: "tinta7", color: lc.tinta7, desc: "segmentos de barra inactivos, chips de día vacíos"),
+    PEntry2(name: "papelAlto", color: lc.papelAlto, desc: "inicio del degradado de pantalla"),
+    PEntry2(name: "papelBajo", color: lc.papelBajo, desc: "fin del degradado de pantalla"),
+    PEntry2(name: "papelDock", color: lc.papelDock, desc: "relleno del vidrio/lente (dock)"),
+    PEntry2(name: "papelTarjeta", color: lc.papelTarjeta, desc: "tarjeta de HOJA — blanco puro"),
+    PEntry2(name: "fondoAlto", color: lc.fondoAlto, desc: "fondo neutro — «El Tablero»"),
+    PEntry2(name: "fondoBajo", color: lc.fondoBajo, desc: "fondo neutro — «El Tablero»"),
+    PEntry2(name: "papelMatriz", color: lc.papelMatriz, desc: "papel plano del modo Matriz"),
+    PEntry2(name: "verdePrimario", color: lc.verdePrimario, desc: "CTA, énfasis, palabra destacada del hero, pulsos"),
+    PEntry2(name: "verdeProfundo", color: lc.verdeProfundo, desc: "deltas positivos, texto quiet"),
+    PEntry2(name: "verdeAurora", color: lc.verdeAurora, desc: "solo halos/auroras de fondo (nunca texto)"),
+    PEntry2(name: "verdeOrbe", color: lc.verdeOrbe, desc: "orbes drift del fondo de Hoy"),
+    PEntry2(name: "verdeBotonAlto", color: lc.verdeBotonAlto, desc: "tope del degradado del botón primary"),
+    PEntry2(name: "tintaSobreVerde", color: lc.tintaSobreVerde, desc: "texto sobre el botón primary"),
+    PEntry2(name: "indigo", color: lc.indigo, desc: "sueño"),
+    PEntry2(name: "cian", color: lc.cian, desc: "HRV"),
+    PEntry2(name: "rosa", color: lc.rosa, desc: "FC en reposo"),
+    PEntry2(name: "ambar", color: lc.ambar, desc: "esfuerzo, temperatura de piel"),
+    PEntry2(name: "teal", color: lc.teal, desc: "pasos"),
+    PEntry2(name: "azul", color: lc.azul, desc: "respiración"),
+    PEntry2(name: "oro", color: lc.oro, desc: "amanecer / halos cálidos"),
+    PEntry2(name: "ambarClaro", color: lc.ambarClaro, desc: "clima de atención"),
+    PEntry2(name: "doradoTemp", color: lc.doradoTemp, desc: "identidad de temperatura de piel en Cosmos/Matriz"),
+    PEntry2(name: "verdeCarga", color: lc.verdeCarga, desc: "identidad de carga"),
+    PEntry2(name: "estresMedio", color: lc.estresMedio, desc: "heatmap de estrés — nivel medio"),
+    PEntry2(name: "estresAlto", color: lc.estresAlto, desc: "heatmap de estrés — nivel alto"),
+    PEntry2(name: "celdaVacia", color: lc.celdaVacia, desc: "día sin lectura en un mosaico de calendario"),
+    PEntry2(name: "celdaVaciaPip", color: lc.celdaVaciaPip, desc: "el mismo hueco a tamaño de pip en leyenda"),
+    PEntry2(name: "particulaVerde", color: lc.particulaVerde, desc: "partícula en rango/atención"),
+    PEntry2(name: "particulaRoja", color: lc.particulaRoja, desc: "partícula en desgaste"),
+    PEntry2(name: "particulaAmbar", color: lc.particulaAmbar, desc: "partícula en atención"),
+    PEntry2(name: "particulaNeutra", color: lc.particulaNeutra, desc: "partícula neutra — calibrando"),
+    PEntry2(name: "rojoClaro", color: lc.rojoClaro, desc: "rojo claro del clima de alerta"),
+    PEntry2(name: "positivo", color: lc.positivo, desc: "deltas a favor"),
+    PEntry2(name: "atencion", color: lc.atencion, desc: "fuera de rango"),
+    PEntry2(name: "negativo", color: lc.negativo, desc: "deltas en contra"),
+    PEntry2(name: "atencionTexto", color: lc.atencionTexto, desc: "atención para texto chico (AA)"),
+    PEntry2(name: "vidrioEspecular", color: lc.vidrioEspecular, desc: "highlight especular"),
+    PEntry2(name: "vidrioBordeFuerte", color: lc.vidrioBordeFuerte, desc: "borde de esfera / gota"),
+    PEntry2(name: "vidrioBorde", color: lc.vidrioBorde, desc: "bordes de vidrio"),
+    PEntry2(name: "vidrioBordePastilla", color: lc.vidrioBordePastilla, desc: "borde de pastilla + inner-highlights"),
+    PEntry2(name: "vidrioBordeSuperficie", color: lc.vidrioBordeSuperficie, desc: "borde de superficie (tiles)"),
+    PEntry2(name: "vidrioStreak", color: lc.vidrioStreak, desc: "streak especular del dock"),
+    PEntry2(name: "vidrioLente", color: lc.vidrioLente, desc: "relleno lente/dial"),
+    PEntry2(name: "vidrioRealcePastilla", color: lc.vidrioRealcePastilla, desc: "realce especular de la pastilla del selector del dock"),
+    PEntry2(name: "vidrioPastilla", color: lc.vidrioPastilla, desc: "relleno pastilla"),
+    PEntry2(name: "vidrioSuperficie", color: lc.vidrioSuperficie, desc: "relleno superficie tile"),
+    PEntry2(name: "vidrioStep", color: lc.vidrioStep, desc: "relleno de los steppers circulares del enfoque"),
+    PEntry2(name: "vidrioCanto", color: lc.vidrioCanto, desc: "canto exterior hairline de un módulo"),
+    PEntry2(name: "vidrioAtmosfera", color: lc.vidrioAtmosfera, desc: "relleno del módulo de vidrio sobre la atmósfera"),
+    PEntry2(name: "vidrioAtmosferaSolida", color: lc.vidrioAtmosferaSolida, desc: "plan B opaco de la receta de atmósfera"),
+]
+
+let ls = LiquidSpace.self
+let lr = LiquidRadius.self
+/// A `CGFloat` pt value as compact JSON — `4` not `4.0`, `0.5` kept as-is.
+func numberValue(_ v: CGFloat) -> String {
+    let d = Double(v)
+    return d == d.rounded() ? String(Int(d)) : String(d)
+}
+
+func numberBlock(_ key: String, _ entries: [(String, CGFloat, String?)]) -> String {
+    let pad = (entries.map { $0.0.count }.max() ?? 0) + 3
+    var lines = ["\"\(key)\": {"]
+    for (i, e) in entries.enumerated() {
+        let keyField = "\"\(e.0)\":".padding(toLength: pad, withPad: " ", startingAt: 0)
+        let comma = i == entries.count - 1 ? "" : ","
+        let descPart = e.2.map { ", \"$description\": \"\($0)\"" } ?? ""
+        lines.append("      \(keyField) { \"$value\": \(numberValue(e.1))\(descPart) }\(comma)")
+    }
+    lines.append("    }")
+    return lines.joined(separator: "\n")
+}
+
+/// `LiquidSpace.sXXX` (la escala cerrada) + los mixtos de `LiquidLayout` que el handoff pide
+/// censar por nombre (`ecosistemaAlto`, `dockBottom`) para que el tope de vocabulario los vea.
+let liquidSpaceEntries: [(String, CGFloat, String?)] = [
+    ("s025", ls.s025, "micro-gap — rótulo ↔ dato dentro de una columna"),
+    ("s050", ls.s050, "gaps de segmentos de barra"),
+    ("s075", ls.s075, "respiro exterior de la pastilla táctil"),
+    ("s100", ls.s100, nil),
+    ("s125", ls.s125, "gap rótulo ↔ ratio / diámetro"),
+    ("s150", ls.s150, "gota ↔ label"),
+    ("s200", ls.s200, "gap del grid de tiles"),
+    ("s225", ls.s225, "padding vertical interior de la pastilla táctil"),
+    ("s250", ls.s250, "gap entre módulos de «El Tablero»"),
+    ("s300", ls.s300, "padding H de tile, separación entre bloques chicos"),
+    ("s400", ls.s400, "padding H de pastilla / interior horizontal de módulo"),
+    ("s550", ls.s550, "margen horizontal de pantalla (legacy Liquid)"),
+    ("s600", ls.s600, "margen horizontal de la pantalla «El Tablero»"),
+    ("s800", ls.s800, nil),
+    ("s1400", ls.s1400, "safe-area top (velo de status)"),
+    ("ecosistemaAlto", ls.ecosistemaAlto, "alto de la zona del héroe «El Ecosistema»"),
+    ("dockBottom", ls.dockBottom, "margen inferior del dock flotante (negativo)"),
+]
+
+let liquidRadiusEntries: [(String, CGFloat, String?)] = [
+    ("hairline", lr.hairline, "antialiasing del trazo de 1pt (capilar divisor)"),
+    ("control", lr.control, "swatches, chips de día, inputs"),
+    ("tarjeta", lr.tarjeta, "tiles, tarjetas, contenedores de lista"),
+    ("modulo", lr.modulo, "módulos de vidrio de «El Tablero»"),
+    ("hoja", lr.hoja, "sheets y modales"),
+    ("pastilla", lr.pastilla, "botones, dock, barras, badges (Capsule)"),
+]
+
+// MARK: - Catálogo de componentes (FER-267)
+//
+// La honestidad es asimétrica a propósito: `rol`/`simbolo` salen del código de arriba (Liquid);
+// `archivo`/`cuandoUsarlo`/`cuandoNo` son una tabla CURADA — nadie deriva de un AST qué hace un
+// componente o cuándo NO usarlo. `CatalogEntryArchivoExisteTests` cierra el hueco barato (el
+// símbolo apunta a un archivo real); la veracidad del resto la cuida el review humano, igual
+// que `Role.desc` arriba.
+
+public struct CatalogEntry: Sendable {
+    public let rol: String
+    public let simbolo: String
+    public let archivo: String
+    public let cuandoUsarlo: String
+    public let cuandoNo: String
+}
+
+public let catalogEntries: [CatalogEntry] = [
+    CatalogEntry(rol: "Superficie de vidrio", simbolo: "liquidGlass(_:)",
+                 archivo: "LiquidGlass/LiquidGlassRecipes.swift",
+                 cuandoUsarlo: "Cualquier tile/tarjeta/pastilla/dock nuevo en pantallas Liquid Glass — es la ÚNICA puerta al vidrio (blur + fondo + borde + highlight + sombra ya compuestos).",
+                 cuandoNo: "No para pantallas «Instrumento diurno» sin migrar (usan `.instrumentoCard(_:)`), ni para componer blur/material a mano."),
+    CatalogEntry(rol: "Botón CTA", simbolo: "LiquidGlassButton",
+                 archivo: "LiquidGlass/LiquidGlassButton.swift",
+                 cuandoUsarlo: "Botones pill de pantalla (primary/glass/quiet) con hit-target 44pt ya resuelto.",
+                 cuandoNo: "No para controles inline chicos (usa `LiquidGlassRecipe.pastilla` directo) ni para un botón .plain sin la receta de press."),
+    CatalogEntry(rol: "Tile de métrica", simbolo: "LiquidMetricTile",
+                 archivo: "LiquidGlass/LiquidMetricTile.swift",
+                 cuandoUsarlo: "Grid de métricas del hub/tablero — overline + valor + delta sobre vidrio.",
+                 cuandoNo: "No para una fila de lista (usa `LiquidListRow`) ni para un valor sin la asignación 1:1 de color de `LiquidColor`."),
+    CatalogEntry(rol: "Fila de lista", simbolo: "LiquidListRow",
+                 archivo: "LiquidGlass/LiquidListRow.swift",
+                 cuandoUsarlo: "Listas de hoja/detalle (historial, entradas) que necesitan la fila estándar Liquid.",
+                 cuandoNo: "No para un grid de tiles (usa `LiquidMetricTile`)."),
+    CatalogEntry(rol: "Chip de selección", simbolo: "LiquidChipSeleccion",
+                 archivo: "LiquidGlass/LiquidChipSeleccion.swift",
+                 cuandoUsarlo: "Chips de filtro/selección múltiple sobre vidrio.",
+                 cuandoNo: "No para el control segmentado único de la app (usa `SegmentedPillControl`)."),
+    CatalogEntry(rol: "Control segmentado", simbolo: "SegmentedPillControl",
+                 archivo: "Components.swift",
+                 cuandoUsarlo: "EL ÚNICO control de rango/segmentos de la app — cualquier selector de periodo/pestaña interna.",
+                 cuandoNo: "No inventar un segmentado nuevo por pantalla; si el look no calza, extiende este (`inkThumb`/`tall`/`thumbTint`)."),
+    CatalogEntry(rol: "Barra de tabs", simbolo: "LiquidTabBar",
+                 archivo: "LiquidGlass/LiquidTabBar.swift",
+                 cuandoUsarlo: "La barra de navegación inferior flotante («dock») de la app.",
+                 cuandoNo: "No para un segmentado de contenido dentro de una pantalla (usa `SegmentedPillControl`)."),
+    CatalogEntry(rol: "Cabecera de hoja", simbolo: "LiquidSheetHeader",
+                 archivo: "LiquidGlass/LiquidSheetHeader.swift",
+                 cuandoUsarlo: "El encabezado estándar de cualquier hoja/sheet Liquid (título + cierre).",
+                 cuandoNo: "No para el título en pantalla completa (usa `InstrumentoScreenTitle` si la pantalla sigue en Instrumento, o el header propio de la pantalla Liquid)."),
+    CatalogEntry(rol: "Pie de hoja — método", simbolo: "LiquidMetodo",
+                 archivo: "LiquidGlass/LiquidSheetFoot.swift",
+                 cuandoUsarlo: "El bloque «cómo se calcula» al pie de una hoja de detalle.",
+                 cuandoNo: "No para el badge de procedencia del dato (usa `LiquidOrigenChip`, mismo archivo)."),
+    CatalogEntry(rol: "Chip de procedencia", simbolo: "LiquidOrigenChip",
+                 archivo: "LiquidGlass/LiquidSheetFoot.swift",
+                 cuandoUsarlo: "Marcar de dónde vino un dato (banda/Apple Salud/computado) al pie de una hoja.",
+                 cuandoNo: "No como badge genérico de estado (usa `StatePill`)."),
+    CatalogEntry(rol: "Gráfica de tendencia (Liquid)", simbolo: "LiquidTrendChart",
+                 archivo: "LiquidGlass/LiquidTrendChart.swift",
+                 cuandoUsarlo: "Series temporales dentro de una pantalla/hoja ya migrada a Liquid Glass.",
+                 cuandoNo: "No en pantallas aún en Instrumento (usa `TrendChart`, que sigue vigente para ese inventario)."),
+    CatalogEntry(rol: "Gráfica de tendencia (compartida)", simbolo: "TrendChart",
+                 archivo: "TrendChart.swift",
+                 cuandoUsarlo: "Serie temporal con hover/crosshair — usada por ambos inventarios (Instrumento y, vía wrapper, Liquid).",
+                 cuandoNo: "No para una línea inline diminuta (usa `Sparkline`)."),
+    CatalogEntry(rol: "Sparkline inline", simbolo: "Sparkline",
+                 archivo: "Sparkline.swift",
+                 cuandoUsarlo: "Tendencia diminuta dentro de un tile (Hoy / live-HR).",
+                 cuandoNo: "No como gráfica principal de una pantalla de detalle (usa `TrendChart`/`LiquidTrendChart`)."),
+    CatalogEntry(rol: "Hipnograma", simbolo: "Hypnogram",
+                 archivo: "Hypnogram.swift",
+                 cuandoUsarlo: "Bandas de etapa de sueño de una noche.",
+                 cuandoNo: "No para cualquier otra serie categórica (es específico de etapas de sueño)."),
+    CatalogEntry(rol: "Mosaico anual", simbolo: "YearHeatStrip",
+                 archivo: "YearHeatStrip.swift",
+                 cuandoUsarlo: "Vista de un año completo estilo calendario de contribuciones (recuperación por día).",
+                 cuandoNo: "No para un rango de 90 días (usa `Calendario90`, mismo archivo)."),
+    CatalogEntry(rol: "Mosaico de 90 días", simbolo: "Calendario90",
+                 archivo: "YearHeatStrip.swift",
+                 cuandoUsarlo: "Vista de 90 días («Patrones», calendarios cortos).",
+                 cuandoNo: "No para el año completo (usa `YearHeatStrip`)."),
+    CatalogEntry(rol: "Pastilla de estado", simbolo: "StatePill",
+                 archivo: "StatePill.swift",
+                 cuandoUsarlo: "Un estado con tono + texto (conectado/calibrando/etc.), con o sin pulso.",
+                 cuandoNo: "No para el chip de procedencia de dato (usa `LiquidOrigenChip`/`SourceBadge`)."),
+    CatalogEntry(rol: "Badge de procedencia", simbolo: "SourceBadge",
+                 archivo: "Components.swift",
+                 cuandoUsarlo: "Marcar «MY-WHOOP» / «APPLE HEALTH» junto a un dato.",
+                 cuandoNo: "No como pastilla de estado genérica (usa `StatePill`)."),
+    CatalogEntry(rol: "Tile de métrica (Instrumento)", simbolo: "StatTile",
+                 archivo: "StatTile.swift",
+                 cuandoUsarlo: "Tile de altura fija en pantallas del inventario «Instrumento diurno» aún sin migrar.",
+                 cuandoNo: "No en pantallas ya migradas a Liquid Glass (usa `LiquidMetricTile`)."),
+]
+
+func catalogoTable() -> String {
+    var lines = ["| Rol | Símbolo | Archivo | Cuándo usarlo | Cuándo no |", "|---|---|---|---|---|"]
+    for e in catalogEntries {
+        lines.append("| \(e.rol) | `\(e.simbolo)` | `\(e.archivo)` | \(e.cuandoUsarlo) | \(e.cuandoNo) |")
+    }
+    return lines.joined(separator: "\n")
+}
+
+func catalogoDoc() -> String {
+    """
+    # Catálogo Liquid Glass
+
+    <!-- GENERADO por `swift run StrandDesignTokens` desde `Packages/StrandDesign/Sources/StrandDesignTokens/main.swift` — no editar a mano. `rol`/`simbolo`/valores salen del código; `archivo`/`cuándo usarlo`/`cuándo no` son la tabla curada `catalogEntries` de ese mismo archivo. -->
+
+    Diccionario + índice del sistema **Liquid Glass · El Eje** (FER-229), leído directo del API
+    público de `StrandDesign` — mismo trato que `color.instrumento` en
+    [`tokens/design-tokens.json`](tokens/design-tokens.json): el código gana, este archivo solo
+    lo refleja.
+
+    ## Diccionario
+
+    ### Color (`LiquidColor`)
+
+    | Token | Valor | Uso |
+    |---|---|---|
+    \(liquidColorEntries.map { "| `\($0.name)` | `\(value($0.color))` | \($0.desc ?? "—") |" }.joined(separator: "\n"))
+
+    ### Espaciado (`LiquidSpace` / mixtos de `LiquidLayout`)
+
+    | Token | Valor | Uso |
+    |---|---|---|
+    \(liquidSpaceEntries.map { "| `\($0.0)` | \(numberValue($0.1))pt | \($0.2 ?? "—") |" }.joined(separator: "\n"))
+
+    ### Radios (`LiquidRadius`)
+
+    | Token | Valor | Uso |
+    |---|---|---|
+    \(liquidRadiusEntries.map { "| `\($0.0)` | \(numberValue($0.1))pt | \($0.2 ?? "—") |" }.joined(separator: "\n"))
+
+    ## Índice de componentes
+
+    Rol → símbolo → archivo → cuándo usarlo → cuándo no. `archivo` es relativo a
+    `Packages/StrandDesign/Sources/StrandDesign/`. Este índice **reemplaza** las listas de
+    componentes a mano de `CLAUDE.md`/`CONTRIBUTING.md`/`DESIGN.md`/`LIBRARY.md` — si buscas
+    un componente, empieza aquí.
+
+    \(catalogoTable())
+    """
+}
+
 // MARK: Splicing
 
 /// Replace the brace-balanced JSON object that follows `"<key>":`, preserving the line's leading
 /// indentation. String literals are skipped so braces inside descriptions never confuse the scan.
-func replaceJSONObject(in text: String, key: String, with block: String) -> String? {
-    guard let keyRange = text.range(of: "\"\(key)\":") else { return nil }
+///
+/// `after`: some keys (e.g. `liquid`) repeat under different parents (`color.liquid`,
+/// `space.liquid`, `radius.liquid`) — pass the parent's own key so the search starts past it,
+/// otherwise a plain `range(of:)` would always hit the first occurrence in the file.
+func replaceJSONObject(in text: String, key: String, after: String? = nil, with block: String) -> String? {
+    let searchStart: String.Index
+    if let after {
+        guard let afterRange = text.range(of: "\"\(after)\":") else { return nil }
+        searchStart = afterRange.upperBound
+    } else {
+        searchStart = text.startIndex
+    }
+    guard let keyRange = text.range(of: "\"\(key)\":", range: searchStart..<text.endIndex) else { return nil }
     guard let openBrace = text.range(of: "{", range: keyRange.upperBound..<text.endIndex) else { return nil }
     var depth = 0
     var i = openBrace.lowerBound
@@ -286,6 +596,23 @@ do {
         fail("✗ could not locate the \"opacity\" object in \(jsonURL.path)")
     }
     newJSON = afterOpacity
+    // Liquid Glass (FER-267): color.liquid / space.liquid / radius.liquid. `liquid` repeats
+    // three times in the file — `after:` anchors each search past its own parent key.
+    guard let afterColorLiquid = replaceJSONObject(in: newJSON, key: "liquid", after: "instrumento",
+                                                    with: liquidColorBlock("liquid", liquidColorEntries)) else {
+        fail("✗ could not locate the \"color.liquid\" object in \(jsonURL.path)")
+    }
+    newJSON = afterColorLiquid
+    guard let afterSpaceLiquid = replaceJSONObject(in: newJSON, key: "liquid", after: "opacity",
+                                                    with: numberBlock("liquid", liquidSpaceEntries)) else {
+        fail("✗ could not locate the \"space.liquid\" object in \(jsonURL.path)")
+    }
+    newJSON = afterSpaceLiquid
+    guard let afterRadiusLiquid = replaceJSONObject(in: newJSON, key: "liquid", after: "space",
+                                                     with: numberBlock("liquid", liquidRadiusEntries)) else {
+        fail("✗ could not locate the \"radius.liquid\" object in \(jsonURL.path)")
+    }
+    newJSON = afterRadiusLiquid
     if newJSON != json { try newJSON.write(to: jsonURL, atomically: true, encoding: .utf8) }
 
     let design = try String(contentsOf: designURL, encoding: .utf8)
@@ -294,9 +621,16 @@ do {
     }
     if newDesign != design { try newDesign.write(to: designURL, atomically: true, encoding: .utf8) }
 
+    let catalogoURL = root.appendingPathComponent("docs/design-system/CATALOGO.md")
+    let newCatalogo = catalogoDoc() + "\n"
+    let existingCatalogo = try? String(contentsOf: catalogoURL, encoding: .utf8)
+    if existingCatalogo != newCatalogo { try newCatalogo.write(to: catalogoURL, atomically: true, encoding: .utf8) }
+
     print("✓ Instrumento tokens regenerated from Instrumento.swift (\(roles.count) roles)")
+    print("✓ Liquid Glass catálogo regenerated (\(liquidColorEntries.count) colors, \(liquidSpaceEntries.count) space, \(liquidRadiusEntries.count) radius, \(catalogEntries.count) components)")
     print("  · \(jsonURL.path)")
     print("  · \(designURL.path)")
+    print("  · \(catalogoURL.path)")
 } catch {
     fail("✗ \(error)")
 }

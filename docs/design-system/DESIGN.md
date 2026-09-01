@@ -197,7 +197,7 @@ Physiological motion — **breathe / pulse / flow, no cartoon bounce.**
 
 | Component | Purpose | Key API |
 |---|---|---|
-| `NoopCard` / `StrandCard` | The one card surface — `surface.raised` fill, `cardRadius`, hairline border, hover lift (shadow + border → `hairlineStrong`) | `padding:`, `cornerRadius:`, `@ViewBuilder content` |
+| *(the old dark-legacy card surface, retired FER-444)* | The current card surface for Liquid Glass screens is `liquidGlass(_:)` — see [CATALOGO.md](CATALOGO.md) for the full index | — |
 | `StrandCardHover` | Hover-lift `ViewModifier` (shadow-md + translateY(-1px) + border emphasis) for any card-like surface | `cornerRadius:` |
 | `SectionHeader` | Section title with optional overline + trailing text | `(_ title, overline:, trailing:)` |
 
@@ -260,7 +260,8 @@ See [`assets/`](assets/) (and its [README](assets/README.md)):
 - **Dark-only.** All previews force `.preferredColorScheme(.dark)`. There is no light theme.
 - **Data colors come from scales, chrome comes from `accent`.** Never tint a metric with `accent`; never reuse a status color as a recovery color.
 - **Numerics are tabular.** Any live value uses a `*Number` font or `StrandFont.number(...)` so digits don't shift.
-- **Compose from the locked set.** New cards = `NoopCard` + the components above, not bespoke surfaces.
+- **Compose from the locked set (retired).** This dark-legacy set was retired in FER-444; new cards
+  use `liquidGlass(_:)` — see [CATALOGO.md](CATALOGO.md) for the current index.
 - **Regenerating tokens:** this doc and [`tokens/design-tokens.json`](tokens/design-tokens.json) are derived from the Swift package; re-derive them when `Palette` / `Typography` / `Motion` / `Components` change. The «Instrumento» color blocks (§8.2 + `color.instrumento`) are emitted from `Instrumento.swift` by `swift run StrandDesignTokens` (run it in `Packages/StrandDesign`); CI fails if they drift (FER-131 handoff · 01).
 
 ---

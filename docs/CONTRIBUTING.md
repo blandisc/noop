@@ -243,12 +243,15 @@ labels, use the `Text.strandOverline()` helper rather than styling by hand.
 
 ### Components — compose, don't reinvent
 
-From `Components.swift` and the chart files. The locked surface is **`NoopCard`** (one radius,
-border, fill, and hover behavior). Build screens from the shared pieces:
+From `Components.swift`, the chart files, and `LiquidGlass/`. The full rol → símbolo → archivo →
+cuándo usarlo → cuándo no index is **generated** into
+[`docs/design-system/CATALOGO.md`](design-system/CATALOGO.md) — start there when looking for a
+component. The card surface for Liquid Glass screens is `liquidGlass(_:)` (the dark-legacy card
+primitive it replaced was retired in FER-444). A few of the shared pieces:
 
 | Component | Use |
 |---|---|
-| `NoopCard` | The one card surface. Every card is this. |
+| `liquidGlass(_:)` | The card/pill/dock surface for Liquid Glass screens — see CATALOGO.md. |
 | `StatTile` | Uniform fixed-height metric tile (`CenitMetrics.tileHeight`), with optional sparkline + delta. |
 | `ChartCard` / `ChartFooter` | Header + fixed-height chart body + optional footer stats. |
 | `SectionHeader` | Overline + title + optional trailing. |
@@ -368,9 +371,10 @@ to the Explore / Compare / tile UI. The catalog is the contract.
 
 ### Add a new screen
 
-1. **Build it from `StrandDesign`.** Compose `NoopCard`, `StatTile`, `ChartCard`, `SectionHeader`,
-   etc.; pull every color/font/size from `StrandPalette` / `StrandFont` / `CenitMetrics`. Use the
-   shared `ScreenScaffold` for the standard screen chrome (see existing screens in `Cenit/Screens`).
+1. **Build it from `StrandDesign`.** Compose from [`docs/design-system/CATALOGO.md`](design-system/CATALOGO.md)
+   (`liquidGlass(_:)`, `StatTile`, etc.); pull every color/font/size from `StrandPalette` /
+   `StrandFont` / `CenitMetrics`. Use the shared `ScreenScaffold` for the standard screen chrome
+   (see existing screens in `Cenit/Screens`).
 2. **Register it in the app's navigation.** Add it to the navigation enum that drives the app's
    destinations:
    - add a `case` (its `rawValue` is the destination label),

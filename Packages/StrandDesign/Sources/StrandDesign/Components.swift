@@ -3,9 +3,9 @@ import SwiftUI
 // MARK: - Shared design-system primitives
 //
 // What survives the «Instrumento diurno» migration: the spacing/measure token scale
-// (`CenitMetrics`), the one segmented pill control, and the source badge. The legacy card
-// primitives (`NoopCard` / `StatTile` / `SectionHeader` / `ChartCard` / `ChartFooter`) were
-// removed once the dark screens that used them went away (FER-444, tail of FER-413/FER-427).
+// (`CenitMetrics`), the one segmented pill control, and the source badge. The legacy dark-theme
+// card primitives were removed once the dark screens that used them went away (FER-444, tail of
+// FER-413/FER-427) — see `docs/design-system/CATALOGO.md` for what replaced them.
 
 public enum CenitMetrics {
     public static let cardRadius: CGFloat = 16

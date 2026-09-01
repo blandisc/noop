@@ -354,7 +354,7 @@ targets: [
 | `Hypnogram` | sleep-stage timeline |
 | `TrendChart`, `Sparkline`, `ChartHover` | line/area charts + hover read-out |
 | `YearHeatStrip` | year-at-a-glance heat strip |
-| `StrandCard`, `NoopCard`, `ChartCard`, `InsightCard` | card containers |
+| `liquidGlass(_:)` | card/pill/dock surface (the dark-legacy card primitives were retired in FER-444) — see [CATALOGO.md](design-system/CATALOGO.md) |
 | `StatePill`, `ConnectionDot`, `SourceBadge` | status chips / source labels |
 | `SectionHeader`, `StatTile`, `ChartFooter`, `SegmentedPillControl` | layout primitives |
 
