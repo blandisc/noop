@@ -19,12 +19,6 @@ public enum CenitMetrics {
     /// between tabs. «Hoy» is exempt: it's the dial dashboard and keeps its tighter `space2` rhythm.
     public static let screenTop: CGFloat = 14
 
-    /// Alto de la hoja «En vivo»: overline + reloj de 56pt + Ritmo/Prom/Máx + «Terminar». Es un
-    /// grabador, no una pantalla — con `.medium` (media pantalla) quedaba medio lienzo vacío. Este alto
-    /// es el que el contenido pide de verdad; la hoja conserva `.large` como segundo detent y su
-    /// `ScrollView`, así que con Dynamic Type grande se sube y nada se recorta.
-    public static let liveSheetHeight: CGFloat = 320
-
     // MARK: Fine spacing ramp (FER-206)
     // Named steps below `gap` (plus a compact section rhythm and two control radii) so
     // the «Instrumento» Today path stops using magic numbers — every spacing/radius
@@ -41,9 +35,7 @@ public enum CenitMetrics {
     public static let rowVPad: CGFloat = 10          // padding vertical de una fila de lista «Instrumento» (handoff Biblioteca — absorbe 9/10/11/13)
     public static let receiptPadding: CGFloat = 14     // padding interno de la tarjeta-recibo de la sesión de fuerza (canvas 2026-07, decisión del dueño — entre gap 12 y cardPadding 16)
 
-    public static let sourceGlyph: CGFloat = 13  // point size of a data-source SF Symbol glyph
     public static let tileHeight: CGFloat = 104  // every metric tile is this tall
-    public static let chartHeight: CGFloat = 220
     /// Clean band reserved below the area fill (via the Y-scale's bottom padding) so the X-axis
     /// hour/date labels never sit behind the fill and get tinted. (FER-82)
     public static let chartXLabelBand: CGFloat = 24
@@ -262,78 +254,6 @@ public struct SourceBadge: View {
             .background(tint.opacity(0.14), in: Capsule())
             .foregroundStyle(tint)
             .overlay(Capsule().strokeBorder(tint.opacity(0.30), lineWidth: 1))
-    }
-}
-
-// MARK: - In-screen title + ⓘ (FER-581 · «Instrumento» detail-screen identity)
-
-/// The detail-screen headline: a Grotesk headline title (`groteskHeadline`, Medium — the serif voice
-/// was retired in FER-901) with an optional ⓘ that toggles an inline plain-language explanation. One
-/// source of truth so every detail sheet titles identically. The numeral, range bar and blocks live
-/// BELOW this, unchanged. (FER-581)
-public struct InstrumentoScreenTitle: View {
-    let title: LocalizedStringKey
-    var size: CGFloat
-    var theme: InstrumentoTheme
-    var explanation: LocalizedStringKey?
-    /// When set, the title renders as the §8.7 overline (metric icon in its hue + ALL-CAPS grotesk)
-    /// instead of the plain Grotesk headline — the standardized «Tendencias v2» header. Provenance is
-    /// NOT here; it lives in the `OriginStamp` at the foot.
-    var glyph: MetricGlyph?
-    @State private var open = false
-
-    public init(_ title: LocalizedStringKey, size: CGFloat = 23,
-                theme: InstrumentoTheme, explanation: LocalizedStringKey? = nil,
-                glyph: MetricGlyph? = nil) {
-        self.title = title
-        self.size = size
-        self.theme = theme
-        self.explanation = explanation
-        self.glyph = glyph
-    }
-
-    public var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: glyph == nil ? .firstTextBaseline : .center, spacing: 6) {
-                if let glyph {
-                    Image(systemName: glyph.sfSymbol)
-                        .font(.system(size: 12))
-                        .foregroundStyle(glyph.hue(theme))
-                        .frame(width: 14, height: 14)
-                        .accessibilityHidden(true)
-                    Text(title)
-                        .font(InstrumentoType.grotesk(12, weight: .bold))
-                        .tracking(2.4)
-                        .textCase(.uppercase)
-                        .foregroundStyle(theme.ink)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: 6)
-                } else {
-                    Text(title)
-                        .font(InstrumentoType.groteskHeadline(size))
-                        .foregroundStyle(theme.ink)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                if explanation != nil {
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.2)) { open.toggle() }
-                    } label: {
-                        Image(systemName: "info.circle")
-                            .font(.system(size: 14))
-                            .foregroundStyle(theme.inkTertiary)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(Text("What this means"))
-                }
-            }
-            if open, let explanation {
-                Text(explanation)
-                    .font(StrandFont.caption)
-                    .foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

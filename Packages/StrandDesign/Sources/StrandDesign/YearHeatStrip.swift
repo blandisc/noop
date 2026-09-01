@@ -393,63 +393,6 @@ private enum DateFormatterCache {
     }()
 }
 
-// MARK: - Calendario90 (Instrumento detail screens)
-
-/// Measured-width wrapper around `YearHeatStrip` for the 90-day calendar on Recovery / Strain /
-/// Stress / Sleep detail screens: measures available width, sizes the cell (clamp 8…22), and wires
-/// Instrumento theme tokens. Trends keeps calling `YearHeatStrip` directly (cell corner 2.5).
-public struct Calendario90: View {
-    public var days: [RecoveryDay]
-    public var tint: (Double) -> Color
-    public var onSelect: (RecoveryDay) -> Void
-    public var theme: InstrumentoTheme
-    /// Cell corner radius. Default 5 — this component is only used by the "Instrumento diurno" detail
-    /// screens (Recovery/Strain/Stress/Sleep), which want a rounder cell than the legacy dark Trends
-    /// caller (which calls `YearHeatStrip` directly and keeps its 2.5 default).
-    public var cellCornerRadius: CGFloat
-
-    public init(days: [RecoveryDay], tint: @escaping (Double) -> Color, onSelect: @escaping (RecoveryDay) -> Void, theme: InstrumentoTheme, cellCornerRadius: CGFloat = 5) {
-        self.days = days
-        self.tint = tint
-        self.onSelect = onSelect
-        self.theme = theme
-        self.cellCornerRadius = cellCornerRadius
-    }
-
-    @State private var calWidth: CGFloat = 0
-
-    private struct CalWidthKey: PreferenceKey {
-        static let defaultValue: CGFloat = 0
-        static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
-    }
-
-    public var body: some View {
-        // Celda a un número FIJO de columnas (14, el máximo de una ventana de 90 días), no al conteo vivo:
-        // mide LO MISMO en las cuatro pantallas y todos los días. `rollingCellSize` es la fuente única de
-        // esa fórmula (FER estable, wobble 13↔14). Antes esto usaba `weekColumns` vivo → oscilaba.
-        let spacing: CGFloat = 4
-        let cell: CGFloat = calWidth > 0 ? YearHeatStrip.rollingCellSize(width: calWidth, spacing: spacing) : 14
-        YearHeatStrip(
-            days: days,
-            cellSize: cell,
-            spacing: spacing,
-            showsScrub: false,
-            tint: tint,
-            emptyFill: theme.hairline,
-            emptyStroke: theme.hairlineStrong,
-            labelColor: theme.inkTertiary,
-            onSelect: onSelect,
-            selectionColor: theme.ink,
-            cellCornerRadius: cellCornerRadius
-        )
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(GeometryReader { g in
-            Color.clear.preference(key: CalWidthKey.self, value: g.size.width)
-        })
-        .onPreferenceChange(CalWidthKey.self) { calWidth = $0 }
-    }
-}
-
 #if DEBUG
 private func sampleYear() -> [RecoveryDay] {
     let cal: Calendar = Calendar.current

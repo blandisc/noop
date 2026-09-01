@@ -5,12 +5,13 @@ import SwiftUI
 // FER-164: el apagón del papel dejó aquí solo las piezas CON consumidor vivo verificado por
 // símbolo (2026-08-30). Las demás (`SeccionFranja`, `SeccionBloque`, `TileSurface`, `PieMetodo`,
 // `QueMedimosCard`, `ChipTendencia`, `QueLaMueveHeader`, `PaperSideBarBlock`) se borraron cuando
-// su último consumidor migró a Liquid. Sobreviven:
+// su último consumidor migró a Liquid. FER-280·3c podó además `HeatLegend` — su único consumidor
+// real era `HeatCalendarSection`, también podado (0 usos reales fuera de su propio preview).
+// Sobreviven:
 //
 //   · `BarraAncla` — el ÚNICO formato legal de caption (rect 2×10 del color del dato + texto);
 //                    vive en `WorkoutHistoryScreen` y dentro de `GraficaRangos`
 //   · `Metodo`     — el DisclosureGroup «Cómo se calcula» sobre superficie (`RestEditorScreen`)
-//   · `HeatLegend` — la leyenda de swatches del calendario 90 días (`HeatCalendarSection`)
 //   · `OnFieldOpacity` — opacidades sancionadas sobre campo invertido (`ConfidenceSello`)
 //
 // Los componentes son mudos en copy: reciben `String`/`LocalizedStringKey` ya localizados desde la
@@ -101,40 +102,11 @@ public struct Metodo<Content: View>: View {
 }
 #endif
 
-// MARK: - HeatLegend
-
-/// La leyenda del calendario 90 días: una fila de swatches 8×8 radio 2 + palabra en 10pt terciaria.
-public struct HeatLegend: View {
-    private let items: [(color: Color, label: String)]
-    private let theme: InstrumentoTheme
-
-    public init(_ items: [(color: Color, label: String)], theme: InstrumentoTheme) {
-        self.items = items
-        self.theme = theme
-    }
-
-    public var body: some View {
-        HStack(spacing: 14) {
-            ForEach(Array(items.enumerated()), id: \.offset) { _, item in
-                HStack(spacing: 5) {
-                    RoundedRectangle(cornerRadius: 2, style: .continuous)
-                        .fill(item.color)
-                        .frame(width: 8, height: 8)
-                    Text(item.label)
-                        .font(StrandFont.scaled(10))
-                        .foregroundStyle(theme.inkTertiary)
-                }
-                .accessibilityElement(children: .combine)
-            }
-        }
-    }
-}
-
 // MARK: - Previews
 
 #if DEBUG
 #if !os(watchOS)
-#Preview("BarraAncla + Metodo + HeatLegend") {
+#Preview("BarraAncla + Metodo") {
     let t = InstrumentoTheme.base
     VStack(alignment: .leading, spacing: 18) {
         BarraAncla("El pronóstico es una proyección, no una garantía.", color: t.verdict, theme: t)
@@ -143,8 +115,6 @@ public struct HeatLegend: View {
                 .font(StrandFont.scaled(13))
                 .foregroundStyle(t.inkSecondary)
         }
-        HeatLegend([(t.verdict, "listo"), (t.warning, "recuperando"),
-                    (t.critical, "bajo"), (t.rangeBand, "sin dato")], theme: t)
     }
     .padding(20)
     .background(t.paper)

@@ -13,20 +13,6 @@ final class InstrumentoSnapshotTests: XCTestCase {
 
     @MainActor func test_language()  throws { try render(LanguageDemo(),  to: "language", width: 390) }
     @MainActor func test_palette()   throws { try render(PaletteDemo(),   to: "palette",  width: 390) }
-    @MainActor func test_loading()   throws { try render(LoadingStateView("Leyendo tu strap…"), to: "state_loading", width: 390, height: 420) }
-    @MainActor func test_empty()     throws {
-        try render(EmptyStateView(systemImage: "bolt.heart",
-                                  title: "Aún no hay datos de hoy",
-                                  message: "Conecta tu strap para ver tu recuperación y esfuerzo del día.",
-                                  actionTitle: "Conectar strap", action: {}),
-                   to: "state_empty", width: 390, height: 420)
-    }
-    @MainActor func test_error()     throws {
-        try render(ErrorStateView(message: "No pudimos leer tu strap. Revisa que esté cerca y vuelve a intentar.",
-                                  retryTitle: "Reintentar", retry: {}),
-                   to: "state_error", width: 390, height: 420)
-    }
-
     // MARK: harness
 
     @MainActor private func render<V: View>(_ content: V, to name: String, width: CGFloat, height: CGFloat? = nil) throws {

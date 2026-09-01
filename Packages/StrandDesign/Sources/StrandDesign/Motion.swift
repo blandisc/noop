@@ -12,8 +12,8 @@ import SwiftUI
 // the connection dot) are black-screen effects that only muddy a glyph's edge on warm paper, so the
 // daytime views drop them: the glow lives in the COMPONENTS, gated off by `\.instrumentoFlat` (which
 // `.instrumentoTheme(_:)` sets), not in a motion preset here. The remaining curves below
-// (`pulse` / `spin` / `bob` / `drawIn` / `fade`) serve the legacy dark system and specific shipped
-// affordances (sync dial spin, pull-to-refresh bob); they are maintained, not extended.
+// (`drawIn` / `fade`) serve the legacy dark system and specific shipped affordances; they are
+// maintained, not extended. FER-280·3c podó `pulse`/`spin`/`bob`/`livePulse` — 0 usos reales.
 
 public enum StrandMotion {
 
@@ -53,34 +53,9 @@ public enum StrandMotion {
         .easeInOut(duration: breathPeriod).repeatForever(autoreverses: true)
     }
 
-    /// A single heartbeat ripple pulse.
-    public static let pulse = Animation.easeOut(duration: 0.6)
-
     /// Standard fade.
     @available(*, deprecated, message: "usa LiquidMotion.fundido (mismo valor; FER-280·2e)")
     public static let fade = Animation.easeInOut(duration: durationStandard)
-
-    /// Continuous linear spin for indeterminate progress (e.g. the sync dial arc,
-    /// FER-221). No autoreverse — a steady rotation, not a wobble.
-    public static func spin(period: Double = 1.5) -> Animation {
-        .linear(duration: period).repeatForever(autoreverses: false)
-    }
-
-    /// Gentle looping vertical bob for an affordance hint that invites a gesture —
-    /// e.g. the pull-to-refresh chevron nudging the eye downward (FER-293). Slower
-    /// and softer than `pulse`, quieter than `breathe`.
-    public static var bob: Animation {
-        .easeInOut(duration: 1.2).repeatForever(autoreverses: true)
-    }
-
-    // MARK: Entrenar v3 session (FER-716)
-
-    /// The one always-on pulse of the app: the live BPM dot in the strength session header
-    /// (1.1 s breath). Everything else on the session screen is still. Callers must gate it off
-    /// under Reduce Motion (fall back to a static dot) — this preset does not self-disable.
-    public static var livePulse: Animation {
-        .easeInOut(duration: 1.1).repeatForever(autoreverses: true)
-    }
 
     /// The receipt's numerals counting 0 → value, ONCE, on save (paired with
     /// `.contentTransition(.numericText())` and an "already-played" flag so re-opening never re-animates).
