@@ -319,7 +319,7 @@ struct TrainingBodyScreen: View {
         if peeked == muscle {
             selected = MuscleSelection(muscle: muscle)
         } else {
-            withAnimation(StrandMotion.interactive) { peeked = muscle }
+            withAnimation(LiquidMotion.toque) { peeked = muscle }
         }
     }
 
@@ -372,7 +372,7 @@ struct TrainingBodyScreen: View {
         HStack {
             Text("Tap again to see everything").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
             Spacer()
-            Button { withAnimation(StrandMotion.interactive) { peeked = nil } } label: {
+            Button { withAnimation(LiquidMotion.toque) { peeked = nil } } label: {
                 HStack(spacing: 3) {
                     Image(systemName: "arrow.uturn.backward").font(StrandFont.glyph(.chevron, weight: .semibold))
                     Text("Deselect").font(StrandFont.caption)
@@ -402,7 +402,7 @@ struct TrainingBodyScreen: View {
 
     private func markAllRecovered() {
         recoveryResetAt = Date().timeIntervalSince1970
-        withAnimation(StrandMotion.interactive) { peeked = nil }
+        withAnimation(LiquidMotion.toque) { peeked = nil }
         Task { await load() }
     }
 
@@ -561,7 +561,7 @@ struct TrainingBodyScreen: View {
 
     private var method: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Button { withAnimation(StrandMotion.interactive) { showMethod.toggle() } } label: {
+            Button { withAnimation(LiquidMotion.toque) { showMethod.toggle() } } label: {
                 Text("See the method ›")
                     .font(StrandFont.caption).fontWeight(.semibold).foregroundColor(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)

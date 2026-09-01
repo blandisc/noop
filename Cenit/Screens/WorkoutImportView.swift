@@ -546,7 +546,7 @@ struct WorkoutImportView: View {
         .onAppear {
             guard !celebrate else { return }
             if reduceMotion { celebrate = true }
-            else { withAnimation(StrandMotion.hero.delay(0.05)) { celebrate = true } }
+            else { withAnimation(LiquidMotion.heroe.delay(0.05)) { celebrate = true } }
         }
     }
 

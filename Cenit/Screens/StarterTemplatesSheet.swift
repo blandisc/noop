@@ -139,7 +139,7 @@ struct StarterTemplatesSheet: View {
     }
 
     private func templateRow(_ t: StarterTemplate) -> some View {
-        Button { withAnimation(StrandMotion.interactive) { selected = t } } label: {
+        Button { withAnimation(LiquidMotion.toque) { selected = t } } label: {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 1) {
                     Text(templateName(t.id)).font(StrandFont.body).foregroundStyle(theme.ink)
@@ -164,7 +164,7 @@ struct StarterTemplatesSheet: View {
             // En modo grupo con 1 rutina no hay lista detrás; el back solo tiene sentido si hay
             // más de una (o catálogo completo).
             if !isGroupMode || (grupo.map { StarterTemplates.inGroup($0).count } ?? 0) > 1 {
-                Button { withAnimation(StrandMotion.interactive) { selected = nil } } label: {
+                Button { withAnimation(LiquidMotion.toque) { selected = nil } } label: {
                     HStack(spacing: 4) {
                         StrandIcon.back.image.font(StrandFont.glyph(.chevron, weight: .semibold))
                         Text(isGroupMode ? groupName(t.group) : LocalizedStringKey("Templates"))

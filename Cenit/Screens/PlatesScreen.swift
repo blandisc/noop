@@ -121,10 +121,10 @@ struct PlatesScreen: View {
                 Text("YOUR INVENTORY · PER SIDE").groteskOverline().foregroundStyle(theme.inkTertiary)
                 Spacer()
                 // FER-89 (auditoría Reduce Motion): sin esto el pliegue del editor de inventario
-                // animaba siempre, sin alternativa quieta. `StrandMotion.gated` apaga la animación
+                // animaba siempre, sin alternativa quieta. `LiquidMotion.condicionado` apaga la animación
                 // cuando el sistema pide Reducir movimiento — el mismo patrón que ya usa el paquete
                 // (`ReduceMotion.swift`) en vez de un `reduceMotion ? nil : x` a mano.
-                Button(action: { withAnimation(StrandMotion.gated(.snappy, reduceMotion)) { editingInventory.toggle() } }) {
+                Button(action: { withAnimation(LiquidMotion.condicionado(.snappy, reduceMotion)) { editingInventory.toggle() } }) {
                     // UI·armonía #2: acción de UI en tinta, no en hue de dato de salud.
                     Text(editingInventory ? "Done" : "Edit")
                         .font(StrandFont.caption.weight(.semibold)).foregroundStyle(theme.ink)

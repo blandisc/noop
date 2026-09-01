@@ -91,7 +91,7 @@ struct RPESheet: View {
     }
 
     /// FER-198: `EntrenarFilaEsfuerzo` (Ola 1) reemplaza el `LazyVGrid` de celdas a mano — MISMA
-    /// selección (índice tocado → `Self.scale[index]`) y MISMA animación (`StrandMotion.interactive`).
+    /// selección (índice tocado → `Self.scale[index]`) y MISMA animación (`LiquidMotion.toque`).
     private var scale: some View {
         EntrenarFilaEsfuerzo(
             opciones: Self.scale.map { LiveStrengthSheet.formatDecimalComma($0) },
@@ -99,7 +99,7 @@ struct RPESheet: View {
             tono: .ambar
         ) { index in
             guard Self.scale.indices.contains(index) else { return }
-            withAnimation(StrandMotion.interactive) { selected = Self.scale[index] }
+            withAnimation(LiquidMotion.toque) { selected = Self.scale[index] }
         }
     }
 
