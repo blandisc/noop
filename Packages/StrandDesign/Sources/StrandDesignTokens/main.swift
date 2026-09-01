@@ -518,6 +518,15 @@ public let catalogEntries: [CatalogEntry] = [
                  archivo: "Entrenar/HojaCapsulaAccion.swift",
                  cuandoUsarlo: "Acción compacta sobre vidrio DENTRO de una hoja de Entrenar que no promete navegación — flecha opcional, apagada por default (FER-280·1c).",
                  cuandoNo: "No para una puerta a otra pantalla/hoja (usa `EntrenarCapsulaPuerta`); no para un CTA de pantalla completa (usa `LiquidGlassButton`/`StrandCTAButton`)."),
+    // —— FER-280 · piezas que matan clases (ola 2p) ——
+    CatalogEntry(rol: "Cápsula outline de acción", simbolo: "OutlineCapsule",
+                 archivo: "OutlineCapsule.swift",
+                 cuandoUsarlo: "Acción secundaria en cápsula con `hairlineStrong` ± fill (raise, Start/Stop, filtro, Use, Match…) — sm/md + press.",
+                 cuandoNo: "No CTA de tinta a lo ancho (`StrandCTAButton`); no pill Liquid de hoja (`LiquidGlassButton`); no acción de header (`HeaderActionButton`)."),
+    CatalogEntry(rol: "Pastilla de estado Liquid", simbolo: "LiquidStatePill",
+                 archivo: "LiquidGlass/LiquidStatePill.swift",
+                 cuandoUsarlo: "Estado vivo/listo sobre cristal (`.pastillaSolida`) o chip de valencia Δ% — sustituye `statusPill` a mano y chips de signo.",
+                 cuandoNo: "No pastilla Instrumento de chrome (`StatePill`); no procedencia (`LiquidOrigenChip`/`SourceBadge`); no filtro removible (`LiquidChipSeleccion`)."),
 ]
 
 func catalogoTable() -> String {
