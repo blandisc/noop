@@ -67,7 +67,7 @@ private struct PullSyncHint: View {
                 Text(String(localized: "hoy.sincronizando", defaultValue: "Syncing…"))
                     .font(InstrumentoType.grotesk(12, weight: .medium))
                     .foregroundStyle(LiquidColor.tinta500)
-                    .transition(.opacity)
+                    .transition(LiquidMotion.fadeTransition)
                     .accessibilityAddTraits(.updatesFrequently)
             } else if shows {
                 VStack(spacing: CenitMetrics.space1) {
@@ -78,7 +78,7 @@ private struct PullSyncHint: View {
                     LiquidIcon(.chevron, size: 11, color: LiquidColor.tinta500)
                         .rotationEffect(.degrees(90))
                 }
-                .transition(.opacity)
+                .transition(LiquidMotion.fadeTransition)
                 .accessibilityHidden(true)
             }
         }

@@ -81,7 +81,7 @@ struct OnboardingWizard: View {
 
             contenido
                 .id(acto)
-                .transition(.opacity)
+                .transition(LiquidMotion.fadeTransition)
                 .zIndex(1)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

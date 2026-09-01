@@ -69,7 +69,7 @@ struct ContentView: View {
                     EntradaDeArranque.marcarCorrida()
                     onboarded = true
                 })
-                .transition(.opacity)
+                .transition(LiquidMotion.fadeTransition)
                 .zIndex(1)
             }
             #if os(iOS)
@@ -79,7 +79,7 @@ struct ContentView: View {
             if onboarded && repo.storeOpenFailed {
                 StoreFailureView(onRetry: { Task { await repo.retryStoreOpen() } },
                                  onRestore: { Task { await runRestore() } })
-                    .transition(.opacity)
+                    .transition(LiquidMotion.fadeTransition)
                     .zIndex(1)
             }
             #endif
@@ -87,7 +87,7 @@ struct ContentView: View {
             // the current terms version is accepted; re-appears if the terms materially change.
             if acceptedTerms != Terms.currentVersion {
                 TermsGateView(onAccept: { acceptedTerms = Terms.currentVersion })
-                    .transition(.opacity)
+                    .transition(LiquidMotion.fadeTransition)
                     .zIndex(2)
             }
             // La entrada (FER-41) va HASTA ARRIBA, incluso sobre el gate de Términos: es lo
@@ -107,7 +107,7 @@ struct ContentView: View {
                 // Cinturón y tirantes: la entrada ya se apaga sola antes de avisar, así que al
                 // quitarla debería ser invisible. Si algún día ese cálculo se desfasa, esto
                 // convierte un corte seco en un fundido en vez de en un parpadeo.
-                .transition(.opacity)
+                .transition(LiquidMotion.fadeTransition)
                 .zIndex(3)
             }
         }
@@ -115,9 +115,9 @@ struct ContentView: View {
         // aterrizar sin costura sobre él. Antes de que llegue (o si el árbol no lo propaga), la
         // entrada cae a su cénit fijo — sin regresión.
         .onPreferenceChange(HeroOrbeFrameKey.self) { heroDestino = $0 }
-        .animation(.easeInOut(duration: 0.35), value: onboarded)
-        .animation(.easeInOut(duration: 0.35), value: acceptedTerms)
-        .animation(.easeOut(duration: 0.2), value: entradaLista)
+        .animation(LiquidMotion.ambient(LiquidMotion.measured), value: onboarded)
+        .animation(LiquidMotion.ambient(LiquidMotion.measured), value: acceptedTerms)
+        .animation(LiquidMotion.settle(LiquidMotion.soft), value: entradaLista)
         // El color scheme se decide AQUÍ (lo más cercano a la raíz del WindowGroup, que es donde el
         // controlador raíz lee `preferredColorScheme` para la barra de estado): el gate de Términos es
         // papel claro (FER-416) → barra en tinta oscura; el onboarding sigue oscuro; ya dentro, Hoy es
@@ -157,7 +157,7 @@ struct ContentView: View {
                     .patternBlock(theme, bar: restoreSucceeded ? theme.verdict : theme.critical)
                     .padding(.horizontal, 16)
                     .onTapGesture { showRestoreResult = false }
-                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .transition(LiquidMotion.fallingFadeTransition)
                     .task {
                         try? await Task.sleep(for: .seconds(8))
                         showRestoreResult = false

@@ -106,6 +106,50 @@ final class DesignDriftTokenTests: XCTestCase {
         XCTAssertEqual(LiquidSpace.estadoVacioAire, LiquidSpace.handoff14,
                         "misma CIFRA por diseño — el rol (spacing de VStack, no padding de tarjeta) es lo que los distingue")
     }
+
+    // MARK: - FER-269a (Fase 3, primera ola) — dimensión movimiento: 12 literal-curve-duration +
+    // 37 literal-transition del censo. Igualdad exacta de valor Y de curva/transición (por
+    // descripción — `Animation`/`AnyTransition` no son `Equatable`, pero dos valores construidos
+    // igual describen igual en este toolchain).
+
+    // Duraciones nuevas: cifras REALES más frecuentes del censo de movimiento (no inventadas).
+    func test_movimientoDuracionesMatchCensusValues() {
+        XCTAssertEqual(LiquidMotion.brief, 0.15)     // Watch check-toggle (2 sitios)
+        XCTAssertEqual(LiquidMotion.soft, 0.2)       // fase de respiración + reveal del héroe (3 sitios)
+        XCTAssertEqual(LiquidMotion.measured, 0.35)  // gates de arranque (2 sitios)
+    }
+
+    // Curvas nuevas: `settle` (easeOut) y `dismiss` (easeIn) deben producir EXACTAMENTE la misma
+    // animación que el literal crudo que envuelven — probado por descripción.
+    func test_movimientoCurvasMatchRawEquivalents() {
+        XCTAssertEqual(String(describing: LiquidMotion.settle(LiquidMotion.brief)),
+                       String(describing: Animation.easeOut(duration: 0.15)))
+        XCTAssertEqual(String(describing: LiquidMotion.dismiss(LiquidMotion.brief)),
+                       String(describing: Animation.easeIn(duration: 0.15)))
+        XCTAssertEqual(String(describing: LiquidMotion.settle(LiquidMotion.soft)),
+                       String(describing: Animation.easeOut(duration: 0.2)))
+        XCTAssertEqual(String(describing: LiquidMotion.ambient(LiquidMotion.soft)),
+                       String(describing: Animation.easeInOut(duration: 0.2)))
+        XCTAssertEqual(String(describing: LiquidMotion.ambient(LiquidMotion.measured)),
+                       String(describing: Animation.easeInOut(duration: 0.35)))
+    }
+
+    // Transiciones nuevas: cada receta debe describir EXACTAMENTE igual que el `AnyTransition`
+    // crudo que envuelve.
+    func test_movimientoTransicionesMatchRawEquivalents() {
+        XCTAssertEqual(String(describing: LiquidMotion.fadeTransition),
+                       String(describing: AnyTransition.opacity))
+        XCTAssertEqual(String(describing: LiquidMotion.risingFadeTransition),
+                       String(describing: AnyTransition.move(edge: .bottom).combined(with: .opacity)))
+        XCTAssertEqual(String(describing: LiquidMotion.fallingFadeTransition),
+                       String(describing: AnyTransition.move(edge: .top).combined(with: .opacity)))
+        XCTAssertEqual(String(describing: LiquidMotion.trailingTransition),
+                       String(describing: AnyTransition.move(edge: .trailing)))
+        XCTAssertEqual(String(describing: LiquidMotion.fadeOrIdentity(reduceMotion: false)),
+                       String(describing: AnyTransition.opacity))
+        XCTAssertEqual(String(describing: LiquidMotion.fadeOrIdentity(reduceMotion: true)),
+                       String(describing: AnyTransition.identity))
+    }
 }
 
 /// (1) `LiquidSectionHeader` — el componente Liquid que reemplaza `InstrumentoSectionBand`

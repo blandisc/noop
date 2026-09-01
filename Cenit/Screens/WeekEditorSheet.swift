@@ -74,7 +74,7 @@ struct WeekEditorSheet: View {
                     .padding(.horizontal, CenitMetrics.gap).padding(.vertical, CenitMetrics.space2)
                     .background(theme.ink, in: Capsule())
                     .padding(.bottom, CenitMetrics.sectionGap)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .transition(LiquidMotion.risingFadeTransition)
                     .task {
                         try? await Task.sleep(for: .seconds(2))
                         lockedToast = false

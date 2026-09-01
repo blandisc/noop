@@ -181,7 +181,7 @@ struct WorkoutHistoryScreen: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .patternBlock(theme, bar: theme.critical)
                     .padding(.horizontal, 16)  // token-exempt: sin token exacto en mapa FER-207 (cardPadding candidato)
-                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .transition(LiquidMotion.fallingFadeTransition)
                     .task {
                         try? await Task.sleep(for: .seconds(4))
                         saveError = false
@@ -1323,7 +1323,7 @@ struct WorkoutHistoryScreen: View {
         .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
         .padding(.horizontal, CenitMetrics.screenPadding)
         .padding(.bottom, CenitMetrics.space2)
-        .transition(.move(edge: .bottom).combined(with: .opacity))
+        .transition(LiquidMotion.risingFadeTransition)
         .task(id: d.id) {
             try? await Task.sleep(nanoseconds: 4_000_000_000)
             withAnimation { if coordinator.pendingUndo?.id == d.id { coordinator.pendingUndo = nil } }
@@ -1609,7 +1609,7 @@ struct WorkoutSessionDetailScreen: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .patternBlock(theme, bar: theme.critical)
                     .padding(.horizontal, 16)  // token-exempt: sin token exacto en mapa FER-207 (cardPadding candidato)
-                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .transition(LiquidMotion.fallingFadeTransition)
                     .task {
                         try? await Task.sleep(for: .seconds(4))
                         saveError = false

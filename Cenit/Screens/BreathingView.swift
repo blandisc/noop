@@ -277,8 +277,8 @@ struct BreathingView: View {
             Text(verbatim: running ? phaseWord : pace.tagline)
                 .font(LiquidType.cuerpo)
                 .foregroundStyle(running ? LiquidColor.tinta900 : LiquidColor.tinta700)
-                .strandAnimation(.easeInOut(duration: 0.2), value: phaseWord)
-                .strandAnimation(.easeInOut(duration: 0.2), value: running)
+                .strandAnimation(LiquidMotion.ambient(LiquidMotion.soft), value: phaseWord)
+                .strandAnimation(LiquidMotion.ambient(LiquidMotion.soft), value: running)
         }
         .padding(LiquidSpace.s600)
         .frame(maxWidth: .infinity, alignment: .leading)
