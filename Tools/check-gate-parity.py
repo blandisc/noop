@@ -55,6 +55,57 @@ def parse_matrix(text):
     return json.loads(m.group(1))
 
 
+# FER-272: el YAML se parsea como YAML (vía ruby, presente en macOS y en los runners de ubuntu —
+# python no trae yaml en stdlib). El texto ejecutable de la pata CI son EXACTAMENTE los bloques
+# `run:` de sus jobs; `name:`/comentarios/strings sueltas dejan de existir para el parser, y las
+# llaves que convierten un step en teatro (`if:` no permitido, `continue-on-error`,
+# `working-directory`) se detectan ESTRUCTURALMENTE por step, no por grep. Fail-closed: si ruby
+# falla o el YAML no parsea, la paridad FALLA — nunca se degrada al escaneo de texto (la clase
+# «fallback silencioso en jobs de seguridad», FER-276).
+def parse_workflow(root, rel):
+    """→ (run_text, problems). run_text = los bloques run: ejecutables concatenados."""
+    import subprocess
+    path = os.path.join(root, rel)
+    try:
+        out = subprocess.run(
+            ["ruby", "-ryaml", "-rjson", "-e", "puts YAML.load_file(ARGV[0]).to_json", path],
+            capture_output=True, text=True, timeout=30)
+    except (OSError, subprocess.TimeoutExpired) as e:
+        return "", [f"design-lint: no pude parsear el YAML como YAML ({e}) — fail-closed"]
+    if out.returncode != 0:
+        return "", [f"design-lint: YAML inválido según ruby ({out.stderr.strip()[:120]}) — fail-closed"]
+    try:
+        doc = json.loads(out.stdout)
+    except json.JSONDecodeError:
+        return "", ["design-lint: la conversión YAML→JSON no produjo JSON — fail-closed"]
+    problems, runs = [], []
+    jobs = doc.get("jobs") or {}
+    if not isinstance(jobs, dict) or not jobs:
+        return "", ["design-lint: el workflow no declara jobs — fail-closed"]
+    for jname, job in jobs.items():
+        if not isinstance(job, dict):
+            continue
+        jif = str(job.get("if", ""))
+        if jif and not YML_IF_ALLOWED.search(jif):
+            problems.append(f"design-lint: job `{jname}` con if: `{jif}` — solo se permite el guard de pull_request")
+        for step in job.get("steps") or []:
+            if not isinstance(step, dict):
+                continue
+            label = step.get("name") or step.get("uses") or "step"
+            for k in ("continue-on-error", "working-directory"):
+                if k in step:
+                    problems.append(f"design-lint: step `{label}` usa {k} — prohibido (teatro de gate)")
+            if "if" in step:
+                problems.append(f"design-lint: step `{label}` usa if: — prohibido a nivel step")
+            run = step.get("run")
+            if isinstance(run, str):
+                runs.append(run)
+    run_text = "\n".join(runs)
+    if "check-baseline-monotony.py" not in run_text:
+        problems.append("design-lint: ningún run: invoca check-baseline-monotony.py")
+    return run_text, problems
+
+
 def _strip_dead_text(text, is_yaml):
     """Quita el texto NO ejecutable antes de parsear (review Grok FER-265: una invocación canónica
     en un comentario bash o en un `name:` de YAML era un señuelo que satisfacía la matriz mientras
@@ -75,7 +126,7 @@ def _strip_dead_text(text, is_yaml):
 # `continue-on-error` no gatea, `working-directory` escanea otra carpeta. Se prohíben, con la
 # única excepción del guard del job de monotonía.
 YML_FORBIDDEN = re.compile(r"continue-on-error|working-directory\s*:")
-YML_IF_ALLOWED = re.compile(r"if:\s*github\.event_name\s*==\s*'pull_request'")
+YML_IF_ALLOWED = re.compile(r"^\s*github\.event_name\s*==\s*'pull_request'\s*$")
 
 
 def parse_invocations(text, is_yaml=False):
@@ -159,18 +210,12 @@ def check(root):
             continue
         is_yaml = rel.endswith((".yml", ".yaml"))
         if is_yaml:
-            # Un step canónico con `if:` raro, `continue-on-error` o `working-directory` es teatro,
-            # no gate (review Grok FER-265, casos A/D/F).
-            if YML_FORBIDDEN.search(text):
-                problems.append(f"{leg}: usa continue-on-error/working-directory — prohibido en este workflow")
-            for line in text.splitlines():
-                s = line.strip()
-                if s.startswith("if:") and not YML_IF_ALLOWED.search(s):
-                    problems.append(f"{leg}: `{s}` — el único if: permitido es el guard de pull_request")
-            if "check-baseline-monotony.py" not in _strip_dead_text(text, True):
-                problems.append(f"{leg}: el job de monotonía no invoca check-baseline-monotony.py")
+            # FER-272: el YAML se parsea como YAML — el texto ejecutable son los run: reales, y las
+            # llaves de teatro (if:/continue-on-error/working-directory) se detectan por estructura.
+            text, yml_problems = parse_workflow(root, rel)
+            problems.extend(yml_problems)
         found = {}
-        for rules, baseline, paths, has_var in parse_invocations(text, is_yaml):
+        for rules, baseline, paths, has_var in parse_invocations(text, is_yaml=False):
             for r in rules:
                 if r not in mrules:
                     problems.append(f"{leg}: invoca `{r}`, que la matriz no declara")
