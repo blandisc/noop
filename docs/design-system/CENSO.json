@@ -1,6 +1,6 @@
 {
-  "commitDate" : "2026-08-31T19:16:37-07:00",
-  "commitHash" : "8f08a6342cf0",
+  "commitDate" : "2026-09-01T16:36:29-06:00",
+  "commitHash" : "17ba6c45d2d9",
   "compositionCandidates" : [
     {
       "file" : "Cenit\/App\/AppMap.swift",
@@ -195,7 +195,7 @@
     {
       "file" : "Cenit\/Screens\/Entrenar\/EntrenarHubHeroe.swift",
       "line" : 148,
-      "snippet" : "Button {             withAnimation(reduceMotion ? StrandMotion.fade : StrandMotion.gentle) { onToggleOtraForma() }   ..."
+      "snippet" : "Button {             withAnimation(reduceMotion ? LiquidMotion.fundido : LiquidMotion.suave) { onToggleOtraForma() } ..."
     },
     {
       "file" : "Cenit\/Screens\/Entrenar\/EntrenarHubHeroe.swift",
@@ -329,92 +329,82 @@
     },
     {
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 198,
-      "snippet" : "Button { isPresented.wrappedValue = true } label: {             HStack(spacing: CenitMetrics.space1) {               ..."
-    },
-    {
-      "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 199,
-      "snippet" : "HStack(spacing: CenitMetrics.space1) {                 Text(active.map(label) ?? title)                     .font(Str..."
-    },
-    {
-      "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 308,
+      "line" : 304,
       "snippet" : "HStack(spacing: CenitMetrics.gap) {             \/\/ Handoff: the thumbnail carries a 2px frame in the exercise's movem..."
     },
     {
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 310,
+      "line" : 306,
       "snippet" : "ExerciseThumbView(exercise: ex, side: 52)   \/\/ handoff: 52px thumb · cached GIF still or paper placeholder (FER-790) ..."
     },
     {
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 353,
+      "line" : 349,
       "snippet" : "Button {                 toggle(ex)             } label: {                 \/\/ Ancho FIJO y alineado a la derecha: la ..."
     },
     {
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 360,
+      "line" : 356,
       "snippet" : "Group {                     if selected.contains(ex.id) {                         Image(systemName: \"checkmark.circle..."
     },
     {
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 367,
+      "line" : 363,
       "snippet" : "Text(\"Add\").font(InstrumentoType.grotesk(13, weight: .semibold)).foregroundStyle(theme.ink)                          ..."
     },
     {
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 389,
+      "line" : 385,
       "snippet" : "HStack {             Spacer(minLength: 0)             Button { showCreate = true } label: {                 HStack(sp..."
     },
     {
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 391,
+      "line" : 387,
       "snippet" : "Button { showCreate = true } label: {                 HStack(spacing: CenitMetrics.space2) {                     Stra..."
     },
     {
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 392,
+      "line" : 388,
       "snippet" : "HStack(spacing: CenitMetrics.space2) {                     StrandIcon.add.image.font(StrandFont.glyph(.inline, weight..."
     },
     {
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 558,
+      "line" : 554,
       "snippet" : "ScrollView {             VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {                 VStack(align..."
     },
     {
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 559,
+      "line" : 555,
       "snippet" : "VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {                 VStack(alignment: .leading, spacing: ..."
     },
     {
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 568,
+      "line" : 564,
       "snippet" : "VStack(alignment: .leading, spacing: CenitMetrics.space2) {                     Text(\"Name\").instrumentoOverline().fo..."
     },
     {
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 570,
+      "line" : 566,
       "snippet" : "TextField(\"e.g. Svend press\", text: $name)                         .font(StrandFont.body).foregroundStyle(theme.ink) ..."
     },
     {
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 598,
+      "line" : 594,
       "snippet" : "Button { create() } label: {                     Text(isEditing ? \"Save changes\" : \"Create exercise\")                ..."
     },
     {
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 599,
+      "line" : 595,
       "snippet" : "Text(isEditing ? \"Save changes\" : \"Create exercise\")                         .font(InstrumentoType.grotesk(15, weight..."
     },
     {
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 643,
+      "line" : 639,
       "snippet" : "Button { type = t } label: {             HStack(spacing: CenitMetrics.gap) {                 Image(systemName: Streng..."
     },
     {
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 644,
+      "line" : 640,
       "snippet" : "HStack(spacing: CenitMetrics.gap) {                 Image(systemName: StrengthDisplay.typeIcon(t)).font(StrandFont.gl..."
     },
     {
@@ -535,7 +525,7 @@
     {
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveFoco.swift",
       "line" : 235,
-      "snippet" : "Button {                 withAnimation(vivo.reduceMotion ? nil : StrandMotion.gentle) {                     if runnin..."
+      "snippet" : "Button {                 withAnimation(vivo.reduceMotion ? nil : LiquidMotion.suave) {                     if running..."
     },
     {
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveFoco.swift",
@@ -545,7 +535,7 @@
     {
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveFoco.swift",
       "line" : 279,
-      "snippet" : "Button {                 withAnimation(vivo.reduceMotion ? nil : StrandMotion.gentle) {                     if runnin..."
+      "snippet" : "Button {                 withAnimation(vivo.reduceMotion ? nil : LiquidMotion.suave) {                     if running..."
     },
     {
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveFoco.swift",
@@ -580,7 +570,7 @@
     {
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveFoco.swift",
       "line" : 463,
-      "snippet" : "Button {                     withAnimation(vivo.reduceMotion ? nil : StrandMotion.gentle) { vivo.focusDoneRunId = nil..."
+      "snippet" : "Button {                     withAnimation(vivo.reduceMotion ? nil : LiquidMotion.suave) { vivo.focusDoneRunId = nil ..."
     },
     {
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveFoco.swift",
@@ -609,97 +599,42 @@
     },
     {
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 114,
-      "snippet" : "Button {             withAnimation(vivo.reduceMotion ? nil : .snappy) { _ = vivo.session.takeHeldRaise(at: ei) }     ..."
-    },
-    {
-      "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 117,
-      "snippet" : "HStack(spacing: LiquidSpace.s150) {                 Text(verbatim: \"▲\").foregroundStyle(LiquidColor.verdeProfundo)   ..."
-    },
-    {
-      "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 248,
+      "line" : 245,
       "snippet" : "HojaFilaSerie(datos: datos, contexto: .sesion, marca: marca) {             vivo.confirmOrToggleSet(ei: ei, si: si)   ..."
     },
     {
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 288,
+      "line" : 285,
       "snippet" : "RoundedRectangle(cornerRadius: HojaMetrics.activaRadius, style: .continuous)                     .fill(LiquidColor.ro..."
     },
     {
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 306,
-      "snippet" : "EntrenarModulo(tono: .indigo) {             HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s250) {       ..."
-    },
-    {
-      "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 307,
-      "snippet" : "HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s250) {                 Text(run.name).font(StrandFont.sub..."
-    },
-    {
-      "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 326,
-      "snippet" : "Button {                     if running {                         withAnimation(vivo.reduceMotion ? nil : .snappy) { ..."
-    },
-    {
-      "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 333,
-      "snippet" : "Text(running ? \"Stop\" : \"Start\")                         .font(StrandFont.caption.weight(.bold)).foregroundStyle(vivo..."
-    },
-    {
-      "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 350,
+      "line" : 342,
       "snippet" : "Text(\"ZONE \\(zone) · \\(bpm)\")             .font(StrandFont.caption.weight(.bold)).foregroundStyle(vivo.sheet.theme.in..."
     },
     {
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 361,
+      "line" : 353,
       "snippet" : "HStack(spacing: LiquidSpace.s150) {             Text(\"RECORD\").font(StrandFont.caption.weight(.bold)).foregroundStyle..."
     },
     {
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 395,
-      "snippet" : "NoteStrip(style: .warning, theme: vivo.sheet.theme) {             VStack(alignment: .leading, spacing: LiquidSpace.s1..."
-    },
-    {
-      "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 396,
-      "snippet" : "VStack(alignment: .leading, spacing: LiquidSpace.s150) {                 (Text(\"\\(vivo.plateNumber(vivo.displayWeight..."
-    },
-    {
-      "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 402,
-      "snippet" : "HStack(spacing: LiquidSpace.s250) {                     Button { vivo.correctAbsurdCapture() } label: {              ..."
-    },
-    {
-      "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 403,
-      "snippet" : "Button { vivo.correctAbsurdCapture() } label: {                         Text(\"It was \\(vivo.plateNumber(vivo.displayW..."
-    },
-    {
-      "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 404,
-      "snippet" : "Text(\"It was \\(vivo.plateNumber(vivo.displayWeight(target.weightKg \/ 10)))\")                             .font(Strand..."
-    },
-    {
-      "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 424,
+      "line" : 413,
       "snippet" : "HStack {             if !allDone {                 Button { withAnimation(vivo.reduceMotion ? nil : .snappy) { vivo.s..."
     },
     {
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 426,
+      "line" : 415,
       "snippet" : "Button { withAnimation(vivo.reduceMotion ? nil : .snappy) { vivo.session.addSet(exercise: ei) } } label: {           ..."
     },
     {
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 427,
+      "line" : 416,
       "snippet" : "Text(verbatim: \"＋ \\(String(localized: \"SET\"))\")                         .font(InstrumentoType.grotesk(9.5, weight: .b..."
     },
     {
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 431,
+      "line" : 420,
       "snippet" : "Capsule().fill(HojaLiveMetrics.capsulaFondo)"
     },
     {
@@ -830,7 +765,7 @@
     {
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
       "line" : 1368,
-      "snippet" : "VStack(alignment: .leading, spacing: 14) {             Image(systemName: \"checkmark.seal\")                 .font(Stra..."
+      "snippet" : "VStack(alignment: .leading, spacing: LiquidSpace.estadoVacioAire) {             Image(systemName: \"checkmark.seal\")  ..."
     },
     {
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
@@ -859,37 +794,27 @@
     },
     {
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1449,
-      "snippet" : "Button { model.closeStrengthSummary() } label: {                 Text(\"Done\")                     .font(InstrumentoTy..."
-    },
-    {
-      "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1450,
-      "snippet" : "Text(\"Done\")                     .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)                     ..."
-    },
-    {
-      "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1735,
+      "line" : 1728,
       "snippet" : "HStack(spacing: 10) {             Text(label).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)           ..."
     },
     {
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1738,
+      "line" : 1731,
       "snippet" : "GeometryReader { geo in                 let w = geo.size.width                 ZStack(alignment: .leading) {         ..."
     },
     {
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1740,
+      "line" : 1733,
       "snippet" : "ZStack(alignment: .leading) {                     Capsule().fill(theme.hairline)                     Capsule().fill(n..."
     },
     {
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1741,
+      "line" : 1734,
       "snippet" : "Capsule().fill(theme.hairline)"
     },
     {
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1742,
+      "line" : 1735,
       "snippet" : "Capsule().fill(neutral ? theme.hairlineStrong : theme.dataRecovery)                         .opacity(neutral || posit..."
     },
     {
@@ -964,22 +889,12 @@
     },
     {
       "file" : "Cenit\/Screens\/PlatesScreen.swift",
-      "line" : 257,
-      "snippet" : "Button {             onInsertWarmup(warmup.map { (weightKg: $0.weightKg, reps: $0.reps) })         } label: {        ..."
-    },
-    {
-      "file" : "Cenit\/Screens\/PlatesScreen.swift",
-      "line" : 260,
-      "snippet" : "Text(\"Insert warm-up into the session\")                 .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0...."
-    },
-    {
-      "file" : "Cenit\/Screens\/PlatesScreen.swift",
-      "line" : 316,
+      "line" : 309,
       "snippet" : "Text(chip.label)             .font(InstrumentoType.groteskNumber(13)).monospacedDigit()             .foregroundStyle(..."
     },
     {
       "file" : "Cenit\/Screens\/PlatesScreen.swift",
-      "line" : 321,
+      "line" : 314,
       "snippet" : "Capsule().fill(fillColor)"
     },
     {
@@ -1079,47 +994,12 @@
     },
     {
       "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 178,
-      "snippet" : "VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {             \/\/ En modo grupo con 1 rutina no hay list..."
-    },
-    {
-      "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 215,
-      "snippet" : "VStack(spacing: 10) {                     Button { add(t) } label: {                         Text(\"Add to my routines..."
-    },
-    {
-      "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 216,
-      "snippet" : "Button { add(t) } label: {                         Text(\"Add to my routines\")                             .font(Instr..."
-    },
-    {
-      "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 217,
-      "snippet" : "Text(\"Add to my routines\")                             .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3..."
-    },
-    {
-      "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 239,
-      "snippet" : "VStack(spacing: 10) {             Button { applyTemplateGroup() } label: {                 Text(\"Use this plan\")     ..."
-    },
-    {
-      "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 240,
-      "snippet" : "Button { applyTemplateGroup() } label: {                 Text(\"Use this plan\")                     .font(InstrumentoT..."
-    },
-    {
-      "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 241,
-      "snippet" : "Text(\"Use this plan\")                     .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)            ..."
-    },
-    {
-      "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 263,
+      "line" : 232,
       "snippet" : "HStack(spacing: 10) {             Text(name).font(StrandFont.body).foregroundStyle(theme.ink)                 .fixedS..."
     },
     {
       "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 268,
+      "line" : 237,
       "snippet" : "Text(restChipText(slot.restSeconds))                 .font(StrandFont.caption).monospacedDigit().foregroundStyle(them..."
     },
     {
@@ -1234,78 +1114,68 @@
     },
     {
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 378,
+      "line" : 365,
       "snippet" : "HStack(spacing: 3) {             ForEach(Array(vol.enumerated()), id: \\.offset) { _, e in                 Capsule().f..."
     },
     {
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 379,
+      "line" : 366,
       "snippet" : "ForEach(Array(vol.enumerated()), id: \\.offset) { _, e in                 Capsule().fill(e.key.tint(theme))           ..."
     },
     {
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 380,
+      "line" : 367,
       "snippet" : "Capsule().fill(e.key.tint(theme))                     .frame(width: max(12, CGFloat(e.value) \/ CGFloat(maxV) * 34), h..."
     },
     {
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 396,
-      "snippet" : "VStack(alignment: .leading, spacing: 10) {             InstrumentoSectionBand(\"Weekly volume by group\")             H..."
+      "line" : 383,
+      "snippet" : "VStack(alignment: .leading, spacing: 10) {             LiquidSectionHeader(\"Weekly volume by group\")             HSta..."
     },
     {
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 398,
+      "line" : 385,
       "snippet" : "HStack(alignment: .bottom, spacing: 14) {                 ForEach(Array(MuscleGroup.allCases.enumerated()), id: \\.ele..."
     },
     {
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 399,
+      "line" : 386,
       "snippet" : "ForEach(Array(MuscleGroup.allCases.enumerated()), id: \\.element) { i, g in                     let v = vol[g] ?? 0   ..."
     },
     {
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 401,
+      "line" : 388,
       "snippet" : "VStack(spacing: 5) {                         RoundedRectangle(cornerRadius: 4, style: .continuous)  \/\/ token-exempt: ..."
     },
     {
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 402,
+      "line" : 389,
       "snippet" : "RoundedRectangle(cornerRadius: 4, style: .continuous)  \/\/ token-exempt: geometría de dato                            ..."
     },
     {
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 668,
+      "line" : 655,
       "snippet" : "SwipeToDeleteRow(             isOpen: Binding(get: { swipedRoutineId == r.id },                             set: { sw..."
     },
     {
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 673,
+      "line" : 660,
       "snippet" : "HStack(spacing: 8) {                 Button { openRoutine(r.id) } label: {                     \/\/ Handoff (opción B, ..."
     },
     {
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 674,
+      "line" : 661,
       "snippet" : "Button { openRoutine(r.id) } label: {                     \/\/ Handoff (opción B, FER-940): a sunken chip with the move..."
     },
     {
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 677,
+      "line" : 664,
       "snippet" : "HStack(spacing: 12) {                         RoutineRegionGlyph(glyphKind(r), tint: routineTint(r))                 ..."
     },
     {
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 678,
+      "line" : 665,
       "snippet" : "RoutineRegionGlyph(glyphKind(r), tint: routineTint(r))                             .frame(width: 22, height: 22)     ..."
-    },
-    {
-      "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 747,
-      "snippet" : "HStack(spacing: 12) {             Text(\"Routine deleted\").font(StrandFont.subhead).foregroundStyle(theme.surface)    ..."
-    },
-    {
-      "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 870,
-      "snippet" : "HStack(spacing: 12) {             Text(\"Folder deleted\").font(StrandFont.subhead).foregroundStyle(theme.surface)     ..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutDetailScreen.swift",
@@ -1334,252 +1204,247 @@
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 397,
-      "snippet" : "Button { withAnimation(StrandMotion.fade) { filtro = .all } } label: {             HStack(spacing: 6) {              ..."
+      "line" : 386,
+      "snippet" : "Button { withAnimation(LiquidMotion.fundido) { filtro = .all } } label: {             HStack(spacing: 6) {           ..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 398,
+      "line" : 387,
       "snippet" : "HStack(spacing: 6) {                 Text(verbatim: WorkoutSource.displaySport(name))                     .font(Stran..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 647,
-      "snippet" : "Group {             if up { Text(\"↗ +\\(n)% vs. last month\") } else { Text(\"↘ −\\(n)% vs. last month\") }         }     ..."
-    },
-    {
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 660,
+      "line" : 643,
       "snippet" : "VStack(spacing: CenitMetrics.space1) {             HStack(alignment: .bottom, spacing: 6) {                 ForEach(w..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 661,
+      "line" : 644,
       "snippet" : "HStack(alignment: .bottom, spacing: 6) {                 ForEach(weeks) { (w: WeekVolume) in                     let ..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 662,
+      "line" : 645,
       "snippet" : "ForEach(weeks) { (w: WeekVolume) in                     let isSelected: Bool = w.id == selectedId                    ..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 667,
+      "line" : 650,
       "snippet" : "UnevenRoundedRectangle(topLeadingRadius: 3, topTrailingRadius: 3)  \/\/ token-exempt: geometría de dato                ..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 690,
+      "line" : 673,
       "snippet" : "HStack(alignment: .center) {             VStack(alignment: .leading, spacing: 1) {                 Group {           ..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 760,
-      "snippet" : "VStack(alignment: .leading, spacing: 9) {                 InstrumentoSectionBand(\"Volume per muscle · 30 days\") {    ..."
+      "line" : 743,
+      "snippet" : "VStack(alignment: .leading, spacing: 9) {                 LiquidSectionHeader(\"Volume per muscle · 30 days\") {       ..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 769,
+      "line" : 752,
       "snippet" : "ForEach(shown, id: \\.muscle) { v in                     HStack(spacing: 10) {                         Text(MuscleAtla..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 770,
+      "line" : 753,
       "snippet" : "HStack(spacing: 10) {                         Text(MuscleAtlas.name(v.muscle))                             .font(Stra..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 775,
+      "line" : 758,
       "snippet" : "Capsule().fill(theme.patternBlock)                             .frame(height: 12)                             .overla..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 778,
+      "line" : 761,
       "snippet" : "GeometryReader { geo in                                     Capsule()                                         .fill(v..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 779,
+      "line" : 762,
       "snippet" : "Capsule()                                         .fill(v.setsPerWeek <= 0 ? theme.hairlineStrong : muscleTint(v.musc..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 990,
+      "line" : 973,
       "snippet" : "HStack(spacing: CenitMetrics.gap) {             RoutineRegionGlyph(sessionGlyph(session), tint: sessionTint(session))..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 991,
+      "line" : 974,
       "snippet" : "RoutineRegionGlyph(sessionGlyph(session), tint: sessionTint(session))                 .frame(width: 22, height: 22)  ..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1067,
-      "snippet" : "VStack(alignment: .leading, spacing: CenitMetrics.gap) {             InstrumentoSectionBand(\"My saved tickets\")      ..."
+      "line" : 1050,
+      "snippet" : "VStack(alignment: .leading, spacing: CenitMetrics.gap) {             LiquidSectionHeader(\"My saved tickets\")         ..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1069,
+      "line" : 1052,
       "snippet" : "NavigationLink(value: SavedTicketsRoute()) {                 EntrenarModulo(tono: .neutro) {                     HSta..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1070,
+      "line" : 1053,
       "snippet" : "EntrenarModulo(tono: .neutro) {                     HStack(spacing: CenitMetrics.gap) {                         Round..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1071,
+      "line" : 1054,
       "snippet" : "HStack(spacing: CenitMetrics.gap) {                         RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, ..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1072,
+      "line" : 1055,
       "snippet" : "RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)                             .fill(theme...."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1314,
+      "line" : 1297,
       "snippet" : "HStack(spacing: CenitMetrics.gap) {             Text(\"Workout deleted\").font(StrandFont.subhead).foregroundStyle(them..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1893,
+      "line" : 1862,
       "snippet" : "VStack(alignment: .leading, spacing: CenitMetrics.gap) {             Text(\"Heart-rate zones\").instrumentoOverline().f..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1895,
+      "line" : 1864,
       "snippet" : "GeometryReader { geo in                 HStack(spacing: 2) {                     ForEach(percents.indices, id: \\.self..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1896,
+      "line" : 1865,
       "snippet" : "HStack(spacing: 2) {                     ForEach(percents.indices, id: \\.self) { i in                         Rectang..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1952,
+      "line" : 1921,
       "snippet" : "VStack(alignment: .leading, spacing: 6) {             Text(\"Note\").instrumentoOverline().foregroundStyle(theme.inkTer..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1954,
+      "line" : 1923,
       "snippet" : "Text(note).font(StrandFont.subhead).foregroundStyle(theme.ink)                 .fixedSize(horizontal: false, vertical..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1964,
+      "line" : 1933,
       "snippet" : "HStack(spacing: CenitMetrics.space2) {             Text(\"Source\").instrumentoOverline().foregroundStyle(theme.inkTert..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1969,
+      "line" : 1938,
       "snippet" : "HStack(spacing: 5) {                     Circle().fill(theme.originBand).frame(width: 5, height: 5)                  ..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1977,
+      "line" : 1946,
       "snippet" : "Text(\"Estimated\")                     .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)                  ..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 2002,
+      "line" : 1971,
       "snippet" : "VStack(alignment: .leading, spacing: 0) {             \/\/ A superset tag when this exercise shares its routine's `supe..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 2011,
+      "line" : 1980,
       "snippet" : "ForEach(Array(g.sets.enumerated()), id: \\.element.id) { idx, set in                 HStack(alignment: .firstTextBasel..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 2012,
+      "line" : 1981,
       "snippet" : "HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space2) {                     Text(\"Set \\(idx + 1)\").font..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 2015,
+      "line" : 1984,
       "snippet" : "Text(\"PR\").font(StrandFont.captionNumber).foregroundStyle(theme.dataStrain)                             .padding(.hor..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 226,
+      "line" : 211,
       "snippet" : "TextEditor(text: $pasteText)             .font(StrandFont.mono)             .foregroundStyle(theme.ink)             ...."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 306,
+      "line" : 291,
       "snippet" : "VStack(alignment: .leading, spacing: CenitMetrics.space2) {             Text(verbatim: name).font(StrandFont.body)   ..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 321,
+      "line" : 306,
       "snippet" : "HStack(spacing: CenitMetrics.space2) {                     \/\/ Handoff: el match como pill verde lavada — el veredicto..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 323,
+      "line" : 308,
       "snippet" : "HStack(spacing: 5) {                         Image(systemName: isAuto ? \"sparkles\" : \"checkmark.circle.fill\")        ..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 349,
+      "line" : 334,
       "snippet" : "ForEach(suggestions, id: \\.id) { s in                         \/\/ Handoff: la sugerencia como tarjeta — sparkle ember,..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 351,
+      "line" : 336,
       "snippet" : "Button { resolve(name, with: s) } label: {                             HStack(spacing: CenitMetrics.space2) {        ..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 352,
+      "line" : 337,
       "snippet" : "HStack(spacing: CenitMetrics.space2) {                                 Image(systemName: \"sparkles\").font(StrandFont...."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 356,
+      "line" : 341,
       "snippet" : "Text(\"Use\").font(InstrumentoType.grotesk(12, weight: .bold)).foregroundStyle(theme.paperHi)                          ..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 389,
+      "line" : 374,
       "snippet" : "Button(action: action) {             Text(title).font(InstrumentoType.grotesk(12, weight: .semibold)).foregroundStyle..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 390,
+      "line" : 375,
       "snippet" : "Text(title).font(InstrumentoType.grotesk(12, weight: .semibold)).foregroundStyle(theme.inkSecondary)                 ..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 484,
+      "line" : 469,
       "snippet" : "HStack(alignment: .top, spacing: CenitMetrics.gap) {             VStack(alignment: .leading, spacing: CenitMetrics.sp..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 503,
+      "line" : 488,
       "snippet" : "Text(mapped == 1 ? \"1 mapped\" : \"\\(mapped) mapped\")                     .font(StrandFont.caption.weight(.semibold)).f..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 576,
+      "line" : 561,
       "snippet" : "VStack(alignment: .leading, spacing: CenitMetrics.space2) {             HStack(spacing: CenitMetrics.space2) {       ..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 577,
+      "line" : 562,
       "snippet" : "HStack(spacing: CenitMetrics.space2) {                 ForEach(0..<labels.count, id: \\.self) { i in                  ..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 578,
+      "line" : 563,
       "snippet" : "ForEach(0..<labels.count, id: \\.self) { i in                     Capsule()                         .fill(i <= current..."
     },
     {
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 579,
+      "line" : 564,
       "snippet" : "Capsule()                         .fill(i <= currentIndex ? theme.dataStrain : theme.hairline)                       ..."
     },
     {
@@ -1707,43 +1572,43 @@
     {
       "category" : "unico",
       "file" : "Cenit\/Screens\/BreathingView.swift",
-      "line" : 250,
+      "line" : 233,
       "reason" : "borde de selección (preview)"
     },
     {
       "category" : "unico",
       "file" : "Cenit\/Screens\/BreathingView.swift",
-      "line" : 334,
+      "line" : 317,
       "reason" : "guide ring"
     },
     {
       "category" : "unico",
       "file" : "Cenit\/Screens\/BreathingView.swift",
-      "line" : 341,
+      "line" : 324,
       "reason" : "rampa decorativa (halo)"
     },
     {
       "category" : "unico",
       "file" : "Cenit\/Screens\/BreathingView.swift",
-      "line" : 342,
+      "line" : 325,
       "reason" : "rampa decorativa (halo)"
     },
     {
       "category" : "unico",
       "file" : "Cenit\/Screens\/BreathingView.swift",
-      "line" : 355,
+      "line" : 338,
       "reason" : "rampa decorativa (orbe)"
     },
     {
       "category" : "unico",
       "file" : "Cenit\/Screens\/BreathingView.swift",
-      "line" : 356,
+      "line" : 339,
       "reason" : "rampa decorativa (orbe)"
     },
     {
       "category" : "unico",
       "file" : "Cenit\/Screens\/BreathingView.swift",
-      "line" : 363,
+      "line" : 346,
       "reason" : "anillo decorativo (orbe)"
     },
     {
@@ -1801,22 +1666,10 @@
       "reason" : "geometría del pictograma (mock SVG 15×23), no un radio del sistema"
     },
     {
-      "category" : "optico",
-      "file" : "Cenit\/Screens\/EntrenarView.swift",
-      "line" : 1230,
-      "reason" : "1 pt es el hairline entre nombre y conteo dentro del chip, más chico"
-    },
-    {
       "category" : "unico",
       "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
       "line" : 235,
       "reason" : "hit slop pair (±8)"
-    },
-    {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
-      "line" : 236,
-      "reason" : "sin token exacto (edge ≠ rowVPad)"
     },
     {
       "category" : "unico",
@@ -1829,36 +1682,6 @@
       "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
       "line" : 327,
       "reason" : "badge del handoff"
-    },
-    {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
-      "line" : 328,
-      "reason" : "radio 7 del handoff"
-    },
-    {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
-      "line" : 338,
-      "reason" : "chip 9\/4 del handoff"
-    },
-    {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
-      "line" : 454,
-      "reason" : "sin token exacto (edge ≠ rowVPad)"
-    },
-    {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
-      "line" : 548,
-      "reason" : "chip 11\/5 del handoff"
-    },
-    {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
-      "line" : 592,
-      "reason" : "chip 11\/5 del handoff"
     },
     {
       "category" : "optico",
@@ -1877,12 +1700,6 @@
       "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
       "line" : 720,
       "reason" : "ajuste óptico"
-    },
-    {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
-      "line" : 789,
-      "reason" : "14 del handoff (mismo aire que las mini-tarjetas retiradas)"
     },
     {
       "category" : "unico",
@@ -1915,51 +1732,33 @@
       "reason" : "halo del handoff"
     },
     {
-      "category" : "falta-pieza",
+      "category" : "dato",
       "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
       "line" : 1023,
-      "reason" : "sin token exacto"
+      "reason" : "(dato): geometría de gráfica — ancho de la columna de labels Y (28) + separación al eje, alinea la serie con el eje"
     },
     {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
-      "line" : 1024,
-      "reason" : "ajuste óptico \/ sin token exacto"
-    },
-    {
-      "category" : "falta-pieza",
+      "category" : "dato",
       "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
       "line" : 1045,
-      "reason" : "sin token exacto"
-    },
-    {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
-      "line" : 1054,
-      "reason" : "14 del handoff"
-    },
-    {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 206,
-      "reason" : "chip 6pt del handoff"
+      "reason" : "(dato): geometría de gráfica — mismo offset que la serie (línea 1023) para alinear las etiquetas X con el eje"
     },
     {
       "category" : "unico",
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 363,
+      "line" : 359,
       "reason" : "glifo 21pt fuera de banda lead"
     },
     {
       "category" : "unico",
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 437,
+      "line" : 433,
       "reason" : "alto del dock + respiro"
     },
     {
       "category" : "unico",
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 655,
+      "line" : 651,
       "reason" : "fondo condicional"
     },
     {
@@ -1989,31 +1788,37 @@
     {
       "category" : "falta-pieza",
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 289,
+      "line" : 286,
       "reason" : "destello breve R16, sin token de opacidad para «molde rosa» transitorio todavía"
     },
     {
       "category" : "unico",
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 372,
+      "line" : 290,
+      "reason" : "(unico): destello rosa de PR al palomear serie — duración escénica de una sola fila"
+    },
+    {
+      "category" : "unico",
+      "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
+      "line" : 364,
       "reason" : "mismo molde rosa transitorio que el destello R16, arriba"
     },
     {
       "category" : "unico",
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 377,
+      "line" : 369,
       "reason" : "mismo molde rosa transitorio que el destello R16, arriba"
     },
     {
       "category" : "falta-pieza",
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 814,
+      "line" : 803,
       "reason" : "EntrenarCapsulaPuerta.fondoAlfa, sin token público (R21, compartida con F1)"
     },
     {
       "category" : "sistema",
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 815,
+      "line" : 804,
       "reason" : "EntrenarCapsulaPuerta.highlightAlfa, sin token público (R21, compartida con F1)"
     },
     {
@@ -2071,69 +1876,27 @@
       "reason" : "ajuste óptico"
     },
     {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1072,
-      "reason" : "sin token exacto (edge ≠ rowVPad)"
-    },
-    {
       "category" : "optico",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
       "line" : 1083,
       "reason" : "ajuste óptico"
     },
     {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1087,
-      "reason" : "sin token exacto (edge ≠ rowVPad)"
-    },
-    {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1092,
-      "reason" : "sin token exacto (edge ≠ rowVPad)"
-    },
-    {
-      "category" : "dato",
-      "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1095,
-      "reason" : "sin token exacto en mapa FER-207 (cardPadding candidato)"
-    },
-    {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1379,
-      "reason" : "sin token exacto"
-    },
-    {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1445,
-      "reason" : "ajuste óptico \/ sin token exacto"
-    },
-    {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1453,
-      "reason" : "sin token exacto"
-    },
-    {
       "category" : "unico",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1512,
+      "line" : 1505,
       "reason" : "microtexto <11pt"
     },
     {
       "category" : "optico",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1798,
+      "line" : 1791,
       "reason" : "ajuste óptico"
     },
     {
       "category" : "optico",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1880,
+      "line" : 1873,
       "reason" : "ajuste óptico"
     },
     {
@@ -2143,22 +1906,10 @@
       "reason" : "aire del grabber (decisión dueño r12)"
     },
     {
-      "category" : "dato",
-      "file" : "Cenit\/Screens\/LiveStrengthSheets.swift",
-      "line" : 362,
-      "reason" : "sin token exacto en mapa FER-207 (cardPadding candidato)"
-    },
-    {
       "category" : "falta-pieza",
       "file" : "Cenit\/Screens\/LiveStrengthSheets.swift",
       "line" : 421,
       "reason" : "sin token exacto (horizontal\/chip handoff)"
-    },
-    {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/LiveStrengthSheets.swift",
-      "line" : 459,
-      "reason" : "ajuste óptico \/ sin token exacto"
     },
     {
       "category" : "dato",
@@ -2281,10 +2032,22 @@
       "reason" : "recibo térmico, el único objeto no-Instrumento (sombra de la impresora)"
     },
     {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/SaveErrorToast.swift",
-      "line" : 33,
-      "reason" : "cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)"
+      "category" : "unico",
+      "file" : "Cenit\/Screens\/ReceiptPrinterScreen.swift",
+      "line" : 288,
+      "reason" : "(unico): coreografía del recibo térmico — toggle vista clásica (0.25 s)"
+    },
+    {
+      "category" : "unico",
+      "file" : "Cenit\/Screens\/ReceiptPrinterScreen.swift",
+      "line" : 383,
+      "reason" : "(unico): coreografía del recibo térmico — asienta tilt al terminar de imprimir (0.6 s)"
+    },
+    {
+      "category" : "unico",
+      "file" : "Cenit\/Screens\/ReceiptPrinterScreen.swift",
+      "line" : 387,
+      "reason" : "(unico): coreografía del recibo térmico — sway idle post-impresión (4.6 s)"
     },
     {
       "category" : "falta-pieza",
@@ -2347,12 +2110,6 @@
       "reason" : "rampa de sueño"
     },
     {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 83,
-      "reason" : "cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)"
-    },
-    {
       "category" : "unico",
       "file" : "Cenit\/Screens\/StrainDetailScreen.swift",
       "line" : 443,
@@ -2377,28 +2134,10 @@
       "reason" : "rampa graduada de esfuerzo"
     },
     {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/TrainingBodyScreen.swift",
-      "line" : 183,
-      "reason" : "sin token exacto"
-    },
-    {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/TrainingBodyScreen.swift",
-      "line" : 283,
-      "reason" : "sin token exacto (edge ≠ rowVPad)"
-    },
-    {
-      "category" : "falta-pieza",
+      "category" : "optico",
       "file" : "Cenit\/Screens\/TrainingBodyScreen.swift",
       "line" : 288,
-      "reason" : "ajuste óptico \/ sin token exacto"
-    },
-    {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/TrainingBodyScreen.swift",
-      "line" : 290,
-      "reason" : "ajuste óptico \/ sin token exacto"
+      "reason" : "(optico): aire entre peekCard y resetRow, entre space1 (4) y space2 (8) — afinado a ojo, sin paso exacto"
     },
     {
       "category" : "falta-pieza",
@@ -2413,28 +2152,10 @@
       "reason" : "EdgeInsets mixto sin token compuesto"
     },
     {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/TrainingBodyScreen.swift",
-      "line" : 333,
-      "reason" : "sin token exacto (horizontal\/chip handoff)"
-    },
-    {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/TrainingBodyScreen.swift",
-      "line" : 396,
-      "reason" : "14 del handoff"
-    },
-    {
       "category" : "dato",
       "file" : "Cenit\/Screens\/TrainingBodyScreen.swift",
       "line" : 421,
       "reason" : "geometría de dato"
-    },
-    {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/TrainingBodyScreen.swift",
-      "line" : 430,
-      "reason" : "ajuste óptico \/ sin token exacto"
     },
     {
       "category" : "optico",
@@ -2447,24 +2168,6 @@
       "file" : "Cenit\/Screens\/TrainingBodyScreen.swift",
       "line" : 579,
       "reason" : "sin token exacto (edge ≠ rowVPad)"
-    },
-    {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/TrainingBodyScreen.swift",
-      "line" : 670,
-      "reason" : "sin token exacto"
-    },
-    {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/TrainingBodyScreen.swift",
-      "line" : 672,
-      "reason" : "ajuste óptico \/ sin token exacto"
-    },
-    {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/TrainingBodyScreen.swift",
-      "line" : 677,
-      "reason" : "sin token exacto"
     },
     {
       "category" : "dato",
@@ -2491,10 +2194,10 @@
       "reason" : "geometría de dato"
     },
     {
-      "category" : "falta-pieza",
+      "category" : "optico",
       "file" : "Cenit\/Screens\/TrainingBodyScreen.swift",
       "line" : 1048,
-      "reason" : "ajuste óptico \/ sin token exacto"
+      "reason" : "(optico): pad vertical de la fila ejercicio-etiqueta, entre space2 (8) y rowVPad (10) — sin paso exacto"
     },
     {
       "category" : "unico",
@@ -2503,15 +2206,15 @@
       "reason" : "microtexto <10pt"
     },
     {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 127,
-      "reason" : "cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)"
+      "category" : "unico",
+      "file" : "Cenit\/Screens\/TrainingLoadStrip.swift",
+      "line" : 111,
+      "reason" : "(unico): marcador ACWR sobre la franja de carga — spring único de esta geometría"
     },
     {
       "category" : "dato",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 402,
+      "line" : 389,
       "reason" : "geometría de dato"
     },
     {
@@ -2521,196 +2224,124 @@
       "reason" : "geometría de dato (barra ancla HRR)"
     },
     {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 146,
-      "reason" : "sin token exacto"
+      "category" : "unico",
+      "file" : "Cenit\/Screens\/WorkoutDetailScreen.swift",
+      "line" : 481,
+      "reason" : "(unico): reveal escalonado del HRR (0.46 s + stagger 70 ms · index), one-off de la lectura"
     },
     {
       "category" : "falta-pieza",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 179,
-      "reason" : "cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)"
-    },
-    {
-      "category" : "dato",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 183,
-      "reason" : "sin token exacto en mapa FER-207 (cardPadding candidato)"
-    },
-    {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 404,
+      "line" : 393,
       "reason" : "sin token exacto (edge ≠ rowVPad)"
     },
     {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 653,
-      "reason" : "sin token exacto (horizontal\/chip handoff)"
-    },
-    {
       "category" : "dato",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 667,
+      "line" : 650,
       "reason" : "geometría de dato"
     },
     {
       "category" : "dato",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 676,
+      "line" : 659,
       "reason" : "eje de dato"
     },
     {
-      "category" : "falta-pieza",
+      "category" : "optico",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 886,
-      "reason" : "ajuste óptico \/ sin token exacto"
+      "line" : 1178,
+      "reason" : "(optico): pad vertical del estado vacío (icono+título+cuerpo) para centrarlo en el bloque — entre s800 (32) y s1400 (56) de LiquidSpace, sin paso exacto"
     },
     {
       "category" : "falta-pieza",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1195,
-      "reason" : "sin token exacto"
-    },
-    {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1204,
+      "line" : 1187,
       "reason" : "cuerpo de banner (13pt, igual que saveError\/ConfirmCard)"
     },
     {
       "category" : "falta-pieza",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1322,
-      "reason" : "14 del handoff"
-    },
-    {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1594,
-      "reason" : "sin token exacto"
-    },
-    {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1607,
-      "reason" : "cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)"
+      "line" : 1305,
+      "reason" : "(falta-pieza): el 14 vertical ya es LiquidSpace.handoff14 (FER-275); el 18 horizontal queda sin token exacto, fuera de alcance de este lote"
     },
     {
       "category" : "dato",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1611,
-      "reason" : "sin token exacto en mapa FER-207 (cardPadding candidato)"
-    },
-    {
-      "category" : "dato",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1904,
+      "line" : 1873,
       "reason" : "barra de zonas 34 del handoff"
     },
     {
       "category" : "falta-pieza",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1924,
-      "reason" : "44 del handoff"
-    },
-    {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1974,
+      "line" : 1943,
       "reason" : "sin token exacto (horizontal\/chip handoff)"
     },
     {
       "category" : "falta-pieza",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1979,
+      "line" : 1948,
       "reason" : "sin token exacto (horizontal\/chip handoff)"
-    },
-    {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 2010,
-      "reason" : "ajuste óptico \/ sin token exacto"
-    },
-    {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 2016,
-      "reason" : "ajuste óptico \/ sin token exacto"
     },
     {
       "category" : "unico",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 2017,
+      "line" : 1986,
       "reason" : "stroke chip PR 0.5 (alfa propio)"
     },
     {
       "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 2024,
-      "reason" : "ajuste óptico \/ sin token exacto"
-    },
-    {
-      "category" : "falta-pieza",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 93,
-      "reason" : "cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)"
-    },
-    {
-      "category" : "dato",
-      "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 97,
-      "reason" : "sin token exacto en mapa FER-207 (cardPadding candidato)"
-    },
-    {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 335,
+      "line" : 320,
       "reason" : "sin token exacto (horizontal\/chip handoff)"
     },
     {
       "category" : "falta-pieza",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 357,
+      "line" : 342,
       "reason" : "sin token exacto (horizontal\/chip handoff)"
     },
     {
       "category" : "falta-pieza",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 360,
+      "line" : 345,
       "reason" : "sin token exacto (edge ≠ rowVPad)"
     },
     {
       "category" : "falta-pieza",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 391,
+      "line" : 376,
       "reason" : "sin token exacto (horizontal\/chip handoff)"
     },
     {
       "category" : "falta-pieza",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 505,
+      "line" : 490,
       "reason" : "sin token exacto (horizontal\/chip handoff)"
     },
     {
       "category" : "unico",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 538,
+      "line" : 523,
       "reason" : "glifo héroe del cierre (44pt, pareado al círculo de 116)"
     },
     {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 585,
-      "reason" : "44 del handoff \/ touchTarget"
+      "category" : "unico",
+      "file" : "Cenit\/System\/WiggleEffect.swift",
+      "line" : 40,
+      "reason" : "(unico): nudge de atención del botón Soporte — fase de subida (burst)"
     },
     {
-      "category" : "falta-pieza",
-      "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 599,
-      "reason" : "44 del handoff \/ touchTarget"
+      "category" : "unico",
+      "file" : "Cenit\/System\/WiggleEffect.swift",
+      "line" : 42,
+      "reason" : "(unico): nudge de atención del botón Soporte — fase de asiento"
+    },
+    {
+      "category" : "unico",
+      "file" : "CenitApp\/App\/CenitApp.swift",
+      "line" : 91,
+      "reason" : "(unico): tope global de la app (FER-394); distinto del cap bendecido por pantalla (.accessibility5)"
     },
     {
       "category" : "sistema",
@@ -2864,17 +2495,17 @@
     }
   ],
   "exemptsByCategory" : {
-    "dato" : 37,
-    "falta-pieza" : 71,
-    "optico" : 11,
+    "dato" : 34,
+    "falta-pieza" : 24,
+    "optico" : 13,
     "paridad" : 4,
     "sistema" : 26,
-    "unico" : 49
+    "unico" : 58
   },
   "generations" : [
     {
       "file" : "Cenit\/App\/AppMap.swift",
-      "generation" : "instrumento",
+      "generation" : "liquid",
       "target" : "Cenit"
     },
     {
@@ -2924,7 +2555,7 @@
     },
     {
       "file" : "Cenit\/App\/AppModel.swift",
-      "generation" : "indeterminada",
+      "generation" : "liquid",
       "target" : "Cenit"
     },
     {
@@ -3294,12 +2925,12 @@
     },
     {
       "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
-      "generation" : "instrumento",
+      "generation" : "liquid",
       "target" : "Cenit"
     },
     {
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "generation" : "instrumento",
+      "generation" : "liquid",
       "target" : "Cenit"
     },
     {
@@ -3454,12 +3085,12 @@
     },
     {
       "file" : "Cenit\/Screens\/LiveStrengthSheets.swift",
-      "generation" : "instrumento",
+      "generation" : "liquid",
       "target" : "Cenit"
     },
     {
       "file" : "Cenit\/Screens\/ManualWorkoutSheet.swift",
-      "generation" : "indeterminada",
+      "generation" : "liquid",
       "target" : "Cenit"
     },
     {
@@ -3494,12 +3125,12 @@
     },
     {
       "file" : "Cenit\/Screens\/PlanAppliedToast.swift",
-      "generation" : "indeterminada",
+      "generation" : "liquid",
       "target" : "Cenit"
     },
     {
       "file" : "Cenit\/Screens\/PlatesScreen.swift",
-      "generation" : "instrumento",
+      "generation" : "liquid",
       "target" : "Cenit"
     },
     {
@@ -3514,7 +3145,7 @@
     },
     {
       "file" : "Cenit\/Screens\/ProgressionSetupScreen.swift",
-      "generation" : "instrumento",
+      "generation" : "liquid",
       "target" : "Cenit"
     },
     {
@@ -3529,12 +3160,12 @@
     },
     {
       "file" : "Cenit\/Screens\/RestEditorScreen.swift",
-      "generation" : "instrumento",
+      "generation" : "liquid",
       "target" : "Cenit"
     },
     {
       "file" : "Cenit\/Screens\/RoutineRegion+Tint.swift",
-      "generation" : "instrumento",
+      "generation" : "liquid",
       "target" : "Cenit"
     },
     {
@@ -3544,12 +3175,12 @@
     },
     {
       "file" : "Cenit\/Screens\/SaveErrorToast.swift",
-      "generation" : "indeterminada",
+      "generation" : "liquid",
       "target" : "Cenit"
     },
     {
       "file" : "Cenit\/Screens\/SavedTicketsScreen.swift",
-      "generation" : "instrumento",
+      "generation" : "liquid",
       "target" : "Cenit"
     },
     {
@@ -3574,7 +3205,7 @@
     },
     {
       "file" : "Cenit\/Screens\/ShareCardView.swift",
-      "generation" : "instrumento",
+      "generation" : "liquid",
       "target" : "Cenit"
     },
     {
@@ -3654,12 +3285,12 @@
     },
     {
       "file" : "Cenit\/Screens\/WeekEditorSheet.swift",
-      "generation" : "indeterminada",
+      "generation" : "liquid",
       "target" : "Cenit"
     },
     {
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "generation" : "instrumento",
+      "generation" : "liquid",
       "target" : "Cenit"
     },
     {
@@ -3674,17 +3305,17 @@
     },
     {
       "file" : "Cenit\/Screens\/WorkoutEditSheet.swift",
-      "generation" : "indeterminada",
+      "generation" : "liquid",
       "target" : "Cenit"
     },
     {
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "generation" : "instrumento",
+      "generation" : "liquid",
       "target" : "Cenit"
     },
     {
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "generation" : "instrumento",
+      "generation" : "liquid",
       "target" : "Cenit"
     },
     {
@@ -3739,7 +3370,7 @@
     },
     {
       "file" : "Cenit\/System\/RoutineDragAndDrop.swift",
-      "generation" : "indeterminada",
+      "generation" : "liquid",
       "target" : "Cenit"
     },
     {
@@ -3769,12 +3400,12 @@
     },
     {
       "file" : "CenitApp\/App\/CenitApp.swift",
-      "generation" : "instrumento",
+      "generation" : "indeterminada",
       "target" : "CenitApp"
     },
     {
       "file" : "CenitApp\/App\/InstrumentTabBar.swift",
-      "generation" : "indeterminada",
+      "generation" : "liquid",
       "target" : "CenitApp"
     },
     {
@@ -4262,20 +3893,6 @@
       "snippet" : "height: 852"
     },
     {
-      "dimension" : "interaccion_haptica",
-      "file" : "Cenit\/App\/AppModel.swift",
-      "line" : 338,
-      "rule" : "evasion:UIFeedbackGenerator-crudo",
-      "snippet" : "UINotificationFeedbackGenerator()"
-    },
-    {
-      "dimension" : "interaccion_haptica",
-      "file" : "Cenit\/App\/AppModel.swift",
-      "line" : 343,
-      "rule" : "evasion:UIFeedbackGenerator-crudo",
-      "snippet" : "UIImpactFeedbackGenerator(style: style)"
-    },
-    {
       "dimension" : "movimiento",
       "file" : "Cenit\/App\/ContentView.swift",
       "line" : 58,
@@ -4315,7 +3932,7 @@
       "file" : "Cenit\/App\/ContentView.swift",
       "line" : 89,
       "rule" : "literal-transition",
-      "snippet" : "TermsGateView(onAccept: { acceptedTerms = Terms.currentVersion })                     .transition(.opacity)"
+      "snippet" : "TermsGateView(onAccept: { acceptedTerms = Terms.currentVersion })                     .transition(LiquidMotion.fadeTr..."
     },
     {
       "dimension" : "movimiento",
@@ -4323,27 +3940,6 @@
       "line" : 103,
       "rule" : "literal-transition",
       "snippet" : "LiquidOrbeEntrada(clima: { climaEntrada }, destino: { heroDestino }) {                     EntradaDeArranque.marcarCo..."
-    },
-    {
-      "dimension" : "movimiento",
-      "file" : "Cenit\/App\/ContentView.swift",
-      "line" : 118,
-      "rule" : "literal-curve-duration",
-      "snippet" : ".easeInOut(duration: 0.35)"
-    },
-    {
-      "dimension" : "movimiento",
-      "file" : "Cenit\/App\/ContentView.swift",
-      "line" : 119,
-      "rule" : "literal-curve-duration",
-      "snippet" : ".easeInOut(duration: 0.35)"
-    },
-    {
-      "dimension" : "movimiento",
-      "file" : "Cenit\/App\/ContentView.swift",
-      "line" : 120,
-      "rule" : "literal-curve-duration",
-      "snippet" : ".easeOut(duration: 0.2)"
     },
     {
       "dimension" : "movimiento",
@@ -4474,7 +4070,7 @@
       "file" : "Cenit\/Onboarding\/OnboardingWizard.swift",
       "line" : 82,
       "rule" : "literal-transition",
-      "snippet" : "contenido                 .id(acto)                 .transition(.opacity)"
+      "snippet" : "contenido                 .id(acto)                 .transition(LiquidMotion.fadeTransition)"
     },
     {
       "dimension" : "spacing",
@@ -4775,7 +4371,7 @@
     {
       "dimension" : "radio_elevacion",
       "file" : "Cenit\/Screens\/BreathingView.swift",
-      "line" : 252,
+      "line" : 235,
       "rule" : "literal-lineWidth",
       "snippet" : "lineWidth: 1",
       "value" : 1
@@ -4783,42 +4379,28 @@
     {
       "dimension" : "radio_elevacion",
       "file" : "Cenit\/Screens\/BreathingView.swift",
-      "line" : 261,
+      "line" : 244,
       "rule" : "evasion:clipShape(RoundedRectangle)",
       "snippet" : "VStack(spacing: LiquidSpace.s550) {             HStack {                 Text(verbatim: pace.label)                  ..."
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/BreathingView.swift",
-      "line" : 274,
+      "line" : 257,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 300"
     },
     {
       "dimension" : "movimiento",
       "file" : "Cenit\/Screens\/BreathingView.swift",
-      "line" : 280,
-      "rule" : "literal-curve-duration",
-      "snippet" : ".easeInOut(duration: 0.2)"
-    },
-    {
-      "dimension" : "movimiento",
-      "file" : "Cenit\/Screens\/BreathingView.swift",
-      "line" : 281,
-      "rule" : "literal-curve-duration",
-      "snippet" : ".easeInOut(duration: 0.2)"
-    },
-    {
-      "dimension" : "movimiento",
-      "file" : "Cenit\/Screens\/BreathingView.swift",
-      "line" : 304,
+      "line" : 287,
       "rule" : "literal-animation",
       "snippet" : ".animation(minimumInterval: 1.0 \/ 30, paused: !running || reduceMotion)"
     },
     {
       "dimension" : "radio_elevacion",
       "file" : "Cenit\/Screens\/BreathingView.swift",
-      "line" : 334,
+      "line" : 317,
       "rule" : "literal-lineWidth",
       "snippet" : "lineWidth: 1",
       "value" : 1
@@ -4826,7 +4408,7 @@
     {
       "dimension" : "radio_elevacion",
       "file" : "Cenit\/Screens\/BreathingView.swift",
-      "line" : 363,
+      "line" : 346,
       "rule" : "literal-lineWidth",
       "snippet" : "lineWidth: 1",
       "value" : 1
@@ -4834,14 +4416,14 @@
     {
       "dimension" : "radio_elevacion",
       "file" : "Cenit\/Screens\/BreathingView.swift",
-      "line" : 411,
+      "line" : 394,
       "rule" : "evasion:clipShape(RoundedRectangle)",
       "snippet" : "VStack(alignment: .leading, spacing: 0) {             Text(verbatim: label)                 .font(LiquidType.regla).t..."
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/BreathingView.swift",
-      "line" : 411,
+      "line" : 394,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 0",
       "value" : 0
@@ -4849,28 +4431,28 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/BreathingView.swift",
-      "line" : 499,
+      "line" : 482,
       "rule" : "evasion:.frame(width:)-decorativo",
       "snippet" : "width: 390,"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/BreathingView.swift",
-      "line" : 499,
+      "line" : 482,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 900"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/BreathingView.swift",
-      "line" : 505,
+      "line" : 488,
       "rule" : "evasion:.frame(width:)-decorativo",
       "snippet" : "width: 390,"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/BreathingView.swift",
-      "line" : 505,
+      "line" : 488,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 1100"
     },
@@ -4879,7 +4461,7 @@
       "file" : "Cenit\/Screens\/CompareView.swift",
       "line" : 358,
       "rule" : "literal-systemName",
-      "snippet" : "Image(systemName: \"plus.circle.fill\")"
+      "snippet" : "Image(systemName: \"plus\")"
     },
     {
       "dimension" : "tipografia_dynamictype",
@@ -4990,14 +4572,14 @@
       "file" : "Cenit\/Screens\/CuerpoView.swift",
       "line" : 324,
       "rule" : "literal-transition",
-      "snippet" : "workoutsLayer                     .transition(.move(edge: .trailing))"
+      "snippet" : "workoutsLayer                     .transition(LiquidMotion.trailingTransition)"
     },
     {
       "dimension" : "movimiento",
       "file" : "Cenit\/Screens\/CuerpoView.swift",
       "line" : 329,
       "rule" : "literal-transition",
-      "snippet" : "DetailChrome(theme: theme, onClose: dismissDetail) { detailOverlayContent }                     .transition(.move(edg..."
+      "snippet" : "DetailChrome(theme: theme, onClose: dismissDetail) { detailOverlayContent }                     .transition(LiquidMot..."
     },
     {
       "dimension" : "spacing",
@@ -5158,14 +4740,6 @@
       "value" : 46
     },
     {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/CuerpoView.swift",
-      "line" : 1201,
-      "rule" : "literal-padding",
-      "snippet" : "HStack(spacing: LiquidSpace.s300) {                 Image(systemName: icon).font(LiquidType.iconSF(size: 17))        ...",
-      "value" : 15
-    },
-    {
       "dimension" : "tipografia_dynamictype",
       "file" : "Cenit\/Screens\/CuerpoView.swift",
       "line" : 1202,
@@ -5273,9 +4847,9 @@
     {
       "dimension" : "movimiento",
       "file" : "Cenit\/Screens\/DataSourcesView.swift",
-      "line" : 97,
+      "line" : 98,
       "rule" : "literal-transition",
-      "snippet" : "LiquidPatternBlock(                     overline: backupAlertTitle,                     lineas: [backupAlertMessage],..."
+      "snippet" : "LiquidAviso(                     titulo: backupAlertTitle,                     cuerpo: backupAlertMessage,           ..."
     },
     {
       "dimension" : "spacing",
@@ -5774,14 +5348,6 @@
       "line" : 226,
       "rule" : "literal-padding",
       "snippet" : "Button { isLoopPlaying.toggle() } label: {                     Image(systemName: isLoopPlaying ? \"pause.fill\" : \"play...",
-      "value" : 10
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
-      "line" : 226,
-      "rule" : "literal-padding",
-      "snippet" : "Button { isLoopPlaying.toggle() } label: {                     Image(systemName: isLoopPlaying ? \"pause.fill\" : \"play...",
       "value" : -8
     },
     {
@@ -5877,36 +5443,12 @@
       "value" : 7
     },
     {
-      "dimension" : "radio_elevacion",
-      "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
-      "line" : 328,
-      "rule" : "literal-cornerRadius",
-      "snippet" : "cornerRadius: 7,",
-      "value" : 7
-    },
-    {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
       "line" : 333,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 7",
       "value" : 7
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
-      "line" : 335,
-      "rule" : "literal-padding",
-      "snippet" : "Text(verbatim: \"\\(StrengthDisplay.weightNumber(s.kg, system: system)) × \\(s.reps)\")                                 ....",
-      "value" : 4
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
-      "line" : 335,
-      "rule" : "literal-padding",
-      "snippet" : "Text(verbatim: \"\\(StrengthDisplay.weightNumber(s.kg, system: system)) × \\(s.reps)\")                                 ....",
-      "value" : 9
     },
     {
       "dimension" : "spacing",
@@ -5919,50 +5461,10 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
-      "line" : 454,
-      "rule" : "literal-padding",
-      "snippet" : "Divider().overlay(theme.hairline).padding(.bottom, 10)",
-      "value" : 10
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
       "line" : 458,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 6",
       "value" : 6
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
-      "line" : 539,
-      "rule" : "literal-padding",
-      "snippet" : "Group {             if primary {                 Text(\"\\(StrengthDisplay.muscle(muscle)) · \\(String(localized: \"prima...",
-      "value" : 5
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
-      "line" : 539,
-      "rule" : "literal-padding",
-      "snippet" : "Group {             if primary {                 Text(\"\\(StrengthDisplay.muscle(muscle)) · \\(String(localized: \"prima...",
-      "value" : 11
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
-      "line" : 590,
-      "rule" : "literal-padding",
-      "snippet" : "Text(StrengthDisplay.name(ex))                 .font(StrandFont.subhead).foregroundStyle(theme.ink)                 ....",
-      "value" : 5
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
-      "line" : 590,
-      "rule" : "literal-padding",
-      "snippet" : "Text(StrengthDisplay.name(ex))                 .font(StrandFont.subhead).foregroundStyle(theme.ink)                 ....",
-      "value" : 11
     },
     {
       "dimension" : "radio_elevacion",
@@ -6084,14 +5586,6 @@
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
       "line" : 774,
-      "rule" : "literal-padding",
-      "snippet" : "VStack(alignment: .leading, spacing: 0) {                 Text(\"Records\").instrumentoOverline().foregroundStyle(theme...",
-      "value" : 14
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
-      "line" : 774,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 0",
       "value" : 0
@@ -6164,14 +5658,6 @@
       "line" : 964,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 1"
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
-      "line" : 970,
-      "rule" : "literal-padding",
-      "snippet" : "GeometryReader { (geo: GeometryProxy) in                 let w: CGFloat = geo.size.width                 let h: CGFlo...",
-      "value" : 5
     },
     {
       "dimension" : "spacing",
@@ -6273,14 +5759,6 @@
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
       "line" : 1049,
-      "rule" : "literal-padding",
-      "snippet" : "VStack(alignment: .leading, spacing: 6) {             scrubReadout             chartPlot             xCaptions       ...",
-      "value" : 14
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
-      "line" : 1049,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 6",
       "value" : 6
@@ -6288,22 +5766,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 199,
-      "rule" : "literal-padding",
-      "snippet" : "HStack(spacing: CenitMetrics.space1) {                 Text(active.map(label) ?? title)                     .font(Str...",
-      "value" : 6
-    },
-    {
-      "dimension" : "color",
-      "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 207,
-      "rule" : "evasion:Color.clear",
-      "snippet" : "Color.clear"
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 222,
+      "line" : 218,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 0",
       "value" : 0
@@ -6311,7 +5774,7 @@
     {
       "dimension" : "radio_elevacion",
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 312,
+      "line" : 308,
       "rule" : "literal-lineWidth",
       "snippet" : "lineWidth: 2",
       "value" : 2
@@ -6319,7 +5782,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 313,
+      "line" : 309,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 2",
       "value" : 2
@@ -6327,7 +5790,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 328,
+      "line" : 324,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 1",
       "value" : 1
@@ -6335,21 +5798,21 @@
     {
       "dimension" : "movimiento",
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 353,
+      "line" : 349,
       "rule" : "literal-animation",
       "snippet" : "Button {                 toggle(ex)             } label: {                 \/\/ Ancho FIJO y alineado a la derecha: la ..."
     },
     {
       "dimension" : "iconografia",
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 362,
+      "line" : 358,
       "rule" : "literal-systemName",
       "snippet" : "Image(systemName: \"checkmark.circle.fill\")"
     },
     {
       "dimension" : "tipografia_dynamictype",
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 363,
+      "line" : 359,
       "rule" : "literal-font-size",
       "snippet" : "size: 21",
       "value" : 21
@@ -6357,7 +5820,7 @@
     {
       "dimension" : "radio_elevacion",
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 369,
+      "line" : 365,
       "rule" : "literal-lineWidth",
       "snippet" : "lineWidth: 1",
       "value" : 1
@@ -6365,14 +5828,14 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 375,
+      "line" : 371,
       "rule" : "evasion:.frame(width:)-decorativo",
       "snippet" : "width: 78,"
     },
     {
       "dimension" : "radio_elevacion",
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 400,
+      "line" : 396,
       "rule" : "literal-lineWidth",
       "snippet" : "lineWidth: 1",
       "value" : 1
@@ -6380,7 +5843,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 425,
+      "line" : 421,
       "rule" : "literal-padding",
       "snippet" : "InstrumentoAddButton(theme: theme,                              label: addBarLabel,                              prom...",
       "value" : 68
@@ -6388,7 +5851,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 560,
+      "line" : 556,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 2",
       "value" : 2
@@ -6396,7 +5859,7 @@
     {
       "dimension" : "radio_elevacion",
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 576,
+      "line" : 572,
       "rule" : "literal-lineWidth",
       "snippet" : "lineWidth: 1",
       "value" : 1
@@ -6404,7 +5867,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 579,
+      "line" : 575,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 2",
       "value" : 2
@@ -6412,7 +5875,7 @@
     {
       "dimension" : "radio_elevacion",
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 604,
+      "line" : 600,
       "rule" : "literal-lineWidth",
       "snippet" : "lineWidth: 1",
       "value" : 1
@@ -6420,7 +5883,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 623,
+      "line" : 619,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 12",
       "value" : 12
@@ -6428,14 +5891,14 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 646,
+      "line" : 642,
       "rule" : "evasion:.frame(width:)-decorativo",
       "snippet" : "width: 22"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 647,
+      "line" : 643,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 1",
       "value" : 1
@@ -6443,7 +5906,7 @@
     {
       "dimension" : "color",
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
-      "line" : 655,
+      "line" : 651,
       "rule" : "evasion:Color.clear",
       "snippet" : "Color.clear"
     },
@@ -6887,24 +6350,16 @@
       "snippet" : "width: 30,"
     },
     {
-      "dimension" : "radio_elevacion",
-      "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 125,
-      "rule" : "literal-lineWidth",
-      "snippet" : "lineWidth: 1",
-      "value" : 1
-    },
-    {
       "dimension" : "iconografia",
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 155,
+      "line" : 152,
       "rule" : "literal-systemName",
       "snippet" : "Image(systemName: \"xmark\")"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 166,
+      "line" : 163,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 0",
       "value" : 0
@@ -6912,43 +6367,35 @@
     {
       "dimension" : "movimiento",
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 208,
+      "line" : 205,
       "rule" : "literal-transition",
       "snippet" : "NoteStrip(style: .info, theme: vivo.sheet.theme) {             HStack(spacing: LiquidSpace.s400) {                 Bu..."
     },
     {
       "dimension" : "movimiento",
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 248,
+      "line" : 245,
       "rule" : "literal-animation",
       "snippet" : "HojaFilaSerie(datos: datos, contexto: .sesion, marca: marca) {             vivo.confirmOrToggleSet(ei: ei, si: si)   ..."
     },
     {
       "dimension" : "movimiento",
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 288,
+      "line" : 285,
       "rule" : "literal-transition",
       "snippet" : "RoundedRectangle(cornerRadius: HojaMetrics.activaRadius, style: .continuous)                     .fill(LiquidColor.ro..."
     },
     {
       "dimension" : "movimiento",
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 293,
+      "line" : 290,
       "rule" : "literal-curve-duration",
       "snippet" : ".easeOut(duration: 0.4)"
     },
     {
       "dimension" : "radio_elevacion",
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 336,
-      "rule" : "literal-lineWidth",
-      "snippet" : "lineWidth: 1",
-      "value" : 1
-    },
-    {
-      "dimension" : "radio_elevacion",
-      "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 353,
+      "line" : 345,
       "rule" : "literal-lineWidth",
       "snippet" : "lineWidth: 1",
       "value" : 1
@@ -6956,14 +6403,14 @@
     {
       "dimension" : "movimiento",
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 361,
+      "line" : 353,
       "rule" : "literal-transition",
       "snippet" : "HStack(spacing: LiquidSpace.s150) {             Text(\"RECORD\").font(StrandFont.caption.weight(.bold)).foregroundStyle..."
     },
     {
       "dimension" : "radio_elevacion",
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 377,
+      "line" : 369,
       "rule" : "literal-lineWidth",
       "snippet" : "lineWidth: 0.5",
       "value" : 0.5
@@ -6971,22 +6418,14 @@
     {
       "dimension" : "movimiento",
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 395,
+      "line" : 387,
       "rule" : "literal-transition",
       "snippet" : "NoteStrip(style: .warning, theme: vivo.sheet.theme) {             VStack(alignment: .leading, spacing: LiquidSpace.s1..."
     },
     {
       "dimension" : "radio_elevacion",
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 407,
-      "rule" : "literal-lineWidth",
-      "snippet" : "lineWidth: 1",
-      "value" : 1
-    },
-    {
-      "dimension" : "radio_elevacion",
-      "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 432,
+      "line" : 421,
       "rule" : "literal-lineWidth",
       "snippet" : "lineWidth: 1",
       "value" : 1
@@ -6994,42 +6433,42 @@
     {
       "dimension" : "color",
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 458,
+      "line" : 447,
       "rule" : "evasion:Color.clear",
       "snippet" : "Color.clear"
     },
     {
       "dimension" : "color",
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 461,
+      "line" : 450,
       "rule" : "evasion:Color.clear",
       "snippet" : "Color.clear"
     },
     {
       "dimension" : "color",
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 467,
+      "line" : 456,
       "rule" : "evasion:Color.clear",
       "snippet" : "Color.clear"
     },
     {
       "dimension" : "color",
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 512,
+      "line" : 501,
       "rule" : "evasion:Color.white",
       "snippet" : "Color.white"
     },
     {
       "dimension" : "color",
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 814,
+      "line" : 803,
       "rule" : "evasion:Color.white",
       "snippet" : "Color.white"
     },
     {
       "dimension" : "color",
       "file" : "Cenit\/Screens\/Hoja\/RoutineSheetLiveTarjeta.swift",
-      "line" : 815,
+      "line" : 804,
       "rule" : "evasion:Color.white",
       "snippet" : "Color.white"
     },
@@ -7371,14 +6810,6 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1049,
-      "rule" : "literal-padding",
-      "snippet" : "VStack(alignment: .leading, spacing: CenitMetrics.gap) {                 Text(\"No routine: add exercises as you go. R...",
-      "value" : 16
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
       "line" : 1054,
       "rule" : "literal-padding",
       "snippet" : "Button { showLibraryPicker = true } label: {                     EntrenarModulo(tono: .neutro) {                     ...",
@@ -7395,34 +6826,10 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1071,
-      "rule" : "literal-padding",
-      "snippet" : "Text(\"Fresh today\").instrumentoOverline().foregroundStyle(theme.inkTertiary)                         .padding(.top, 10)",
-      "value" : 10
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
       "line" : 1078,
       "rule" : "literal-padding",
       "snippet" : "(Text(MuscleAtlas.name(muscle)) + Text(verbatim: \" \") + Text(\"still carries load · suggestions avoid it.\"))          ...",
       "value" : 3
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1087,
-      "rule" : "literal-padding",
-      "snippet" : "Divider().overlay(theme.hairline).padding(.top, 10)",
-      "value" : 10
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1088,
-      "rule" : "literal-padding",
-      "snippet" : "Text(\"You'll be able to save this as a routine when you finish · it doesn't touch your plan.\")                     .f...",
-      "value" : 10
     },
     {
       "dimension" : "spacing",
@@ -7463,14 +6870,6 @@
       "value" : 1
     },
     {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1368,
-      "rule" : "literal-spacing",
-      "snippet" : "spacing: 14",
-      "value" : 14
-    },
-    {
       "dimension" : "iconografia",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
       "line" : 1369,
@@ -7480,26 +6879,10 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1377,
-      "rule" : "literal-padding",
-      "snippet" : "Text(\"Got it\")                     .font(InstrumentoType.groteskHeadline(17)).foregroundStyle(theme.paper)           ...",
-      "value" : 15
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
       "line" : 1407,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 18",
       "value" : 18
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1437,
-      "rule" : "literal-padding",
-      "snippet" : "Button { shareReceipt = ShareRef(sessionId: session.id) } label: {                 Label(\"Print receipt\", systemImage...",
-      "value" : 6
     },
     {
       "dimension" : "radio_elevacion",
@@ -7512,15 +6895,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1450,
-      "rule" : "literal-padding",
-      "snippet" : "Text(\"Done\")                     .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)                     ...",
-      "value" : 15
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1488,
+      "line" : 1481,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 5",
       "value" : 5
@@ -7528,14 +6903,14 @@
     {
       "dimension" : "iconografia",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1489,
+      "line" : 1482,
       "rule" : "literal-systemName",
       "snippet" : "Image(systemName: \"applewatch\")"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1508,
+      "line" : 1501,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 5",
       "value" : 5
@@ -7543,21 +6918,21 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1510,
+      "line" : 1503,
       "rule" : "evasion:.frame(width:)-decorativo",
       "snippet" : "width: 6,"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1510,
+      "line" : 1503,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 6"
     },
     {
       "dimension" : "tipografia_dynamictype",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1512,
+      "line" : 1505,
       "rule" : "literal-font-size",
       "snippet" : "size: 10",
       "value" : 10
@@ -7565,7 +6940,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1563,
+      "line" : 1556,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 2",
       "value" : 2
@@ -7573,7 +6948,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1569,
+      "line" : 1562,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 3",
       "value" : 3
@@ -7581,7 +6956,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1581,
+      "line" : 1574,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 2",
       "value" : 2
@@ -7589,22 +6964,14 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1651,
-      "rule" : "literal-spacing",
-      "snippet" : "spacing: 20",
-      "value" : 20
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1655,
+      "line" : 1648,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 1"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1660,
+      "line" : 1653,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 2",
       "value" : 2
@@ -7612,7 +6979,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1662,
+      "line" : 1655,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 2",
       "value" : 2
@@ -7620,7 +6987,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1684,
+      "line" : 1677,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 6",
       "value" : 6
@@ -7628,14 +6995,14 @@
     {
       "dimension" : "iconografia",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1685,
+      "line" : 1678,
       "rule" : "literal-systemName",
-      "snippet" : "Image(systemName: \"checkmark.seal.fill\")"
+      "snippet" : "Image(systemName: \"checkmark\")"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1719,
+      "line" : 1712,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 10",
       "value" : 10
@@ -7643,7 +7010,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1735,
+      "line" : 1728,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 10",
       "value" : 10
@@ -7651,63 +7018,63 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1737,
+      "line" : 1730,
       "rule" : "evasion:.frame(width:)-decorativo",
       "snippet" : "width: 64,"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1745,
+      "line" : 1738,
       "rule" : "evasion:.offset",
       "snippet" : "Rectangle().fill(theme.ink).frame(width: 2, height: 14)                         .offset(x: min(w - 2, max(0, w * (pre..."
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1745,
+      "line" : 1738,
       "rule" : "evasion:.frame(width:)-decorativo",
       "snippet" : "width: 2,"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1745,
+      "line" : 1738,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 14"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1749,
+      "line" : 1742,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 8"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1752,
+      "line" : 1745,
       "rule" : "evasion:.frame(width:)-decorativo",
       "snippet" : "width: 56,"
     },
     {
       "dimension" : "iconografia",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1765,
+      "line" : 1758,
       "rule" : "literal-systemName",
       "snippet" : "Image(systemName: \"star\")"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1785,
+      "line" : 1778,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 1"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1796,
+      "line" : 1789,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 0",
       "value" : 0
@@ -7715,7 +7082,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1797,
+      "line" : 1790,
       "rule" : "literal-padding",
       "snippet" : "Text(\"By exercise\").groteskOverline().foregroundStyle(theme.inkTertiary)                 .padding(.bottom, 2)",
       "value" : 2
@@ -7723,42 +7090,42 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1810,
+      "line" : 1803,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 1"
     },
     {
       "dimension" : "iconografia",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1835,
+      "line" : 1828,
       "rule" : "literal-systemName",
       "snippet" : "Image(systemName: \"arrow.down\")"
     },
     {
       "dimension" : "color",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1842,
+      "line" : 1835,
       "rule" : "evasion:Color.clear",
       "snippet" : "Color.clear"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1842,
+      "line" : 1835,
       "rule" : "evasion:.frame(width:)-decorativo",
       "snippet" : "width: 12,"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1842,
+      "line" : 1835,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 1"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1867,
+      "line" : 1860,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 14",
       "value" : 14
@@ -7766,7 +7133,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1879,
+      "line" : 1872,
       "rule" : "literal-padding",
       "snippet" : "Text(\"Estimate, you decide\").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)                 .padding(.t...",
       "value" : 2
@@ -7774,7 +7141,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheet.swift",
-      "line" : 1916,
+      "line" : 1909,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 6",
       "value" : 6
@@ -7861,14 +7228,6 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/LiveStrengthSheets.swift",
-      "line" : 341,
-      "rule" : "literal-padding",
-      "snippet" : "VStack(alignment: .leading, spacing: CenitMetrics.gap) {                     searchField                     if !filt...",
-      "value" : 16
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/LiveStrengthSheets.swift",
       "line" : 415,
       "rule" : "literal-padding",
       "snippet" : "HStack(spacing: 9) {             StrandIcon.search.image.font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTer...",
@@ -7889,14 +7248,6 @@
       "rule" : "literal-lineWidth",
       "snippet" : "lineWidth: 1",
       "value" : 1
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/LiveStrengthSheets.swift",
-      "line" : 458,
-      "rule" : "literal-padding",
-      "snippet" : "Text(\"Use\").font(StrandFont.caption).foregroundStyle(theme.ink)                 .padding(.horizontal, CenitMetrics.ga...",
-      "value" : 5
     },
     {
       "dimension" : "radio_elevacion",
@@ -7957,26 +7308,10 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/ManualWorkoutSheet.swift",
-      "line" : 149,
-      "rule" : "literal-padding",
-      "snippet" : "Text(editing == nil ? \"Add\" : \"Save\")                         .font(StrandFont.headline)                         .for...",
-      "value" : 20
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/ManualWorkoutSheet.swift",
       "line" : 159,
       "rule" : "literal-padding",
       "snippet" : "Text(editing == nil ? \"Add\" : \"Save\")                         .font(StrandFont.headline)                         .for...",
       "value" : 9
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/ManualWorkoutSheet.swift",
-      "line" : 159,
-      "rule" : "literal-padding",
-      "snippet" : "Text(editing == nil ? \"Add\" : \"Save\")                         .font(StrandFont.headline)                         .for...",
-      "value" : 20
     },
     {
       "dimension" : "spacing",
@@ -8407,21 +7742,13 @@
       "file" : "Cenit\/Screens\/PlatesScreen.swift",
       "line" : 257,
       "rule" : "literal-padding",
-      "snippet" : "Button {             onInsertWarmup(warmup.map { (weightKg: $0.weightKg, reps: $0.reps) })         } label: {        ...",
+      "snippet" : "StrandCTAButton(\"Insert warm-up into the session\") {             onInsertWarmup(warmup.map { (weightKg: $0.weightKg, ...",
       "value" : 6
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/PlatesScreen.swift",
-      "line" : 260,
-      "rule" : "literal-padding",
-      "snippet" : "Text(\"Insert warm-up into the session\")                 .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0....",
-      "value" : 15
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/PlatesScreen.swift",
-      "line" : 299,
+      "line" : 292,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 6",
       "value" : 6
@@ -8429,14 +7756,14 @@
     {
       "dimension" : "color",
       "file" : "Cenit\/Screens\/PlatesScreen.swift",
-      "line" : 310,
+      "line" : 303,
       "rule" : "evasion:Color.clear",
       "snippet" : "Color.clear"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/PlatesScreen.swift",
-      "line" : 316,
+      "line" : 309,
       "rule" : "literal-padding",
       "snippet" : "Text(chip.label)             .font(InstrumentoType.groteskNumber(13)).monospacedDigit()             .foregroundStyle(...",
       "value" : 8
@@ -8536,22 +7863,6 @@
       "rule" : "literal-spacing",
       "snippet" : "spacing: 10",
       "value" : 10
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/ProgressionSetupScreen.swift",
-      "line" : 220,
-      "rule" : "literal-padding",
-      "snippet" : "text.font(StrandFont.caption).foregroundStyle(accented ? theme.ink : theme.inkSecondary)             .fixedSize(horiz...",
-      "value" : 11
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/ProgressionSetupScreen.swift",
-      "line" : 220,
-      "rule" : "literal-padding",
-      "snippet" : "text.font(StrandFont.caption).foregroundStyle(accented ? theme.ink : theme.inkSecondary)             .fixedSize(horiz...",
-      "value" : 13
     },
     {
       "dimension" : "spacing",
@@ -8661,32 +7972,8 @@
       "file" : "Cenit\/Screens\/RestEditorScreen.swift",
       "line" : 156,
       "rule" : "literal-padding",
-      "snippet" : "VStack(alignment: .leading, spacing: 20) {                 \/\/ FER-198 (Ola 2): la cabecera de la familia El Eje absor...",
+      "snippet" : "VStack(alignment: .leading, spacing: LiquidSpace.seccionAire) {                 \/\/ FER-198 (Ola 2): la cabecera de la...",
       "value" : 12
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/RestEditorScreen.swift",
-      "line" : 156,
-      "rule" : "literal-spacing",
-      "snippet" : "spacing: 20",
-      "value" : 20
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/RestEditorScreen.swift",
-      "line" : 209,
-      "rule" : "literal-spacing",
-      "snippet" : "spacing: 14",
-      "value" : 14
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/RestEditorScreen.swift",
-      "line" : 262,
-      "rule" : "literal-spacing",
-      "snippet" : "spacing: 14",
-      "value" : 14
     },
     {
       "dimension" : "spacing",
@@ -8707,14 +7994,6 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/RestEditorScreen.swift",
-      "line" : 293,
-      "rule" : "literal-spacing",
-      "snippet" : "spacing: 14",
-      "value" : 14
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/RestEditorScreen.swift",
       "line" : 294,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 4",
@@ -8727,14 +8006,6 @@
       "rule" : "literal-spacing",
       "snippet" : "spacing: 8",
       "value" : 8
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/RestEditorScreen.swift",
-      "line" : 320,
-      "rule" : "literal-spacing",
-      "snippet" : "spacing: 14",
-      "value" : 14
     },
     {
       "dimension" : "spacing",
@@ -8755,14 +8026,6 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/RestEditorScreen.swift",
-      "line" : 345,
-      "rule" : "literal-spacing",
-      "snippet" : "spacing: 14",
-      "value" : 14
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/RestEditorScreen.swift",
       "line" : 346,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 4",
@@ -8775,14 +8038,6 @@
       "rule" : "literal-spacing",
       "snippet" : "spacing: 8",
       "value" : 8
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/RestEditorScreen.swift",
-      "line" : 370,
-      "rule" : "literal-spacing",
-      "snippet" : "spacing: 14",
-      "value" : 14
     },
     {
       "dimension" : "spacing",
@@ -8869,14 +8124,6 @@
       "rule" : "literal-padding",
       "snippet" : "StrandCTAButton(\"Apply\") {             let config = RestEditorMapping.buildConfig(                 mode: mode, hrRef:...",
       "value" : 4
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/RoutineRegion+Tint.swift",
-      "line" : 32,
-      "rule" : "literal-padding",
-      "snippet" : "HStack(spacing: 16) {         VStack(spacing: 8) {             Circle().fill(RoutineRegion.push.tint(t)).frame(width:...",
-      "value" : 20
     },
     {
       "dimension" : "spacing",
@@ -9062,31 +8309,15 @@
       "file" : "Cenit\/Screens\/SaveErrorToast.swift",
       "line" : 32,
       "rule" : "literal-transition",
-      "snippet" : "banner                         .font(.system(size: 13))   \/\/ token-exempt: cuerpo de banner (13pt, igual que el mensa..."
+      "snippet" : "banner                         .font(LiquidType.cuerpoBanner)                         .foregroundStyle(theme.ink)    ..."
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/SaveErrorToast.swift",
       "line" : 32,
       "rule" : "literal-padding",
-      "snippet" : "banner                         .font(.system(size: 13))   \/\/ token-exempt: cuerpo de banner (13pt, igual que el mensa...",
+      "snippet" : "banner                         .font(LiquidType.cuerpoBanner)                         .foregroundStyle(theme.ink)    ...",
       "value" : 16
-    },
-    {
-      "dimension" : "tipografia_dynamictype",
-      "file" : "Cenit\/Screens\/SaveErrorToast.swift",
-      "line" : 33,
-      "rule" : "literal-font-size",
-      "snippet" : "size: 13",
-      "value" : 13
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/SavedTicketsScreen.swift",
-      "line" : 58,
-      "rule" : "literal-padding",
-      "snippet" : "VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {                 header                 segmentControl...",
-      "value" : 20
     },
     {
       "dimension" : "spacing",
@@ -9310,14 +8541,6 @@
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/ShareCardView.swift",
       "line" : 24,
-      "rule" : "literal-padding",
-      "snippet" : "VStack(alignment: .leading, spacing: 0) {             Text(\"Cénit\").font(InstrumentoType.grotesk(16, weight: .semibol...",
-      "value" : 20
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/ShareCardView.swift",
-      "line" : 24,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 0",
       "value" : 0
@@ -9439,39 +8662,9 @@
       "value" : 0
     },
     {
-      "dimension" : "movimiento",
-      "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 58,
-      "rule" : "literal-animation",
-      "snippet" : "ScrollView {             VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {                 if let t = s..."
-    },
-    {
-      "dimension" : "movimiento",
-      "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 82,
-      "rule" : "literal-transition",
-      "snippet" : "Text(\"Couldn't save. Try again.\")                     .font(.system(size: 13))   \/\/ token-exempt: cuerpo de banner (1..."
-    },
-    {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 82,
-      "rule" : "literal-padding",
-      "snippet" : "Text(\"Couldn't save. Try again.\")                     .font(.system(size: 13))   \/\/ token-exempt: cuerpo de banner (1...",
-      "value" : 16
-    },
-    {
-      "dimension" : "tipografia_dynamictype",
-      "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 83,
-      "rule" : "literal-font-size",
-      "snippet" : "size: 13",
-      "value" : 13
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 104,
+      "line" : 89,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 4",
       "value" : 4
@@ -9479,7 +8672,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 111,
+      "line" : 96,
       "rule" : "literal-padding",
       "snippet" : "Text(\"Begin with a proven base and edit it to taste. Everything works offline.\")                         .font(Strand...",
       "value" : 2
@@ -9487,7 +8680,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 117,
+      "line" : 102,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 4",
       "value" : 4
@@ -9495,7 +8688,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 123,
+      "line" : 108,
       "rule" : "literal-padding",
       "snippet" : "Text(routineCountText(StarterTemplates.inGroup(grupo).count))                         .font(StrandFont.subhead).foreg...",
       "value" : 2
@@ -9503,7 +8696,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 133,
+      "line" : 118,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 6",
       "value" : 6
@@ -9511,7 +8704,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 138,
+      "line" : 123,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 0",
       "value" : 0
@@ -9519,7 +8712,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 158,
+      "line" : 143,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 12",
       "value" : 12
@@ -9527,7 +8720,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 159,
+      "line" : 144,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 1",
       "value" : 1
@@ -9535,7 +8728,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 183,
+      "line" : 168,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 4",
       "value" : 4
@@ -9543,7 +8736,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 194,
+      "line" : 179,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 3",
       "value" : 3
@@ -9551,7 +8744,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 206,
+      "line" : 191,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 0",
       "value" : 0
@@ -9559,15 +8752,15 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 215,
+      "line" : 200,
       "rule" : "literal-padding",
-      "snippet" : "VStack(spacing: 10) {                     Button { add(t) } label: {                         Text(\"Add to my routines...",
+      "snippet" : "VStack(spacing: 10) {                     StrandCTAButton(\"Add to my routines\") { add(t) }                         .d...",
       "value" : 2
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 215,
+      "line" : 200,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 10",
       "value" : 10
@@ -9575,23 +8768,15 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 217,
+      "line" : 216,
       "rule" : "literal-padding",
-      "snippet" : "Text(\"Add to my routines\")                             .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3...",
-      "value" : 15
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 239,
-      "rule" : "literal-padding",
-      "snippet" : "VStack(spacing: 10) {             Button { applyTemplateGroup() } label: {                 Text(\"Use this plan\")     ...",
+      "snippet" : "VStack(spacing: 10) {             StrandCTAButton(\"Use this plan\") { applyTemplateGroup() }                 .disabled...",
       "value" : 2
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 239,
+      "line" : 216,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 10",
       "value" : 10
@@ -9599,15 +8784,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 241,
-      "rule" : "literal-padding",
-      "snippet" : "Text(\"Use this plan\")                     .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)            ...",
-      "value" : 15
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 263,
+      "line" : 232,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 10",
       "value" : 10
@@ -9615,7 +8792,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 268,
+      "line" : 237,
       "rule" : "literal-padding",
       "snippet" : "Text(restChipText(slot.restSeconds))                 .font(StrandFont.caption).monospacedDigit().foregroundStyle(them...",
       "value" : 2
@@ -9623,7 +8800,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 268,
+      "line" : 237,
       "rule" : "literal-padding",
       "snippet" : "Text(restChipText(slot.restSeconds))                 .font(StrandFont.caption).monospacedDigit().foregroundStyle(them...",
       "value" : 7
@@ -9631,7 +8808,7 @@
     {
       "dimension" : "radio_elevacion",
       "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
-      "line" : 273,
+      "line" : 242,
       "rule" : "literal-lineWidth",
       "snippet" : "lineWidth: 1",
       "value" : 1
@@ -9740,13 +8917,6 @@
       "value" : 11
     },
     {
-      "dimension" : "interaccion_haptica",
-      "file" : "Cenit\/Screens\/TodayView.swift",
-      "line" : 621,
-      "rule" : "uso-sensoryFeedback",
-      "snippet" : "GeometryReader { proxy in             todayScroll(proxy)         }         \/\/ Pull-to-refresh propio (FER-222): reemp..."
-    },
-    {
       "dimension" : "color",
       "file" : "Cenit\/Screens\/TodayView.swift",
       "line" : 813,
@@ -9784,14 +8954,6 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/TrainingBodyScreen.swift",
-      "line" : 166,
-      "rule" : "literal-padding",
-      "snippet" : "VStack(alignment: .leading, spacing: CenitMetrics.gap) {                 header                 if loaded && loadedVo...",
-      "value" : 20
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/TrainingBodyScreen.swift",
       "line" : 227,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 0",
@@ -9808,26 +8970,10 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/TrainingBodyScreen.swift",
-      "line" : 280,
-      "rule" : "literal-padding",
-      "snippet" : "BodyFiguresView(theme: theme, loadByMuscle: loadByMuscle,                                 maxLoad: loads.first?.load ...",
-      "value" : 10
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/TrainingBodyScreen.swift",
       "line" : 288,
       "rule" : "literal-padding",
       "snippet" : "resetRow.padding(.top, 7)",
       "value" : 7
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/TrainingBodyScreen.swift",
-      "line" : 290,
-      "rule" : "literal-padding",
-      "snippet" : "legend.padding(.top, 6)",
-      "value" : 6
     },
     {
       "dimension" : "spacing",
@@ -9851,22 +8997,6 @@
       "rule" : "literal-lineWidth",
       "snippet" : "lineWidth: 1",
       "value" : 1
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/TrainingBodyScreen.swift",
-      "line" : 327,
-      "rule" : "literal-padding",
-      "snippet" : "HStack(spacing: 7) {             Circle().fill(theme.muscleStateColor(m.relative))                 .frame(width: 7, h...",
-      "value" : 5
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/TrainingBodyScreen.swift",
-      "line" : 327,
-      "rule" : "literal-padding",
-      "snippet" : "HStack(spacing: 7) {             Circle().fill(theme.muscleStateColor(m.relative))                 .frame(width: 7, h...",
-      "value" : 11
     },
     {
       "dimension" : "spacing",
@@ -9909,14 +9039,6 @@
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/TrainingBodyScreen.swift",
       "line" : 391,
-      "rule" : "literal-padding",
-      "snippet" : "HStack(spacing: 6) {                 Image(systemName: \"arrow.counterclockwise\").font(StrandFont.glyph(.chevron, weig...",
-      "value" : 14
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/TrainingBodyScreen.swift",
-      "line" : 391,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 6",
       "value" : 6
@@ -9935,14 +9057,6 @@
       "rule" : "literal-lineWidth",
       "snippet" : "lineWidth: 1",
       "value" : 1
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/TrainingBodyScreen.swift",
-      "line" : 418,
-      "rule" : "literal-padding",
-      "snippet" : "VStack(spacing: 6) {             LinearGradient(colors: theme.muscleLoadRamp, startPoint: .leading, endPoint: .traili...",
-      "value" : 6
     },
     {
       "dimension" : "spacing",
@@ -10021,14 +9135,6 @@
       "snippet" : "height: 1"
     },
     {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/TrainingBodyScreen.swift",
-      "line" : 589,
-      "rule" : "literal-spacing",
-      "snippet" : "spacing: 14",
-      "value" : 14
-    },
-    {
       "dimension" : "radio_elevacion",
       "file" : "Cenit\/Screens\/TrainingBodyScreen.swift",
       "line" : 591,
@@ -10040,33 +9146,9 @@
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/TrainingBodyScreen.swift",
       "line" : 665,
-      "rule" : "literal-padding",
-      "snippet" : "VStack(alignment: .leading, spacing: 0) {             Text(\"Volume per muscle\").groteskOverline().foregroundStyle(the...",
-      "value" : 20
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/TrainingBodyScreen.swift",
-      "line" : 665,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 0",
       "value" : 0
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/TrainingBodyScreen.swift",
-      "line" : 670,
-      "rule" : "literal-padding",
-      "snippet" : "volumeEmptyState.padding(.top, 20)",
-      "value" : 20
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/TrainingBodyScreen.swift",
-      "line" : 672,
-      "rule" : "literal-padding",
-      "snippet" : "volumeRows.padding(.top, 6)",
-      "value" : 6
     },
     {
       "dimension" : "spacing",
@@ -10560,39 +9642,9 @@
       "snippet" : "ScrollView {             VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {                 header      ..."
     },
     {
-      "dimension" : "movimiento",
-      "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 98,
-      "rule" : "literal-animation",
-      "snippet" : "ScrollView {             VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {                 header      ..."
-    },
-    {
-      "dimension" : "movimiento",
-      "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 126,
-      "rule" : "literal-transition",
-      "snippet" : "Text(\"Couldn't save. Try again.\")                     .font(.system(size: 13))   \/\/ token-exempt: cuerpo de banner (1..."
-    },
-    {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 126,
-      "rule" : "literal-padding",
-      "snippet" : "Text(\"Couldn't save. Try again.\")                     .font(.system(size: 13))   \/\/ token-exempt: cuerpo de banner (1...",
-      "value" : 16
-    },
-    {
-      "dimension" : "tipografia_dynamictype",
-      "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 127,
-      "rule" : "literal-font-size",
-      "snippet" : "size: 13",
-      "value" : 13
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 182,
+      "line" : 169,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 4",
       "value" : 4
@@ -10600,7 +9652,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 207,
+      "line" : 194,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 10",
       "value" : 10
@@ -10608,7 +9660,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 212,
+      "line" : 199,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 0",
       "value" : 0
@@ -10616,7 +9668,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 272,
+      "line" : 259,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 10",
       "value" : 10
@@ -10624,7 +9676,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 273,
+      "line" : 260,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 2",
       "value" : 2
@@ -10632,14 +9684,14 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 282,
+      "line" : 269,
       "rule" : "evasion:.frame(width:)-decorativo",
       "snippet" : "width: 52,"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 283,
+      "line" : 270,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 5",
       "value" : 5
@@ -10647,7 +9699,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 285,
+      "line" : 272,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 6",
       "value" : 6
@@ -10655,35 +9707,35 @@
     {
       "dimension" : "iconografia",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 308,
+      "line" : 295,
       "rule" : "literal-systemName",
       "snippet" : "Image(systemName: \"arrow.left.arrow.right\")"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 310,
+      "line" : 297,
       "rule" : "evasion:.frame(width:)-decorativo",
       "snippet" : "width: 44,"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 310,
+      "line" : 297,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 44"
     },
     {
       "dimension" : "color",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 325,
+      "line" : 312,
       "rule" : "evasion:Color.clear",
       "snippet" : "Color.clear"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 336,
+      "line" : 323,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 14",
       "value" : 14
@@ -10691,7 +9743,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 337,
+      "line" : 324,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 2",
       "value" : 2
@@ -10699,14 +9751,14 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 346,
+      "line" : 333,
       "rule" : "evasion:.frame(width:)-decorativo",
       "snippet" : "width: 52,"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 349,
+      "line" : 336,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 5",
       "value" : 5
@@ -10714,14 +9766,14 @@
     {
       "dimension" : "color",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 367,
+      "line" : 354,
       "rule" : "evasion:Color.clear",
       "snippet" : "Color.clear"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 378,
+      "line" : 365,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 3",
       "value" : 3
@@ -10729,14 +9781,14 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 381,
+      "line" : 368,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 4"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 396,
+      "line" : 383,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 10",
       "value" : 10
@@ -10744,7 +9796,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 398,
+      "line" : 385,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 14",
       "value" : 14
@@ -10752,7 +9804,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 401,
+      "line" : 388,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 5",
       "value" : 5
@@ -10760,14 +9812,14 @@
     {
       "dimension" : "movimiento",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 402,
+      "line" : 389,
       "rule" : "literal-animation",
       "snippet" : "RoundedRectangle(cornerRadius: 4, style: .continuous)  \/\/ token-exempt: geometría de dato                            ..."
     },
     {
       "dimension" : "radio_elevacion",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 402,
+      "line" : 389,
       "rule" : "literal-cornerRadius",
       "snippet" : "cornerRadius: 4,",
       "value" : 4
@@ -10775,7 +9827,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 438,
+      "line" : 425,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 6",
       "value" : 6
@@ -10783,7 +9835,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 448,
+      "line" : 435,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 0",
       "value" : 0
@@ -10791,7 +9843,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 450,
+      "line" : 437,
       "rule" : "literal-padding",
       "snippet" : "Text(\"No routines yet. Create one, start from a template, or import a plan.\")                         .font(StrandFon...",
       "value" : 10
@@ -10799,7 +9851,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 516,
+      "line" : 503,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 0",
       "value" : 0
@@ -10807,28 +9859,28 @@
     {
       "dimension" : "iconografia",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 569,
+      "line" : 556,
       "rule" : "literal-systemName",
       "snippet" : "Image(systemName: \"ellipsis\")"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 570,
+      "line" : 557,
       "rule" : "evasion:.frame(width:)-decorativo",
       "snippet" : "width: 44,"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 570,
+      "line" : 557,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 44"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 593,
+      "line" : 580,
       "rule" : "literal-padding",
       "snippet" : "HStack(spacing: 8) {             Button(action: toggle) {                 HStack(spacing: 8) {                     Te...",
       "value" : 10
@@ -10836,7 +9888,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 593,
+      "line" : 580,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 8",
       "value" : 8
@@ -10844,7 +9896,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 595,
+      "line" : 582,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 8",
       "value" : 8
@@ -10852,7 +9904,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 625,
+      "line" : 612,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 12",
       "value" : 12
@@ -10860,14 +9912,14 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 626,
+      "line" : 613,
       "rule" : "evasion:.frame(width:)-decorativo",
       "snippet" : "width: 30"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 673,
+      "line" : 660,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 8",
       "value" : 8
@@ -10875,7 +9927,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 677,
+      "line" : 664,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 12",
       "value" : 12
@@ -10883,35 +9935,35 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 679,
+      "line" : 666,
       "rule" : "evasion:.frame(width:)-decorativo",
       "snippet" : "width: 22,"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 679,
+      "line" : 666,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 22"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 680,
+      "line" : 667,
       "rule" : "evasion:.frame(width:)-decorativo",
       "snippet" : "width: 38,"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 680,
+      "line" : 667,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 38"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 684,
+      "line" : 671,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 2",
       "value" : 2
@@ -10919,81 +9971,49 @@
     {
       "dimension" : "iconografia",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 699,
+      "line" : 686,
       "rule" : "literal-systemName",
       "snippet" : "Image(systemName: \"ellipsis\")"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 700,
+      "line" : 687,
       "rule" : "evasion:.frame(width:)-decorativo",
       "snippet" : "width: 32,"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 700,
+      "line" : 687,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 48"
     },
     {
       "dimension" : "movimiento",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 747,
+      "line" : 735,
       "rule" : "literal-transition",
-      "snippet" : "HStack(spacing: 12) {             Text(\"Routine deleted\").font(StrandFont.subhead).foregroundStyle(theme.surface)    ..."
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 747,
-      "rule" : "literal-padding",
-      "snippet" : "HStack(spacing: 12) {             Text(\"Routine deleted\").font(StrandFont.subhead).foregroundStyle(theme.surface)    ...",
-      "value" : 8
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 747,
-      "rule" : "literal-spacing",
-      "snippet" : "spacing: 12",
-      "value" : 12
+      "snippet" : "UndoToast(message: String(localized: \"Routine deleted\"),                   cta: String(localized: \"Undo\"),           ..."
     },
     {
       "dimension" : "movimiento",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 870,
+      "line" : 851,
       "rule" : "literal-transition",
-      "snippet" : "HStack(spacing: 12) {             Text(\"Folder deleted\").font(StrandFont.subhead).foregroundStyle(theme.surface)     ..."
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 870,
-      "rule" : "literal-padding",
-      "snippet" : "HStack(spacing: 12) {             Text(\"Folder deleted\").font(StrandFont.subhead).foregroundStyle(theme.surface)     ...",
-      "value" : 8
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 870,
-      "rule" : "literal-spacing",
-      "snippet" : "spacing: 12",
-      "value" : 12
+      "snippet" : "UndoToast(message: String(localized: \"Folder deleted\"),                   cta: String(localized: \"Undo\"),            ..."
     },
     {
       "dimension" : "iconografia",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 1061,
+      "line" : 1034,
       "rule" : "literal-systemName",
       "snippet" : "Image(systemName: \"trash\")"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WeeklyPlanEditorView.swift",
-      "line" : 1072,
+      "line" : 1045,
       "rule" : "evasion:.offset",
       "snippet" : "content                 .background(theme.paper)                 .offset(x: offset)"
     },
@@ -11135,7 +10155,7 @@
       "file" : "Cenit\/Screens\/WorkoutDetailScreen.swift",
       "line" : 335,
       "rule" : "literal-systemName",
-      "snippet" : "Image(systemName: \"ellipsis.circle\")"
+      "snippet" : "Image(systemName: \"ellipsis\")"
     },
     {
       "dimension" : "spacing",
@@ -11235,14 +10255,6 @@
       "rule" : "literal-spacing",
       "snippet" : "spacing: 6",
       "value" : 6
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/WorkoutEditSheet.swift",
-      "line" : 244,
-      "rule" : "literal-spacing",
-      "snippet" : "spacing: 20",
-      "value" : 20
     },
     {
       "dimension" : "spacing",
@@ -11353,47 +10365,9 @@
       "snippet" : "ScrollView {             VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {                 header      ..."
     },
     {
-      "dimension" : "movimiento",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 128,
-      "rule" : "literal-animation",
-      "snippet" : "ScrollView {             VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {                 header      ..."
-    },
-    {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 129,
-      "rule" : "literal-padding",
-      "snippet" : "VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {                 header                 \/\/ FER-202: el...",
-      "value" : 20
-    },
-    {
-      "dimension" : "movimiento",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 178,
-      "rule" : "literal-transition",
-      "snippet" : "Text(\"Couldn't save the workout. Try again.\")                     .font(.system(size: 13))   \/\/ token-exempt: cuerpo ..."
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 178,
-      "rule" : "literal-padding",
-      "snippet" : "Text(\"Couldn't save the workout. Try again.\")                     .font(.system(size: 13))   \/\/ token-exempt: cuerpo ...",
-      "value" : 16
-    },
-    {
-      "dimension" : "tipografia_dynamictype",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 179,
-      "rule" : "literal-font-size",
-      "snippet" : "size: 13",
-      "value" : 13
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 373,
+      "line" : 362,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 6",
       "value" : 6
@@ -11401,7 +10375,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 374,
+      "line" : 363,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 6",
       "value" : 6
@@ -11409,7 +10383,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 398,
+      "line" : 387,
       "rule" : "literal-padding",
       "snippet" : "HStack(spacing: 6) {                 Text(verbatim: WorkoutSource.displaySport(name))                     .font(Stran...",
       "value" : 5
@@ -11417,7 +10391,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 398,
+      "line" : 387,
       "rule" : "literal-padding",
       "snippet" : "HStack(spacing: 6) {                 Text(verbatim: WorkoutSource.displaySport(name))                     .font(Stran...",
       "value" : 10
@@ -11425,7 +10399,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 398,
+      "line" : 387,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 6",
       "value" : 6
@@ -11433,7 +10407,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 423,
+      "line" : 412,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 3",
       "value" : 3
@@ -11441,14 +10415,14 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 482,
+      "line" : 471,
       "rule" : "evasion:.frame(width:)-decorativo",
       "snippet" : "width: 22"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 621,
+      "line" : 610,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 10",
       "value" : 10
@@ -11456,23 +10430,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 647,
-      "rule" : "literal-padding",
-      "snippet" : "Group {             if up { Text(\"↗ +\\(n)% vs. last month\") } else { Text(\"↘ −\\(n)% vs. last month\") }         }     ...",
-      "value" : 3
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 647,
-      "rule" : "literal-padding",
-      "snippet" : "Group {             if up { Text(\"↗ +\\(n)% vs. last month\") } else { Text(\"↘ −\\(n)% vs. last month\") }         }     ...",
-      "value" : 9
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 661,
+      "line" : 644,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 6",
       "value" : 6
@@ -11480,21 +10438,21 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 675,
+      "line" : 658,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 58,"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 676,
+      "line" : 659,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 1.2"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 691,
+      "line" : 674,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 1",
       "value" : 1
@@ -11502,7 +10460,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 729,
+      "line" : 712,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 2",
       "value" : 2
@@ -11510,7 +10468,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 731,
+      "line" : 714,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 3",
       "value" : 3
@@ -11518,7 +10476,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 760,
+      "line" : 743,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 9",
       "value" : 9
@@ -11526,7 +10484,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 770,
+      "line" : 753,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 10",
       "value" : 10
@@ -11534,21 +10492,21 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 774,
+      "line" : 757,
       "rule" : "evasion:.frame(width:)-decorativo",
       "snippet" : "width: 86,"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 776,
+      "line" : 759,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 12"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 828,
+      "line" : 811,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 10",
       "value" : 10
@@ -11556,23 +10514,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 876,
-      "rule" : "literal-padding",
-      "snippet" : "TrainingCalendar(                 days: historyCalendarDays, size: .full, summary: historyCalendarSummary,           ...",
-      "value" : 2
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 876,
-      "rule" : "literal-padding",
-      "snippet" : "TrainingCalendar(                 days: historyCalendarDays, size: .full, summary: historyCalendarSummary,           ...",
-      "value" : 6
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 887,
+      "line" : 870,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 0",
       "value" : 0
@@ -11580,35 +10522,35 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 992,
+      "line" : 975,
       "rule" : "evasion:.frame(width:)-decorativo",
       "snippet" : "width: 22,"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 992,
+      "line" : 975,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 22"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 993,
+      "line" : 976,
       "rule" : "evasion:.frame(width:)-decorativo",
       "snippet" : "width: 38,"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 993,
+      "line" : 976,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 38"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 996,
+      "line" : 979,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 2",
       "value" : 2
@@ -11616,28 +10558,28 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1074,
+      "line" : 1057,
       "rule" : "evasion:.frame(width:)-decorativo",
       "snippet" : "width: 38,"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1074,
+      "line" : 1057,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 38"
     },
     {
       "dimension" : "iconografia",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1076,
+      "line" : 1059,
       "rule" : "literal-systemName",
       "snippet" : "Image(systemName: \"doc.plaintext\")"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1080,
+      "line" : 1063,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 2",
       "value" : 2
@@ -11645,7 +10587,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1098,
+      "line" : 1081,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 10",
       "value" : 10
@@ -11653,14 +10595,14 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1107,
+      "line" : 1090,
       "rule" : "evasion:.frame(width:)-decorativo",
       "snippet" : "width: 110"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1123,
+      "line" : 1106,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 0",
       "value" : 0
@@ -11668,7 +10610,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1185,
+      "line" : 1168,
       "rule" : "literal-padding",
       "snippet" : "VStack(spacing: 11) {             Image(systemName: \"clock.arrow.circlepath\")                 .font(StrandFont.glyph(...",
       "value" : 34
@@ -11676,7 +10618,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1185,
+      "line" : 1168,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 11",
       "value" : 11
@@ -11684,14 +10626,14 @@
     {
       "dimension" : "iconografia",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1186,
+      "line" : 1169,
       "rule" : "literal-systemName",
       "snippet" : "Image(systemName: \"clock.arrow.circlepath\")"
     },
     {
       "dimension" : "tipografia_dynamictype",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1204,
+      "line" : 1187,
       "rule" : "literal-font-size",
       "snippet" : "size: 13",
       "value" : 13
@@ -11699,75 +10641,29 @@
     {
       "dimension" : "movimiento",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1314,
+      "line" : 1297,
       "rule" : "literal-transition",
       "snippet" : "HStack(spacing: CenitMetrics.gap) {             Text(\"Workout deleted\").font(StrandFont.subhead).foregroundStyle(them..."
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1314,
-      "rule" : "literal-padding",
-      "snippet" : "HStack(spacing: CenitMetrics.gap) {             Text(\"Workout deleted\").font(StrandFont.subhead).foregroundStyle(them...",
-      "value" : 14
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1314,
+      "line" : 1297,
       "rule" : "literal-padding",
       "snippet" : "HStack(spacing: CenitMetrics.gap) {             Text(\"Workout deleted\").font(StrandFont.subhead).foregroundStyle(them...",
       "value" : 18
     },
     {
-      "dimension" : "movimiento",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1562,
-      "rule" : "literal-animation",
-      "snippet" : "ScrollView {             VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {                 heading     ..."
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1563,
-      "rule" : "literal-padding",
-      "snippet" : "VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {                 heading                 hero         ...",
-      "value" : 20
-    },
-    {
-      "dimension" : "movimiento",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1606,
-      "rule" : "literal-transition",
-      "snippet" : "Text(\"Couldn't delete the workout. Try again.\")                     .font(.system(size: 13))   \/\/ token-exempt: cuerp..."
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1606,
-      "rule" : "literal-padding",
-      "snippet" : "Text(\"Couldn't delete the workout. Try again.\")                     .font(.system(size: 13))   \/\/ token-exempt: cuerp...",
-      "value" : 16
-    },
-    {
-      "dimension" : "tipografia_dynamictype",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1607,
-      "rule" : "literal-font-size",
-      "snippet" : "size: 13",
-      "value" : 13
-    },
-    {
       "dimension" : "iconografia",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1625,
+      "line" : 1594,
       "rule" : "literal-systemName",
-      "snippet" : "Image(systemName: \"ellipsis.circle\")"
+      "snippet" : "Image(systemName: \"ellipsis\")"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1674,
+      "line" : 1643,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 10",
       "value" : 10
@@ -11775,7 +10671,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1840,
+      "line" : 1809,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 2",
       "value" : 2
@@ -11783,7 +10679,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1876,
+      "line" : 1845,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 3",
       "value" : 3
@@ -11791,14 +10687,14 @@
     {
       "dimension" : "radio_elevacion",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1896,
+      "line" : 1865,
       "rule" : "evasion:clipShape(RoundedRectangle)",
       "snippet" : "HStack(spacing: 2) {                     ForEach(percents.indices, id: \\.self) { i in                         Rectang..."
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1896,
+      "line" : 1865,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 2",
       "value" : 2
@@ -11806,14 +10702,14 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1904,
+      "line" : 1873,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 34"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1905,
+      "line" : 1874,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 0",
       "value" : 0
@@ -11821,7 +10717,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1907,
+      "line" : 1876,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 2",
       "value" : 2
@@ -11829,15 +10725,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1924,
-      "rule" : "literal-spacing",
-      "snippet" : "spacing: 44",
-      "value" : 44
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1926,
+      "line" : 1895,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 3",
       "value" : 3
@@ -11845,7 +10733,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1936,
+      "line" : 1905,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 3",
       "value" : 3
@@ -11853,7 +10741,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1952,
+      "line" : 1921,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 6",
       "value" : 6
@@ -11861,7 +10749,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1969,
+      "line" : 1938,
       "rule" : "literal-padding",
       "snippet" : "HStack(spacing: 5) {                     Circle().fill(theme.originBand).frame(width: 5, height: 5)                  ...",
       "value" : 3
@@ -11869,7 +10757,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1969,
+      "line" : 1938,
       "rule" : "literal-padding",
       "snippet" : "HStack(spacing: 5) {                     Circle().fill(theme.originBand).frame(width: 5, height: 5)                  ...",
       "value" : 9
@@ -11877,7 +10765,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1969,
+      "line" : 1938,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 5",
       "value" : 5
@@ -11885,21 +10773,21 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1970,
+      "line" : 1939,
       "rule" : "evasion:.frame(width:)-decorativo",
       "snippet" : "width: 5,"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1970,
+      "line" : 1939,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 5"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1977,
+      "line" : 1946,
       "rule" : "literal-padding",
       "snippet" : "Text(\"Estimated\")                     .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)                  ...",
       "value" : 3
@@ -11907,7 +10795,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 1977,
+      "line" : 1946,
       "rule" : "literal-padding",
       "snippet" : "Text(\"Estimated\")                     .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)                  ...",
       "value" : 9
@@ -11915,47 +10803,15 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 2002,
+      "line" : 1971,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 0",
       "value" : 0
     },
     {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 2009,
-      "rule" : "literal-padding",
-      "snippet" : "exerciseTitle(g)                 .padding(.bottom, 6)",
-      "value" : 6
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 2012,
-      "rule" : "literal-padding",
-      "snippet" : "HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space2) {                     Text(\"Set \\(idx + 1)\").font...",
-      "value" : 5
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 2015,
-      "rule" : "literal-padding",
-      "snippet" : "Text(\"PR\").font(StrandFont.captionNumber).foregroundStyle(theme.dataStrain)                             .padding(.hor...",
-      "value" : 1
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 2015,
-      "rule" : "literal-padding",
-      "snippet" : "Text(\"PR\").font(StrandFont.captionNumber).foregroundStyle(theme.dataStrain)                             .padding(.hor...",
-      "value" : 6
-    },
-    {
       "dimension" : "radio_elevacion",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 2017,
+      "line" : 1986,
       "rule" : "literal-lineWidth",
       "snippet" : "lineWidth: 1",
       "value" : 1
@@ -11963,45 +10819,15 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutHistoryScreen.swift",
-      "line" : 2066,
+      "line" : 2035,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 6",
       "value" : 6
     },
     {
-      "dimension" : "movimiento",
-      "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 71,
-      "rule" : "literal-animation",
-      "snippet" : "ScrollView {             Group {                 switch phase {                 case .capture: captureFlow           ..."
-    },
-    {
-      "dimension" : "movimiento",
-      "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 92,
-      "rule" : "literal-transition",
-      "snippet" : "Text(\"Couldn't save. Try again.\")                     .font(.system(size: 13))   \/\/ token-exempt: cuerpo de banner (1..."
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 92,
-      "rule" : "literal-padding",
-      "snippet" : "Text(\"Couldn't save. Try again.\")                     .font(.system(size: 13))   \/\/ token-exempt: cuerpo de banner (1...",
-      "value" : 16
-    },
-    {
-      "dimension" : "tipografia_dynamictype",
-      "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 93,
-      "rule" : "literal-font-size",
-      "snippet" : "size: 13",
-      "value" : 13
-    },
-    {
       "dimension" : "radio_elevacion",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 234,
+      "line" : 219,
       "rule" : "literal-lineWidth",
       "snippet" : "lineWidth: 1.5,",
       "value" : 1.5
@@ -12009,7 +10835,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 250,
+      "line" : 235,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 6",
       "value" : 6
@@ -12017,14 +10843,14 @@
     {
       "dimension" : "iconografia",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 264,
+      "line" : 249,
       "rule" : "literal-systemName",
       "snippet" : "Image(systemName: \"exclamationmark.triangle\")"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 284,
+      "line" : 269,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 0",
       "value" : 0
@@ -12032,14 +10858,14 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 288,
+      "line" : 273,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 0.5"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 323,
+      "line" : 308,
       "rule" : "literal-padding",
       "snippet" : "HStack(spacing: 5) {                         Image(systemName: isAuto ? \"sparkles\" : \"checkmark.circle.fill\")        ...",
       "value" : 3
@@ -12047,7 +10873,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 323,
+      "line" : 308,
       "rule" : "literal-padding",
       "snippet" : "HStack(spacing: 5) {                         Image(systemName: isAuto ? \"sparkles\" : \"checkmark.circle.fill\")        ...",
       "value" : 9
@@ -12055,7 +10881,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 323,
+      "line" : 308,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 5",
       "value" : 5
@@ -12063,7 +10889,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 352,
+      "line" : 337,
       "rule" : "literal-padding",
       "snippet" : "HStack(spacing: CenitMetrics.space2) {                                 Image(systemName: \"sparkles\").font(StrandFont....",
       "value" : 10
@@ -12071,14 +10897,14 @@
     {
       "dimension" : "iconografia",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 353,
+      "line" : 338,
       "rule" : "literal-systemName",
       "snippet" : "Image(systemName: \"sparkles\")"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 356,
+      "line" : 341,
       "rule" : "literal-padding",
       "snippet" : "Text(\"Use\").font(InstrumentoType.grotesk(12, weight: .bold)).foregroundStyle(theme.paperHi)                          ...",
       "value" : 11
@@ -12086,7 +10912,7 @@
     {
       "dimension" : "radio_elevacion",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 363,
+      "line" : 348,
       "rule" : "literal-lineWidth",
       "snippet" : "lineWidth: 1",
       "value" : 1
@@ -12094,7 +10920,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 390,
+      "line" : 375,
       "rule" : "literal-padding",
       "snippet" : "Text(title).font(InstrumentoType.grotesk(12, weight: .semibold)).foregroundStyle(theme.inkSecondary)                 ...",
       "value" : 6
@@ -12102,7 +10928,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 390,
+      "line" : 375,
       "rule" : "literal-padding",
       "snippet" : "Text(title).font(InstrumentoType.grotesk(12, weight: .semibold)).foregroundStyle(theme.inkSecondary)                 ...",
       "value" : 13
@@ -12110,7 +10936,7 @@
     {
       "dimension" : "radio_elevacion",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 392,
+      "line" : 377,
       "rule" : "literal-lineWidth",
       "snippet" : "lineWidth: 1",
       "value" : 1
@@ -12118,7 +10944,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 413,
+      "line" : 398,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 0",
       "value" : 0
@@ -12126,14 +10952,14 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 426,
+      "line" : 411,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 0.5"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 443,
+      "line" : 428,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 6",
       "value" : 6
@@ -12141,7 +10967,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 486,
+      "line" : 471,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 6",
       "value" : 6
@@ -12149,7 +10975,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 503,
+      "line" : 488,
       "rule" : "literal-padding",
       "snippet" : "Text(mapped == 1 ? \"1 mapped\" : \"\\(mapped) mapped\")                     .font(StrandFont.caption.weight(.semibold)).f...",
       "value" : 3
@@ -12157,7 +10983,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 503,
+      "line" : 488,
       "rule" : "literal-padding",
       "snippet" : "Text(mapped == 1 ? \"1 mapped\" : \"\\(mapped) mapped\")                     .font(StrandFont.caption.weight(.semibold)).f...",
       "value" : 9
@@ -12165,7 +10991,7 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 530,
+      "line" : 515,
       "rule" : "literal-spacing",
       "snippet" : "spacing: 0",
       "value" : 0
@@ -12173,28 +10999,28 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 536,
+      "line" : 521,
       "rule" : "evasion:.frame(width:)-decorativo",
       "snippet" : "width: 116,"
     },
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 536,
+      "line" : 521,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 116"
     },
     {
       "dimension" : "iconografia",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 537,
+      "line" : 522,
       "rule" : "literal-systemName",
       "snippet" : "Image(systemName: \"checkmark\")"
     },
     {
       "dimension" : "tipografia_dynamictype",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 538,
+      "line" : 523,
       "rule" : "literal-font-size",
       "snippet" : "size: 44,",
       "value" : 44
@@ -12202,25 +11028,9 @@
     {
       "dimension" : "spacing",
       "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 577,
-      "rule" : "literal-padding",
-      "snippet" : "HStack(spacing: CenitMetrics.space2) {                 ForEach(0..<labels.count, id: \\.self) { i in                  ...",
-      "value" : 44
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 581,
+      "line" : 566,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 3"
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "Cenit\/Screens\/WorkoutImportView.swift",
-      "line" : 586,
-      "rule" : "literal-padding",
-      "snippet" : "HStack(spacing: CenitMetrics.space2) {                 ForEach(0..<labels.count, id: \\.self) { i in                  ...",
-      "value" : 44
     },
     {
       "dimension" : "spacing",
@@ -12330,24 +11140,8 @@
       "file" : "CenitApp\/App\/InstrumentTabBar.swift",
       "line" : 60,
       "rule" : "literal-padding",
-      "snippet" : "HStack(alignment: .top, spacing: 0) {             ForEach(items, id: \\.tag) { item in tab(item) }         }         ....",
+      "snippet" : "HStack(alignment: .top, spacing: .zero) {             ForEach(items, id: \\.tag) { item in tab(item) }         }      ...",
       "value" : -10
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "CenitApp\/App\/InstrumentTabBar.swift",
-      "line" : 60,
-      "rule" : "literal-padding",
-      "snippet" : "HStack(alignment: .top, spacing: 0) {             ForEach(items, id: \\.tag) { item in tab(item) }         }         ....",
-      "value" : 8
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "CenitApp\/App\/InstrumentTabBar.swift",
-      "line" : 60,
-      "rule" : "literal-spacing",
-      "snippet" : "spacing: 0",
-      "value" : 0
     },
     {
       "dimension" : "spacing",
@@ -12355,14 +11149,6 @@
       "line" : 76,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 0.5"
-    },
-    {
-      "dimension" : "spacing",
-      "file" : "CenitApp\/App\/InstrumentTabBar.swift",
-      "line" : 90,
-      "rule" : "literal-spacing",
-      "snippet" : "spacing: 5",
-      "value" : 5
     },
     {
       "dimension" : "spacing",
@@ -12381,88 +11167,64 @@
     {
       "dimension" : "tipografia_dynamictype",
       "file" : "CenitApp\/App\/InstrumentTabBar.swift",
-      "line" : 115,
-      "rule" : "literal-font-size",
-      "snippet" : "size: 21,",
-      "value" : 21
-    },
-    {
-      "dimension" : "tipografia_dynamictype",
-      "file" : "CenitApp\/App\/InstrumentTabBar.swift",
-      "line" : 119,
+      "line" : 121,
       "rule" : "literal-font-size",
       "snippet" : "size: 23,",
       "value" : 23
     },
     {
-      "dimension" : "radio_elevacion",
-      "file" : "CenitApp\/App\/InstrumentTabBar.swift",
-      "line" : 121,
-      "rule" : "literal-lineWidth",
-      "snippet" : "lineWidth: 1.9",
-      "value" : 1.9
-    },
-    {
       "dimension" : "spacing",
       "file" : "CenitApp\/App\/InstrumentTabBar.swift",
-      "line" : 121,
+      "line" : 124,
       "rule" : "evasion:.frame(width:)-decorativo",
       "snippet" : "width: 22,"
     },
     {
       "dimension" : "spacing",
       "file" : "CenitApp\/App\/InstrumentTabBar.swift",
-      "line" : 121,
+      "line" : 124,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 22"
     },
     {
-      "dimension" : "radio_elevacion",
-      "file" : "CenitApp\/App\/InstrumentTabBar.swift",
-      "line" : 123,
-      "rule" : "literal-lineWidth",
-      "snippet" : "lineWidth: 1.8",
-      "value" : 1.8
-    },
-    {
       "dimension" : "spacing",
       "file" : "CenitApp\/App\/InstrumentTabBar.swift",
-      "line" : 123,
+      "line" : 127,
       "rule" : "evasion:.frame(width:)-decorativo",
       "snippet" : "width: 23,"
     },
     {
       "dimension" : "spacing",
       "file" : "CenitApp\/App\/InstrumentTabBar.swift",
-      "line" : 123,
+      "line" : 127,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 23"
     },
     {
       "dimension" : "movimiento",
       "file" : "CenitApp\/App\/InstrumentTabBar.swift",
-      "line" : 139,
+      "line" : 143,
       "rule" : "literal-animation",
       "snippet" : "Circle()             .fill(color)             .frame(width: 5, height: 5)             .scaleEffect(active ? (breathin..."
     },
     {
       "dimension" : "movimiento",
       "file" : "CenitApp\/App\/InstrumentTabBar.swift",
-      "line" : 139,
+      "line" : 143,
       "rule" : "literal-animation",
       "snippet" : "Circle()             .fill(color)             .frame(width: 5, height: 5)             .scaleEffect(active ? (breathin..."
     },
     {
       "dimension" : "spacing",
       "file" : "CenitApp\/App\/InstrumentTabBar.swift",
-      "line" : 141,
+      "line" : 145,
       "rule" : "evasion:.frame(width:)-decorativo",
       "snippet" : "width: 5,"
     },
     {
       "dimension" : "spacing",
       "file" : "CenitApp\/App\/InstrumentTabBar.swift",
-      "line" : 141,
+      "line" : 145,
       "rule" : "evasion:.frame(height:)-decorativo",
       "snippet" : "height: 5"
     },
@@ -12502,14 +11264,6 @@
       "snippet" : "Color.clear"
     },
     {
-      "dimension" : "spacing",
-      "file" : "CenitApp\/App\/RootTabView.swift",
-      "line" : 529,
-      "rule" : "literal-spacing",
-      "snippet" : "spacing: 0",
-      "value" : 0
-    },
-    {
       "dimension" : "color",
       "file" : "CenitApp\/App\/RootTabView.swift",
       "line" : 530,
@@ -12522,20 +11276,6 @@
       "line" : 87,
       "rule" : "literal-systemName",
       "snippet" : "Image(systemName: \"checkmark\")"
-    },
-    {
-      "dimension" : "movimiento",
-      "file" : "CenitWatch\/Screens\/WatchLiveFaceView.swift",
-      "line" : 101,
-      "rule" : "literal-curve-duration",
-      "snippet" : ".easeOut(duration: 0.15)"
-    },
-    {
-      "dimension" : "movimiento",
-      "file" : "CenitWatch\/Screens\/WatchLiveFaceView.swift",
-      "line" : 104,
-      "rule" : "literal-curve-duration",
-      "snippet" : ".easeIn(duration: 0.15)"
     },
     {
       "dimension" : "radio_elevacion",
@@ -13030,13 +11770,13 @@
     }
   ],
   "hitsByDimension" : {
-    "color" : 74,
+    "color" : 73,
     "iconografia" : 65,
-    "interaccion_haptica" : 5,
-    "movimiento" : 82,
-    "radio_elevacion" : 122,
-    "spacing" : 793,
-    "tipografia_dynamictype" : 61
+    "interaccion_haptica" : 2,
+    "movimiento" : 65,
+    "radio_elevacion" : 116,
+    "spacing" : 713,
+    "tipografia_dynamictype" : 54
   },
   "iconVocabulary" : {
     "applewatch" : 1,
@@ -13048,11 +11788,10 @@
     "arrow.up.left.and.arrow.down.right" : 2,
     "arrow.uturn.backward" : 1,
     "calendar.badge.clock" : 1,
-    "checkmark" : 7,
+    "checkmark" : 8,
     "checkmark.circle.fill" : 1,
     "checkmark.icloud.fill" : 1,
     "checkmark.seal" : 1,
-    "checkmark.seal.fill" : 1,
     "chevron.down" : 1,
     "chevron.left" : 2,
     "chevron.right" : 1,
@@ -13061,8 +11800,7 @@
     "circle.fill" : 1,
     "clock.arrow.circlepath" : 2,
     "doc.plaintext" : 2,
-    "ellipsis" : 2,
-    "ellipsis.circle" : 2,
+    "ellipsis" : 4,
     "exclamationmark.triangle" : 5,
     "gearshape" : 1,
     "heart.fill" : 7,
@@ -13070,8 +11808,7 @@
     "info.circle" : 1,
     "pause.fill" : 2,
     "play.rectangle" : 2,
-    "plus" : 1,
-    "plus.circle.fill" : 1,
+    "plus" : 2,
     "questionmark.circle" : 1,
     "sparkles" : 1,
     "star" : 1,

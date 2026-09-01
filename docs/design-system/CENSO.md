@@ -2,7 +2,7 @@
 
 > Regenerable: `cd Tools/DesignCensus && swift run design-census --repo ../.. --roles roles.yaml --labels labels/composicion-etiquetado.json --out ../../docs/design-system/CENSO.md`
 >
-> **Commit**: `8f08a6342cf0` · **fecha del commit**: 2026-08-31T19:16:37-07:00 · **archivos .swift escaneados**: 209
+> **Commit**: `17ba6c45d2d9` · **fecha del commit**: 2026-09-01T16:36:29-06:00 · **archivos .swift escaneados**: 209
 >
 > Este archivo distingue **[MEDIDO]** (contado por el AST de swift-syntax, reproducible) de **[ETIQUETADO]** (`roles.yaml` y `labels/composicion-etiquetado.json`, mantenidos a mano por un agente — el AST no ve roles). Etiquetado por: subagent-general-purpose-independent-labeler-2026-08-31 — declarado distinto del autor del detector (swift-syntax visitor) en el propio archivo de labels.
 >
@@ -12,12 +12,12 @@
 
 | Dimensión | Hits [MEDIDO] |
 |---|---|
-| color | 74 |
-| spacing | 793 |
-| radio_elevacion | 122 |
-| tipografia_dynamictype | 61 |
-| movimiento | 82 |
-| interaccion_haptica | 5 |
+| color | 73 |
+| spacing | 713 |
+| radio_elevacion | 116 |
+| tipografia_dynamictype | 54 |
+| movimiento | 65 |
+| interaccion_haptica | 2 |
 | iconografia | 65 |
 | composicion | 0 |
 
@@ -29,14 +29,13 @@ APIs que evaden el regex de `Tools/check-design-drift.py` (multi-línea, nombre 
 |---|---|---|
 | `evasion:.frame(height:)-decorativo` | 146 | 42 |
 | `evasion:.frame(width:)-decorativo` | 109 | 38 |
-| `evasion:Color.clear` | 64 | 27 |
+| `evasion:Color.clear` | 63 | 27 |
 | `evasion:clipShape(RoundedRectangle)` | 12 | 8 |
 | `evasion:.offset` | 10 | 7 |
 | `evasion:Color.white` | 4 | 2 |
 | `evasion:.foregroundStyle(.white)-fuera-de-token` | 2 | 2 |
 | `evasion:Color.black` | 2 | 2 |
 | `evasion:EdgeInsets(literal)` | 2 | 2 |
-| `evasion:UIFeedbackGenerator-crudo` | 2 | 1 |
 | `evasion:.foregroundStyle(.primary)-fuera-de-token` | 1 | 1 |
 | `evasion:.foregroundStyle(.secondary)-fuera-de-token` | 1 | 1 |
 
@@ -46,76 +45,48 @@ Taxonomía: `dato` · `sistema` · `falta-pieza` · `optico` · `paridad` · `un
 
 | Categoría | conteo |
 |---|---|
-| falta-pieza | 71 |
-| unico | 49 |
-| dato | 37 |
+| unico | 58 |
+| dato | 34 |
 | sistema | 26 |
-| optico | 11 |
+| falta-pieza | 24 |
+| optico | 13 |
 | paridad | 4 |
 
-**Total exempts vivos en el árbol**: 198
+**Total exempts vivos en el árbol**: 159
 
 ### Top archivos por exempts
 
 | Archivo | exempts |
 |---|---|
 | `CenitWidgets/RestLiveActivity.swift` | 24 |
-| `Cenit/Screens/ExerciseDetailScreen.swift` | 22 |
-| `Cenit/Screens/WorkoutHistoryScreen.swift` | 22 |
-| `Cenit/Screens/TrainingBodyScreen.swift` | 20 |
-| `Cenit/Screens/LiveStrengthSheet.swift` | 13 |
+| `Cenit/Screens/ExerciseDetailScreen.swift` | 13 |
 | `Cenit/Screens/MetricDetailScreen.swift` | 13 |
-| `Cenit/Screens/WorkoutImportView.swift` | 10 |
+| `Cenit/Screens/TrainingBodyScreen.swift` | 11 |
+| `Cenit/Screens/WorkoutHistoryScreen.swift` | 10 |
 | `Cenit/Screens/BreathingView.swift` | 7 |
 | `Cenit/Screens/DataSourcesView.swift` | 6 |
-| `Cenit/Screens/Hoja/RoutineSheetLiveTarjeta.swift` | 5 |
+| `Cenit/Screens/Hoja/RoutineSheetLiveTarjeta.swift` | 6 |
+| `Cenit/Screens/LiveStrengthSheet.swift` | 6 |
+| `Cenit/Screens/WorkoutImportView.swift` | 6 |
 | `Cenit/Screens/AjustesView.swift` | 4 |
-| `Cenit/Screens/ExerciseLibraryScreen.swift` | 4 |
 | `Cenit/Screens/Hoy/HoyModosHost.swift` | 4 |
-| `Cenit/Screens/LiveStrengthSheets.swift` | 4 |
 | `Cenit/Screens/MetricDetailSupport.swift` | 4 |
+| `Cenit/Screens/ReceiptPrinterScreen.swift` | 4 |
+| `Cenit/Screens/SleepDetailScreen.swift` | 4 |
 
 ### Clusters ×3 de `falta-pieza` (regla anti-excepción del épico §5)
 
-- **12×** — pieza propuesta: _ajuste óptico / sin token exacto_
-  - `Cenit/Screens/ExerciseDetailScreen.swift:1024` — ajuste óptico / sin token exacto
-  - `Cenit/Screens/LiveStrengthSheet.swift:1445` — ajuste óptico / sin token exacto
-  - `Cenit/Screens/LiveStrengthSheets.swift:459` — ajuste óptico / sin token exacto
-  - `Cenit/Screens/TrainingBodyScreen.swift:288` — ajuste óptico / sin token exacto
-  - `Cenit/Screens/TrainingBodyScreen.swift:290` — ajuste óptico / sin token exacto
-- **10×** — pieza propuesta: _sin token exacto (horizontal/chip handoff)_
+- **8×** — pieza propuesta: _sin token exacto (horizontal/chip handoff)_
   - `Cenit/Screens/Hoja/RoutineSheetLiveLogic.swift:703` — sin token exacto (horizontal/chip handoff)
   - `Cenit/Screens/LiveStrengthSheets.swift:421` — sin token exacto (horizontal/chip handoff)
-  - `Cenit/Screens/TrainingBodyScreen.swift:333` — sin token exacto (horizontal/chip handoff)
-  - `Cenit/Screens/WorkoutHistoryScreen.swift:653` — sin token exacto (horizontal/chip handoff)
-  - `Cenit/Screens/WorkoutHistoryScreen.swift:1974` — sin token exacto (horizontal/chip handoff)
-- **10×** — pieza propuesta: _sin token exacto (edge ≠ rowVPad)_
-  - `Cenit/Screens/ExerciseDetailScreen.swift:236` — sin token exacto (edge ≠ rowVPad)
-  - `Cenit/Screens/ExerciseDetailScreen.swift:454` — sin token exacto (edge ≠ rowVPad)
-  - `Cenit/Screens/LiveStrengthSheet.swift:1072` — sin token exacto (edge ≠ rowVPad)
-  - `Cenit/Screens/LiveStrengthSheet.swift:1087` — sin token exacto (edge ≠ rowVPad)
-  - `Cenit/Screens/LiveStrengthSheet.swift:1092` — sin token exacto (edge ≠ rowVPad)
-- **10×** — pieza propuesta: _sin token exacto_
-  - `Cenit/Screens/ExerciseDetailScreen.swift:1023` — sin token exacto
-  - `Cenit/Screens/ExerciseDetailScreen.swift:1045` — sin token exacto
-  - `Cenit/Screens/LiveStrengthSheet.swift:1379` — sin token exacto
-  - `Cenit/Screens/LiveStrengthSheet.swift:1453` — sin token exacto
-  - `Cenit/Screens/TrainingBodyScreen.swift:183` — sin token exacto
-- **6×** — pieza propuesta: _cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)_
-  - `Cenit/Screens/SaveErrorToast.swift:33` — cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)
-  - `Cenit/Screens/StarterTemplatesSheet.swift:83` — cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)
-  - `Cenit/Screens/WeeklyPlanEditorView.swift:127` — cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)
-  - `Cenit/Screens/WorkoutHistoryScreen.swift:179` — cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)
-  - `Cenit/Screens/WorkoutHistoryScreen.swift:1607` — cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)
-- **4×** — pieza propuesta: _14 del handoff_
-  - `Cenit/Screens/ExerciseDetailScreen.swift:1054` — 14 del handoff
-  - `Cenit/Screens/TrainingBodyScreen.swift:396` — 14 del handoff
-  - `Cenit/Screens/WorkoutHistoryScreen.swift:1322` — 14 del handoff
-  - `Cenit/Screens/WorkoutHistoryScreen.swift:1924` — 44 del handoff
-- **3×** — pieza propuesta: _chip 11/5 del handoff_
-  - `Cenit/Screens/ExerciseDetailScreen.swift:338` — chip 9/4 del handoff
-  - `Cenit/Screens/ExerciseDetailScreen.swift:548` — chip 11/5 del handoff
-  - `Cenit/Screens/ExerciseDetailScreen.swift:592` — chip 11/5 del handoff
+  - `Cenit/Screens/WorkoutHistoryScreen.swift:1943` — sin token exacto (horizontal/chip handoff)
+  - `Cenit/Screens/WorkoutHistoryScreen.swift:1948` — sin token exacto (horizontal/chip handoff)
+  - `Cenit/Screens/WorkoutImportView.swift:320` — sin token exacto (horizontal/chip handoff)
+- **4×** — pieza propuesta: _sin token exacto (edge ≠ rowVPad)_
+  - `Cenit/Screens/TrainingBodyScreen.swift:293` — sin token exacto (edge ≠ rowVPad)
+  - `Cenit/Screens/TrainingBodyScreen.swift:579` — sin token exacto (edge ≠ rowVPad)
+  - `Cenit/Screens/WorkoutHistoryScreen.swift:393` — sin token exacto (edge ≠ rowVPad)
+  - `Cenit/Screens/WorkoutImportView.swift:345` — sin token exacto (edge ≠ rowVPad)
 
 ## 3. Colisiones de rol y veredicto del árbitro [ETIQUETADO + MEDIDO]
 
@@ -125,17 +96,17 @@ Contexto asignado por heurística de ruta (`Watch` → watch_oled, `Liquid` en e
 
 | Dimensión | Contexto | Valores en disputa | Canónico propuesto | Razonamiento |
 |---|---|---|---|---|
-| radius | sobrio | 0, 0.5, 1, 1.1, 1.2, 1.5, 1.6, 1.8, 1.9, 2, 2.4, 2.5, 3, 4, 7, 42 | 1 | Ningún valor de este grupo tiene rol en roles.yaml — candidato a `falta-pieza` o a colisión real; requiere veredicto del dueño. |
+| radius | sobrio | 0, 0.5, 1, 1.1, 1.2, 1.5, 1.6, 1.9, 2, 2.4, 2.5, 3, 4, 42 | 1 | Ningún valor de este grupo tiene rol en roles.yaml — candidato a `falta-pieza` o a colisión real; requiere veredicto del dueño. |
 | radius | watch_oled | 1, 4 | 1 | Ningún valor de este grupo tiene rol en roles.yaml — candidato a `falta-pieza` o a colisión real; requiere veredicto del dueño. |
-| spacing | sobrio | -10, -8, -2, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 28, 32, 34, 36, 40, 44, 46, 48, 68 | 1 | roles.yaml ya nombra 13 de 33 valores; 20 sin rol compiten por el mismo sitio — candidatos a colisión. |
+| spacing | sobrio | -10, -8, -2, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 18, 20, 22, 24, 28, 32, 34, 36, 40, 46, 48, 68 | 1 | roles.yaml ya nombra 13 de 31 valores; 18 sin rol compiten por el mismo sitio — candidatos a colisión. |
 
 ## 4. Detector de composición (fondo+radio+sombra) — solo reporte [MEDIDO + ETIQUETADO]
 
-**Nunca promovido a gate** (anti-alcance del épico). Candidatos detectados: 334.
+**Nunca promovido a gate** (anti-alcance del épico). Candidatos detectados: 307.
 
 - n etiquetado = 120
-- Precision = 0.50 (Wilson 95%: 0.41–0.59), tp=60 fp=60
-- Recall = 1.00 (Wilson 95%: 0.94–1.00), fn=0
+- Precision = 0.45 (Wilson 95%: 0.35–0.57), tp=35 fp=42
+- Recall = 0.58 (Wilson 95%: 0.46–0.70), fn=25
 
 ⚠️ **Sesgo de muestreo conocido**: el set etiquetado se tomó de los propios candidatos que el detector produjo (no de un barrido independiente del árbol), así que `fn` solo puede venir de un candidato detectado y luego descartado en el conteo — el recall de esta corrida NO mide qué fracción de composiciones REALES en todo el repo el detector se perdió, sólo qué tan bien re-encuentra su propia lista. Un recall verdadero necesitaría una muestra etiquetada por barrido ciego del árbol, independiente del detector — pendiente, fuera del alcance de esta primera corrida.
 
@@ -183,8 +154,8 @@ Clasificado por qué símbolos importa cada archivo (`Liquid*` vs `Instrumento*`
 
 | Target | Liquid (vigente) | Instrumento (absorbida, en migración) | Indeterminada |
 |---|---|---|---|
-| Cenit | 69 | 20 | 89 |
-| CenitApp | 1 | 1 | 7 |
+| Cenit | 89 | 7 | 82 |
+| CenitApp | 2 | 0 | 7 |
 | CenitShared | 0 | 0 | 3 |
 | CenitWatch | 1 | 2 | 5 |
 | CenitWidgets | 0 | 3 | 8 |
@@ -195,17 +166,17 @@ Usos de `Image(systemName: "…")` fuera de un token de icono — cada nombre di
 
 | Símbolo | usos |
 |---|---|
-| `checkmark` | 7 |
+| `checkmark` | 8 |
 | `heart.fill` | 7 |
 | `exclamationmark.triangle` | 5 |
+| `ellipsis` | 4 |
 | `arrow.up.left.and.arrow.down.right` | 2 |
 | `chevron.left` | 2 |
 | `clock.arrow.circlepath` | 2 |
 | `doc.plaintext` | 2 |
-| `ellipsis` | 2 |
-| `ellipsis.circle` | 2 |
 | `pause.fill` | 2 |
 | `play.rectangle` | 2 |
+| `plus` | 2 |
 | `trash` | 2 |
 | `xmark` | 2 |
 | `applewatch` | 1 |
