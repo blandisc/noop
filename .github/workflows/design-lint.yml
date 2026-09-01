@@ -13,26 +13,15 @@
 # Dynamic-Island / watch geometry is exempt on purpose.
 name: Design Lint
 
+# Sin filtro de paths desde FER-261: el workflow cuesta ~13 s en ubuntu y correrlo SIEMPRE es lo
+# que permite volver `lint` y `baseline-monotony` required checks de iOS sin dejar inmergeables
+# los PRs que no tocan diseño (un required check que no reporta bloquea el merge para siempre).
 on:
   pull_request:
     branches: [iOS, main]
     # labeled/unlabeled: el alta legal (`baseline-alta`) se aplica DESPUÉS de abrir el PR —
     # sin estos types el job de monotonía se quedaría en rojo hasta un push vacío (Grok r1 #5).
     types: [opened, synchronize, reopened, labeled, unlabeled]
-    paths:
-      - 'Packages/StrandDesign/**'
-      - 'Cenit/**'
-      - 'CenitWidgets/**'
-      - 'CenitWatch/**'
-      - 'Tools/check-design-drift.py'
-      - 'Tools/check-baseline-monotony.py'
-      - 'Tools/design-drift-baseline.json'
-      - 'Tools/tests/**'
-      - 'Tools/verify.sh'
-      - 'Tools/git-hooks/pre-commit'
-      - 'Tools/check-gate-parity.py'
-      - 'docs/design-system/CONTRATO.md'
-      - '.github/workflows/design-lint.yml'
   workflow_dispatch:
 
 concurrency:
