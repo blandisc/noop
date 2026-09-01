@@ -37,9 +37,9 @@ private final class WiggleTimerHold: ObservableObject {
                 guard let self else { return }
                 guard self.fireCount < maxFires else { return self.stop() }
                 self.fireCount += 1
-                withAnimation(.spring(response: 0.16, dampingFraction: 0.22)) { self.angle = 16 }
+                withAnimation(.spring(response: 0.16, dampingFraction: 0.22)) { self.angle = 16 }  // token-exempt(unico): nudge de atención del botón Soporte — fase de subida (burst)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    withAnimation(.spring(response: 0.22, dampingFraction: 0.55)) { self.angle = 0 }
+                    withAnimation(.spring(response: 0.22, dampingFraction: 0.55)) { self.angle = 0 }  // token-exempt(unico): nudge de atención del botón Soporte — fase de asiento
                 }
                 if self.fireCount >= maxFires { self.stop() }
             }

@@ -164,6 +164,16 @@ public enum LiquidMotion {
     /// (0.18 s glass-spring; «más responsivo», pedido del dueño /inject).
     public static let selector = glassSpring(selectorDuration)
 
+    // MARK: Springs nombrados (censo FER-278 — mismos response/damping que el literal crudo)
+
+    /// Spring del swipe-to-reveal de una fila del plan semanal (abre/cierra el offset al soltar
+    /// o al cerrar desde fuera). Censo FER-278 (2 sitios, WeeklyPlanEditor).
+    public static let filaDesliza = Animation.spring(response: 0.32, dampingFraction: 0.86)
+
+    /// Spring del rasgado del ticket térmico + asiento del wobble de boca al cerrar.
+    /// Censo FER-278 (3 sitios, ReceiptPrinter).
+    public static let reciboRasga = Animation.spring(response: 0.15, dampingFraction: 0.35)
+
     // MARK: Ambientales (fase determinista para TimelineView — nunca por debajo de 9 s)
 
     /// Progreso 0→1→0 del `drift` (CSS `alternate` + ease-in-out ≈ coseno; ciclo completo

@@ -290,7 +290,7 @@ struct HojaTarjetaEjercicioSesion: View {
                     .transition(LiquidMotion.fadeOrIdentity(reduceMotion: vivo.reduceMotion))
             }
         }
-        .animation(vivo.reduceMotion ? nil : .easeOut(duration: 0.4), value: vivo.prFlash)
+        .animation(vivo.reduceMotion ? nil : .easeOut(duration: 0.4), value: vivo.prFlash)  // token-exempt(unico): destello rosa de PR al palomear serie — duración escénica de una sola fila
         // FER-223: el destello visual de PR no tenía háptico — el patrón de éxito ascendente,
         // reservado para esto y para el cierre de sesión, nunca para una serie más.
         .entrenarHaptic(.prNuevo, trigger: vivo.prFlash)

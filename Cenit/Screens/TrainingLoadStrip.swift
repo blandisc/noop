@@ -108,7 +108,7 @@ struct TrainingLoadStrip: View {
                         .overlay(Circle().strokeBorder(theme.ink, lineWidth: 3))
                         .frame(width: 12, height: 12)
                         .offset(x: w * x - 6, y: 0)
-                        .strandAnimation(.spring(response: 0.5, dampingFraction: 0.8), value: acwr)
+                        .strandAnimation(.spring(response: 0.5, dampingFraction: 0.8), value: acwr)  // token-exempt(unico): marcador ACWR sobre la franja de carga — spring único de esta geometría
                 }
             }
         }

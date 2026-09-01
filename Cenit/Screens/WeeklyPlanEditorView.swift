@@ -1078,7 +1078,7 @@ private struct SwipeToDeleteRow<Content: View>: View {
         }
         .clipped()
         .onChange(of: isOpen) { _, open in
-            if !open { withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) { offset = 0 } }
+            if !open { withAnimation(LiquidMotion.filaDesliza) { offset = 0 } }
         }
     }
 
@@ -1096,7 +1096,7 @@ private struct SwipeToDeleteRow<Content: View>: View {
                     return
                 }
                 let open = isOpen ? !(dx > revealWidth * 0.5) : (-dx > revealWidth * 0.5)
-                withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+                withAnimation(LiquidMotion.filaDesliza) {
                     offset = open ? -revealWidth : 0
                 }
                 isOpen = open
