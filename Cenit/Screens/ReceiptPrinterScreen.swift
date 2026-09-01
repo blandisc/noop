@@ -204,7 +204,7 @@ struct ReceiptPrinterScreen: View {
         case .printed:
             if translation <= -30 {
                 // Tear first; may also remove in the same gesture.
-                withAnimation(.spring(response: 0.15, dampingFraction: 0.35)) {
+                withAnimation(LiquidMotion.reciboRasga) {
                     ticketState = .torn
                     closeMouthWithWobble()
                 }
@@ -238,7 +238,7 @@ struct ReceiptPrinterScreen: View {
     }
 
     private func tearThenRemove() {
-        withAnimation(.spring(response: 0.15, dampingFraction: 0.35)) {
+        withAnimation(LiquidMotion.reciboRasga) {
             ticketState = .torn
             closeMouthWithWobble()
         }
@@ -262,7 +262,7 @@ struct ReceiptPrinterScreen: View {
         mouthPrinting = false
         mouthWidth = restingMouth
         mouthWobble = 4
-        withAnimation(.spring(response: 0.15, dampingFraction: 0.35)) {
+        withAnimation(LiquidMotion.reciboRasga) {
             mouthWobble = 0
         }
     }
@@ -285,7 +285,7 @@ struct ReceiptPrinterScreen: View {
                     if let img = renderTicket() { FileExport.exportImage(img) }
                 }
                 StrandCTAButton(showClassic ? "Ver ticket" : "Vista clásica", kind: .outline) {
-                    withAnimation(.easeInOut(duration: 0.25)) { showClassic.toggle() }
+                    withAnimation(.easeInOut(duration: 0.25)) { showClassic.toggle() }  // token-exempt(unico): coreografía del recibo térmico — toggle vista clásica (0.25 s)
                 }
             }
         }
@@ -380,11 +380,11 @@ struct ReceiptPrinterScreen: View {
         // done — settle tilt, start sway
         printPhase = .done
         mouthPrinting = true
-        withAnimation(.easeOut(duration: 0.6)) {
+        withAnimation(.easeOut(duration: 0.6)) {  // token-exempt(unico): coreografía del recibo térmico — asienta tilt al terminar de imprimir (0.6 s)
             tiltDegrees = 0
         }
         if !reduceMotion {
-            withAnimation(.easeInOut(duration: 4.6).repeatForever(autoreverses: true)) {
+            withAnimation(.easeInOut(duration: 4.6).repeatForever(autoreverses: true)) {  // token-exempt(unico): coreografía del recibo térmico — sway idle post-impresión (4.6 s)
                 swayAngle = 0.3
             }
         }

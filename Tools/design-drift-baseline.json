@@ -61,14 +61,6 @@
     "Cenit/Screens/WorkshopTricksScreen.swift": 3,
     "Cenit/System/RoutineDragAndDrop.swift": 1
   },
-  "no-motion-literal": {
-    "Cenit/Screens/Hoja/RoutineSheetLiveTarjeta.swift": 1,
-    "Cenit/Screens/ReceiptPrinterScreen.swift": 6,
-    "Cenit/Screens/TrainingLoadStrip.swift": 1,
-    "Cenit/Screens/WeeklyPlanEditorView.swift": 2,
-    "Cenit/Screens/WorkoutDetailScreen.swift": 1,
-    "Cenit/System/WiggleEffect.swift": 2
-  },
   "no-opacity-literal": {
     "Cenit/App/AppMap.swift": 1,
     "Cenit/App/AppMapSerieActiva.swift": 1,

@@ -134,6 +134,14 @@ final class DesignDriftTokenTests: XCTestCase {
                        String(describing: Animation.easeInOut(duration: 0.35)))
     }
 
+    // FER-278a: springs nombrados por rol — mismos response/damping que el literal crudo (2+ sitios).
+    func test_movimientoSpringsMatchRawEquivalents() {
+        XCTAssertEqual(String(describing: LiquidMotion.filaDesliza),
+                       String(describing: Animation.spring(response: 0.32, dampingFraction: 0.86)))
+        XCTAssertEqual(String(describing: LiquidMotion.reciboRasga),
+                       String(describing: Animation.spring(response: 0.15, dampingFraction: 0.35)))
+    }
+
     // Transiciones nuevas: cada receta debe describir EXACTAMENTE igual que el `AnyTransition`
     // crudo que envuelve.
     func test_movimientoTransicionesMatchRawEquivalents() {
