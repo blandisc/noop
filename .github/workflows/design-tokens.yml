@@ -19,6 +19,7 @@ on:
     paths:
       - 'Packages/StrandDesign/**'
       - 'docs/design-system/DESIGN.md'
+      - 'docs/design-system/CATALOGO.md'
       - 'docs/design-system/tokens/design-tokens.json'
       - '.github/workflows/design-tokens.yml'
   workflow_dispatch:
@@ -50,7 +51,7 @@ jobs:
 
       - name: Fail if docs drift from code
         run: |
-          if ! git diff --exit-code -- docs/design-system/DESIGN.md docs/design-system/tokens/design-tokens.json; then
+          if ! git diff --exit-code -- docs/design-system/DESIGN.md docs/design-system/CATALOGO.md docs/design-system/tokens/design-tokens.json; then
             echo "::error::Design tokens are out of date. Run 'swift run StrandDesignTokens' in Packages/StrandDesign and commit the result."
             exit 1
           fi
