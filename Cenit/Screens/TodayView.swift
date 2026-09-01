@@ -82,8 +82,8 @@ private struct PullSyncHint: View {
                 .accessibilityHidden(true)
             }
         }
-        .strandAnimation(StrandMotion.fade, value: shows)
-        .strandAnimation(StrandMotion.fade, value: isSyncing)
+        .strandAnimation(LiquidMotion.fundido, value: shows)
+        .strandAnimation(LiquidMotion.fundido, value: isSyncing)
     }
 }
 #endif

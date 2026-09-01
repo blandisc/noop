@@ -81,7 +81,7 @@ struct WeekEditorSheet: View {
                     }
             }
         }
-        .animation(StrandMotion.fade, value: lockedToast)
+        .animation(LiquidMotion.fundido, value: lockedToast)
         .instrumentoTheme(theme)
         .preferredColorScheme(.light)
     }
@@ -195,7 +195,7 @@ struct WeekEditorSheet: View {
     }
 
     private func showLockedToast() {
-        withAnimation(StrandMotion.fade) { lockedToast = true }
+        withAnimation(LiquidMotion.fundido) { lockedToast = true }
     }
 
     // MARK: - Weekday labels

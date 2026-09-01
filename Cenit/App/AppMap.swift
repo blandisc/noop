@@ -244,7 +244,7 @@ private struct RoutineEditorMapCell: View {
                     .transition(LiquidMotion.risingFadeTransition)
             }
         }
-        .animation(StrandMotion.gentle, value: model.strengthSheetPresented)
+        .animation(LiquidMotion.suave, value: model.strengthSheetPresented)
         .fullScreenCover(isPresented: $model.strengthSheetPresented, onDismiss: {
             if model.strengthSession?.summary != nil { model.closeStrengthSummary() }
         }) {
@@ -356,7 +356,7 @@ private struct NewRoutineFlowMapCell: View {
                     .transition(LiquidMotion.risingFadeTransition)
             }
         }
-        .animation(StrandMotion.gentle, value: model.strengthSheetPresented)
+        .animation(LiquidMotion.suave, value: model.strengthSheetPresented)
         .fullScreenCover(isPresented: $model.strengthSheetPresented, onDismiss: {
             if model.strengthSession?.summary != nil { model.closeStrengthSummary() }
         }) {
@@ -443,7 +443,7 @@ private struct EntrenarFlowsMapCell: View {
                     .transition(LiquidMotion.risingFadeTransition)
             }
         }
-        .animation(StrandMotion.gentle, value: model.strengthSheetPresented)
+        .animation(LiquidMotion.suave, value: model.strengthSheetPresented)
         .fullScreenCover(isPresented: $model.strengthSheetPresented, onDismiss: {
             if model.strengthSession?.summary != nil { model.closeStrengthSummary() }
         }) {
