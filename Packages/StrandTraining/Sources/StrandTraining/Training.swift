@@ -264,6 +264,22 @@ public struct RoutineExercise: Codable, Sendable, Identifiable, Equatable {
     public func effectiveRest(for set: RoutineSet) -> RestConfig { set.rest ?? restConfig }
 }
 
+public extension Array where Element == RoutineExercise {
+    /// Insertion index right AFTER the exercise with `afterRunId` — skipping to the end of its
+    /// superset block first (membership is positional adjacency of equal `supersetGroup`), so an
+    /// insert can never split a block. `nil` or unknown id → append at the end. The ONE shared rule
+    /// for every «agregar ejercicio a media sesión» persistence path (Nancy · rondas 11-12: two
+    /// hand-rolled copies of this computation diverged and one kept splitting supersets).
+    func insertionIndex(afterRunId id: String?) -> Int {
+        guard let id, let idx = firstIndex(where: { $0.id == id }) else { return count }
+        var hi = idx
+        if let g = self[idx].supersetGroup {
+            while hi + 1 < count, self[hi + 1].supersetGroup == g { hi += 1 }
+        }
+        return hi + 1
+    }
+}
+
 /// A performed strength session. Optionally linked to a routine and to the strap
 /// (`deviceId`) that supplied heart rate / strain.
 public struct StrengthSession: Codable, Sendable, Identifiable, Equatable {
@@ -472,6 +488,11 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
     /// The in-flight rest, preserved so a crash mid-rest doesn't drop the countdown/target.
     public var restEndsAt: Date?
     public var restStartedAt: Date?
+    /// The staleness anchor for durable remote channels (Live Activity inbox / watch queue) — the last
+    /// time a set closed or the focus moved. Unlike `restStartedAt` it is NOT cleared outside a rest, so
+    /// it must survive a restore or a queued stale tap applies to the wrong context after a relaunch.
+    /// Optional so an older snapshot (key absent) still decodes; the restorer falls back conservatively.
+    public var lastRestStartedAt: Date?
     public var currentRestTarget: Int?
     public var currentRestMode: RestMode
     /// The `WorkingSet.id` that opened the in-flight rest above (FER-167) — the descanso en vuelo needs
@@ -492,10 +513,11 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
                 restStartedAt: Date? = nil, currentRestTarget: Int? = nil,
                 currentRestMode: RestMode = .fixed, timerStart: Date? = nil,
                 paused: Bool = false, pausedAccumulatedS: Int = 0, pausedAt: Date? = nil,
-                updatedTs: Int, restOwnerSetId: String? = nil) {
+                updatedTs: Int, restOwnerSetId: String? = nil, lastRestStartedAt: Date? = nil) {
         self.id = id; self.routineId = routineId; self.routineName = routineName
         self.startTs = startTs; self.runs = runs; self.currentIndex = currentIndex
         self.restEndsAt = restEndsAt; self.restStartedAt = restStartedAt
+        self.lastRestStartedAt = lastRestStartedAt
         self.currentRestTarget = currentRestTarget; self.currentRestMode = currentRestMode
         self.timerStart = timerStart
         self.paused = paused; self.pausedAccumulatedS = pausedAccumulatedS; self.pausedAt = pausedAt

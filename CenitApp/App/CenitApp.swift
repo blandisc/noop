@@ -69,8 +69,8 @@ struct CenitApp: App {
             model?.endStrengthSessionFromWatch(sessionId: sid, save: save)
         }
         // FER-808: wrist-initiated set log / rest skip / ±30 → the same live-session path as the lock screen.
-        mirroring.onWatchAction = { [weak model] sid, action in
-            model?.applyWatchWorkoutAction(action, sessionId: sid)
+        mirroring.onWatchAction = { [weak model] sid, action, requestedAt in
+            model?.applyWatchWorkoutAction(action, sessionId: sid, requestedAt: requestedAt)
         }
         // FER-810: «Ver recibo en iPhone» from the wrist → open the saved workout's history detail.
         mirroring.onOpenReceipt = { [weak model] sid in
@@ -167,7 +167,13 @@ struct CenitApp: App {
                 // Stop the analysis sequence while NOOP is off screen, so the band-mode periodic recompute
                 // doesn't compete with BLE keep-alive / backfill on the main actor (FER-177).
                 model.stopAnalysis()
+                model.scheduleInProgressPersist(immediate: true)
             case .inactive:
+                // Nancy · ronda 1: el snapshot anti-crash de la sesión viva (FER-798) solo se escribía
+                // con 1 s de debounce, así que matar la app desde el selector —o que iOS la mate en
+                // segundo plano— perdía las últimas capturas. `.inactive` es la PRIMERA señal antes de
+                // ese cierre, así que aquí se fuerza el vaciado; es un no-op sin sesión viva.
+                model.scheduleInProgressPersist(immediate: true)
                 break   // transient (app switcher, Control Center) — keep the loop alive
             @unknown default:
                 break

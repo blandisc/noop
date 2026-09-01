@@ -102,6 +102,14 @@ extension HojaSesionViva {
         // B10 (FER-169): antes de registrar una serie nueva, ¿el peso capturado es 8× lo que ya
         // sabemos de este ejercicio? Una hecha que se está corrigiendo (B9) no vuelve a preguntar
         // aquí — ya pasó el guard cuando se palomeó la primera vez.
+        // Nancy · ronda 1: una serie de peso×reps con 0 repeticiones no es trabajo — palomearla
+        // guardaba una serie «hecha» de volumen cero que sí contaba en «N de M» y en el acta. El
+        // candado real vive en el motor (`registerCurrentSet`, Nancy · ronda 2); aquí la piel solo
+        // manda a escribir el número en vez de tragarse el tap.
+        if !set.done, session.runs[ei].type == .weightReps || session.runs[ei].type == .bodyweight, set.reps <= 0 {
+            beginEditing(.reps(ei, si))
+            return
+        }
         if !set.done, !bypassAbsurdGuard {
             let run = session.runs[ei]
             let reference = absurdCaptureReference(run)
@@ -239,8 +247,17 @@ extension HojaSesionViva {
     /// depende de esto: refleja lo que de verdad se hizo sea cual sea la respuesta.
     func finishAndSaveRoutineChanges() {
         routineChangesToConfirm = nil
-        Task { await persistRoutineChanges() }
-        sheet.model.endStrengthSession(save: true)
+        // Nancy · ronda 1: el `Task { … }` sin esperar corría en CARRERA con el cierre de sesión y,
+        // encadenado a `try?`, un fallo de escritura se tragaba en silencio: la usuaria leía
+        // «guardado en la rutina» y la rutina seguía igual. Ahora se espera la escritura, se avisa si
+        // falla (mismo toast que «Agregar ejercicio») y solo entonces se cierra la sesión.
+        Task {
+            let ok = await persistRoutineChanges()
+            await MainActor.run {
+                if !ok { routineWriteError = true }
+                sheet.model.endStrengthSession(save: true)
+            }
+        }
     }
 
     /// «SOLO POR HOY»: termina sin tocar la rutina — la próxima sesión vuelve a sembrar desde lo de
@@ -250,17 +267,21 @@ extension HojaSesionViva {
         sheet.model.endStrengthSession(save: true)
     }
 
-    private func persistRoutineChanges() async {
-        guard let rid = session.routineId, let store = await sheet.repo.storeHandle(),
+    /// `true` = la rutina quedó escrita (o no había rutina detrás / nada que escribir); `false` = la
+    /// escritura falló y quien llama debe decirlo (Nancy · ronda 1).
+    @discardableResult
+    private func persistRoutineChanges() async -> Bool {
+        guard let rid = session.routineId else { return true }
+        guard let store = await sheet.repo.storeHandle(),
               var res = try? await store.routineExercises(routineId: rid),
-              let routine = (try? await store.routines())?.first(where: { $0.id == rid }) else { return }
+              let routine = (try? await store.routines())?.first(where: { $0.id == rid }) else { return false }
         for run in session.runs {
             guard let idx = res.firstIndex(where: { $0.id == run.id }) else { continue }
             let currentWork = run.sets.filter { $0.kind == .work }.count
             if currentWork > 0 { res[idx].targetSets = currentWork }
             if run.exerciseId != res[idx].exerciseId { res[idx].exerciseId = run.exerciseId }
         }
-        try? await store.saveRoutine(routine, exercises: res)
+        do { try await store.saveRoutine(routine, exercises: res); return true } catch { return false }
     }
 
     // MARK: - B8 · «＋ Agregar ejercicio» (FER-169, porteado de `LiveStrengthSheet.addExercises`/
@@ -293,11 +314,13 @@ extension HojaSesionViva {
                     let last = lasts[ex.id]
                     session.addExercise(ex, lastWeightKg: last?.0, lastReps: last?.1)
                 }
-            } else if let afterRunId, let after = session.runs.firstIndex(where: { $0.id == afterRunId }) {
-                session.currentIndex = after   // `insertExerciseAfterCurrent` inserta a `currentIndex + 1`
+            } else if let afterRunId, session.runs.contains(where: { $0.id == afterRunId }) {
+                // Nancy · ronda 10: insertar tras CUALQUIER fila sin robar el foco — la reasignación
+                // cruda de `currentIndex` dejaba el descanso en vuelo huérfano y esquivaba el candado.
                 for ex in picks.reversed() {
                     let last = lasts[ex.id]
-                    session.insertExerciseAfterCurrent(ex, lastWeightKg: last?.0, lastReps: last?.1)
+                    session.insertExercise(ex, afterRunId: afterRunId,
+                                           lastWeightKg: last?.0, lastReps: last?.1)
                 }
                 if session.routineId != nil { persistInsertedExercises(picks, afterRunId: afterRunId) }
             } else {
@@ -315,7 +338,10 @@ extension HojaSesionViva {
             guard let store = await sheet.repo.storeHandle(),
                   var res = try? await store.routineExercises(routineId: rid),
                   let routine = (try? await store.routines())?.first(where: { $0.id == rid }) else { return }
-            var insertAt = res.firstIndex(where: { $0.id == afterRunId }).map { $0 + 1 } ?? res.count
+            // Nancy · rondas 11-12: misma regla que session.insertExercise — el punto de inserción
+            // salta al final del bloque de superserie (adyacencia por posición). Helper compartido
+            // con LiveStrengthSheet.persistInsertedExercises para que no vuelvan a divergir.
+            var insertAt = res.insertionIndex(afterRunId: afterRunId)
             for ex in picks {
                 let re = RoutineExercise(routineId: rid, exerciseId: ex.id, position: insertAt,
                                          targetSets: 1, targetReps: 8,
@@ -416,6 +442,9 @@ extension HojaSesionViva {
         let ei = session.currentIndex
         guard session.runs.indices.contains(ei) else { return }
         let si = session.runs[ei].currentSet
+        // Nancy · ronda 2: el motor ya se niega a registrar una serie de peso×reps sin repeticiones
+        // (`canRegisterCurrentSet`); aquí la piel dice POR QUÉ no pasó nada — manda a escribir el número.
+        guard session.canRegisterCurrentSet else { beginEditing(.reps(ei, si)); return }
         let inSuperset = session.isInSuperset(ei)
         let members = inSuperset ? session.supersetMembers(at: ei) : []
         let roundsClosedBefore = inSuperset ? session.closedSupersetRounds(members: members) : 0
@@ -473,12 +502,17 @@ extension HojaSesionViva {
     /// que `checkForPR` compara cada serie que se palomea.
     func loadPersonalRecords() async {
         guard let store = await sheet.repo.storeHandle() else { return }
-        var built: [String: [PRMetric: PersonalRecord]] = [:]
-        for exId in Set(session.runs.map(\.exerciseId)) {
+        // Nancy · ronda 2: acumula sobre lo ya cargado en vez de reemplazarlo, y marca por ejercicio
+        // cuáles se consultaron de verdad — un fallo de lectura NO puede pasar por «sin marca previa».
+        var built = personalRecords
+        var cargados = personalRecordsLoadedFor
+        for exId in Set(session.runs.map(\.exerciseId)) where !cargados.contains(exId) {
             guard let prs = try? await store.personalRecords(exerciseId: exId) else { continue }
             built[exId] = Dictionary(uniqueKeysWithValues: prs.map { ($0.metric, $0) })
+            cargados.insert(exId)
         }
         personalRecords = built
+        personalRecordsLoadedFor = cargados
     }
 
     /// B11 (FER-169): si la serie recién registrada bate cualquiera de los 3 `PRMetric` (peso máximo,
@@ -490,6 +524,9 @@ extension HojaSesionViva {
     private func checkForPR(ei: Int, set: StrengthSessionModel.WorkingSet) {
         guard set.kind == .work, session.runs.indices.contains(ei) else { return }
         let run = session.runs[ei]
+        // Nancy · ronda 2: sin los PR de ESTE ejercicio leídos, no se opina — ni destello falso
+        // (ronda 1) ni silencio sobre un récord real que solo no se alcanzó a consultar.
+        guard personalRecordsLoadedFor.contains(run.exerciseId) else { return }
         guard !CaptureGuard.isAbsurd(weightKg: set.weightKg, referenceKg: absurdCaptureReference(run)) else { return }
         let exId = run.exerciseId
         let prs = personalRecords[exId] ?? [:]
@@ -500,9 +537,13 @@ extension HojaSesionViva {
         // (`PersonalRecord.valueKg`/`reps`, StrandTraining) — el volumen previo se recompone aquí, no
         // se compara peso contra volumen por descuido.
         let priorVolume = prs[.maxVolume].map { ($0.valueKg ?? 0) * Double($0.reps ?? 0) }
-        let beatsWeight = priorWeight.map { set.weightKg > $0 } ?? (set.weightKg > 0)
-        let beatsReps = priorReps.map { set.reps > $0 } ?? (set.reps > 0)
-        let beatsVolume = priorVolume.map { volume > $0 } ?? (volume > 0)
+        // Nancy · ronda 1: SIN marca previa no hay récord que batir. El `?? (valor > 0)` de antes
+        // convertía «este ejercicio es nuevo» en «RÉCORD», así que la primera serie de la vida de un
+        // movimiento destellaba un récord sobre nada — y el copy no puede prometer un «antes» que no
+        // existe. Sin prior, no destella.
+        let beatsWeight = priorWeight.map { set.weightKg > $0 } ?? false
+        let beatsReps = priorReps.map { set.reps > $0 } ?? false
+        let beatsVolume = priorVolume.map { volume > $0 } ?? false
         // Prioridad de copy cuando bate más de un tipo a la vez (mapa B11 muestra una sola línea):
         // peso máx primero (el más legible), luego volumen, luego reps.
         let flash: PRFlash?
@@ -796,11 +837,35 @@ extension HojaSesionViva {
         }
         if session.runs.count > 1 {
             rows.append(.init(String(localized: "Remove from session"), systemImage: "trash", isDestructive: true) {
-                withAnimation(reduceMotion ? nil : .snappy) { session.removeExercise(at: ei) }
-                EntrenarHaptic.borrado.play()   // FER-223: borrar no tenía háptico propio.
+                // Nancy · ronda 1: con series ya hechas, el borrado pasa por una pregunta — es
+                // trabajo real que no vuelve. Sin nada palomeado, se quita en el acto como siempre.
+                if run.sets.contains(where: { $0.done }) {
+                    confirmRemoveRunId = run.id
+                } else {
+                    withAnimation(reduceMotion ? nil : .snappy) { session.removeExercise(at: ei) }
+                    EntrenarHaptic.borrado.play()   // FER-223: borrar no tenía háptico propio.
+                }
             })
         }
         return rows
+    }
+
+    /// Nancy · ronda 1: el mensaje de «¿lo quito con sus series?» — cuántas series hechas se pierden.
+    var removeExerciseMessage: String {
+        guard let id = confirmRemoveRunId, let run = session.runs.first(where: { $0.id == id }) else { return "" }
+        let hechas = run.sets.filter { $0.done }.count
+        // Nancy · ronda 2: interpolación (no `String(format:)`) para que el catálogo pueda elegir el
+        // plural — «1 series hechas» no es español.
+        return String(localized: "\(run.name) already has \(hechas) logged sets. Removing it deletes them from this workout.")
+    }
+
+    /// Nancy · ronda 1: ejecuta el borrado confirmado, resolviendo el índice VIGENTE por `id`.
+    func confirmRemoveExercise() {
+        guard let id = confirmRemoveRunId else { return }
+        confirmRemoveRunId = nil
+        guard let ei = session.runs.firstIndex(where: { $0.id == id }) else { return }
+        withAnimation(reduceMotion ? nil : .snappy) { session.removeExercise(at: ei) }
+        EntrenarHaptic.borrado.play()
     }
 
     /// R1 (ronda 2 del gate FER-168, bloqueante): deshace la superserie COMPLETA desde la tarjeta
@@ -860,11 +925,19 @@ extension HojaSesionViva {
         Task {
             guard let store = await sheet.repo.storeHandle(),
                   var res = try? await store.routineExercises(routineId: rid),
-                  let routine = (try? await store.routines())?.first(where: { $0.id == rid }) else { return }
+                  let routine = (try? await store.routines())?.first(where: { $0.id == rid }) else {
+                await MainActor.run { routineWriteError = true }
+                return
+            }
             for i in res.indices where groups.keys.contains(res[i].id) {
                 res[i].supersetGroup = groups[res[i].id] ?? nil
             }
-            try? await store.saveRoutine(routine, exercises: res)
+            // Nancy · ronda 1: el `try?` de aquí se tragaba el fallo — la superserie se veía armada en
+            // pantalla y desaparecía la próxima vez que se abriera la rutina. Mismo toast que B8.
+            do { try await store.saveRoutine(routine, exercises: res) } catch {
+                await MainActor.run { routineWriteError = true }
+                return
+            }
             for re in res { routineREs[re.id] = re }
         }
     }

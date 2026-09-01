@@ -336,14 +336,14 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
     /// over `transferUserInfo` and applies on reconnect) — the CTA is never a dead button.
     func completeSetFromWrist() {
         guard let sid = sessionId else { return }
-        send(.completeSet(sessionId: sid))
+        send(.completeSet(sessionId: sid, ts: Date()))
     }
 
     /// Skip the current rest from the wrist. Sends `.skipRest` and clears the local rest immediately so the
     /// face returns to capture without waiting for the round-trip (honest even if the iPhone is away).
     func skipRestFromWrist() {
         guard let sid = sessionId, rest != nil else { return }
-        send(.skipRest(sessionId: sid))
+        send(.skipRest(sessionId: sid, ts: Date()))
         restEndTask?.cancel()
         rest = nil
     }
@@ -354,7 +354,7 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
     /// once the rest has expired, and `extendRest` floors the ceiling at «now».
     func adjustRestFromWrist(by deltaS: Int) {
         guard let sid = sessionId, let snap = rest else { return }
-        send(.adjustRest(sessionId: sid, deltaS: deltaS))
+        send(.adjustRest(sessionId: sid, deltaS: deltaS, ts: Date()))
         let newEnd = max(Date(), snap.restEndsAt.addingTimeInterval(TimeInterval(deltaS)))
         rest?.restEndsAt = newEnd
         scheduleRestEnd(at: newEnd)

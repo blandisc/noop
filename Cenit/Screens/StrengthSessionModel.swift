@@ -261,6 +261,12 @@ final class StrengthSessionModel: ObservableObject {
     /// When the current rest started — the anchor for `elapsedS` in the HR readiness rule (FER-506). Set
     /// alongside `restEndsAt`; not moved by ±15 so the floor counts from the real start.
     @Published var restStartedAt: Date?
+    /// La última vez que cambió el contexto que un toque remoto pudo estar viendo: se re-arma en CADA
+    /// cierre de serie (`registerCurrentSet`, por cualquiera de sus ramas — descanso, superserie, «Sin
+    /// descanso», fin de rutina) y en `startRest`, y a diferencia de `restStartedAt` NO se limpia al
+    /// salir del descanso (Nancy · rondas 6–8). Es el ancla de staleness de los canales durables (inbox
+    /// de la Live Activity y cola del reloj): un toque anterior a esta fecha se descarta.
+    private(set) var lastRestStartedAt: Date?
     /// The HR «ready» target (bpm) for this rest, computed once on entry (FER-495/506). nil = use FER-348's
     /// resting+margin default (when `currentRestMode == .heartRate`).
     @Published var currentRestTarget: Int?
@@ -444,7 +450,14 @@ final class StrengthSessionModel: ObservableObject {
     // MARK: Editing the current set
 
     func bumpWeight(byKg delta: Double) { mutateCurrentSet { $0.weightKg = max(0, $0.weightKg + delta) } }
-    func bumpReps(_ delta: Int) { mutateCurrentSet { $0.reps = max(0, $0.reps + delta) } }
+    /// Nancy · ronda 3: el ± de Foco tocaba fondo en 0, y una fila de peso×reps con 0 repeticiones
+    /// no es un estado representable — dejaba la serie imposible de registrar y las puertas remotas
+    /// (Live Activity, Apple Watch), que no tienen dónde escribir, mudas. Para no registrar nada se
+    /// borra la fila, no se baja a cero. Los ejercicios de tiempo/distancia no se juzgan por reps.
+    func bumpReps(_ delta: Int) {
+        let piso = (current?.type == .weightReps || current?.type == .bodyweight) ? 1 : 0
+        mutateCurrentSet { $0.reps = max(piso, $0.reps + delta) }
+    }
     func bumpDistance(byMeters delta: Double) { mutateCurrentSet { $0.distanceM = max(0, ($0.distanceM ?? 0) + delta) } }
 
     // MARK: Stopwatch (time / distance Foco)
@@ -515,6 +528,7 @@ final class StrengthSessionModel: ObservableObject {
         pausedAccumulatedS += Int(delta)
         if let r = restEndsAt { restEndsAt = r.addingTimeInterval(delta) }
         if let r = restStartedAt { restStartedAt = r.addingTimeInterval(delta) }
+        if let r = lastRestStartedAt { lastRestStartedAt = r.addingTimeInterval(delta) }
         if let t = timerStart { timerStart = t.addingTimeInterval(delta) }
         pausedAt = nil
         paused = false
@@ -531,9 +545,27 @@ final class StrengthSessionModel: ObservableObject {
     /// `hasLivePulse` (FER-250): ¿hay pulso del Apple Watch transmitiendo AHORA? Default `true` para no
     /// alterar los call sites viejos (snapshot/restore, tests). Sin reloj vivo, un descanso por FC se
     /// degrada a temporizador fijo (ver `computeRestTarget`) — el reloj es mejora, no requisito.
+    /// ¿La serie enfocada es registrable? `false` solo para peso×reps sin repeticiones (Nancy · ronda 2):
+    /// una serie de volumen cero no es trabajo. La piel lo consulta para mandar a escribir las reps en
+    /// vez de tragarse el tap en silencio; el motor lo aplica pase quien pase (Foco, Live Activity, reloj).
+    var canRegisterCurrentSet: Bool {
+        guard runs.indices.contains(currentIndex) else { return false }
+        let run = runs[currentIndex]
+        guard run.sets.indices.contains(run.currentSet) else { return false }
+        let usaReps = run.type == .weightReps || run.type == .bodyweight
+        return !(usaReps && run.sets[run.currentSet].reps <= 0)
+    }
+
     func registerCurrentSet(now: Date = Date(), restingHR: Double? = nil, maxHR: Double? = nil,
                             hasLivePulse: Bool = true) {
         guard runs.indices.contains(currentIndex) else { return }
+        // Nancy · ronda 2 (BLOQUEANTE): el guard de «0 repeticiones» vivía SOLO en la fila de la tabla
+        // (`confirmOrToggleSet`), así que el ✓ de Foco, el «Completar» de la Live Activity y el del
+        // Apple Watch entraban por aquí y SÍ registraban una serie hecha de volumen cero. El candado
+        // vive ahora en el motor —antes de cerrar el descanso o parar el cronómetro, para no dejar
+        // efectos a medias— así que ninguna puerta puede palomearla. Las series de tiempo/distancia
+        // no se juzgan por reps y pasan igual.
+        if canRegisterCurrentSet == false { return }
         // FER-167: palomear la siguiente serie mientras el descanso anterior sigue corriendo lo cierra
         // aquí mismo — ANTES de cualquier otra cosa, incluido el salto de ronda de superserie de abajo.
         closeOpenRest(now: now)
@@ -544,6 +576,11 @@ final class StrengthSessionModel: ObservableObject {
         let doneTs = Int(now.timeIntervalSince1970)
         runs[currentIndex].sets[i].done = true
         runs[currentIndex].sets[i].doneTs = doneTs
+        // Nancy · ronda 8: el ancla de staleness se re-arma AQUÍ, en el único punto por el que pasa
+        // TODO cierre de serie — no solo en `startRest`: el salto de superserie, «Sin descanso» y el
+        // fin de rutina salen a `.capturing` sin descanso, y un toque encolado (reloj/Live Activity)
+        // anterior a este instante ya vio un contexto que dejó de existir.
+        lastRestStartedAt = now
 
         // FER-931: superset round-robin — A1 done moves straight to A2, no rest in between; the rest
         // lands when the ROUND closes (the last member with pending work). r18 (owner edge case):
@@ -646,8 +683,10 @@ final class StrengthSessionModel: ObservableObject {
     func addSet() {
         guard runs.indices.contains(currentIndex) else { return }
         let template = runs[currentIndex].sets.last
+        let usaReps = runs[currentIndex].type == .weightReps || runs[currentIndex].type == .bodyweight
+        let reps = usaReps ? max(1, template?.reps ?? 8) : (template?.reps ?? 0)   // Nancy · ronda 5
         let set = WorkingSet(id: UUID().uuidString,
-                             weightKg: template?.weightKg ?? 0, reps: template?.reps ?? 8, done: false)
+                             weightKg: template?.weightKg ?? 0, reps: reps, done: false)
         runs[currentIndex].sets.append(set)
         runs[currentIndex].currentSet = runs[currentIndex].sets.count - 1
         phase = .capturing
@@ -668,7 +707,7 @@ final class StrengthSessionModel: ObservableObject {
     func addExercise(_ exercise: Exercise, lastWeightKg: Double? = nil, lastReps: Int? = nil) {
         let usesReps = exercise.type == .weightReps || exercise.type == .bodyweight
         let weight = lastWeightKg ?? 0
-        let reps = usesReps ? (lastReps ?? 8) : 0
+        let reps = usesReps ? max(1, lastReps ?? 8) : 0   // Nancy · ronda 4: historial con reps 0 no siembra en 0
         let set = WorkingSet(id: UUID().uuidString, weightKg: weight, reps: reps, done: false)
         let run = ExerciseRun(id: UUID().uuidString, exerciseId: exercise.id,
                               name: StrengthDisplay.name(exercise), type: exercise.type,
@@ -688,9 +727,23 @@ final class StrengthSessionModel: ObservableObject {
     /// picks in reverse order keeps a multi-pick batch contiguous and in the user's chosen order, since
     /// each call lands its run at the same `currentIndex + 1` slot, pushing the previous insert one further.
     func insertExerciseAfterCurrent(_ exercise: Exercise, lastWeightKg: Double? = nil, lastReps: Int? = nil) {
+        guard runs.indices.contains(currentIndex) else { return }
+        insertExercise(exercise, afterRunId: runs[currentIndex].id,
+                       lastWeightKg: lastWeightKg, lastReps: lastReps)
+    }
+
+    /// Insert an exercise right after the run with `afterRunId`, WITHOUT touching the guided focus
+    /// (Nancy · ronda 10): «＋ Agregar» desde el menú «···» de CUALQUIER fila insertaba reasignando
+    /// `currentIndex` en crudo — robaba el foco al ejercicio de esa fila, dejaba el descanso en vuelo
+    /// huérfano, y esquivaba el candado de staleness (un toque remoto encolado registraba la serie
+    /// del ejercicio equivocado). Aquí la identidad enfocada se conserva: si el insert cae antes del
+    /// foco, el índice se corre; el foco nunca cambia de run.
+    func insertExercise(_ exercise: Exercise, afterRunId: String,
+                        lastWeightKg: Double? = nil, lastReps: Int? = nil) {
+        guard let after = runs.firstIndex(where: { $0.id == afterRunId }) else { return }
         let usesReps = exercise.type == .weightReps || exercise.type == .bodyweight
         let weight = lastWeightKg ?? 0
-        let reps = usesReps ? (lastReps ?? 8) : 0
+        let reps = usesReps ? max(1, lastReps ?? 8) : 0   // Nancy · ronda 4: historial con reps 0 no siembra en 0
         let set = WorkingSet(id: UUID().uuidString, weightKg: weight, reps: reps, done: false)
         let run = ExerciseRun(id: UUID().uuidString, exerciseId: exercise.id,
                               name: StrengthDisplay.name(exercise), type: exercise.type,
@@ -699,7 +752,13 @@ final class StrengthSessionModel: ObservableObject {
                               lastWeightKg: lastWeightKg, lastReps: lastReps,
                               lastTimeS: nil, lastDistanceM: nil, lastRPE: nil,
                               sets: [set], currentSet: 0, skipped: false)
-        runs.insert(run, at: min(currentIndex + 1, runs.count))
+        // Nancy · ronda 11: la pertenencia a superserie es ADYACENCIA por índice — insertar en
+        // `after+1` cuando `after` es miembro no-terminal partía el bloque en silencio (en vivo y,
+        // vía persistInsertedExercises, para siempre en la rutina). El insert cae tras el ÚLTIMO
+        // miembro del bloque: la superserie queda intacta y «después de X» sigue siendo verdad.
+        let insertionPoint = (supersetMembers(at: after).last ?? after) + 1
+        runs.insert(run, at: min(insertionPoint, runs.count))
+        if insertionPoint <= currentIndex { currentIndex += 1 }
     }
 
     /// Pair this exercise with the NEXT one as a superset (canvas pass 2026-07-15, menú «Superserie
@@ -756,9 +815,11 @@ final class StrengthSessionModel: ObservableObject {
     func addSet(exercise ei: Int) {
         guard runs.indices.contains(ei) else { return }
         let template = runs[ei].sets.last
+        let usaReps = runs[ei].type == .weightReps || runs[ei].type == .bodyweight
+        let reps = usaReps ? max(1, template?.reps ?? 8) : (template?.reps ?? 0)   // Nancy · ronda 3
         runs[ei].sets.append(WorkingSet(id: UUID().uuidString,
                                         weightKg: template?.weightKg ?? 0,
-                                        reps: template?.reps ?? 8, done: false))
+                                        reps: reps, done: false))
     }
     /// Insert warm-up sets at the FRONT of an exercise (FER-720 · 3a) — warm-ups precede the work sets.
     /// Marked `.warmup` so they're excluded from volume/PRs but still logged. Keeps the current set
@@ -807,28 +868,39 @@ final class StrengthSessionModel: ObservableObject {
     func skipExercise(_ index: Int) {
         guard runs.indices.contains(index) else { return }
         runs[index].skipped = true
-        if index == currentIndex { phase = .capturing; clearRest(); timerStart = nil; advanceToNextPending(fromStart: true) }
+        if index == currentIndex {
+            // Nancy · ronda 9: mover el foco también cierra el contexto que un toque remoto encolado
+            // pudo estar viendo — el ancla de staleness se re-arma igual que en un cierre de serie.
+            lastRestStartedAt = Date()
+            phase = .capturing; clearRest(); timerStart = nil; advanceToNextPending(fromStart: true)
+        }
     }
 
-    /// Swap the exercise at `ei` for a different movement mid-session (FER-894 · «Cómo llego a Cambiar»),
-    /// KEEPING the sets already marked `done` (they're real logged work) and re-seeding only the not-yet-done
-    /// sets with the new exercise's prescription. The run keeps its slot, its rest configuration and its id
-    /// (so the table row and focus are undisturbed); it takes on the new exercise's identity (exerciseId /
-    /// name / type). Any pending raise proposal is dropped — that plan belonged to the old movement. Self-
-    /// contained: it only rewrites this one run, leaving the rest of the session engine untouched.
+    /// Swap the exercise at `ei` for a different movement mid-session (FER-894 · «Cómo llego a Cambiar»).
+    /// The run keeps its slot, its rest configuration and its id (so the table row, the focus and the
+    /// routine mapping are undisturbed) and takes on the new exercise's identity (exerciseId / name /
+    /// type). Any pending raise proposal is dropped — that plan belonged to the old movement.
+    ///
+    /// Nancy · ronda 1 (BLOQUEANTE): las series ya HECHAS antes de sustituir NO pueden viajar dentro
+    /// del run sustituido. `buildForSave` etiqueta cada `SetEntry` con `run.exerciseId`, así que
+    /// dejarlas ahí re-etiquetaba trabajo real (3 series de Banca) como el movimiento NUEVO (Inclinado)
+    /// — acta mentirosa, PR envenenado y mapa muscular equivocado. Ahora ese trabajo se congela en un
+    /// run PROPIO, insertado en el mismo sitio, que conserva la identidad VIEJA: sin series pendientes
+    /// (nunca roba el foco), sin superserie (no deja un grupo de uno) y con un `id` nuevo, así que no
+    /// mapea a ningún `RoutineExercise` y `persistRoutineChanges` lo ignora — la rutina sigue viendo
+    /// una sola sustitución, la del run que sí conserva su id.
     func replaceExercise(at ei: Int, with exercise: Exercise, lastWeightKg: Double? = nil, lastReps: Int? = nil) {
         guard runs.indices.contains(ei) else { return }
         let old = runs[ei]
         let usesReps = exercise.type == .weightReps || exercise.type == .bodyweight
         let seedWeight = lastWeightKg ?? 0
-        let seedReps = usesReps ? (lastReps ?? 8) : 0
-        // Keep the done sets verbatim; re-seed the pending ones (same count) with the new prescription.
+        let seedReps = usesReps ? max(1, lastReps ?? 8) : 0   // Nancy · ronda 3: nunca una fila de 0 reps
+        let wasCurrent = ei == currentIndex
         let doneSets = old.sets.filter { $0.done }
-        let pendingCount = max(old.sets.count - doneSets.count, doneSets.isEmpty ? 1 : 0)
-        let reseeded = (0..<pendingCount).map { _ in
+        let pendingCount = max(old.sets.count - doneSets.count, 1)
+        let newSets = (0..<pendingCount).map { _ in
             WorkingSet(id: UUID().uuidString, weightKg: seedWeight, reps: seedReps, done: false)
         }
-        let newSets = doneSets + reseeded
         runs[ei] = ExerciseRun(
             id: old.id, exerciseId: exercise.id,
             name: StrengthDisplay.name(exercise), type: exercise.type,
@@ -836,9 +908,28 @@ final class StrengthSessionModel: ObservableObject {
             hrRestReference: old.hrRestReference, hrRestValue: old.hrRestValue,
             lastWeightKg: lastWeightKg, lastReps: lastReps,
             lastTimeS: nil, lastDistanceM: nil, lastRPE: nil,
-            sets: newSets, currentSet: min(doneSets.count, max(0, newSets.count - 1)),
+            sets: newSets, currentSet: 0,
             skipped: false)
-        if ei == currentIndex { phase = .capturing; clearRest(); timerStart = nil }
+        if !doneSets.isEmpty {
+            let frozen = ExerciseRun(
+                id: UUID().uuidString, exerciseId: old.exerciseId,
+                name: old.name, type: old.type,
+                restSeconds: old.restSeconds, restMode: old.restMode,
+                hrRestReference: old.hrRestReference, hrRestValue: old.hrRestValue,
+                lastWeightKg: old.lastWeightKg, lastReps: old.lastReps,
+                lastTimeS: old.lastTimeS, lastDistanceM: old.lastDistanceM, lastRPE: old.lastRPE,
+                sets: doneSets, currentSet: max(0, doneSets.count - 1),
+                skipped: false,
+                raiseOptedOut: old.raiseOptedOut,
+                note: old.note, seededNote: old.seededNote)
+            runs.insert(frozen, at: ei)
+            if currentIndex >= ei { currentIndex += 1 }
+        }
+        if wasCurrent {
+            currentIndex = doneSets.isEmpty ? ei : ei + 1
+            lastRestStartedAt = Date()   // Nancy · ronda 9: sustituir el foco cierra su contexto
+            phase = .capturing; clearRest(); timerStart = nil
+        }
     }
 
     /// Remove an exercise from the session entirely (FER-894 menu «Remove from session»). Unlike
@@ -863,7 +954,10 @@ final class StrengthSessionModel: ObservableObject {
                 runs[idx].supersetGroup = nil
             }
         }
-        if wasCurrent { phase = .capturing; clearRest(); timerStart = nil; advanceToNextPending(fromStart: true) }
+        if wasCurrent {
+            lastRestStartedAt = Date()   // Nancy · ronda 9: quitar el foco cierra su contexto
+            phase = .capturing; clearRest(); timerStart = nil; advanceToNextPending(fromStart: true)
+        }
     }
 
     /// B8 (FER-169) «Saltar ejercicio · vuelve al final»: sends this exercise to the END of the plan,
@@ -876,7 +970,10 @@ final class StrengthSessionModel: ObservableObject {
         let run = runs.remove(at: index)
         runs.append(run)
         if index < currentIndex { currentIndex -= 1 }
-        if wasCurrent { phase = .capturing; clearRest(); timerStart = nil; advanceToNextPending(fromStart: true) }
+        if wasCurrent {
+            lastRestStartedAt = Date()   // Nancy · ronda 9: diferir el foco cierra su contexto
+            phase = .capturing; clearRest(); timerStart = nil; advanceToNextPending(fromStart: true)
+        }
     }
 
     /// Move an exercise one slot earlier in the plan (reorder), keeping the current exercise focused.
@@ -890,6 +987,9 @@ final class StrengthSessionModel: ObservableObject {
     // MARK: Rest (fixed — FER-348 adds the HR-driven variant)
 
     func startRest(seconds: Int, now: Date = Date()) {
+        // El ancla se re-arma aunque NO haya descanso («Sin descanso»): cerrar una serie también cierra
+        // el contexto que un toque encolado (Live Activity / reloj) pudo estar viendo (Nancy · ronda 7).
+        lastRestStartedAt = now
         guard seconds > 0 else { phase = .capturing; clearRest(); return }
         restEndsAt = now.addingTimeInterval(TimeInterval(seconds))
         restStartedAt = now
@@ -1124,7 +1224,7 @@ final class StrengthSessionModel: ObservableObject {
             currentRestTarget: currentRestTarget, currentRestMode: currentRestMode,
             timerStart: timerStart,
             paused: paused, pausedAccumulatedS: pausedAccumulatedS, pausedAt: pausedAt,
-            updatedTs: now, restOwnerSetId: restOwnerSetId)
+            updatedTs: now, restOwnerSetId: restOwnerSetId, lastRestStartedAt: lastRestStartedAt)
     }
 
     /// Rebuild a live session from a persisted snapshot (FER-798). Re-derives `phase` from the rest state;
@@ -1167,6 +1267,12 @@ final class StrengthSessionModel: ObservableObject {
         model.currentIndex = snap.currentIndex
         model.restEndsAt = snap.restEndsAt
         model.restStartedAt = snap.restStartedAt
+        // Nancy · ronda 9: el ancla viaja en el snapshot — derivarla de `restStartedAt` (que se limpia
+        // fuera del descanso) dejaba el candado MUERTO tras relanzar sin descanso activo, y un toque
+        // encolado pre-muerte registraba la serie equivocada. Snapshot viejo sin el campo → ancla = el
+        // momento del rescate (conservador: un toque anterior al relanzamiento se descarta, nunca
+        // se aplica a ciegas).
+        model.lastRestStartedAt = snap.lastRestStartedAt ?? snap.restStartedAt ?? Date()
         model.currentRestTarget = snap.currentRestTarget
         model.currentRestMode = snap.currentRestMode
         model.restOwnerSetId = snap.restOwnerSetId
@@ -1222,7 +1328,9 @@ final class StrengthSessionModel: ObservableObject {
                 // E13/FER-94: with a rep range (e.g. 8-12), the cell opens at the TOP — «la última
                 // vez» still wins whenever it exists, exactly the fantasma rule above; the range top
                 // only enters as the plan's fallback, same tier as the fixed `p.reps` it replaces.
-                let reps = usesReps ? (lastReps ?? p.repsRangeTop ?? p.reps ?? 8) : 0
+                // Nancy · ronda 3: `max(1, …)` — una rutina con `targetReps` 0, o un historial viejo con
+                // series de 0 reps, sembraba filas imposibles de registrar (ver `canRegisterCurrentSet`).
+                let reps = usesReps ? max(1, lastReps ?? p.repsRangeTop ?? p.reps ?? 8) : 0
                 // FER-715: keep the planned `RoutineSet` id (so a per-set rest edit can persist back to the
                 // routine) and carry the set's own rest override (nil = inherit the exercise at rest time).
                 return WorkingSet(id: p.id, weightKg: weight, reps: reps, done: false, rest: p.rest)

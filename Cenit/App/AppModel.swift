@@ -179,7 +179,9 @@ import UIKit
         self.repo.strainHRmax = strainHRmax
         self.repo.strainSex = profile.sex
         // FER-721: the lock-screen actions come back through the controller; apply them to the live session.
-        restActivity.onAction = { [weak self] (action: RestActivityBridge.Action) in self?.applyRestAction(action) }
+        restActivity.onAction = { [weak self] (action: RestActivityBridge.Action, requestedAt: Date) in
+            self?.applyRestAction(action, requestedAt: requestedAt)
+        }
         // FER-806: the Activity now lives the WHOLE session, so we must NOT kill it unconditionally at
         // launch — that would blow away a legitimate card before crash-recovery restores its session.
         // Instead, only when FER-798's recovery finds NO recoverable session do we end any orphan (a card

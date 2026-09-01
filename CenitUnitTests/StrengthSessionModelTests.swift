@@ -861,6 +861,262 @@ final class StrengthSessionModelTests: XCTestCase {
         XCTAssertNil(s.runs[0].supersetGroup, "swapping the exercise breaks its superset membership")
     }
 
+    /// Nancy · ronda 6: `lastRestStartedAt` es el ancla de staleness del inbox de la Live Activity —
+    /// nace con cada descanso y, a diferencia de `restStartedAt`, SOBREVIVE a salir del descanso
+    /// (saltarlo lo limpia todo vía `clearRest`). Un toque encolado antes del ancla se descarta.
+    func testLastRestStartAnchorSurvivesLeavingRest() {
+        let slot = StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 3),
+                                                 exercise: ex("bench", "Bench"), lastSets: [])
+        let s = make([slot])
+        XCTAssertNil(s.lastRestStartedAt, "sin descanso aún, no hay ancla")
+        let t0 = Date()
+        s.startRest(seconds: 90, now: t0)
+        XCTAssertEqual(s.lastRestStartedAt, t0)
+        s.skipRest()
+        XCTAssertNil(s.restStartedAt, "salir del descanso limpia el estado vivo…")
+        XCTAssertEqual(s.lastRestStartedAt, t0, "…pero el ancla de staleness queda")
+    }
+
+    /// Nancy · ronda 8: el ancla avanza en TODO cierre de serie, incluidas las ramas que salen a
+    /// `.capturing` sin descanso — «Sin descanso» (rest 0) era la fuga: un toque de reloj encolado
+    /// antes del cierre pasaba el candado y registraba la serie siguiente sin que la usuaria la hiciera.
+    func testStalenessAnchorAdvancesOnRestlessRegister() {
+        let slot = StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 3, rest: 0),
+                                                 exercise: ex("bench", "Bench"), lastSets: [])
+        let s = make([slot])
+        let t1 = Date()
+        s.registerCurrentSet(now: t1)
+        XCTAssertEqual(s.phase, .capturing, "«Sin descanso» sigue de largo…")
+        XCTAssertEqual(s.lastRestStartedAt, t1, "…pero el cierre de la serie re-arma el ancla")
+    }
+
+    /// Nancy · ronda 9a: el ancla VIAJA en el snapshot — derivarla de `restStartedAt` (que se limpia
+    /// fuera del descanso) dejaba el candado muerto tras relanzar sin descanso activo, y un toque
+    /// encolado pre-muerte registraba la serie equivocada.
+    func testStalenessAnchorSurvivesSnapshotRestoreWithoutActiveRest() {
+        let slot = StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 3, rest: 0),
+                                                 exercise: ex("bench", "Bench"), lastSets: [])
+        let s = make([slot])
+        let t1 = Date(timeIntervalSince1970: 1_700_000_000)
+        s.registerCurrentSet(now: t1)   // «Sin descanso»: ancla = t1, restStartedAt = nil
+        XCTAssertNil(s.restStartedAt)
+        let restored = StrengthSessionModel.restore(from: s.snapshot())
+        XCTAssertEqual(restored.lastRestStartedAt, t1, "el ancla sobrevive al relanzamiento")
+    }
+
+    /// Nancy · ronda 9a: un snapshot VIEJO sin el campo no puede renacer con el candado muerto — el
+    /// restore cae al momento del rescate (conservador), nunca a nil.
+    func testStalenessAnchorFallsBackToRestoreTimeOnLegacySnapshot() throws {
+        let slot = StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 3),
+                                                 exercise: ex("bench", "Bench"), lastSets: [])
+        let s = make([slot])
+        var snap = s.snapshot()
+        snap.lastRestStartedAt = nil   // como decodifica un snapshot pre-ronda-9
+        snap.restStartedAt = nil
+        let before = Date()
+        let restored = StrengthSessionModel.restore(from: snap)
+        let anchor = try XCTUnwrap(restored.lastRestStartedAt, "nunca nil tras restore")
+        XCTAssertGreaterThanOrEqual(anchor, before)
+    }
+
+    /// Nancy · ronda 9b: mover el foco (saltar/quitar/sustituir/diferir el ejercicio enfocado) cierra
+    /// el contexto igual que un cierre de serie — el ancla se re-arma para que un toque remoto
+    /// encolado antes de la navegación no se aplique al ejercicio equivocado.
+    func testStalenessAnchorAdvancesOnFocusNavigation() throws {
+        let slots = ["a", "b"].map {
+            StrengthSessionModel.PlanSlot(re: re($0, exerciseId: $0, sets: 2),
+                                          exercise: ex($0, $0.uppercased()), lastSets: [])
+        }
+        let s = make(slots)
+        let old = Date(timeIntervalSince1970: 1_000)
+        s.startRest(seconds: 60, now: old)
+        s.skipExercise(0)
+        let anchor = try XCTUnwrap(s.lastRestStartedAt)
+        XCTAssertGreaterThan(anchor, old, "saltar el ejercicio enfocado re-arma el ancla")
+    }
+
+    /// Nancy · ronda 10: «＋ Agregar ejercicio» desde el menú «···» de OTRA fila inserta en su lugar
+    /// SIN robar el foco — la reasignación cruda de `currentIndex` dejaba el descanso en vuelo
+    /// huérfano y esquivaba el candado de staleness de las rondas 6-9.
+    func testInsertExerciseAfterOtherRowKeepsFocusAndRest() throws {
+        let slots = ["a", "b", "c"].map {
+            StrengthSessionModel.PlanSlot(re: re($0, exerciseId: $0, sets: 2),
+                                          exercise: ex($0, $0.uppercased()), lastSets: [])
+        }
+        let s = make(slots)
+        s.currentIndex = 2   // foco en C, descansando
+        s.startRest(seconds: 60)
+        let focusedId = s.runs[2].id
+
+        s.insertExercise(ex("row", "Row"), afterRunId: s.runs[0].id)   // insertar tras A
+
+        XCTAssertEqual(s.runs[1].exerciseId, "row", "el nuevo cae tras A")
+        XCTAssertEqual(s.current?.id, focusedId, "el foco sigue en C (identidad, no índice)")
+        XCTAssertEqual(s.phase, .resting, "el descanso en vuelo sigue vivo")
+        XCTAssertNotNil(s.restEndsAt)
+    }
+
+    /// Nancy · ronda 11: insertar tras un miembro NO-terminal de una superserie no la parte — la
+    /// pertenencia es adyacencia por índice, así que el insert cae tras el ÚLTIMO miembro del bloque.
+    func testInsertExerciseAfterSupersetMemberLandsAfterBlock() {
+        let s = supersetSession()   // A1-A2 agrupados (helper existente)
+        let a1 = s.runs[0].id
+        s.insertExercise(ex("row", "Row"), afterRunId: a1)
+        XCTAssertEqual(s.runs[2].exerciseId, "row", "el nuevo cae DESPUÉS de A2, no en medio")
+        XCTAssertEqual(s.supersetMembers(at: 0), [0, 1], "la superserie sigue entera")
+    }
+
+    /// Nancy · ronda 12: la regla ÚNICA de inserción en la rutina persistida — tras el bloque de
+    /// superserie, nunca en medio (dos copias a mano divergieron; ahora ambas usan este helper).
+    func testRoutineInsertionIndexSkipsSupersetBlock() {
+        let res = [re("a1", exerciseId: "a1", sets: 2, superset: 1),
+                   re("a2", exerciseId: "a2", sets: 2, superset: 1),
+                   re("b", exerciseId: "b", sets: 2)]
+        XCTAssertEqual(res.insertionIndex(afterRunId: "a1"), 2, "tras el bloque, no en medio")
+        XCTAssertEqual(res.insertionIndex(afterRunId: "a2"), 2, "el miembro terminal da lo mismo")
+        XCTAssertEqual(res.insertionIndex(afterRunId: "b"), 3)
+        XCTAssertEqual(res.insertionIndex(afterRunId: nil), 3, "sin ancla → al final")
+        XCTAssertEqual(res.insertionIndex(afterRunId: "zz"), 3, "id desconocido → al final")
+    }
+
+    /// Nancy · ronda 4: un historial con `reps = 0` (dejado por el bug que las rondas 1-2 cerraron)
+    /// no puede sembrar en 0 la serie de un ejercicio agregado a media sesión — las DOS rutas de
+    /// «＋ Agregar ejercicio» llevan el mismo piso `max(1, …)` que la siembra del plan y `addSet`.
+    func testAddExerciseFloorsSeededRepsAtOne() {
+        let s = make([StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 1),
+                                                    exercise: ex("bench", "Bench"), lastSets: [])])
+        s.addExercise(ex("row", "Row"), lastWeightKg: 40, lastReps: 0)
+        XCTAssertEqual(s.runs.last?.sets.first?.reps, 1, "agregar al final no nace en 0")
+
+        s.insertExerciseAfterCurrent(ex("curl", "Curl"), lastWeightKg: 10, lastReps: 0)
+        XCTAssertEqual(s.runs[s.currentIndex + 1].sets.first?.reps, 1, "insertar tras el foco no nace en 0")
+    }
+
+    // MARK: - Una serie de peso×reps sin repeticiones NO se registra (Nancy · ronda 2, bloqueante)
+    //
+    // El candado vive en el motor, no en una sola piel: el ✓ de la tabla, el de Foco, el «Completar»
+    // de la Live Activity y el del Apple Watch entran todos por `registerCurrentSet`.
+
+    func testRegisterCurrentSetRefusesZeroRepsOnWeightReps() {
+        let slot = StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 3),
+                                                 exercise: ex("bench", "Bench"), lastSets: [])
+        let s = make([slot])
+        s.setReps(exercise: 0, set: 0, reps: 0)
+        s.registerCurrentSet()
+        XCTAssertFalse(s.canRegisterCurrentSet)
+        XCTAssertFalse(s.runs[0].sets[0].done, "una serie de volumen cero no es trabajo hecho")
+        XCTAssertEqual(s.doneCount, 0, "y no puede contar en «N de M»")
+    }
+
+    /// Con repeticiones de verdad, el camino de siempre no cambia.
+    func testRegisterCurrentSetStillWorksWithReps() {
+        let slot = StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 3),
+                                                 exercise: ex("bench", "Bench"), lastSets: [])
+        let s = make([slot])
+        s.setReps(exercise: 0, set: 0, reps: 8)
+        s.registerCurrentSet()
+        XCTAssertTrue(s.runs[0].sets[0].done)
+        XCTAssertEqual(s.doneCount, 1)
+    }
+
+    /// Nancy · ronda 3: el ± de Foco no puede fabricar una fila imposible de registrar — con
+    /// peso×reps toca fondo en 1, no en 0. Es lo que devuelve la voz a las puertas remotas (Live
+    /// Activity y Apple Watch), que no tienen dónde escribir un número que falte.
+    func testBumpRepsFloorsAtOneForWeightReps() {
+        let slot = StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 3),
+                                                 exercise: ex("bench", "Bench"), lastSets: [])
+        let s = make([slot])
+        s.setReps(exercise: 0, set: 0, reps: 2)
+        s.bumpReps(-5)
+        XCTAssertEqual(s.runs[0].sets[0].reps, 1, "una fila de peso×reps nunca baja a 0")
+        XCTAssertTrue(s.canRegisterCurrentSet)
+    }
+
+    /// La siembra del plan tampoco puede nacer en 0, ni con una rutina que prescribe 0 repeticiones.
+    func testPlanSeedNeverStartsAtZeroReps() {
+        let slot = StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 2, reps: 0),
+                                                 exercise: ex("bench", "Bench"), lastSets: [])
+        let s = make([slot])
+        XCTAssertTrue(s.runs[0].sets.allSatisfy { $0.reps >= 1 })
+        XCTAssertTrue(s.canRegisterCurrentSet)
+    }
+
+    /// Un ejercicio de tiempo no se juzga por repeticiones — el candado no puede bloquearlo.
+    func testRegisterCurrentSetNotBlockedForTimeExercises() {
+        let slot = StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "plank", sets: 2),
+                                                 exercise: ex("plank", "Plank", type: .time), lastSets: [])
+        let s = make([slot])
+        XCTAssertTrue(s.canRegisterCurrentSet, "reps no aplica a un ejercicio de tiempo")
+        s.registerCurrentSet()
+        XCTAssertTrue(s.runs[0].sets[0].done)
+    }
+
+    // MARK: - Sustituir NUNCA re-etiqueta el trabajo ya hecho (Nancy · ronda 1, bloqueante)
+    //
+    // `buildForSave` etiqueta cada `SetEntry` con `run.exerciseId`. Mientras las series ya `done`
+    // viajaban DENTRO del run sustituido, 3 series reales de Banca se guardaban como Inclinado: acta
+    // mentirosa, PR envenenado y mapa muscular equivocado. Ahora ese trabajo se congela en un run
+    // propio que conserva la identidad vieja.
+
+    /// El caso que rompía: 2 series hechas de banca, luego sustituir por inclinado.
+    func testReplaceExerciseFreezesDoneSetsUnderTheOldExercise() {
+        let slot = StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 4),
+                                                 exercise: ex("bench", "Bench"),
+                                                 lastSets: [lastSet("bench", weight: 80, reps: 8)])
+        let s = make([slot])
+        s.runs[0].sets[0].done = true
+        s.runs[0].sets[1].done = true
+
+        s.replaceExercise(at: 0, with: ex("incline", "Incline bench"))
+
+        XCTAssertEqual(s.runs.count, 2, "el trabajo hecho se congela en un run propio")
+        XCTAssertEqual(s.runs[0].exerciseId, "bench", "las series hechas conservan el ejercicio VIEJO")
+        XCTAssertEqual(s.runs[0].sets.count, 2)
+        XCTAssertTrue(s.runs[0].sets.allSatisfy(\.done), "el run congelado no tiene pendientes")
+        XCTAssertEqual(s.runs[1].exerciseId, "incline", "el run sustituido queda justo después")
+        XCTAssertFalse(s.runs[1].sets.contains { $0.done }, "el nuevo movimiento arranca sin nada hecho")
+
+        let (_, entries, _, _) = s.buildForSave(deviceId: nil, endTs: 999)
+        XCTAssertEqual(entries.count, 2)
+        XCTAssertTrue(entries.allSatisfy { $0.exerciseId == "bench" },
+                      "lo que se guarda es Banca — el acta no puede renombrar trabajo real")
+    }
+
+    /// El run congelado lleva un `id` NUEVO, así que no mapea a ningún `RoutineExercise`: la rutina
+    /// solo ve la sustitución del run que sí conserva su id.
+    func testFrozenRunKeepsANewIdSoItNeverMapsToTheRoutine() {
+        let slot = StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 3),
+                                                 exercise: ex("bench", "Bench"), lastSets: [])
+        let s = make([slot])
+        s.runs[0].sets[0].done = true
+        s.replaceExercise(at: 0, with: ex("incline", "Incline bench"))
+        XCTAssertNotEqual(s.runs[0].id, "a", "el run congelado no puede reclamar el slot de la rutina")
+        XCTAssertEqual(s.runs[1].id, "a", "el run sustituido sí conserva el id que la rutina conoce")
+    }
+
+    /// Sin nada hecho, sustituir sigue siendo un reemplazo en el sitio — cero runs de más.
+    func testReplaceExerciseWithNothingDoneStaysInPlace() {
+        let slot = StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 3),
+                                                 exercise: ex("bench", "Bench"), lastSets: [])
+        let s = make([slot])
+        s.replaceExercise(at: 0, with: ex("incline", "Incline bench"))
+        XCTAssertEqual(s.runs.count, 1)
+        XCTAssertEqual(s.runs[0].exerciseId, "incline")
+        XCTAssertEqual(s.currentIndex, 0)
+    }
+
+    /// El foco sigue al movimiento NUEVO (donde toca capturar), no al trabajo congelado.
+    func testReplaceExerciseKeepsFocusOnTheNewMovement() {
+        let slot = StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 3),
+                                                 exercise: ex("bench", "Bench"), lastSets: [])
+        let s = make([slot])
+        s.runs[0].sets[0].done = true
+        s.currentIndex = 0
+        s.replaceExercise(at: 0, with: ex("incline", "Incline bench"))
+        XCTAssertEqual(s.currentIndex, 1, "el foco va al run sustituido, que quedó en ei+1")
+        XCTAssertEqual(s.runs[s.currentIndex].exerciseId, "incline")
+    }
+
     // MARK: - removeExercise leaves an orphaned superset dissolved (FER-188)
     //
     // Pre-existing bug found in F3: `removeExercise` isn't group-aware. Removing one of a 2-member

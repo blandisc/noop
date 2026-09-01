@@ -284,10 +284,17 @@ extension AppModel {
     /// adds ±30, complete-set and finish-workout. Completar ≠ Saltar: `completeSet` logs the upcoming set
     /// (`registerCurrentSet`) and rests again; `skip` only cuts the timer and leaves the set pending.
     // AppModel-internal (split D1)
-    func applyRestAction(_ action: RestActivityBridge.Action) {
+    func applyRestAction(_ action: RestActivityBridge.Action, requestedAt: Date = Date()) {
         // FER-806: actions arrive across the whole session now (the Activity lives the whole session), so
         // the guard is only «there's a live session without a receipt» — each action gates its own phase.
         guard let s = strengthSession, s.summary == nil else { return }
+        // Nancy · ronda 6: el inbox del App Group es durable y puede drenar TARDE (app suspendida,
+        // Darwin con retraso). Un toque anterior al inicio del ÚLTIMO descanso que haya arrancado
+        // pertenece a un contexto ya cerrado — aplicarlo extendería/cortaría el descanso equivocado
+        // o registraría una serie que la usuaria no estaba viendo. Se descarta, no se reinterpreta.
+        // El ancla es `lastRestStartedAt` (sobrevive a `clearRest`): si NINGÚN descanso arrancó
+        // después del toque, la serie enfocada sigue siendo la que la tarjeta prometía.
+        if let anchor = s.lastRestStartedAt, requestedAt < anchor { return }
         switch action {
         case .resume:
             resumeStrengthSessionFromPause()   // FER-823 — leave «En pausa»; re-arms the reconcile loop
@@ -299,8 +306,16 @@ extension AppModel {
                                  hasLivePulse: watchBpm != nil)
         case .finishWorkout:
             // Last set of the routine: log it, then end the session (which ends the Live Activity).
-            s.registerCurrentSet(restingHR: restingHrBaseline, maxHR: Double(profile.hrMax),
-                                 hasLivePulse: watchBpm != nil)
+            // Nancy · ronda 3: la tarjeta promete «registrar y terminar», pero desde la pantalla
+            // bloqueada no hay dónde escribir un número que falte. Si la serie enfocada no es
+            // registrable (peso×reps sin repeticiones — hoy inalcanzable desde la UI, pero puede
+            // llegar en un snapshot restaurado o una rutina vieja con `targetReps` 0), el acta se
+            // cierra con lo que de verdad se hizo: la serie se queda PENDIENTE en vez de guardarse
+            // como trabajo de volumen cero. Terminar nunca se bloquea; el acta nunca miente.
+            if s.canRegisterCurrentSet {
+                s.registerCurrentSet(restingHR: restingHrBaseline, maxHR: Double(profile.hrMax),
+                                     hasLivePulse: watchBpm != nil)
+            }
             endStrengthSession(save: true)
         case .addThirty:
             guard s.phase == .resting, !s.paused else { return }
@@ -320,8 +335,14 @@ extension AppModel {
     /// both the wrist and the Live Activity. Each case is gated to the phase its wrist affordance lives in:
     /// `completeSet` fires from the capture face (guarded to `.capturing` so a late/queued message can't
     /// double-advance a set mid-rest); skip/adjust apply only while resting, mirroring `applyRestAction`.
-    func applyWatchWorkoutAction(_ action: WatchWorkoutAction, sessionId: String) {
+    func applyWatchWorkoutAction(_ action: WatchWorkoutAction, sessionId: String, requestedAt: Date? = nil) {
         guard let s = strengthSession, s.id == sessionId else { return }
+        // Nancy · ronda 7: `transferUserInfo` es una cola DURABLE — un toque de muñeca hecho fuera de
+        // alcance Bluetooth puede entregarse minutos después, cuando el descanso/serie que la usuaria
+        // veía ya no existe. Mismo candado que el inbox de la Live Activity (ronda 6): si ALGÚN
+        // descanso arrancó después del toque, el toque es de un contexto cerrado y se descarta.
+        // `requestedAt` nil = reloj viejo sin `ts` → sin candado, como antes (degradación honesta).
+        if let requestedAt, let anchor = s.lastRestStartedAt, requestedAt < anchor { return }
         switch action {
         case .completeSet:
             guard s.phase == .capturing else { return }
