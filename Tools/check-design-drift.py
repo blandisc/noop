@@ -44,7 +44,7 @@ DEFAULT_ROOTS = ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App
 DESIGN_PKG = "Packages/StrandDesign"
 EXEMPT = re.compile(r"//\s*token-exempt\b")
 
-ALL_RULES = ["no-hex", "no-adhoc-font", "no-radius-literal", "no-opacity-literal", "no-emdash-string", "no-raw-shadow", "no-sheet-glass", "no-spacing-literal", "no-legacy-api", "token-exempt"]
+ALL_RULES = ["no-hex", "no-adhoc-font", "no-radius-literal", "no-opacity-literal", "no-emdash-string", "no-raw-shadow", "no-sheet-glass", "no-spacing-literal", "no-legacy-api", "token-exempt", "no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic"]
 
 # no-emdash-string: an em-dash (—, U+2014) inside a user-facing Swift string literal. ADN copy rule
 # (FER-878): on-screen copy uses «:», «·» or a comma, never an em-dash. Scoped to STRING LITERALS so the
@@ -110,6 +110,22 @@ RE_LEGACY_API = re.compile(
     r"|\.paperMenu\("
 )
 
+# FER-276 — reglas anti-evasión del colador del censo (CENSO.md §1). Solo las regex-ables con
+# baja tasa de falso positivo; `.frame(width/height:)` decorativo, `.offset` y `Color.clear`
+# quedan FUERA a propósito (dato vs chrome es indecidible por regex — los vigila el censo).
+# no-raw-color: deriva cromática de sistema que no-hex no ve — Color.white/black/Color(red:) y
+# `.foregroundStyle(.white)` fuera de token, sobre el lienzo canónico blanco. 7 hits congelados.
+RE_RAW_COLOR = re.compile(
+    r"\bColor\.white\b|\bColor\.black\b|\bColor\(red:"
+    r"|\.foregroundStyle\(\.white\)"
+)
+# no-edgeinsets-literal: EdgeInsets con un dígito pelón — el mismo defecto de no-spacing-literal
+# con otra API (el regex de spacing no lo ve).
+RE_EDGEINSETS = re.compile(r"EdgeInsets\([^)]*:\s*[0-9]")
+# no-token-arithmetic: `CenitMetrics.space1 + 2` — un token corregido a mano es un rol que falta
+# o deuda disfrazada (CONTRATO.md prohíbe resolverlo minteando roles basura).
+RE_TOKEN_ARITH = re.compile(r"\b(?:LiquidSpace|LiquidRadius|CenitMetrics|WidgetMetrics)\.[A-Za-z0-9]+\s*[-+]\s*[0-9]")
+
 RULE_PATTERNS = {
     "no-hex": RE_HEX,
     "no-adhoc-font": RE_FONT,
@@ -119,6 +135,9 @@ RULE_PATTERNS = {
     "no-sheet-glass": RE_SHEET_GLASS,
     "no-spacing-literal": RE_SPACING,
     "no-legacy-api": RE_LEGACY_API,
+    "no-raw-color": RE_RAW_COLOR,
+    "no-edgeinsets-literal": RE_EDGEINSETS,
+    "no-token-arithmetic": RE_TOKEN_ARITH,
 }
 
 
@@ -159,9 +178,9 @@ def check(paths, rules):
             for rule in rules:
                 if rule == "token-exempt":
                     continue
-                if rule in ("no-hex", "no-legacy-api") and in_design_pkg:
+                if rule in ("no-hex", "no-legacy-api", "no-raw-color", "no-token-arithmetic") and in_design_pkg:
                     continue
-                if rule == "no-legacy-api" and in_widget_watch:
+                if rule in ("no-legacy-api", "no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic") and in_widget_watch:
                     continue
                 if rule == "no-emdash-string":
                     if _emdash_string_hit(line):

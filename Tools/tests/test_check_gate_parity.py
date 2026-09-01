@@ -44,7 +44,7 @@ class GateParity(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             _copy_tree(tmp)
             _mutate(tmp, "Tools/check-design-drift.py",
-                    '"token-exempt"]', '"token-exempt", "no-regla-nueva"]')
+                    '"no-token-arithmetic"]', '"no-token-arithmetic", "no-regla-nueva"]')
             problems = parity.check(tmp)
             self.assertTrue(any("no-regla-nueva" in p and "ALL_RULES" in p for p in problems), problems)
 

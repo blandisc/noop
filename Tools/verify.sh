@@ -49,8 +49,6 @@ run_lint() {
     python3 Tools/check-design-drift.py --rules no-hex $files || ok=1
     screens=$(printf '%s\n' $files | grep -E '^Cenit/(Screens|Onboarding)/' || true)
     if [ -n "$screens" ]; then
-      # shellcheck disable=SC2086
-      python3 Tools/check-design-drift.py --rules no-adhoc-font,no-radius-literal,no-opacity-literal $screens || ok=1
       # FER-264: emdash corre en CI desde FER-879 pero faltaba aquí — verde local ≠ verde CI.
       # shellcheck disable=SC2086
       python3 Tools/check-design-drift.py --rules no-emdash-string $screens || ok=1
@@ -66,6 +64,10 @@ run_lint() {
     if [ -f Tools/design-drift-baseline.json ]; then
       python3 Tools/check-design-drift.py --rules no-spacing-literal \
         --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App || ok=1
+      python3 Tools/check-design-drift.py --rules no-adhoc-font,no-radius-literal,no-opacity-literal \
+        --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App || ok=1
+      python3 Tools/check-design-drift.py --rules no-raw-color,no-edgeinsets-literal,no-token-arithmetic \
+        --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media || ok=1
       python3 Tools/check-design-drift.py --rules no-legacy-api \
         --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media || ok=1
       python3 Tools/check-design-drift.py --rules token-exempt \

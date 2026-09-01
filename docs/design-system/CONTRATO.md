@@ -104,6 +104,12 @@ Los veredictos viven en [CENSO.md](CENSO.md); a `docs/DECISIONS.md` solo sube la
 **Aplicar** un veredicto (cambiar píxeles) es trabajo de los lotes trimestrales (`/migracion` para
 pantalla entera; polish en `/canvas` para lote transversal de un rol, N ≤ 10) — nunca de tooling.
 
+**Alta estructural** (FER-276): estrenar una regla nueva agrega su clave completa al baseline en el
+mismo PR del código — el job de monotonía la permite porque congela deuda vieja bajo una regla que no
+existía (la garantía protege las reglas EXISTENTES; un archivo nuevo dentro de una regla vigente sigue
+siendo subida ilegal). Fuera del gate por indecidibles con regex (los vigila el censo): `.frame`
+decorativo, `.offset`, `Color.clear`, `.safeAreaPadding`.
+
 ## Caducidad del censo
 
 `CENSO.md` lleva el commit en que se generó. Se re-corre **antes de cada lote trimestral** y antes
@@ -117,13 +123,14 @@ Tabla humana (resumen) — la verdad máquina-legible es el bloque JSON de abajo
 | Regla | pre-commit | verify quick | design-lint (CI) |
 |---|---|---|---|
 | no-hex | staged (todos) | changed (todos) | árbol (raíces default) |
-| no-adhoc-font / no-radius-literal / no-opacity-literal | staged Screens+Onboarding | changed Screens+Onboarding | árbol Screens+Onboarding |
+| no-adhoc-font / no-radius-literal / no-opacity-literal (trinquete) | árbol 4 raíces | árbol 4 raíces | árbol 4 raíces |
 | no-emdash-string | staged Screens+Onboarding | changed Screens+Onboarding | árbol Screens+Onboarding |
 | no-raw-shadow | staged Screens | changed Screens | árbol Screens |
 | no-sheet-glass | staged (todos)¹ | changed (todos)¹ | árbol StrandDesign+Cenit+CenitApp+CenitShared+CenitWidgets |
 | no-spacing-literal (trinquete) | árbol 4 raíces | árbol 4 raíces | árbol 4 raíces |
 | no-legacy-api (trinquete) | árbol 7 raíces | árbol 7 raíces | árbol 7 raíces |
 | token-exempt (trinquete) | árbol 7 raíces + StrandDesign | árbol 7 raíces + StrandDesign | árbol 7 raíces + StrandDesign |
+| no-raw-color / no-edgeinsets-literal / no-token-arithmetic (trinquete, FER-276) | árbol 7 raíces | árbol 7 raíces | árbol 7 raíces |
 | monotonía del baseline | — (hook delgado) | espejo vs origin/iOS | job `baseline-monotony` |
 
 ¹ divergencia declarada: local corre sobre los archivos tocados (más estricto en Watch); CI usa las
@@ -141,15 +148,18 @@ raíces explícitas donde vive el defecto (incluye el paquete, excluye CenitWatc
   },
   "rules": {
     "no-hex":             {"pre-commit": "staged", "verify-quick": "changed", "design-lint": "tree-default"},
-    "no-adhoc-font":      {"pre-commit": "staged-screens-onboarding", "verify-quick": "changed-screens-onboarding", "design-lint": "tree:Cenit/Screens Cenit/Onboarding"},
-    "no-radius-literal":  {"pre-commit": "staged-screens-onboarding", "verify-quick": "changed-screens-onboarding", "design-lint": "tree:Cenit/Screens Cenit/Onboarding"},
-    "no-opacity-literal": {"pre-commit": "staged-screens-onboarding", "verify-quick": "changed-screens-onboarding", "design-lint": "tree:Cenit/Screens Cenit/Onboarding"},
+    "no-adhoc-font":      {"pre-commit": "tree:spacing+baseline", "verify-quick": "tree:spacing+baseline", "design-lint": "tree:spacing+baseline"},
+    "no-radius-literal":  {"pre-commit": "tree:spacing+baseline", "verify-quick": "tree:spacing+baseline", "design-lint": "tree:spacing+baseline"},
+    "no-opacity-literal": {"pre-commit": "tree:spacing+baseline", "verify-quick": "tree:spacing+baseline", "design-lint": "tree:spacing+baseline"},
     "no-emdash-string":   {"pre-commit": "staged-screens-onboarding", "verify-quick": "changed-screens-onboarding", "design-lint": "tree:Cenit/Screens Cenit/Onboarding"},
     "no-raw-shadow":      {"pre-commit": "staged-screens", "verify-quick": "changed-screens", "design-lint": "tree:Cenit/Screens"},
     "no-sheet-glass":     {"pre-commit": "staged", "verify-quick": "changed", "design-lint": "tree:sheet_glass_ci", "nota": "raices distintas a proposito: el defecto vive en el paquete; local mas estricto"},
     "no-spacing-literal": {"pre-commit": "tree:spacing+baseline", "verify-quick": "tree:spacing+baseline", "design-lint": "tree:spacing+baseline"},
     "no-legacy-api":      {"pre-commit": "tree:legacy+baseline", "verify-quick": "tree:legacy+baseline", "design-lint": "tree:legacy+baseline"},
-    "token-exempt":       {"pre-commit": "tree:exempt+baseline", "verify-quick": "tree:exempt+baseline", "design-lint": "tree:exempt+baseline"}
+    "token-exempt":       {"pre-commit": "tree:exempt+baseline", "verify-quick": "tree:exempt+baseline", "design-lint": "tree:exempt+baseline"},
+    "no-raw-color":         {"pre-commit": "tree:legacy+baseline", "verify-quick": "tree:legacy+baseline", "design-lint": "tree:legacy+baseline"},
+    "no-edgeinsets-literal": {"pre-commit": "tree:legacy+baseline", "verify-quick": "tree:legacy+baseline", "design-lint": "tree:legacy+baseline"},
+    "no-token-arithmetic":  {"pre-commit": "tree:legacy+baseline", "verify-quick": "tree:legacy+baseline", "design-lint": "tree:legacy+baseline"}
   }
 }
 ```

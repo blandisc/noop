@@ -211,3 +211,33 @@ class Ratchet(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AntiEvasionRules(unittest.TestCase):
+    """FER-276 — las 3 reglas del colador del censo."""
+
+    def test_raw_color_positivos_y_negativos(self):
+        for line in ["Color.white", "Color.black", "Color(red: 0.1, green: 0.2, blue: 0.3)",
+                     ".foregroundStyle(.white)"]:
+            self.assertTrue(drift.RE_RAW_COLOR.search(line), line)
+        for line in ["LiquidColor.lienzo", "Color.clear", ".foregroundStyle(.primary)",
+                     "Color.whiteish"]:
+            self.assertFalse(drift.RE_RAW_COLOR.search(line), line)
+
+    def test_edgeinsets_y_aritmetica_de_token(self):
+        self.assertTrue(drift.RE_EDGEINSETS.search("EdgeInsets(top: 16, leading: 10)"))
+        self.assertFalse(drift.RE_EDGEINSETS.search("EdgeInsets(top: CenitMetrics.a, leading: M.b)"))
+        self.assertTrue(drift.RE_TOKEN_ARITH.search(".padding(.top, CenitMetrics.space1 + 2)"))
+        self.assertTrue(drift.RE_TOKEN_ARITH.search("LiquidSpace.s400 - 4"))
+        self.assertFalse(drift.RE_TOKEN_ARITH.search(".padding(CenitMetrics.space1)"))
+
+    def test_carve_outs_de_las_tres(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            w = _swift(tmp, "CenitWidgets/X.swift", ["Color.white", "EdgeInsets(top: 1, leading: 2)",
+                                                     "WidgetMetrics.hero + 2"])
+            pkg = _swift(tmp, "Packages/StrandDesign/Sources/StrandDesign/Y.swift",
+                         ["Color(red: 0.1, green: 0.2, blue: 0.3)", "LiquidSpace.s400 + 8"])
+            rules = ["no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic"]
+            self.assertEqual(drift.check([w], rules), [], "Widgets/Watch: geometría de sistema")
+            self.assertEqual([h for h in drift.check([pkg], rules) if h[2] != "no-edgeinsets-literal"],
+                             [], "el paquete define colores y compone su escala legítimamente")
