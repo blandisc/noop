@@ -376,7 +376,7 @@ struct HojaSesionViva: View {
                 .onChange(of: accordionIndex) { _, newIndex in
                     guard session.runs.indices.contains(newIndex) else { return }
                     let id = session.runs[newIndex].id
-                    withAnimation(reduceMotion ? nil : StrandMotion.gentle.delay(0.15)) {
+                    withAnimation(reduceMotion ? nil : LiquidMotion.suave.delay(0.15)) {
                         proxy.scrollTo("hoja-viva-ejercicio-\(id)", anchor: .center)
                     }
                 }

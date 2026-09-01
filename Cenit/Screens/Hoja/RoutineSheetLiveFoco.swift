@@ -233,7 +233,7 @@ struct HojaFoco: View {
             }
             if let bpm = vivo.sheet.model.watchBpm { zonaBadge(bpm).padding(.top, FocoMetrics.capcionTop) }
             Button {
-                withAnimation(vivo.reduceMotion ? nil : StrandMotion.gentle) {
+                withAnimation(vivo.reduceMotion ? nil : LiquidMotion.suave) {
                     if running { vivo.registerFromFoco() } else { vivo.session.startSetTimer() }
                 }
             } label: {
@@ -277,7 +277,7 @@ struct HojaFoco: View {
             // (`if timerStart != nil { stopSetTimer(...) }`), así que `registerFromFoco()` sola
             // captura lo corrido y cierra la serie, sin un `stopSetTimer()` aparte.
             Button {
-                withAnimation(vivo.reduceMotion ? nil : StrandMotion.gentle) {
+                withAnimation(vivo.reduceMotion ? nil : LiquidMotion.suave) {
                     if running { vivo.registerFromFoco() } else { vivo.session.startSetTimer() }
                 }
             } label: {
@@ -310,7 +310,7 @@ struct HojaFoco: View {
         // FER-223: SIN háptico propio aquí — `vivo.registerFromFoco()` llega a `registerActiveSet`,
         // el único funnel que da `EntrenarHaptic.serieCompletada` (poner otro aquí duplicaba el golpe).
         LiquidGlassButton(String(localized: "Set done"), variant: .primary, expands: true) {
-            withAnimation(vivo.reduceMotion ? nil : StrandMotion.gentle) { vivo.registerFromFoco() }
+            withAnimation(vivo.reduceMotion ? nil : LiquidMotion.suave) { vivo.registerFromFoco() }
         }
         .accessibilityLabel(Text(String(localized: "Set done")))
     }
@@ -350,7 +350,7 @@ struct HojaFoco: View {
 
     private func focoJump(to runId: String) {
         guard let idx = vivo.session.runs.firstIndex(where: { $0.id == runId }) else { return }
-        withAnimation(vivo.reduceMotion ? nil : StrandMotion.gentle) {
+        withAnimation(vivo.reduceMotion ? nil : LiquidMotion.suave) {
             vivo.session.select(exerciseIndex: idx, setIndex: vivo.session.runs[idx].sets.firstIndex { !$0.done } ?? 0)
         }
     }
@@ -403,7 +403,7 @@ struct HojaFoco: View {
             .padding(.horizontal, CenitMetrics.gap).padding(.vertical, LiquidSpace.s125).frame(minHeight: EntrenarMetrics.secondaryButton)
             .background { if activo { Capsule().fill(vivo.sheet.theme.ink) } }
             .contentShape(Capsule())
-            .onTapGesture { withAnimation(vivo.reduceMotion ? nil : StrandMotion.interactive) { action() } }
+            .onTapGesture { withAnimation(vivo.reduceMotion ? nil : LiquidMotion.toque) { action() } }
             .accessibilityAddTraits(activo ? [.isSelected, .isButton] : .isButton)
     }
 
@@ -461,7 +461,7 @@ struct HojaFoco: View {
                         .padding(.top, FocoMetrics.capcionTop)
                 }
                 Button {
-                    withAnimation(vivo.reduceMotion ? nil : StrandMotion.gentle) { vivo.focusDoneRunId = nil }
+                    withAnimation(vivo.reduceMotion ? nil : LiquidMotion.suave) { vivo.focusDoneRunId = nil }
                     if isLast {
                         withAnimation(vivo.reduceMotion ? nil : .snappy) { vivo.focusMode = false }
                         vivo.requestFinish()

@@ -493,7 +493,7 @@ extension HojaSesionViva {
     /// banda es suficiente, y un golpe adicional al tacto que originó la acción es redundante, no
     /// informativo (mismo principio de `SetTable`: el check ya tiene su propio feedback al tocarlo).
     func skipRest() {
-        withAnimation(reduceMotion ? nil : StrandMotion.gentle) { session.skipRest() }
+        withAnimation(reduceMotion ? nil : LiquidMotion.suave) { session.skipRest() }
     }
 
     // MARK: - R16 · destello de récord (detección VIGENTE — `PRMetric`, sin redefinir tipos, F4/B11 intacto)
@@ -1050,7 +1050,7 @@ struct RestAutoSkipModifier: ViewModifier {
                 EntrenarHaptic.descansoTerminado.play()
                 SessionComfort.playRestChime()
             }
-            withAnimation(vivo.reduceMotion ? nil : StrandMotion.gentle) { vivo.session.skipRest() }
+            withAnimation(vivo.reduceMotion ? nil : LiquidMotion.suave) { vivo.session.skipRest() }
         }
     }
 }
