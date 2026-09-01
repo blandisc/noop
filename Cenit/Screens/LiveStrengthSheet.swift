@@ -1376,7 +1376,7 @@ struct LiveStrengthSheet: View {
             Button { model.endStrengthSession(save: false) } label: {
                 Text("Got it")
                     .font(InstrumentoType.groteskHeadline(17)).foregroundStyle(theme.paper)
-                    .frame(maxWidth: .infinity).padding(.vertical, 15)  // token-exempt: sin token exacto
+                    .frame(maxWidth: .infinity).padding(.vertical, 15)  // token-exempt(optico): pad vertical del CTA, mismo 15 repetido en PlatesScreen/StarterTemplatesSheet/CuerpoView — candidato a pieza (no minteada aquí)
                     .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
             }
             .buttonStyle(.plain).padding(.top, CenitMetrics.space1)
@@ -1442,7 +1442,7 @@ struct LiveStrengthSheet: View {
                     .background(RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous)
                         .strokeBorder(theme.hairlineStrong, lineWidth: 1))
             }
-            .buttonStyle(.plain).padding(.top, 6)  // token-exempt: ajuste óptico / sin token exacto
+            .buttonStyle(.plain).padding(.top, LiquidSpace.s150)
 
             // copy.md «Acta»: «Listo» va en verde (quisquilloso ronda 4) — mismo token `positiveText`
             // que ya marca «hecho» en el resto del acta (raise, PRs, etc.), no tinta.
@@ -1450,7 +1450,7 @@ struct LiveStrengthSheet: View {
                 Text("Done")
                     .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
                     .foregroundStyle(theme.paper)
-                    .frame(maxWidth: .infinity).padding(.vertical, 15)  // token-exempt: sin token exacto
+                    .frame(maxWidth: .infinity).padding(.vertical, 15)  // token-exempt(optico): pad vertical del CTA, mismo 15 repetido en PlatesScreen/StarterTemplatesSheet/CuerpoView — candidato a pieza (no minteada aquí)
                     .background(theme.positiveText, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
             }
             .buttonStyle(.plain)

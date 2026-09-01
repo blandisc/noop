@@ -143,7 +143,7 @@ struct WorkoutHistoryScreen: View {
                     manualEntryRow
                 }
             }
-            .padding(.top, 20)  // token-exempt: sin token exacto
+            .padding(.top, 20)  // token-exempt(optico): tope de scroll deliberadamente menor que screenPadding (24) para acercar el contenido al nav bar — sin paso exacto en LiquidSpace/CenitMetrics
             .padding(.horizontal, CenitMetrics.screenPadding)
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -883,7 +883,7 @@ struct WorkoutHistoryScreen: View {
                 },
                 monthLabels: historyMonthLabels
             )
-            .padding(.top, 6).padding(.bottom, 2)  // token-exempt: ajuste óptico / sin token exacto
+            .padding(.top, LiquidSpace.s150).padding(.bottom, LiquidSpace.s050)
             LazyVStack(alignment: .leading, spacing: 0) {
                 // FER-136 (quisquilloso ronda 4): la lista se acota a la MISMA ventana de 90 días que
                 // `historialSubtitle` anuncia — antes iteraba `sessions` (hasta 200, cualquier
@@ -1192,7 +1192,7 @@ struct WorkoutHistoryScreen: View {
                 .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 34)  // token-exempt: sin token exacto
+        .padding(.vertical, 34)  // token-exempt(optico): pad vertical del estado vacío (icono+título+cuerpo) para centrarlo en el bloque — entre s800 (32) y s1400 (56) de LiquidSpace, sin paso exacto
     }
 
     /// «Error de lectura» (Estados, decisión #16 del épico): sustituye la ilustración de «sin datos» —
@@ -1591,7 +1591,7 @@ struct WorkoutSessionDetailScreen: View {
                     actions
                 }
             }
-            .padding(.top, 20)  // token-exempt: sin token exacto
+            .padding(.top, 20)  // token-exempt(optico): tope de scroll deliberadamente menor que screenPadding (24) para acercar el contenido al nav bar — sin paso exacto en LiquidSpace/CenitMetrics
             .padding(.horizontal, CenitMetrics.screenPadding)
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -2007,13 +2007,13 @@ struct WorkoutSessionDetailScreen: View {
                     .padding(.bottom, CenitMetrics.space1)
             }
             exerciseTitle(g)
-                .padding(.bottom, 6)  // token-exempt: ajuste óptico / sin token exacto
+                .padding(.bottom, LiquidSpace.s150)
             ForEach(Array(g.sets.enumerated()), id: \.element.id) { idx, set in
                 HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space2) {
                     Text("Set \(idx + 1)").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
                     if isPRSet(set, exerciseId: g.exerciseId) {
                         Text("PR").font(StrandFont.captionNumber).foregroundStyle(theme.dataStrain)
-                            .padding(.horizontal, 6).padding(.vertical, 1)  // token-exempt: ajuste óptico / sin token exacto
+                            .padding(.horizontal, LiquidSpace.s150).padding(.vertical, LiquidSpace.s025)
                             .overlay(Capsule().strokeBorder(theme.dataStrain.opacity(0.5), lineWidth: 1)) // token-exempt: stroke chip PR 0.5 (alfa propio)
                             .accessibilityLabel(Text("Personal record"))
                     }
@@ -2021,7 +2021,7 @@ struct WorkoutSessionDetailScreen: View {
                     Text(StrengthHistoryFormat.setLine(set, system: system))
                         .font(InstrumentoType.groteskNumber(14)).foregroundStyle(theme.ink)
                 }
-                .padding(.vertical, 5)  // token-exempt: ajuste óptico / sin token exacto
+                .padding(.vertical, LiquidSpace.s125)
                 .overlay(alignment: .top) {
                     if idx > 0 { Divider().overlay(theme.hairline) }
                 }

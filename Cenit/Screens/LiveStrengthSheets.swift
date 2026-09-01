@@ -456,7 +456,7 @@ struct ChangeExerciseSheet: View {
     private func useButton(_ ex: Exercise) -> some View {
         Button { onUse(ex) } label: {
             Text("Use").font(StrandFont.caption).foregroundStyle(theme.ink)
-                .padding(.horizontal, CenitMetrics.gap).padding(.vertical, 5)  // token-exempt: ajuste óptico / sin token exacto
+                .padding(.horizontal, CenitMetrics.gap).padding(.vertical, LiquidSpace.s125)
                 .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
                 .frame(minHeight: 44)   // toque 44: la cápsula queda visualmente igual
                 .contentShape(Rectangle())

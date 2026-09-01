@@ -1020,8 +1020,8 @@ private struct TrendAxisChart: View {
                         .onEnded { (_: DragGesture.Value) in scrubIndex = nil }
                 )
             }
-            .padding(.leading, 34)  // token-exempt: sin token exacto
-            .padding(.vertical, 5)  // token-exempt: ajuste óptico / sin token exacto
+            .padding(.leading, 34)  // token-exempt(dato): geometría de gráfica — ancho de la columna de labels Y (28) + separación al eje, alinea la serie con el eje
+            .padding(.vertical, LiquidSpace.s125)
         }
         .frame(height: Self.plotHeight)
     }
@@ -1042,7 +1042,7 @@ private struct TrendAxisChart: View {
                 .foregroundStyle(accent)
                 .frame(maxWidth: .infinity, alignment: .trailing)
         }
-        .padding(.leading, 34)  // token-exempt: sin token exacto
+        .padding(.leading, 34)  // token-exempt(dato): geometría de gráfica — mismo offset que la serie (línea 1023) para alinear las etiquetas X con el eje
     }
 
     var body: some View {
