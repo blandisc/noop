@@ -30,6 +30,8 @@ on:
       - 'Tools/tests/**'
       - 'Tools/verify.sh'
       - 'Tools/git-hooks/pre-commit'
+      - 'Tools/check-gate-parity.py'
+      - 'docs/design-system/CONTRATO.md'
       - '.github/workflows/design-lint.yml'
   workflow_dispatch:
 
@@ -43,6 +45,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Paridad de las tres patas contra CONTRATO.md (FER-265)
+        run: python3 Tools/check-gate-parity.py
       - name: Design-drift linter — no raw hex (all roots)
         run: python3 Tools/check-design-drift.py --rules no-hex
       - name: Design-drift linter — no ad-hoc font/radius/opacity (migrated screens)
@@ -51,7 +55,7 @@ jobs:
         run: python3 Tools/check-design-drift.py --rules no-emdash-string Cenit/Screens Cenit/Onboarding
       - name: Design-drift linter — no raw shadow, use StrandElevation (migrated screens)
         run: python3 Tools/check-design-drift.py --rules no-raw-shadow Cenit/Screens
-      - name: Linter self-tests (FER-263/264)
+      - name: Linter self-tests (FER-263/264/265)
         run: python3 -m unittest discover -s Tools/tests -p 'test_*.py'
       - name: Design-drift linter — no spacing/stroke literal, ratchet (FER-258/263)
         run: python3 Tools/check-design-drift.py --rules no-spacing-literal --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App
