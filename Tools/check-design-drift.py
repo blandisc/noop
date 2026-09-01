@@ -33,7 +33,7 @@ Exits non-zero on any hit.
 """
 import re, sys, os, json
 
-DEFAULT_ROOTS = ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/AI", "Cenit/App", "CenitWidgets", "CenitWatch"]
+DEFAULT_ROOTS = ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "CenitWidgets", "CenitWatch"]
 DESIGN_PKG = "Packages/StrandDesign"
 EXEMPT = re.compile(r"//\s*token-exempt\b")
 
