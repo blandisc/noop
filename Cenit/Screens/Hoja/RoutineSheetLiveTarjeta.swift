@@ -111,9 +111,9 @@ struct HojaTarjetaEjercicioSesion: View {
     /// «Subida esperando ▲» — la propuesta de la barra RETENIDA (mapa: intervención vigente, alcanzable
     /// aquí). El «por qué» expandible es F4 (deload/intervención); esta hoja solo ofrece tomarla.
     private var raisePill: some View {
-        Button {
+        OutlineCapsule(theme: vivo.sheet.theme, size: .sm, action: {
             withAnimation(vivo.reduceMotion ? nil : .snappy) { _ = vivo.session.takeHeldRaise(at: ei) }
-        } label: {
+        }) {
             HStack(spacing: LiquidSpace.s150) {
                 Text(verbatim: "▲").foregroundStyle(LiquidColor.verdeProfundo)
                 if let raise = run.proposedRaise {
@@ -121,10 +121,7 @@ struct HojaTarjetaEjercicioSesion: View {
                 }
             }
             .font(StrandFont.caption.weight(.semibold)).foregroundStyle(vivo.sheet.theme.ink)
-            .padding(.horizontal, LiquidSpace.s250).padding(.vertical, LiquidSpace.s150)
-            .overlay(Capsule().strokeBorder(vivo.sheet.theme.hairlineStrong, lineWidth: 1))
         }
-        .buttonStyle(.plain)
     }
 
     /// B7 (FER-169): la bajada propuesta — «↓ 3 sesiones igual · propone 76» con BAJAR/SEGUIR (mapa),
@@ -323,19 +320,14 @@ struct HojaTarjetaEjercicioSesion: View {
                 if let metaS, metaS > 0 {
                     Text("goal \(SessionClock.format(metaS))").font(StrandFont.caption).foregroundStyle(vivo.sheet.theme.inkTertiary)
                 }
-                Button {
+                OutlineCapsule(running ? "Stop" : "Start",
+                               theme: vivo.sheet.theme, size: .sm, weight: .bold) {
                     if running {
                         withAnimation(vivo.reduceMotion ? nil : .snappy) { vivo.confirmOrToggleSet(ei: ei, si: si) }
                     } else {
                         vivo.session.startSetTimer()
                     }
-                } label: {
-                    Text(running ? "Stop" : "Start")
-                        .font(StrandFont.caption.weight(.bold)).foregroundStyle(vivo.sheet.theme.ink)
-                        .padding(.horizontal, LiquidSpace.s250).padding(.vertical, LiquidSpace.s150)
-                        .overlay(Capsule().strokeBorder(vivo.sheet.theme.hairlineStrong, lineWidth: 1))
                 }
-                .buttonStyle(.plain)
             }
         }
         .accessibilityElement(children: .combine)
@@ -400,13 +392,10 @@ struct HojaTarjetaEjercicioSesion: View {
                  + Text("is 8× your record").font(StrandFont.caption))
                     .foregroundStyle(vivo.sheet.theme.ink)
                 HStack(spacing: LiquidSpace.s250) {
-                    Button { vivo.correctAbsurdCapture() } label: {
+                    OutlineCapsule(theme: vivo.sheet.theme, size: .md, action: { vivo.correctAbsurdCapture() }) {
                         Text("It was \(vivo.plateNumber(vivo.displayWeight(target.weightKg / 10)))")
                             .font(StrandFont.caption.weight(.semibold)).foregroundStyle(vivo.sheet.theme.ink)
-                            .padding(.horizontal, CenitMetrics.gap).padding(.vertical, LiquidSpace.s150)
-                            .overlay(Capsule().strokeBorder(vivo.sheet.theme.hairlineStrong, lineWidth: 1))
                     }
-                    .buttonStyle(.plain)
                     Button { vivo.confirmAbsurdCaptureAsIs() } label: {
                         Text("Yes, \(vivo.plateNumber(vivo.displayWeight(target.weightKg)))")
                             .font(StrandFont.caption.weight(.semibold)).foregroundStyle(vivo.sheet.theme.critical)
