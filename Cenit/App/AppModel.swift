@@ -7,10 +7,6 @@ import CenitStore
 import StrandImport
 import StrandAnalytics
 import StrandTraining
-#if canImport(UIKit)
-import UIKit
-#endif
-
 /// Root app state: owns the on-device repository, profile, strength session, and Watch mirror.
 /// Strap BLE ownership was amputated in Ola 2 (Apple-only).
 @MainActor
@@ -331,27 +327,22 @@ import UIKit
 
     /// Phone haptics for timer / rest / moment cues (replaces the retired strap motor, FER-1003).
     /// `loops` ≥ 3 use a heavier impact; ≥ 5 also fire a success notification for the long completion cue.
+    /// Generators live in `LiquidHaptica` (FER-269b); this method only orchestrates the loop.
     func buzz(loops: UInt8 = 2) {
-        #if canImport(UIKit)
         let count = max(1, min(Int(loops), 8))
         if count >= 5 {
-            let note = UINotificationFeedbackGenerator()
-            note.prepare()
-            note.notificationOccurred(.success)
+            LiquidHaptica.disparar(.confirmacion)
         }
-        let style: UIImpactFeedbackGenerator.FeedbackStyle = count >= 3 ? .heavy : .medium
-        let impact = UIImpactFeedbackGenerator(style: style)
-        impact.prepare()
+        let rol: LiquidHaptica = count >= 3 ? .acento : .toque
         for i in 0..<count {
             if i == 0 {
-                impact.impactOccurred(intensity: 1.0)
+                LiquidHaptica.disparar(rol)
             } else {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.12 * Double(i)) {
-                    impact.impactOccurred(intensity: 1.0)
+                    LiquidHaptica.disparar(rol)
                 }
             }
         }
-        #endif
     }
 
     /// Pattern was a strap motor id; on phone, loops alone drive the haptic.

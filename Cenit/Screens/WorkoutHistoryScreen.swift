@@ -189,7 +189,9 @@ struct WorkoutHistoryScreen: View {
             }
         }
         .animation(StrandMotion.fade, value: saveError)
-        .sensoryFeedback(trigger: coordinator.pendingUndo?.id) { _, new in new != nil ? .warning : nil }
+        .sensoryFeedback(trigger: coordinator.pendingUndo?.id) { _, new in
+            new != nil ? LiquidHaptica.advertencia.feedback : nil
+        }
         // Reloads on first appear (token 0), whenever a delete/edit deeper in the stack bumps it, and
         // when the repository publishes a new pass — the progression rows read today's verdict, so a
         // cold-start visit corrects itself the moment it lands (FER-82) instead of staying empty.

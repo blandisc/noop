@@ -126,8 +126,8 @@ struct TodayView: View {
     /// La hoja del eje AUTONÓMICO — destino del tap del orbe «Autonómico» (el desglose de sus
     /// tres señales). Reemplaza el placeholder que abría la métrica de VFC (pasada UX H2).
     @State private var showAutonomicoHoja = false
-    /// Cuenta cada pull-to-refresh para disparar la háptica declarativa (`.sensoryFeedback`) al
-    /// provocar el gesto de sincronización (FER-204).
+    /// Cuenta cada pull-to-refresh para disparar la háptica `.toque` (`LiquidHaptica`) al
+    /// provocar el gesto de sincronización (FER-204 → FER-269b).
     @State private var syncHaptic = 0
 
     // «El Ecosistema» (FER-10): la fusión de apertura es el ritual de «tu veredicto llegó»
@@ -624,9 +624,9 @@ struct TodayView: View {
         // Pull-to-refresh propio (FER-222): reemplaza el `.refreshable` nativo (su ruedita gris de
         // ~1 s). El gesto de jalar DIBUJA el dial —`handlePullOffset` arma el arco verde proporcional
         // al tirón— y al cruzar el umbral dispara la MISMA sincronización de antes (`pullToSync`) y el
-        // dial pasa a girar (modo `syncing` de FER-221). La háptica `.medium` la dispara
-        // `.sensoryFeedback` por el cambio de `syncHaptic` que hace `pullToSync` (heredado de FER-204).
-        .sensoryFeedback(.impact(weight: .medium), trigger: syncHaptic)
+        // dial pasa a girar (modo `syncing` de FER-221). La háptica `.toque` (impact medium)
+        // la dispara `liquidHaptica` por el cambio de `syncHaptic` (FER-204 → FER-269b).
+        .liquidHaptica(.toque, trigger: syncHaptic)
         // El fondo (FER-1045): la superficie Liquid monta su fondo ambiental (aurora + orbes
         // drift) DETRÁS del scroll — un solo fondo, nunca papel doble. El velo de status lo
         // corona, y las animaciones ambientales se pausan fuera de `.active` (scenePhase →
@@ -850,7 +850,7 @@ struct TodayView: View {
     /// de FER-204; el offload largo sigue en segundo plano, reflejado en el dial girando + la cápsula de pulso.
     @MainActor
     private func pullToSync() async {
-        syncHaptic += 1                       // dispara la háptica `.medium` al provocar el gesto
+        syncHaptic += 1                       // dispara la háptica `.toque` (impact medium)
         // Dueño 2026-08-15: el jalón era TEATRO — un sleep de 1.2 s + releer la DB local, sin
         // tocar Apple Salud (vestigio de la banda). Ahora hace lo que la franja «pull down to
         // sync» promete: un sync MANUAL real del bridge (trae noches nuevas de HealthKit, misma

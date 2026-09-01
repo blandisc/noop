@@ -137,7 +137,9 @@ struct WeeklyPlanEditorView: View {
             }
         }
         .animation(StrandMotion.fade, value: saveError)
-        .sensoryFeedback(trigger: pendingUndo?.id) { _, new in new != nil ? .warning : nil }
+        .sensoryFeedback(trigger: pendingUndo?.id) { _, new in
+            new != nil ? LiquidHaptica.advertencia.feedback : nil
+        }
         // FER-952 unified flow: «＋ Nueva rutina» PUSHES the library as a screen (no sheet); adding
         // the picks creates the routine on the spot and lands on the unified «Rutina» editor.
         .navigationDestination(isPresented: $showBuilder) {
