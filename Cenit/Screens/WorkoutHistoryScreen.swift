@@ -640,21 +640,15 @@ struct WorkoutHistoryScreen: View {
     }
 
     /// «↗ +N% / ↘ −N% vs. last month» chip — valence color pre-bound so the ternary isn't re-inferred
-    /// on every modifier (FER-981).
+    /// on every modifier (FER-981). LiquidStatePill.valencia (FER-280·2b).
     @ViewBuilder
     private func tuMesDeltaChip(delta: Double) -> some View {
         let up: Bool = delta >= 0
         let n: Int = abs(Int(delta.rounded()))
-        let valence: Color = up ? theme.positiveText : theme.warning
-        Group {
-            if up { Text("↗ +\(n)% vs. last month") } else { Text("↘ −\(n)% vs. last month") }
-        }
-        .font(InstrumentoType.grotesk(11, weight: .bold))
         // §8.7: valence en texto <24pt usa positiveText (5.0:1), no el hue del dato.
-        .foregroundStyle(valence)
-        .padding(.horizontal, LiquidSpace.chipHorizontal).padding(.vertical, LiquidSpace.s075)
-        .background(valence.opacity(StrandOpacity.tintFill),
-                    in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+        let valence: Color = up ? theme.positiveText : theme.warning
+        let label: String = up ? "↗ +\(n)% vs. last month" : "↘ −\(n)% vs. last month"
+        LiquidStatePill(valencia: label, tono: valence)
     }
 
     /// 8-week bar chart + axis labels. Bar height uses fully-typed CGFloat math (FER-981).
