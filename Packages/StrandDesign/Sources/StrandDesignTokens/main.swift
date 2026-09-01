@@ -358,6 +358,13 @@ let liquidSpaceEntries: [(String, CGFloat, String?)] = [
     ("s1400", ls.s1400, "safe-area top (velo de status)"),
     ("ecosistemaAlto", ls.ecosistemaAlto, "alto de la zona del héroe «El Ecosistema»"),
     ("dockBottom", ls.dockBottom, "margen inferior del dock flotante (negativo)"),
+    ("chipHorizontal", ls.chipHorizontal, "respiro horizontal de chip/pastilla chica (FER-273)"),
+    ("seccionCanto", ls.seccionCanto, "canto de sección — antes/después de un Divider (FER-273)"),
+    ("filaRespiro", ls.filaRespiro, "respiro vertical de fila/chip compacto (FER-273)"),
+    ("handoff14", ls.handoff14, "padding de tarjetas/controles chicos del handoff (FER-273)"),
+    ("handoff44", ls.handoff44, "gap entre bloques de dato gemelos, == mínimo táctil HIG (FER-273)"),
+    ("chipCompactoH", LiquidChip.compactoHorizontal, "chip compacto del handoff — horizontal (FER-273)"),
+    ("chipCompactoV", LiquidChip.compactoVertical, "chip compacto del handoff — vertical (FER-273)"),
 ]
 
 let liquidRadiusEntries: [(String, CGFloat, String?)] = [
@@ -462,6 +469,10 @@ public let catalogEntries: [CatalogEntry] = [
                  archivo: "StatTile.swift",
                  cuandoUsarlo: "Tile de altura fija en pantallas del inventario «Instrumento diurno» aún sin migrar.",
                  cuandoNo: "No en pantallas ya migradas a Liquid Glass (usa `LiquidMetricTile`)."),
+    CatalogEntry(rol: "Encabezado de sección (Liquid)", simbolo: "LiquidSectionHeader",
+                 archivo: "LiquidGlass/LiquidSectionHeader.swift",
+                 cuandoUsarlo: "Abrir una sección en una pantalla Liquid Glass — kicker + aire, sin banda de fondo (FER-273).",
+                 cuandoNo: "No en pantallas «Instrumento diurno» aún sin migrar (usa `InstrumentoSectionBand`, que sí lleva banda de papel)."),
 ]
 
 func catalogoTable() -> String {

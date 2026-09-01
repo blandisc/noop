@@ -90,6 +90,13 @@ lo refleja.
 | `s1400` | 56pt | safe-area top (velo de status) |
 | `ecosistemaAlto` | 320pt | alto de la zona del héroe «El Ecosistema» |
 | `dockBottom` | -22pt | margen inferior del dock flotante (negativo) |
+| `chipHorizontal` | 9pt | respiro horizontal de chip/pastilla chica (FER-273) |
+| `seccionCanto` | 10pt | canto de sección — antes/después de un Divider (FER-273) |
+| `filaRespiro` | 10pt | respiro vertical de fila/chip compacto (FER-273) |
+| `handoff14` | 14pt | padding de tarjetas/controles chicos del handoff (FER-273) |
+| `handoff44` | 44pt | gap entre bloques de dato gemelos, == mínimo táctil HIG (FER-273) |
+| `chipCompactoH` | 11pt | chip compacto del handoff — horizontal (FER-273) |
+| `chipCompactoV` | 5pt | chip compacto del handoff — vertical (FER-273) |
 
 ### Radios (`LiquidRadius`)
 
@@ -130,3 +137,4 @@ un componente, empieza aquí.
 | Pastilla de estado | `StatePill` | `StatePill.swift` | Un estado con tono + texto (conectado/calibrando/etc.), con o sin pulso. | No para el chip de procedencia de dato (usa `LiquidOrigenChip`/`SourceBadge`). |
 | Badge de procedencia | `SourceBadge` | `Components.swift` | Marcar «MY-WHOOP» / «APPLE HEALTH» junto a un dato. | No como pastilla de estado genérica (usa `StatePill`). |
 | Tile de métrica (Instrumento) | `StatTile` | `StatTile.swift` | Tile de altura fija en pantallas del inventario «Instrumento diurno» aún sin migrar. | No en pantallas ya migradas a Liquid Glass (usa `LiquidMetricTile`). |
+| Encabezado de sección (Liquid) | `LiquidSectionHeader` | `LiquidGlass/LiquidSectionHeader.swift` | Abrir una sección en una pantalla Liquid Glass — kicker + aire, sin banda de fondo (FER-273). | No en pantallas «Instrumento diurno» aún sin migrar (usa `InstrumentoSectionBand`, que sí lleva banda de papel). |

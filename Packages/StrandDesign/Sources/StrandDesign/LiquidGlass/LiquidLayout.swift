@@ -74,6 +74,57 @@ public enum LiquidSpace {
     public static let dockBottom: CGFloat = -22
     /// Margen lateral del dock flotante (absolute left/right 16 en el handoff).
     public static let dockSide: CGFloat = 16
+
+    // MARK: - Fase 1a del wrapping valor-neutral (FER-273, CONTRATO.md) — piezas nuevas
+    //
+    // Cinco roles minteados del censo (docs/design-system/CENSO.md §clusters) sin aplicar
+    // a ningún call-site (eso es trabajo del lote de `/migracion` que sigue). Nacen aquí
+    // porque son respiros/layout, no color ni tipografía — `chipHorizontal`/`seccionCanto`/
+    // `filaRespiro`/`handoff14`/`handoff44` abajo.
+
+    /// 9 — respiro horizontal de un chip/pastilla chica del handoff. CENSO «horizontal/chip
+    /// handoff» (10 sitios): la moda del cluster es 9 (5 de 10 sitios ya lo usan tal cual;
+    /// los otros valen 11 o 13 y no igualan este token — quedan para `/migracion`, que
+    /// decide sitio por sitio contra la regla de igualdad exacta del CONTRATO).
+    public static let chipHorizontal: CGFloat = 9
+
+    /// 10 — respiro del CANTO de una sección Liquid (antes/después de un `Divider`, remate
+    /// de lista). Misma cifra que `CenitMetrics.rowVPad` (10) pero OTRO rol a propósito:
+    /// `rowVPad` es el padding vertical de una fila de lista «Instrumento» — reusarlo aquí
+    /// acoplaría Liquid a un token legacy por pura coincidencia numérica. CENSO
+    /// «edge ≠ rowVPad» (10 sitios, dos roles distintos bajo el mismo cluster — ver
+    /// `filaRespiro`, el otro).
+    public static let seccionCanto: CGFloat = 10
+
+    /// 10 — respiro vertical de una fila/chip compacto en el universo Liquid. Gemelo
+    /// numérico de `seccionCanto` (misma cifra, 10) pero rol distinto dentro del mismo
+    /// cluster CENSO «edge ≠ rowVPad»: unos sitios cierran el canto de una sección, otros
+    /// respiran una fila — ninguno es `CenitMetrics.rowVPad` por la misma razón de arriba.
+    public static let filaRespiro: CGFloat = 10
+
+    /// 14 — padding horizontal/vertical de tarjetas y controles chicos del handoff (el
+    /// panel del scrub de carga, «Mark all recovered», el toast de deshacer). Escalón entre
+    /// `s150` (6) y `cardPadding` (16, en `CenitMetrics`) que 3 sitios ya comparten tal
+    /// cual. CENSO «14 del handoff».
+    public static let handoff14: CGFloat = 14
+
+    /// 44 — el gap del handoff entre dos bloques de dato gemelos («Avg HR» / «Max HR» del
+    /// resumen de sesión). Vale lo mismo que el mínimo táctil HIG (`LiquidControl.hitTarget`)
+    /// pero es OTRO rol — un espaciado de layout entre lecturas, no un objetivo de toque —
+    /// y por eso lleva nombre propio en vez de reusar `hitTarget`. CENSO «44 del handoff».
+    public static let handoff44: CGFloat = 44
+}
+
+// MARK: - Liquid Glass · Chip compacto (FER-273, CONTRATO.md — checklist Fase 1)
+
+/// El par horizontal/vertical de un chip compacto del handoff (variantes de ejercicio,
+/// chips del atlas muscular). CENSO «chip 11/5 del handoff» (3 sitios; 2 ya usan 11/5 tal
+/// cual, el tercero vale 9/4 y no iguala este token — queda para `/migracion`).
+public enum LiquidChip {
+    /// 11 — padding horizontal.
+    public static let compactoHorizontal: CGFloat = 11
+    /// 5 — padding vertical.
+    public static let compactoVertical: CGFloat = 5
 }
 
 // MARK: - Liquid Glass · Radios (handoff §4.4 — cinco tokens, ninguno más)
