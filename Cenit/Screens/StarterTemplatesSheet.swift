@@ -76,23 +76,8 @@ struct StarterTemplatesSheet: View {
         // swipe-dismiss + «Add to my routines»); meter `EntrenarHojaCabecera` AÑADIRÍA un control
         // (REGLA SUPREMA) — se ignora deliberadamente y se flagea en el reporte.
         .entrenarHojaFondo(tono: .neutro)
-        // FER-969: write failure is an inline banner (same pattern as WorkoutEditSheet), not silent dismiss.
-        .overlay(alignment: .top) {
-            if saveError {
-                Text("Couldn't save. Try again.")
-                    .font(LiquidType.cuerpoBanner)
-                    .foregroundStyle(theme.ink)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .patternBlock(theme, bar: theme.critical)
-                    .padding(.horizontal, 16)
-                    .transition(LiquidMotion.fallingFadeTransition)
-                    .task {
-                        try? await Task.sleep(for: .seconds(4))
-                        saveError = false
-                    }
-            }
-        }
-        .animation(StrandMotion.fade, value: saveError)
+        // FER-969 / FER-280·2c: write failure → `.saveErrorToast` (misma receta, un solo dialecto).
+        .saveErrorToast(isPresented: $saveError)
         .enableInjection()
     }
 

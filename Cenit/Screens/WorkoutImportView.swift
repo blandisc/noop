@@ -85,24 +85,9 @@ struct WorkoutImportView: View {
         // CONSERVAN el ✕ overlay (el stepper ya le cede el carril de 44 pt) — unificarlos en la
         // cabecera AÑADIRÍA título ahí o quitaría el carril del stepper (REGLA SUPREMA).
         .entrenarHojaFondo(tono: .neutro)
-        // FER-969: save failure is an inline banner (same pattern as WorkoutEditSheet). Parse errors keep
+        // FER-969 / FER-280·2c: save failure → `.saveErrorToast`. Parse errors keep
         // their existing `errorNote` path in capture; this is only the final write.
-        .overlay(alignment: .top) {
-            if saveError {
-                Text("Couldn't save. Try again.")
-                    .font(.system(size: 13))   // token-exempt: cuerpo de banner (13pt, igual que el mensaje de ConfirmCard)
-                    .foregroundStyle(theme.ink)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .patternBlock(theme, bar: theme.critical)
-                    .padding(.horizontal, CenitMetrics.cardPadding)
-                    .transition(LiquidMotion.fallingFadeTransition)
-                    .task {
-                        try? await Task.sleep(for: .seconds(4))
-                        saveError = false
-                    }
-            }
-        }
-        .animation(StrandMotion.fade, value: saveError)
+        .saveErrorToast(isPresented: $saveError)
         // FER-138 / FER-200: captura y confirmación llevan `EntrenarHojaCabecera`; este ✕ se queda
         // solo para mapeo y hecho (el stepper le cede el carril de 44 pt).
         .overlay(alignment: .topTrailing) {
