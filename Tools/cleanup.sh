@@ -89,6 +89,35 @@ done < <(git -C "$MAIN" worktree list --porcelain | awk '/^worktree /{wt=$2} /^b
 
 echo "worktrees: $podados podado(s), $conservados conservado(s)"
 
+# FER-277: ramas de origin cuyo PR ya está MERGED. El ajuste "Automatically
+# delete head branches" del repo cubre el camino normal (mergear por gh/UI);
+# esto es la red para lo que se coló antes de activarlo o se mergeó por otra
+# vía. Nunca se toca `iOS` ni una rama sin PR mergeado.
+if command -v gh >/dev/null 2>&1; then
+  ramas_borradas=0
+  ramas_detectadas=0
+  merged_refs="$(gh pr list --state merged --limit 500 --json headRefName --jq '.[].headRefName' 2>/dev/null || true)"
+  if [ -n "$merged_refs" ]; then
+    while read -r rama; do
+      { [ -z "$rama" ] || [ "$rama" = "iOS" ]; } && continue
+      if printf '%s\n' "$merged_refs" | grep -qxF "$rama"; then
+        ramas_detectadas=$((ramas_detectadas + 1))
+        echo "  RAMA REMOTA (PR mergeado): $rama"
+        if [ $APPLY -eq 1 ]; then
+          if git -C "$MAIN" push origin --delete "$rama" >/dev/null 2>&1; then
+            ramas_borradas=$((ramas_borradas + 1))
+          else
+            echo "    (no se pudo borrar $rama; se conserva)"
+          fi
+        fi
+      fi
+    done < <(git -C "$MAIN" for-each-ref --format='%(refname:short)' refs/remotes/origin | sed 's#^origin/##')
+  fi
+  echo "ramas remotas con PR mergeado: $ramas_borradas borrada(s), $ramas_detectadas detectada(s)"
+else
+  echo "  (gh no disponible; se omite la poda de ramas remotas con PR mergeado)"
+fi
+
 # Fósiles del rename Cénit: esas rutas ya no existen, es basura 100% segura.
 if compgen -G "$DD/Strand-*" >/dev/null; then
   echo "  DerivedData fósil pre-rename: $(compgen -G "$DD/Strand-*" | wc -l | tr -d ' ') carpeta(s)"
