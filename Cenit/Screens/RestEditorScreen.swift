@@ -153,7 +153,7 @@ struct RestEditorScreen: View {
     @ObserveInjection private var inject
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: LiquidSpace.seccionAire) {
                 // FER-198 (Ola 2): la cabecera de la familia El Eje absorbe el `header` a mano
                 // (BackButton) Y el `InstrumentoFlowTitle` de abajo — mismas DOS cadenas ya
                 // localizadas (título/overline), sin copy nueva. `Salida.cancelar` unifica el

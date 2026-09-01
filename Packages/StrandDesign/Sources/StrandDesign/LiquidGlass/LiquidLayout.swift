@@ -140,6 +140,22 @@ public enum LiquidSpace {
     /// separa las secciones internas de UN editor, no el padding de una tarjeta ni el aire de
     /// un estado vacío. CENSO «14» suelto, rol repetido (6 sitios, un solo archivo).
     public static let bloqueAjuste: CGFloat = 14
+
+    /// 20 — aire entre SECCIONES hermanas de una hoja/editor (el `spacing` del stack que separa
+    /// bloques completos, no filas). Rol distinto de `topeScroll` (mismo 20, otro papel: aquel es
+    /// padding contra el nav bar). Veredicto del dueño en FER-275 punto 3: los «20» depurados NO
+    /// eran colisión con la escala — son roles; se nombran, no se suben a s550. (WorkoutEditSheet,
+    /// RestEditorScreen, LiveStrengthSheet — 3 sitios.)
+    public static let seccionAire: CGFloat = 20
+
+    /// 20 — padding interior de una tarjeta AMPLIA (la tarjeta de compartir, la región de rutina):
+    /// más aire que `CenitMetrics.cardPadding` a propósito, porque la tarjeta es protagonista.
+    /// Mismo veredicto FER-275 punto 3. (ShareCardView, RoutineRegion+Tint — 2 sitios.)
+    public static let tarjetaAmplia: CGFloat = 20
+
+    /// 20 — padding HORIZONTAL de una pastilla/botón pill de hoja (con su vertical corto aparte).
+    /// Mismo veredicto FER-275 punto 3. (ManualWorkoutSheet — 2 sitios.)
+    public static let pastillaHorizontal: CGFloat = 20
 }
 
 // MARK: - Liquid Glass · Chip compacto (FER-273, CONTRATO.md — checklist Fase 1)

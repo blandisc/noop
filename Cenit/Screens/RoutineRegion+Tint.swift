@@ -51,7 +51,7 @@ extension Optional where Wrapped == RoutineRegion {
             Text("nil").font(StrandFont.caption).foregroundStyle(t.inkTertiary)
         }
     }
-    .padding(20)
+    .padding(LiquidSpace.tarjetaAmplia)
     .background(CenitColor.pantalla)
 }
 #endif

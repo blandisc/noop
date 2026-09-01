@@ -51,7 +51,7 @@ struct ShareCardView: View {
                     .padding(.top, 14)
             }
         }
-        .padding(20)
+        .padding(LiquidSpace.tarjetaAmplia)
         .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
     }

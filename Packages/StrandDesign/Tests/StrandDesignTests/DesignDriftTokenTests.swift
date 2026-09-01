@@ -204,5 +204,11 @@ final class InstrumentoCardRenderTests: XCTestCase {
             .padding(CenitMetrics.cardPadding)
             .instrumentoCard(r)
     }
+
+    // FER-275 punto 3 (veredicto del dueño: los «20» son roles, no colisión — cero pixel):
+    func test_fase1_rolesVeinteSonValorNeutral() {
+        XCTAssertEqual(LiquidSpace.seccionAire, 20)
+        XCTAssertEqual(LiquidSpace.tarjetaAmplia, 20)
+        XCTAssertEqual(LiquidSpace.pastillaHorizontal, 20)
+    }
 }
-#endif
