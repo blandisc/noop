@@ -13,8 +13,18 @@ import SwiftUI
 // glow, en tinta terciaria, sin acción. Con `a11yHint` la fila inerte DICE por qué no responde
 // («máximo 4 métricas»), que si no VoiceOver leería una fila apagada sin razón (TND30-7). El
 // `subtitle` es opcional — vacío no dibuja renglón.
+//
+// SLOT `accessory` (FER-280 · 1c, H1.4/clase 5): control a la derecha que NO es chevron/✓ —
+// un `Picker`, un botón «Deshacer», un ícono de acción. Al proveerlo, REEMPLAZA la afordancia
+// estándar (chevron/check) por completo: la fila deja de prometer navegación/selección y pasa
+// el control al caller, exactamente lo que Ajustes necesita para `sexRow`/`recalibrateRow` sin
+// clonar la geometría de la fila a mano.
+//
+// **Cuándo sí:** filas de lista Liquid con navegación (chevron), toggle (`seleccionado`) o un
+// control de acción propio (`accessory`). **Cuándo no:** un grid de tiles (usa
+// `LiquidMetricTile`); una fila fuera de una `LiquidListCard`/tarjeta de vidrio.
 
-public struct LiquidListRow: View {
+public struct LiquidListRow<Accessory: View>: View {
     private let title: String
     private let subtitle: String
     private let trailing: String?
@@ -29,10 +39,14 @@ public struct LiquidListRow: View {
     private let a11yHint: String?
     private let divider: Bool
     private let action: (() -> Void)?
+    /// Control de la derecha que sustituye chevron/✓ cuando el caller lo provee (`EmptyView`
+    /// por default = afordancia estándar sin cambios).
+    private let accessory: Accessory
 
     public init(title: String, subtitle: String = "", trailing: String? = nil, tone: Color? = nil,
                 seleccionado: Bool? = nil, deshabilitado: Bool = false, a11yHint: String? = nil,
-                divider: Bool = true, action: (() -> Void)? = nil) {
+                divider: Bool = true, action: (() -> Void)? = nil,
+                @ViewBuilder accessory: () -> Accessory = { EmptyView() }) {
         self.title = title
         self.subtitle = subtitle
         self.trailing = trailing
@@ -42,6 +56,7 @@ public struct LiquidListRow: View {
         self.a11yHint = a11yHint
         self.divider = divider
         self.action = action
+        self.accessory = accessory()
     }
 
     public var body: some View {
@@ -98,7 +113,7 @@ public struct LiquidListRow: View {
             if let trailing {
                 Text(trailing).font(LiquidType.unidadCompacta).foregroundStyle(LiquidColor.tinta500)
             }
-            afordanciaTrailing
+            trailingSlot
         }
         .padding(.vertical, 11)
         .padding(.horizontal, LiquidSpace.s100)
@@ -108,6 +123,16 @@ public struct LiquidListRow: View {
             }
         }
         .contentShape(Rectangle())
+    }
+
+    /// `accessory` (no-`EmptyView`) reemplaza por completo la afordancia estándar — la fila
+    /// deja de prometer chevron/✓ y pasa el control al caller.
+    @ViewBuilder private var trailingSlot: some View {
+        if Accessory.self == EmptyView.self {
+            afordanciaTrailing
+        } else {
+            accessory
+        }
     }
 
     @ViewBuilder private var afordanciaTrailing: some View {
@@ -185,6 +210,22 @@ public struct LiquidListCard<Content: View>: View {
         LiquidListCard {
             LiquidListRow(title: "Frecuencia cardiaca", subtitle: "Apple Watch",
                           tone: LiquidColor.rosa, divider: false, action: {})
+        }
+    }
+    .padding(LiquidSpace.s550)
+    .background(LiquidColor.papelGradient)
+}
+
+/// FER-280 · 1c (H1.4/clase 5): slot `accessory` — un control propio (aquí, un botón) en vez
+/// del chevron/✓ estándar, para que Ajustes deje de clonar la geometría de la fila a mano
+/// (`sexRow`/`recalibrateRow`).
+#Preview("Liquid · ListRow accessory") {
+    LiquidListCard {
+        LiquidListRow(title: "Recalibrar recuperación", subtitle: "Recalibrado el 10 jul 2026",
+                      divider: false) {
+            Button("Deshacer") {}
+                .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.negativo)
+                .buttonStyle(.plain)
         }
     }
     .padding(LiquidSpace.s550)
