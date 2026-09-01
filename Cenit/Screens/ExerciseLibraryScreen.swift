@@ -223,7 +223,7 @@ struct ExerciseLibraryScreen: View {
             }
             // «Con historial tuyo» — the exercises you've logged, first, each with its best mark + sparkline.
             if !mine.isEmpty {
-                InstrumentoSectionBand("With your history") {
+                LiquidSectionHeader("With your history") {
                     Text("Best mark").font(InstrumentoType.grotesk(11, weight: .semibold)).tracking(1.4)
                         .textCase(.uppercase).foregroundStyle(theme.inkTertiary)
                 }
@@ -236,7 +236,7 @@ struct ExerciseLibraryScreen: View {
             // «De la biblioteca» — catalog remainder, one overline section per primary muscle.
             if !rest.isEmpty {
                 ForEach(Array(libraryGroups.enumerated()), id: \.element.key) { index, group in
-                    InstrumentoSectionBand("\(group.key.isEmpty ? String(localized: "Other") : StrengthDisplay.muscle(group.key)) · \(String(localized: "FROM THE LIBRARY"))")
+                    LiquidSectionHeader("\(group.key.isEmpty ? String(localized: "Other") : StrengthDisplay.muscle(group.key)) · \(String(localized: "FROM THE LIBRARY"))")
                         .padding(.top, index == 0 && mine.isEmpty ? CenitMetrics.space1 : CenitMetrics.sectionGapCompact)
                         .padding(.bottom, CenitMetrics.space2)
                     ForEach(group.items) { ex in

@@ -444,7 +444,7 @@ struct WorkoutHistoryScreen: View {
         let strengthCount = base.filter(\.isStrength).count
         if !sports.isEmpty || strengthCount > 0 {
             VStack(alignment: .leading, spacing: CenitMetrics.space1) {
-                InstrumentoSectionBand("By sport")
+                LiquidSectionHeader("By sport")
                 if strengthCount > 0 {
                     porDeporteRow(symbol: "dumbbell.fill", name: String(localized: "Strength"),
                                   count: strengthCount) {
@@ -489,7 +489,7 @@ struct WorkoutHistoryScreen: View {
     /// contenedor `EntrenarHistorialLista` (separadores tinta7). El vacío dice que el periodo está vacío.
     private func todoTimeline(entries: [HistoryEntry]) -> some View {
         VStack(alignment: .leading, spacing: CenitMetrics.space1) {
-            InstrumentoSectionBand("Sessions") {
+            LiquidSectionHeader("Sessions") {
                 Text(verbatim: "\(entries.count)").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             }
             if entries.isEmpty {
@@ -591,7 +591,7 @@ struct WorkoutHistoryScreen: View {
     /// Split for type-check cost (FER-981): volume card + month tiles are separate ViewBuilders.
     private var tuMes: some View {
         VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-            InstrumentoSectionBand("Your month")
+            LiquidSectionHeader("Your month")
             tuMesVolumeCard
             tuMesMonthTiles
         }
@@ -741,7 +741,7 @@ struct WorkoutHistoryScreen: View {
             let weakest = sorted.last
             let maxV = max(sorted.first?.setsPerWeek ?? 1, 0.1)
             VStack(alignment: .leading, spacing: 9) {
-                InstrumentoSectionBand("Volume per muscle · 30 days") {
+                LiquidSectionHeader("Volume per muscle · 30 days") {
                     NavigationLink(value: MuscleVolumeRoute()) {
                         Text("See map").font(StrandFont.subhead).foregroundStyle(theme.ink)
                             .frame(minHeight: 44)   // toque 44 (HIG §8.7-4)
@@ -806,7 +806,7 @@ struct WorkoutHistoryScreen: View {
                 // «Ciclos de subida», no «Tu progresión» (FER-148, decisión del dueño): en esta misma
                 // pantalla vive «Progreso» (1RM por ejercicio, FER-136) y los dos nombres casi
                 // iguales nombraban cosas distintas — este es el plan de subida, aquel el marcador.
-                InstrumentoSectionBand("Raise cycles")
+                LiquidSectionHeader("Raise cycles")
                 ForEach(progressionRows) { row in
                     HStack(spacing: 10) {
                         Text(row.name)
@@ -852,7 +852,7 @@ struct WorkoutHistoryScreen: View {
     /// dibuja sus 91 celdas `.empty`) sin una rama aparte.
     private var sessionsSection: some View {
         VStack(alignment: .leading, spacing: CenitMetrics.space1) {
-            InstrumentoSectionBand("Sessions") {
+            LiquidSectionHeader("Sessions") {
                 Text(verbatim: "\(String(localized: "Effort")) /21")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
             }
@@ -1048,7 +1048,7 @@ struct WorkoutHistoryScreen: View {
 
     private var savedTicketsEntry: some View {
         VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-            InstrumentoSectionBand("My saved tickets")
+            LiquidSectionHeader("My saved tickets")
             NavigationLink(value: SavedTicketsRoute()) {
                 EntrenarModulo(tono: .neutro) {
                     HStack(spacing: CenitMetrics.gap) {
@@ -1104,7 +1104,7 @@ struct WorkoutHistoryScreen: View {
     @ViewBuilder private var progressSection: some View {
         if !progressExercises.isEmpty {
             VStack(alignment: .leading, spacing: 0) {
-                InstrumentoSectionBand("Progress") {
+                LiquidSectionHeader("Progress") {
                     Text("per exercise").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 }
                 ForEach(progressExercises) { row in
