@@ -50,6 +50,10 @@ jobs:
         run: python3 -m unittest discover -s Tools/tests -p 'test_*.py'
       - name: Design-drift linter — no spacing/stroke literal, ratchet (FER-258/263)
         run: python3 Tools/check-design-drift.py --rules no-spacing-literal --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App
+      - name: Design-drift linter — no motion literal, ratchet (FER-269)
+        run: python3 Tools/check-design-drift.py --rules no-motion-literal --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App
+      - name: Oráculo de Dynamic Type — solo el cap bendecido (FER-269/FER-118)
+        run: python3 Tools/check-design-drift.py --rules no-dt-cap-adhoc Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media CenitWidgets CenitWatch
       - name: Design-drift linter — no legacy API, ratchet (FER-263)
         run: python3 Tools/check-design-drift.py --rules no-legacy-api --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media
       - name: Design-drift linter — token-exempt es deuda, ratchet (FER-263)
