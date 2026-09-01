@@ -359,7 +359,7 @@ struct ChangeExerciseSheet: View {
                         .padding(.top, CenitMetrics.space2)
                 }
                 .padding(.horizontal, CenitMetrics.screenPadding)
-                .padding(.vertical, 16)  // token-exempt: sin token exacto en mapa FER-207 (cardPadding candidato)
+                .padding(.vertical, CenitMetrics.cardPadding)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .navigationTitle(Text("Change \(run.name)"))
