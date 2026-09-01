@@ -71,7 +71,7 @@ public struct ExerciseThumbnail: View {
             } else {
                 // El Eje («Un solo vidrio»): el marco de media reservado deja el gradiente de papel
                 // (`hairline → hairlineStrong`) por la superficie de vidrio del sistema.
-                Color.clear.liquidGlass(.superficie)
+                Color.clear.liquidGlass(.superficie)   // token-exempt: migración El Eje (#1379) — el marco de media es vidrio a propósito; #1379 y el gate (#1376) se cruzaron en vuelo y iOS quedó en rojo
             }
         }
         .modifier(FrameForForm(form: form))
