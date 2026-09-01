@@ -71,21 +71,21 @@ jobs:
         env:
           BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: |
-          # La punta ACTUAL de la rama base — no base.sha, que es una foto de cuando se abrió el
-          # PR y se queda stale cuando la base avanza (FER-276: dejaba corriendo un guardián viejo).
+          # La punta ACTUAL de la rama base vía FETCH_HEAD — no base.sha (foto stale al abrirse el
+          # PR) y no origin/$BASE_REF (checkout@v4 restringe el refspec y ese ref NO se crea: el
+          # primer intento falló en silencio y el job aprobó con base vacía + guardián del PR — el
+          # hoyo exacto que este job existe para cerrar). Sin fallbacks: si algo falla, FALLA.
           git fetch --depth=1 origin "$BASE_REF"
-          git show "origin/$BASE_REF:Tools/design-drift-baseline.json" > /tmp/base.json || echo '{}' > /tmp/base.json
+          git show "FETCH_HEAD:Tools/design-drift-baseline.json" > /tmp/base.json
           # El guardia se ejecuta desde la BASE, no desde el PR: un PR no puede traer su propio
-          # check-baseline-monotony.py parchado (Grok r1 #2). Fallback al del PR solo mientras el
-          # script aún no exista en iOS (primer aterrizaje).
-          git show "origin/$BASE_REF:Tools/check-baseline-monotony.py" > /tmp/check-monotony.py \
-            || cp Tools/check-baseline-monotony.py /tmp/check-monotony.py
+          # check-baseline-monotony.py parchado (Grok r1 #2).
+          git show "FETCH_HEAD:Tools/check-baseline-monotony.py" > /tmp/check-monotony.py
       - name: El baseline solo baja
         env:
           PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
         run: |
           # diff de dos puntos (no tres): el checkout es shallow y HEAD ya es el merge del PR
-          # sobre la punta ACTUAL de la base — misma referencia que el guardia de arriba.
-          DIFF_FILES=$(git diff --name-only "origin/${{ github.event.pull_request.base.ref }}" HEAD | tr '\n' ',')
+          # sobre la punta ACTUAL de la base — misma referencia (FETCH_HEAD) que el guardia.
+          DIFF_FILES=$(git diff --name-only FETCH_HEAD HEAD | tr '\n' ',')
           python3 /tmp/check-monotony.py /tmp/base.json Tools/design-drift-baseline.json \
             --labels "$PR_LABELS" --diff-files "$DIFF_FILES"
