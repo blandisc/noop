@@ -213,16 +213,8 @@ struct StarterTemplatesSheet: View {
 
             if !isGroupMode {
                 VStack(spacing: 10) {
-                    Button { add(t) } label: {
-                        Text("Add to my routines")
-                            .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
-                            .foregroundStyle(theme.paper)
-                            .frame(maxWidth: .infinity).padding(.vertical, LiquidSpace.ctaVertical)
-                            .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(saving)
-                    .opacity(saving ? 0.6 : 1)
+                    StrandCTAButton("Add to my routines") { add(t) }
+                        .disabled(saving)
 
                     Text("It's copied into «My routines». You can edit it like any routine.")
                         .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
@@ -237,17 +229,9 @@ struct StarterTemplatesSheet: View {
     /// CTA de modo grupo (FER-251): aplica el programa entero + agenda, no una sola rutina.
     private var useThisPlanFooter: some View {
         VStack(spacing: 10) {
-            Button { applyTemplateGroup() } label: {
-                Text("Use this plan")
-                    .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)
-                    .foregroundStyle(theme.paper)
-                    .frame(maxWidth: .infinity).padding(.vertical, LiquidSpace.ctaVertical)
-                    .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
-            }
-            .buttonStyle(.plain)
-            .disabled(saving)
-            .opacity(saving ? 0.6 : 1)
-            .accessibilityHint(Text("Choosing a template creates its routines and your week is set; you can always edit it later, day by day."))
+            StrandCTAButton("Use this plan") { applyTemplateGroup() }
+                .disabled(saving)
+                .accessibilityHint(Text("Choosing a template creates its routines and your week is set; you can always edit it later, day by day."))
 
             Text("Choosing a template creates its routines and your week is set; you can always edit it later, day by day.")
                 .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
