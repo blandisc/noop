@@ -51,13 +51,37 @@ run_lint() {
     if [ -n "$screens" ]; then
       # shellcheck disable=SC2086
       python3 Tools/check-design-drift.py --rules no-adhoc-font,no-radius-literal,no-opacity-literal $screens || ok=1
+      # FER-264: emdash corre en CI desde FER-879 pero faltaba aquí — verde local ≠ verde CI.
+      # shellcheck disable=SC2086
+      python3 Tools/check-design-drift.py --rules no-emdash-string $screens || ok=1
     fi
-    # FER-258: espaciado/trazo literal, con trinquete — la deuda vieja pasa, una más no.
+    screens_only=$(printf '%s\n' $files | grep -E '^Cenit/Screens/' || true)
+    if [ -n "$screens_only" ]; then
+      # shellcheck disable=SC2086
+      python3 Tools/check-design-drift.py --rules no-raw-shadow $screens_only || ok=1
+    fi
+    # shellcheck disable=SC2086
+    python3 Tools/check-design-drift.py --rules no-sheet-glass $files || ok=1
+    # FER-258/263: trinquetes de árbol (el presupuesto es POR ARCHIVO; hay que medir el árbol entero).
     if [ -f Tools/design-drift-baseline.json ]; then
       python3 Tools/check-design-drift.py --rules no-spacing-literal \
-        --baseline Tools/design-drift-baseline.json Cenit/Screens || ok=1
+        --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App || ok=1
+      python3 Tools/check-design-drift.py --rules no-legacy-api \
+        --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media || ok=1
+      python3 Tools/check-design-drift.py --rules token-exempt \
+        --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media Packages/StrandDesign/Sources || ok=1
+      # FER-264 espejo local del job de monotonía: el baseline solo baja respecto a origin/iOS.
+      # El PR de alta legal corre con CENIT_BASELINE_ALTA=1 (ver docs/design-system/CONTRATO.md).
+      if [ "${CENIT_BASELINE_ALTA:-0}" != "1" ] && [ -f Tools/check-baseline-monotony.py ] \
+         && git rev-parse --verify -q origin/iOS >/dev/null; then
+        base_json=$(mktemp)
+        if git show origin/iOS:Tools/design-drift-baseline.json > "$base_json" 2>/dev/null; then
+          python3 Tools/check-baseline-monotony.py "$base_json" Tools/design-drift-baseline.json || ok=1
+        fi
+        rm -f "$base_json"
+      fi
     fi
-    [ "$ok" -ne 0 ] && fail "deriva del sistema de diseño (token de StrandDesign o « // token-exempt: <motivo> »)."
+    [ "$ok" -ne 0 ] && fail "deriva del sistema de diseño (token de StrandDesign o « // token-exempt(<categoria>): <motivo> »)."
   fi
   if changed_files | grep -qE 'Localizable\.xcstrings$' && [ -f Tools/check-xcstrings-cycles.py ]; then
     python3 Tools/check-xcstrings-cycles.py || fail "ciclo en un String Catalog (FER-395)."

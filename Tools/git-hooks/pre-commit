@@ -28,12 +28,23 @@ if [ -n "$swift_staged" ] && [ -f "$root/Tools/check-design-drift.py" ]; then
   screens_staged=$(printf '%s\n' $swift_staged | grep -E '^Cenit/(Screens|Onboarding)/')
   if [ -n "$screens_staged" ]; then
     python3 "$root/Tools/check-design-drift.py" --rules no-adhoc-font,no-radius-literal,no-opacity-literal $screens_staged || fail=1
+    # FER-264: alineado con CI (emdash corre allá desde FER-879).
+    python3 "$root/Tools/check-design-drift.py" --rules no-emdash-string $screens_staged || fail=1
   fi
-  # FER-258: espaciado/trazo literal con trinquete — se mide el árbol entero contra la línea base,
-  # porque el presupuesto es POR ARCHIVO y sólo así se ve una literal de más.
+  screens_only_staged=$(printf '%s\n' $swift_staged | grep -E '^Cenit/Screens/')
+  if [ -n "$screens_only_staged" ]; then
+    python3 "$root/Tools/check-design-drift.py" --rules no-raw-shadow $screens_only_staged || fail=1
+  fi
+  python3 "$root/Tools/check-design-drift.py" --rules no-sheet-glass $swift_staged || fail=1
+  # FER-258/263: trinquetes de árbol — el presupuesto es POR ARCHIVO y sólo midiendo el árbol
+  # entero se ve una literal / call-site legacy / exención de más.
   if [ -f "$root/Tools/design-drift-baseline.json" ]; then
     (cd "$root" && python3 Tools/check-design-drift.py --rules no-spacing-literal \
-      --baseline Tools/design-drift-baseline.json Cenit/Screens) || fail=1
+      --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App) || fail=1
+    (cd "$root" && python3 Tools/check-design-drift.py --rules no-legacy-api \
+      --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media) || fail=1
+    (cd "$root" && python3 Tools/check-design-drift.py --rules token-exempt \
+      --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media Packages/StrandDesign/Sources) || fail=1
   fi
   if [ "$fail" -ne 0 ]; then
     echo ""
