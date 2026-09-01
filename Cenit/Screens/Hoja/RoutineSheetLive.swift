@@ -49,6 +49,14 @@ struct HojaSesionViva: View {
 
     // MARK: R16/B11 · destello de récord
     @State var personalRecords: [String: [PRMetric: PersonalRecord]] = [:]
+    /// Nancy · ronda 1: `loadPersonalRecords()` es `async` y arranca en `.task`, así que hasta que
+    /// termina `personalRecords` está VACÍO — y un diccionario vacío hacía que TODA serie palomeada
+    /// en esos primeros instantes destellara «RÉCORD». El destello espera a que los PR estén cargados.
+    ///
+    /// Nancy · ronda 2: y por EJERCICIO, no una bandera global. Con un solo `Bool`, un movimiento
+    /// agregado o sustituido a media sesión —cuyos PR nunca se consultaron— quedaba indistinguible de
+    /// «no tiene marca previa», así que un récord REAL no destellaba nunca en esa sesión.
+    @State var personalRecordsLoadedFor: Set<String> = []
     @State var prFlash: PRFlash?
 
     // MARK: B10 · guard de captura absurda (FER-169)
@@ -82,6 +90,11 @@ struct HojaSesionViva: View {
     @State var menuExerciseIndex: Int?
     /// R8: el «robo» de superserie pide confirmar antes de deshacer la pareja del vecino.
     @State var confirmSupersetSteal: Int?
+    /// Nancy · ronda 1 (BLOQUEANTE): «Quitar de la sesión» borraba el run COMPLETO —con sus series
+    /// ya palomeadas— de un solo tap y sin vuelta atrás. Cuando el ejercicio tiene trabajo real
+    /// registrado, primero pregunta. Por `run.id` (regla dura), nunca por índice: B8 puede reordenar
+    /// mientras la pregunta está en pantalla.
+    @State var confirmRemoveRunId: String?
 
     // MARK: Modo foco (FER-170 · F5, épico FER-165) — expansión de la tarjeta activa, DENTRO de
     // esta misma vista (ya no una instancia efímera de `LiveStrengthSheet`). `focoNS` amarra la
@@ -151,7 +164,9 @@ struct HojaSesionViva: View {
         // no-op mientras no hay `restEndsAt` fijo en vuelo (ver `RestAutoSkipModifier`).
         .modifier(restAutoSkipModifier())
         .task(id: session.routineId) { await loadRoutineREs() }
-        .task { await loadPersonalRecords() }   // R16
+        // R16 · Nancy ronda 2: se re-dispara cuando cambia el elenco de ejercicios (B8 «Agregar»,
+        // «Sustituir», o una restauración post-crash), para traer los PR del movimiento nuevo.
+        .task(id: session.runs.map(\.exerciseId).joined(separator: "|")) { await loadPersonalRecords() }
         .saveErrorToast(isPresented: $routineWriteError)   // B8: falló persistir a la rutina (no la sesión)
         .onChange(of: session.phase) { previous, phase in
             // FER-250 / FER-257 D2: al salir del primer descanso caído a reloj, bloquea el aviso
@@ -309,6 +324,17 @@ struct HojaSesionViva: View {
             actions: [
                 .init(String(localized: "Save to the routine"), role: .primary) { finishAndSaveRoutineChanges() },
                 .init(String(localized: "Just for today"), role: .secondary) { finishWithoutSavingRoutineChanges() }
+            ]
+        )
+        // Nancy · ronda 1: confirma antes de tirar un ejercicio que YA tiene series hechas.
+        .instrumentoConfirm(
+            isPresented: Binding(get: { confirmRemoveRunId != nil }, set: { if !$0 { confirmRemoveRunId = nil } }),
+            title: String(localized: "Remove it with its logged sets?"),
+            context: String(localized: "SESSION · IN PROGRESS"),
+            message: removeExerciseMessage,
+            actions: [
+                .init(String(localized: "Keep it"), role: .primary),
+                .init(String(localized: "Remove anyway"), role: .destructive) { confirmRemoveExercise() }
             ]
         )
         // R8: confirma antes de robarle la pareja de superserie al vecino — misma clave que F1.

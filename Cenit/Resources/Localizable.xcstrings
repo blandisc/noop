@@ -31160,6 +31160,100 @@
         }
       }
     },
+    "%@ already has %lld logged sets. Removing it deletes them from this workout." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ already has %2$#@series@. Removing it deletes them from this workout."
+          },
+          "substitutions" : {
+            "series" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg logged set"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg logged sets"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ ya tiene %2$#@series@. Si lo quitas, se borran de este entrenamiento."
+          },
+          "substitutions" : {
+            "series" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg serie hecha"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg series hechas"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Keep it" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dejarlo"
+          }
+        }
+      }
+    },
+    "Remove anyway" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quitarlo de todos modos"
+          }
+        }
+      }
+    },
+    "Remove it with its logged sets?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Lo quito con sus series hechas?"
+          }
+        }
+      }
+    },
     "Pair here" : {
       "extractionState" : "manual",
       "localizations" : {

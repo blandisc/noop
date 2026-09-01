@@ -299,8 +299,16 @@ extension AppModel {
                                  hasLivePulse: watchBpm != nil)
         case .finishWorkout:
             // Last set of the routine: log it, then end the session (which ends the Live Activity).
-            s.registerCurrentSet(restingHR: restingHrBaseline, maxHR: Double(profile.hrMax),
-                                 hasLivePulse: watchBpm != nil)
+            // Nancy · ronda 3: la tarjeta promete «registrar y terminar», pero desde la pantalla
+            // bloqueada no hay dónde escribir un número que falte. Si la serie enfocada no es
+            // registrable (peso×reps sin repeticiones — hoy inalcanzable desde la UI, pero puede
+            // llegar en un snapshot restaurado o una rutina vieja con `targetReps` 0), el acta se
+            // cierra con lo que de verdad se hizo: la serie se queda PENDIENTE en vez de guardarse
+            // como trabajo de volumen cero. Terminar nunca se bloquea; el acta nunca miente.
+            if s.canRegisterCurrentSet {
+                s.registerCurrentSet(restingHR: restingHrBaseline, maxHR: Double(profile.hrMax),
+                                     hasLivePulse: watchBpm != nil)
+            }
             endStrengthSession(save: true)
         case .addThirty:
             guard s.phase == .resting, !s.paused else { return }

@@ -167,7 +167,13 @@ struct CenitApp: App {
                 // Stop the analysis sequence while NOOP is off screen, so the band-mode periodic recompute
                 // doesn't compete with BLE keep-alive / backfill on the main actor (FER-177).
                 model.stopAnalysis()
+                model.scheduleInProgressPersist(immediate: true)
             case .inactive:
+                // Nancy · ronda 1: el snapshot anti-crash de la sesión viva (FER-798) solo se escribía
+                // con 1 s de debounce, así que matar la app desde el selector —o que iOS la mate en
+                // segundo plano— perdía las últimas capturas. `.inactive` es la PRIMERA señal antes de
+                // ese cierre, así que aquí se fuerza el vaciado; es un no-op sin sesión viva.
+                model.scheduleInProgressPersist(immediate: true)
                 break   // transient (app switcher, Control Center) — keep the loop alive
             @unknown default:
                 break
