@@ -166,6 +166,18 @@ final class DesignDriftTokenTests: XCTestCase {
         )
     }
 
+    // FER-280·3b: puente valor-neutral CenitMetrics → escala Liquid (paridad congelada).
+    func test_cenitMetricsLiquidScaleParityFrozen() {
+        XCTAssertEqual(CenitMetrics.space1, 4)
+        XCTAssertEqual(CenitMetrics.space2, 8)
+        XCTAssertEqual(CenitMetrics.gap, 12)
+        XCTAssertEqual(CenitMetrics.cardPadding, 16)
+        XCTAssertEqual(CenitMetrics.screenPadding, 24)
+        XCTAssertEqual(CenitMetrics.controlRadius, 12)
+        XCTAssertEqual(CenitMetrics.chipRadius, 8)
+        XCTAssertEqual(CenitMetrics.touchTarget, 44)
+    }
+
     // Transiciones nuevas: cada receta debe describir EXACTAMENTE igual que el `AnyTransition`
     // crudo que envuelve.
     func test_movimientoTransicionesMatchRawEquivalents() {
