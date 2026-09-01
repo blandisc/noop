@@ -87,6 +87,22 @@ class LegacyApiRule(unittest.TestCase):
             hits = drift.check([src], ["no-legacy-api"])
             self.assertEqual(len(hits), 1)
 
+    def test_comment_line_is_not_a_hit(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src = _swift(tmp, "Cenit/Screens/X.swift", [
+                "// let t = InstrumentoTheme.base  (histórico, solo comentario)",
+                "/* PaperMenu también vivía aquí */",
+            ])
+            self.assertEqual(drift.check([src], ["no-legacy-api"]), [])
+
+    def test_file_outside_scanned_roots_is_not_walked(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            _swift(tmp, "CenitWidgets/RestLiveActivity.swift", ["let t = InstrumentoTheme.base"])
+            gated = os.path.join(tmp, "Cenit", "Screens")
+            os.makedirs(gated, exist_ok=True)
+            self.assertEqual(drift.check([gated], ["no-legacy-api"]), [],
+                             "un archivo fuera de las raíces pasadas no se escanea (carve-out FER-219)")
+
 
 class TokenExemptPseudoRule(unittest.TestCase):
     def test_counts_both_annotation_forms_and_silences_other_rules(self):

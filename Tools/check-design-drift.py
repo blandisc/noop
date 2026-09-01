@@ -249,8 +249,19 @@ def main(argv):
             return 2
         hits, stale = apply_baseline(hits, {r: v for r, v in baseline.items() if r in rules})
     if hits:
-        print("❌ design-system drift — promote the value to a StrandDesign token, "
-              "or annotate the line with `// token-exempt: <reason>`:")
+        # The remedy depends on the rule (FER-263): suggesting a token for a legacy call-site, or an
+        # exemption for an over-budget exemption, would prescribe exactly the wrong medicine.
+        rules_hit = {r for _p, _i, r, _s in hits}
+        print("❌ design-system drift:")
+        if rules_hit - {"no-legacy-api", "token-exempt"}:
+            print("   → promote the value to a StrandDesign token, "
+                  "or annotate the line with `// token-exempt(<categoria>): <reason>`")
+        if "no-legacy-api" in rules_hit:
+            print("   → no-legacy-api: API de una generación retirada — "
+                  "la pieza vigente está en docs/design-system/CATALOGO.md")
+        if "token-exempt" in rules_hit:
+            print("   → token-exempt: una exención nueva es deuda congelada — "
+                  "el alta legal va por carve-out o issue dedicado (docs/design-system/CONTRATO.md)")
         for path, i, rule, snippet in hits:
             print(f"   {path}:{i}: {rule} — {snippet}")
         if baseline_path:
