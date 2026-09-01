@@ -206,7 +206,7 @@ struct RestEditorScreen: View {
     private var marginTargetBpm: Int? { restingHR.map { Int($0.rounded()) + margin } }
 
     private var hrSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: LiquidSpace.bloqueAjuste) {
             Text("Rest ends when your pulse drops to the threshold. The phone buzzes when you're ready.")
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary).fixedSize(horizontal: false, vertical: true)
             // Owner call 2026-07-15: your OWN resting HR named up front — the anchor every margin
@@ -259,7 +259,7 @@ struct RestEditorScreen: View {
         // Handoff (verificado 2026-07-16): overline «DESCANSA HASTA», el bpm resultante como numeral
         // dominante, la ARITMÉTICA dicha completa («reposo 58 + margen 20 bpm») y el slider con sus
         // puntas «+5 exigente / +30 suave» — los presets salieron (el handoff no los trae).
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: LiquidSpace.bloqueAjuste) {
             VStack(alignment: .center, spacing: 4) {
                 Text("Rest down to").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -290,7 +290,7 @@ struct RestEditorScreen: View {
     private var reserveBody: some View {
         // Misma anatomía del handoff que el margen: el bpm en el que ACABAS como numeral, la
         // aritmética dicha, y las puntas del slider con su valencia.
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: LiquidSpace.bloqueAjuste) {
             VStack(alignment: .center, spacing: 4) {
                 Text("Rest down to").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -317,7 +317,7 @@ struct RestEditorScreen: View {
     /// no en vivo), así que `peakHR` siempre es `nil` aquí: el preview es siempre solo-porcentaje,
     /// igual que Karvonen sin perfil de FC.
     private var peakDropBody: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: LiquidSpace.bloqueAjuste) {
             VStack(alignment: .center, spacing: 4) {
                 Text("Rest down to").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -342,7 +342,7 @@ struct RestEditorScreen: View {
     /// y formateado por `RoutineSetEditing.restChipLabel` (`HR · N bpm`), pero invisible en esta hoja
     /// hasta esta fase.
     private var fixedBpmBody: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: LiquidSpace.bloqueAjuste) {
             VStack(alignment: .center, spacing: 4) {
                 Text("Rest down to").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -367,7 +367,7 @@ struct RestEditorScreen: View {
     // MARK: Time mode
 
     private var timeSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: LiquidSpace.bloqueAjuste) {
             HStack(spacing: 16) {
                 stepper("minus") { seconds = max(0, seconds - 15) }
                 Text(Self.clock(seconds)).groteskSheetNumeral().monospacedDigit().foregroundStyle(theme.ink)

@@ -113,6 +113,33 @@ public enum LiquidSpace {
     /// pero es OTRO rol — un espaciado de layout entre lecturas, no un objetivo de toque —
     /// y por eso lleva nombre propio en vez de reusar `hitTarget`. CENSO «44 del handoff».
     public static let handoff44: CGFloat = 44
+
+    // MARK: - Lote Uno (FER-275, aprobación del dueño 2026-09-01) — piezas nuevas
+
+    /// 20 — tope de scroll: el padding superior de un `ScrollView` cuando debe quedar
+    /// DELIBERADAMENTE menor que `CenitMetrics.screenPadding` (24) para acercar el contenido
+    /// al nav bar. CENSO «sin token exacto» (TrainingBodyScreen, WorkoutHistoryScreen,
+    /// SavedTicketsScreen — 6 sitios).
+    public static let topeScroll: CGFloat = 20
+
+    /// 15 — respiro vertical de un CTA ancho (`.frame(maxWidth: .infinity)`) cuando no lleva
+    /// el padding vertical de un botón normal. CENSO «sin token exacto» (PlatesScreen,
+    /// StarterTemplatesSheet, CuerpoView, LiveStrengthSheet — 6 sitios).
+    public static let ctaVertical: CGFloat = 15
+
+    /// 14 — aire vertical entre icono, título y subtítulo de un estado vacío/terminal (la
+    /// tarjeta «Nothing to save» del descarte de sesión, el estado vacío del mapa muscular).
+    /// Rol distinto de `handoff14` (padding de tarjeta/control chico): aquí es el `spacing`
+    /// del `VStack` que apila las tres piezas del estado, no un padding. CENSO «14» suelto,
+    /// rol repetido (2 sitios: LiveStrengthSheet, TrainingBodyScreen).
+    public static let estadoVacioAire: CGFloat = 14
+
+    /// 14 — respiro vertical entre bloques de un editor de ajuste (margen/reserva/zona de
+    /// `RestEditorScreen`: el bloque del numeral resultante, el slider, las puntas). Rol
+    /// distinto de `handoff14` y de `estadoVacioAire`: es el `spacing` del `VStack` que
+    /// separa las secciones internas de UN editor, no el padding de una tarjeta ni el aire de
+    /// un estado vacío. CENSO «14» suelto, rol repetido (6 sitios, un solo archivo).
+    public static let bloqueAjuste: CGFloat = 14
 }
 
 // MARK: - Liquid Glass · Chip compacto (FER-273, CONTRATO.md — checklist Fase 1)
@@ -133,6 +160,11 @@ public enum LiquidRadius {
     /// 0.5 — hairline: el redondeo mínimo de un trazo de 1 pt (el capilar divisor) para que no
     /// se lea como un pixel cuadrado. No es un radio de layout — es antialiasing de trazo (FER-31).
     public static let hairline: CGFloat = 0.5
+    /// 8 — badge chico del handoff (record de historial). CENSO «radio 7 del handoff»: pixel
+    /// aprobado por el dueño en preview (FER-275, 2026-09-01) — el 7 original no igualaba
+    /// ningún token; el dueño aprobó subirlo a 8 para que caiga en la escala en vez de
+    /// quedarse suelto.
+    public static let chip: CGFloat = 8
     /// 12 — swatches, chips de día, inputs.
     public static let control: CGFloat = 12
     /// 18 — tiles, tarjetas, contenedores de lista.

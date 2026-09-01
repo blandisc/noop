@@ -68,7 +68,7 @@ struct SavedTicketsScreen: View {
                     }
                 }
             }
-            .padding(.top, 20)
+            .padding(.top, LiquidSpace.topeScroll)
             .padding(.horizontal, CenitMetrics.screenPadding)
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)

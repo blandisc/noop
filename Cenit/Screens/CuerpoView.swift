@@ -1205,7 +1205,7 @@ private struct CuerpoLanding: View {
                 Spacer(minLength: LiquidSpace.s200)
                 LiquidIcon(.chevron, size: 12, color: LiquidColor.tinta500)
             }
-            .padding(.horizontal, LiquidSpace.s400).padding(.vertical, 15)
+            .padding(.horizontal, LiquidSpace.s400).padding(.vertical, LiquidSpace.ctaVertical)
             .contentShape(Rectangle())
         }
         .buttonStyle(.liquidPress)

@@ -180,7 +180,7 @@ struct TrainingBodyScreen: View {
                 }
             }
             .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.top, 20)  // token-exempt(optico): tope de scroll deliberadamente menor que screenPadding (24) para acercar el contenido al nav bar — sin paso exacto en LiquidSpace/CenitMetrics
+            .padding(.top, LiquidSpace.topeScroll)
             .padding(.bottom, CenitMetrics.screenPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -393,7 +393,7 @@ struct TrainingBodyScreen: View {
                 Text("Mark all recovered").font(StrandFont.caption)
             }
             .foregroundStyle(theme.inkSecondary)
-            .padding(.horizontal, 14).padding(.vertical, CenitMetrics.space2)  // token-exempt: 14 del handoff
+            .padding(.horizontal, LiquidSpace.handoff14).padding(.vertical, CenitMetrics.space2)
             .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
         }
         .buttonStyle(.plain)
@@ -586,7 +586,7 @@ struct TrainingBodyScreen: View {
     // MARK: - Empty
 
     private var emptyState: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: LiquidSpace.estadoVacioAire) {
             AnatomyBaseShape()
                 .stroke(theme.hairline, lineWidth: 1.2)
                 .aspectRatio(200.0 / 430.0, contentMode: .fit)
@@ -667,14 +667,14 @@ struct TrainingBodyScreen: View {
             volumeSpanPicker
                 .padding(.top, CenitMetrics.gap)
             if volumes.isEmpty {
-                volumeEmptyState.padding(.top, 20)  // token-exempt(optico): aire entre el picker de rango y el estado vacío de volumen, mayor que gap (12) para dar espacio al icono — sin paso exacto
+                volumeEmptyState.padding(.top, LiquidSpace.topeScroll)
             } else {
                 volumeRows.padding(.top, LiquidSpace.s150)
                 volumeRailAxisMarks.padding(.top, CenitMetrics.space1)
                 volumeInsightLine.padding(.top, CenitMetrics.gap)
             }
         }
-        .padding(.top, 20)  // token-exempt(optico): aire bajo el separador que abre la sección de volumen — mismo valor que el tope de scroll de la pantalla (línea 183), sin paso exacto en la escala
+        .padding(.top, LiquidSpace.topeScroll)
         .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 1) }
     }
 
