@@ -1,0 +1,842 @@
+[
+  {
+    "file": "CenitWidgets/RestLiveActivity.swift",
+    "line": 401,
+    "snippet": "Text(String(localized: \"Open Cénit to continue\"))                 .font(.system(size: M.pillLabel, weight: .semibold)...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/ExerciseDetailScreen.swift",
+    "line": 318,
+    "snippet": "RoundedRectangle(cornerRadius: 3, style: .continuous)  // token-exempt: geometría del punto de familia (8×8)         ...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/CuerpoView.swift",
+    "line": 903,
+    "snippet": "Capsule().fill(LiquidColor.tinta10)                 .frame(width: 132, height: 6)                 .overlay(alignment:...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Hoy/HojaDecideTuDia.swift",
+    "line": 15,
+    "snippet": "VStack(alignment: .leading, spacing: 0) {             Text(String(localized: \"manual.deciden.titulo\",                ...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Hoja/RoutineSheetLiveTarjeta.swift",
+    "line": 306,
+    "snippet": "EntrenarModulo(tono: .indigo) {             HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s250) {       ...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Hoja/RoutineSheetLiveFoco.swift",
+    "line": 436,
+    "snippet": "VStack(spacing: 0) {                 Spacer(minLength: 0)                 Circle().fill(LiquidColor.verdePrimario)   ...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/ExerciseLibraryScreen.swift",
+    "line": 367,
+    "snippet": "Text(\"Add\").font(InstrumentoType.grotesk(13, weight: .semibold)).foregroundStyle(theme.ink)                          ...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/ExerciseDetailScreen.swift",
+    "line": 247,
+    "snippet": "ZStack {                     ExerciseThumbnail(hero: nil)                     if loadingMedia { ProgressView().tint(t...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/WorkoutHistoryScreen.swift",
+    "line": 779,
+    "snippet": "Capsule()                                         .fill(v.setsPerWeek <= 0 ? theme.hairlineStrong : muscleTint(v.musc...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Entrenar/EntrenarHubMarcasVolumen.swift",
+    "line": 109,
+    "snippet": "ForEach(Array(v.bars.enumerated()), id: \\.offset) { i, h in                         let esActual = i == v.accentIndex...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/WorkoutImportView.swift",
+    "line": 321,
+    "snippet": "HStack(spacing: CenitMetrics.space2) {                     // Handoff: el match como pill verde lavada — el veredicto...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/StarterTemplatesSheet.swift",
+    "line": 215,
+    "snippet": "VStack(spacing: 10) {                     Button { add(t) } label: {                         Text(\"Add to my routines...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/CuerpoView.swift",
+    "line": 1683,
+    "snippet": "content             .padding(.horizontal, LiquidSpace.s550)             .padding(.vertical, LiquidSpace.s400)        ...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/CuerpoView.swift",
+    "line": 1171,
+    "snippet": "HStack(spacing: LiquidSpace.s200) {                     LiquidIcon(.corazon, size: 17, color: LiquidColor.azul)      ...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Entrenar/EntrenarHubPar.swift",
+    "line": 130,
+    "snippet": "ZStack(alignment: .leading) {                 Capsule().fill(LiquidColor.tinta900.opacity(EntrenarHubMetrics.vbarsEmp...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Hoja/RoutineSheetLiveFoco.swift",
+    "line": 400,
+    "snippet": "Text(verbatim: label)             .font(InstrumentoType.grotesk(10, weight: .semibold)).tracking(0.6).textCase(.upper...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Hoja/RoutineSheetLiveLogic.swift",
+    "line": 701,
+    "snippet": "Button { openRestEditor(ei: ei) } label: {                     Label(\"Change rest\", systemImage: \"pencil\").font(Stran...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/WeeklyPlanEditorView.swift",
+    "line": 678,
+    "snippet": "RoutineRegionGlyph(glyphKind(r), tint: routineTint(r))                             .frame(width: 22, height: 22)     ...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/WorkoutImportView.swift",
+    "line": 389,
+    "snippet": "Button(action: action) {             Text(title).font(InstrumentoType.grotesk(12, weight: .semibold)).foregroundStyle...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/CuerpoView.swift",
+    "line": 906,
+    "snippet": "Capsule().fill(LiquidColor.tinta500)                         .frame(width: 132 * CGFloat(calibrating) / CGFloat(Self....",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/WorkoutHistoryScreen.swift",
+    "line": 1314,
+    "snippet": "HStack(spacing: CenitMetrics.gap) {             Text(\"Workout deleted\").font(StrandFont.subhead).foregroundStyle(them...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Hoja/RoutineSheetLiveCabecera.swift",
+    "line": 105,
+    "snippet": "Capsule().fill(vivo.sheet.theme.paper)",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "CenitWidgets/RestLiveActivity.swift",
+    "line": 367,
+    "snippet": "RoundedRectangle(cornerRadius: M.bar / 2)                     .fill(i < state.setNumber ? theme.ink : theme.hairline)",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/SleepDetailScreen.swift",
+    "line": 1244,
+    "snippet": "RoundedRectangle(cornerRadius: LiquidRadius.hairline * 6, style: .continuous)                 .fill(SleepDetailScreen...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Hoja/RoutineSheetLiveFoco.swift",
+    "line": 404,
+    "snippet": "Capsule().fill(vivo.sheet.theme.ink)",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/TrainingBodyScreen.swift",
+    "line": 700,
+    "snippet": "GeometryReader { geo in                 let w = geo.size.width                 let lo = MuscleFatigueMap.weeklyBandLo...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/WorkoutImportView.swift",
+    "line": 306,
+    "snippet": "VStack(alignment: .leading, spacing: CenitMetrics.space2) {             Text(verbatim: name).font(StrandFont.body)   ...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Hoy/HojaDecideTuDia.swift",
+    "line": 133,
+    "snippet": "Text(texto)             .font(LiquidType.micro)             .tracking(LiquidType.microTracking)             .textCase...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/App/AppMapSerieActiva.swift",
+    "line": 30,
+    "snippet": "RoutineSheet(origin: .today(routineId: model.strengthSession?.routineId), mode: .live)                     .environme...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/ExerciseLibraryScreen.swift",
+    "line": 643,
+    "snippet": "Button { type = t } label: {             HStack(spacing: CenitMetrics.gap) {                 Image(systemName: Streng...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "CenitWidgets/RestLiveActivity.swift",
+    "line": 145,
+    "snippet": "Text(initials)                 .font(.system(size: 13, weight: .semibold))  // token-exempt: Live Activity geometry (...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/LiveStrengthSheet.swift",
+    "line": 1738,
+    "snippet": "GeometryReader { geo in                 let w = geo.size.width                 ZStack(alignment: .leading) {         ...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/WorkoutImportView.swift",
+    "line": 352,
+    "snippet": "HStack(spacing: CenitMetrics.space2) {                                 Image(systemName: \"sparkles\").font(StrandFont....",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/ExerciseLibraryScreen.swift",
+    "line": 598,
+    "snippet": "Button { create() } label: {                     Text(isEditing ? \"Save changes\" : \"Create exercise\")                ...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Hoja/RoutineSheetLiveFoco.swift",
+    "line": 391,
+    "snippet": "HStack(spacing: LiquidSpace.s075) {             combustibleSegmento(String(localized: \"Time\"), activo: forzarVistaTie...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/LiveStrengthSheet.swift",
+    "line": 1450,
+    "snippet": "Text(\"Done\")                     .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0.3)                     ...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "CenitWidgets/RestLiveActivity.swift",
+    "line": 385,
+    "snippet": "RoundedRectangle(cornerRadius: M.bar / 2).fill(color)",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/System/RoutineDragAndDrop.swift",
+    "line": 51,
+    "snippet": "RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)                     .fill(active ? theme....",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/PlatesScreen.swift",
+    "line": 316,
+    "snippet": "Text(chip.label)             .font(InstrumentoType.groteskNumber(13)).monospacedDigit()             .foregroundStyle(...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Entrenar/EntrenarHubPar.swift",
+    "line": 132,
+    "snippet": "Capsule().fill(LiquidColor.cian.opacity(EntrenarHubMetrics.restFillAlfa))                     .frame(width: geo.size....",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/LiveStrengthSheets.swift",
+    "line": 458,
+    "snippet": "Text(\"Use\").font(StrandFont.caption).foregroundStyle(theme.ink)                 .padding(.horizontal, CenitMetrics.ga...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/LiveStrengthSheet.swift",
+    "line": 1741,
+    "snippet": "Capsule().fill(theme.hairline)",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Hoja/RoutineSheetLiveTarjeta.swift",
+    "line": 404,
+    "snippet": "Text(\"It was \\(vivo.plateNumber(vivo.displayWeight(target.weightKg / 10)))\")                             .font(Strand...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/DataSourcesView.swift",
+    "line": 612,
+    "snippet": "LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: LiquidSpace.s100), count: 6),                     ...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/TrainingBodyScreen.swift",
+    "line": 967,
+    "snippet": "ZStack(alignment: .leading) {                     RoundedRectangle(cornerRadius: 4).fill(theme.hairline).frame(height...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/WorkoutHistoryScreen.swift",
+    "line": 760,
+    "snippet": "VStack(alignment: .leading, spacing: 9) {                 InstrumentoSectionBand(\"Volume per muscle · 30 days\") {    ...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/ExerciseDetailScreen.swift",
+    "line": 689,
+    "snippet": "HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.gap) {                 if let latest = oneRM.last {      ...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/PlatesScreen.swift",
+    "line": 260,
+    "snippet": "Text(\"Insert warm-up into the session\")                 .font(InstrumentoType.grotesk(15, weight: .bold)).tracking(0....",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Entrenar/EntrenarHubHeroe.swift",
+    "line": 164,
+    "snippet": "Capsule().fill(LiquidColor.papelTarjeta.opacity(EntrenarHubMetrics.otraFormaFondoAlfa))",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/WorkoutHistoryScreen.swift",
+    "line": 1067,
+    "snippet": "VStack(alignment: .leading, spacing: CenitMetrics.gap) {             InstrumentoSectionBand(\"My saved tickets\")      ...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/IntervalTimerView.swift",
+    "line": 336,
+    "snippet": "GeometryReader { geo in                 ZStack(alignment: .leading) {                     Capsule()                  ...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/ManualWorkoutSheet.swift",
+    "line": 147,
+    "snippet": "Group {                 if enabled {                     Text(editing == nil ? \"Add\" : \"Save\")                       ...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Hoja/RoutineSheetLive.swift",
+    "line": 474,
+    "snippet": "(Text(\"Keep training\") + Text(verbatim: \" ›\"))                         .font(StrandFont.subhead.weight(.bold)).foregr...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Entrenar/EntrenarHubHeroe.swift",
+    "line": 95,
+    "snippet": "Button(action: onOpenRaise) {             HStack(spacing: CenitMetrics.space2) {                 Circle()            ...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/DataSourcesView.swift",
+    "line": 614,
+    "snippet": "ForEach(Array(days30.enumerated()), id: \\.offset) { _, day in                     Group {                         if ...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Hoja/RoutineSheetLiveFoco.swift",
+    "line": 470,
+    "snippet": "Group {                         if let next = nextRun {                             Text(\"Next\") + Text(verbatim: \": ...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/IntervalTimerView.swift",
+    "line": 284,
+    "snippet": "Capsule()                     .fill(roundIndicatorFill(index))                     .frame(height: LiquidSpace.s150)  ...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/WorkoutHistoryScreen.swift",
+    "line": 1071,
+    "snippet": "HStack(spacing: CenitMetrics.gap) {                         RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, ...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/WorkshopTricksScreen.swift",
+    "line": 85,
+    "snippet": "Image(systemName: t.systemImage)                 .font(StrandFont.glyph(.inline))                 .foregroundStyle(th...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/ExerciseDetailScreen.swift",
+    "line": 246,
+    "snippet": "VStack(alignment: .leading, spacing: CenitMetrics.space2) {                 ZStack {                     ExerciseThum...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/WorkoutHistoryScreen.swift",
+    "line": 1977,
+    "snippet": "Text(\"Estimated\")                     .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)                  ...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/WorkoutImportView.swift",
+    "line": 356,
+    "snippet": "Text(\"Use\").font(InstrumentoType.grotesk(12, weight: .bold)).foregroundStyle(theme.paperHi)                          ...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/TrainingBodyScreen.swift",
+    "line": 711,
+    "snippet": "RoundedRectangle(cornerRadius: 3)  // token-exempt: geometría de dato                         .fill(below ? theme.war...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/ManualWorkoutSheet.swift",
+    "line": 149,
+    "snippet": "Text(editing == nil ? \"Add\" : \"Save\")                         .font(StrandFont.headline)                         .for...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Hoja/HojaPlegada.swift",
+    "line": 52,
+    "snippet": "Button {             sheet.replaceIndex = nil             sheet.showLibrary = true         } label: {             HSt...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/MetricExplorerView.swift",
+    "line": 597,
+    "snippet": "Capsule().fill(tono)                     .frame(width: ancho, height: 6)                     .position(x: r < 0 ? med...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/LiveStrengthSheets.swift",
+    "line": 415,
+    "snippet": "HStack(spacing: 9) {             StrandIcon.search.image.font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTer...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Hoja/RoutineSheetLiveFoco.swift",
+    "line": 240,
+    "snippet": "Text(running ? String(localized: \"Stop and save\") : String(localized: \"Start\"))                     .font(StrandFont....",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Hoja/RoutineSheetLiveTarjeta.swift",
+    "line": 424,
+    "snippet": "HStack {             if !allDone {                 Button { withAnimation(vivo.reduceMotion ? nil : .snappy) { vivo.s...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Entrenar/EntrenarHubHeroe.swift",
+    "line": 96,
+    "snippet": "HStack(spacing: CenitMetrics.space2) {                 Circle()                     .fill(LiquidColor.papelTarjeta)  ...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Hoja/HojaTarjetaEjercicio.swift",
+    "line": 54,
+    "snippet": "ExerciseThumbView(exercise: item.exercise, side: 40)                     .overlay(RoundedRectangle(cornerRadius: Exer...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "CenitWidgets/RestLiveActivity.swift",
+    "line": 473,
+    "snippet": "title                 .font(.system(size: M.name, weight: .semibold))                 .foregroundStyle(theme.ink)    ...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/WorkoutHistoryScreen.swift",
+    "line": 660,
+    "snippet": "VStack(spacing: CenitMetrics.space1) {             HStack(alignment: .bottom, spacing: 6) {                 ForEach(w...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/TrainingBodyScreen.swift",
+    "line": 968,
+    "snippet": "RoundedRectangle(cornerRadius: 4).fill(theme.hairline).frame(height: 8)",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/WorkoutHistoryScreen.swift",
+    "line": 690,
+    "snippet": "HStack(alignment: .center) {             VStack(alignment: .leading, spacing: 1) {                 Group {           ...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Hoja/RoutineSheetLiveTarjeta.swift",
+    "line": 427,
+    "snippet": "Text(verbatim: \"＋ \\(String(localized: \"SET\"))\")                         .font(InstrumentoType.grotesk(9.5, weight: .b...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/WorkoutImportView.swift",
+    "line": 390,
+    "snippet": "Text(title).font(InstrumentoType.grotesk(12, weight: .semibold)).foregroundStyle(theme.inkSecondary)                 ...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/LiveStrengthSheet.swift",
+    "line": 1376,
+    "snippet": "Button { model.endStrengthSession(save: false) } label: {                 Text(\"Got it\")                     .font(In...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/DataSourcesView.swift",
+    "line": 656,
+    "snippet": "RoundedRectangle(cornerRadius: 2, style: .continuous)  // token-exempt: paridad LiquidCalendario90.radioSwatch (no pú...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/ExerciseDetailScreen.swift",
+    "line": 324,
+    "snippet": "Text(\"RECORD\")                                 .font(InstrumentoType.grotesk(10, weight: .bold)).tracking(0.5)       ...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/SessionKeypad.swift",
+    "line": 302,
+    "snippet": "Text(label)                 .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.paper)                 ...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/CuerpoView.swift",
+    "line": 692,
+    "snippet": "VStack(alignment: .leading, spacing: LiquidSpace.s250) {                     moduleTitle(\"Training load\")            ...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/SessionKeypad.swift",
+    "line": 285,
+    "snippet": "Button(action: action) {             Text(glyph)                 .font(.system(size: size)).foregroundStyle(theme.ink...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/ExerciseLibraryScreen.swift",
+    "line": 599,
+    "snippet": "Text(isEditing ? \"Save changes\" : \"Create exercise\")                         .font(InstrumentoType.grotesk(15, weight...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Hoja/RoutineSheetLiveCabecera.swift",
+    "line": 131,
+    "snippet": "GeometryReader { geo in             ZStack(alignment: .leading) {                 Capsule().fill(vivo.sheet.theme.hai...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/ExerciseLibraryScreen.swift",
+    "line": 310,
+    "snippet": "ExerciseThumbView(exercise: ex, side: 52)   // handoff: 52px thumb · cached GIF still or paper placeholder (FER-790) ...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "CenitWidgets/RestLiveActivity.swift",
+    "line": 138,
+    "snippet": "image.resizable().scaledToFill()                 .frame(width: M.thumb, height: M.thumb)                 .clipShape(C...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/ExerciseDetailScreen.swift",
+    "line": 315,
+    "snippet": "ForEach(Array(sessions.enumerated()), id: \\.offset) { idx, day in                 VStack(alignment: .leading, spacing...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/TrainingBodyScreen.swift",
+    "line": 964,
+    "snippet": "VStack(alignment: .leading, spacing: 6) {             GeometryReader { geo in                 let w = geo.size.width ...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/TrainingLoadStrip.swift",
+    "line": 96,
+    "snippet": "HStack(spacing: 2) {                     ForEach(LoadScale.bounds, id: \\.lo) { seg in                         Capsule...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Hoy/HoyModosHost.swift",
+    "line": 193,
+    "snippet": "RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)                     .fill(LiquidColor.rojoCl...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/TrainingBodyScreen.swift",
+    "line": 278,
+    "snippet": "VStack(spacing: 0) {             ZStack(alignment: .top) {                 BodyFiguresView(theme: theme, loadByMuscle...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/WorkoutHistoryScreen.swift",
+    "line": 1964,
+    "snippet": "HStack(spacing: CenitMetrics.space2) {             Text(\"Source\").instrumentoOverline().foregroundStyle(theme.inkTert...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/WeeklyPlanEditorView.swift",
+    "line": 398,
+    "snippet": "HStack(alignment: .bottom, spacing: 14) {                 ForEach(Array(MuscleGroup.allCases.enumerated()), id: \\.ele...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/WeeklyPlanEditorView.swift",
+    "line": 378,
+    "snippet": "HStack(spacing: 3) {             ForEach(Array(vol.enumerated()), id: \\.offset) { _, e in                 Capsule().f...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/LiveStrengthSheet.swift",
+    "line": 1377,
+    "snippet": "Text(\"Got it\")                     .font(InstrumentoType.groteskHeadline(17)).foregroundStyle(theme.paper)           ...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Hoja/RoutineSheetLiveTarjeta.swift",
+    "line": 326,
+    "snippet": "Button {                     if running {                         withAnimation(vivo.reduceMotion ? nil : .snappy) { ...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/WorkoutImportView.swift",
+    "line": 576,
+    "snippet": "VStack(alignment: .leading, spacing: CenitMetrics.space2) {             HStack(spacing: CenitMetrics.space2) {       ...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/TrainingBodyScreen.swift",
+    "line": 390,
+    "snippet": "Button { showResetConfirm = true } label: {             HStack(spacing: 6) {                 Image(systemName: \"arrow...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/TrainingBodyScreen.swift",
+    "line": 965,
+    "snippet": "GeometryReader { geo in                 let w = geo.size.width                 ZStack(alignment: .leading) {         ...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/LiveStrengthSheet.swift",
+    "line": 1126,
+    "snippet": "RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)                         .fill(theme.surf...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Hoja/RoutineSheetLiveFoco.swift",
+    "line": 498,
+    "snippet": "Text(\"ZONE \\(zone) · \\(bpm)\")             .font(StrandFont.caption.weight(.bold)).foregroundStyle(LiquidColor.tinta50...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/WorkoutDetailScreen.swift",
+    "line": 440,
+    "snippet": "RoundedRectangle(cornerRadius: 2).fill(theme.dataHeart) // token-exempt: geometría de dato (barra ancla HRR)         ...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/ExerciseLibraryScreen.swift",
+    "line": 308,
+    "snippet": "HStack(spacing: CenitMetrics.gap) {             // Handoff: the thumbnail carries a 2px frame in the exercise's movem...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/WorkoutHistoryScreen.swift",
+    "line": 990,
+    "snippet": "HStack(spacing: CenitMetrics.gap) {             RoutineRegionGlyph(sessionGlyph(session), tint: sessionTint(session))...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/WorkoutImportView.swift",
+    "line": 577,
+    "snippet": "HStack(spacing: CenitMetrics.space2) {                 ForEach(0..<labels.count, id: \\.self) { i in                  ...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/PlanAppliedToast.swift",
+    "line": 17,
+    "snippet": "content             .overlay(alignment: .bottom) {                 if isPresented {                     Text(\"Templat...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Hoy/HoyModosHost.swift",
+    "line": 179,
+    "snippet": "TimelineView(.animation(minimumInterval: LiquidMotion.intervaloSello, paused: quieto)) { tl in             let fase =...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Hoja/RoutineSheetLiveTarjeta.swift",
+    "line": 426,
+    "snippet": "Button { withAnimation(vivo.reduceMotion ? nil : .snappy) { vivo.session.addSet(exercise: ei) } } label: {           ...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/TrainingBodyScreen.swift",
+    "line": 704,
+    "snippet": "ZStack(alignment: .leading) {                     // the 10–20 band, the fixed reference                     RoundedR...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/PlanAppliedToast.swift",
+    "line": 20,
+    "snippet": "Text(\"Template applied · your week is set, edit it whenever\")                         .font(StrandFont.caption).fontW...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/IntervalTimerView.swift",
+    "line": 326,
+    "snippet": "VStack(alignment: .leading, spacing: LiquidSpace.s300) {             HStack(alignment: .firstTextBaseline) {         ...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Hoja/RoutineSheetLiveFoco.swift",
+    "line": 284,
+    "snippet": "Text(running ? String(localized: \"Stop and save\") : String(localized: \"Start\"))                     .font(StrandFont....",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/StarterTemplatesSheet.swift",
+    "line": 263,
+    "snippet": "HStack(spacing: 10) {             Text(name).font(StrandFont.body).foregroundStyle(theme.ink)                 .fixedS...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/WeeklyPlanEditorView.swift",
+    "line": 396,
+    "snippet": "VStack(alignment: .leading, spacing: 10) {             InstrumentoSectionBand(\"Weekly volume by group\")             H...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Hoja/RoutineSheet.swift",
+    "line": 426,
+    "snippet": "Capsule().fill(theme.dataHrv).frame(width: 2.5)",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/ExerciseDetailScreen.swift",
+    "line": 317,
+    "snippet": "HStack(spacing: CenitMetrics.space2) {                         RoundedRectangle(cornerRadius: 3, style: .continuous) ...",
+    "isComposition": true,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/WorkoutImportView.swift",
+    "line": 579,
+    "snippet": "Capsule()                         .fill(i <= currentIndex ? theme.dataStrain : theme.hairline)                       ...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Hoja/RoutineSheetLiveTarjeta.swift",
+    "line": 361,
+    "snippet": "HStack(spacing: LiquidSpace.s150) {             Text(\"RECORD\").font(StrandFont.caption.weight(.bold)).foregroundStyle...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  },
+  {
+    "file": "Cenit/Screens/Hoja/RoutineSheetLiveTarjeta.swift",
+    "line": 307,
+    "snippet": "HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s250) {                 Text(run.name).font(StrandFont.sub...",
+    "isComposition": false,
+    "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
+  }
+]
