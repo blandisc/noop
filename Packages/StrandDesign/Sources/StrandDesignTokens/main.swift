@@ -473,6 +473,10 @@ public let catalogEntries: [CatalogEntry] = [
                  archivo: "LiquidGlass/LiquidSectionHeader.swift",
                  cuandoUsarlo: "Abrir una sección en una pantalla Liquid Glass — kicker + aire, sin banda de fondo (FER-273).",
                  cuandoNo: "No en pantallas «Instrumento diurno» aún sin migrar (usa `InstrumentoSectionBand`, que sí lleva banda de papel)."),
+    CatalogEntry(rol: "Cápsula de acción (Hoja)", simbolo: "HojaCapsulaAccion",
+                 archivo: "Entrenar/HojaCapsulaAccion.swift",
+                 cuandoUsarlo: "Acción compacta sobre vidrio DENTRO de una hoja de Entrenar (agregar serie, acción secundaria) que no debe prometer navegación — flecha opcional, apagada por default (FER-280 · 1c, clase 5).",
+                 cuandoNo: "No para una puerta a otra pantalla/hoja (usa `EntrenarCapsulaPuerta`, que siempre trae «›»); no para un CTA de pantalla completa (usa `LiquidGlassButton`/`StrandCTAButton`)."),
 ]
 
 func catalogoTable() -> String {

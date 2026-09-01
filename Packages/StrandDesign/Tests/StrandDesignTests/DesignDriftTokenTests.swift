@@ -220,3 +220,4 @@ final class InstrumentoCardRenderTests: XCTestCase {
         XCTAssertEqual(LiquidSpace.pastillaHorizontal, 20)
     }
 }
+#endif
