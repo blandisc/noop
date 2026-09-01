@@ -60,9 +60,7 @@ class LegacyApiRule(unittest.TestCase):
     def test_matches_retired_symbols_and_modifier(self):
         for line in [
             "let theme = InstrumentoTheme.base",
-            "PaperMenu { … }",
-            "PaperMenuItem(r.name, systemImage: nil) { }",   # el tipo que la app SÍ usa (review Grok r1)
-            ".paperMenu(isPresented: $show, items: items)",
+            "PaperStepper(value: $n, range: 1...10)",  # Paper* residual que sigue en el gate
             "InstrumentoSectionBand(\"By sport\")",
             "view.instrumentoTheme(.dia)",
             "InstrumentoType.titulo",
@@ -99,7 +97,7 @@ class LegacyApiRule(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             src = _swift(tmp, "Cenit/Screens/X.swift", [
                 "// let t = InstrumentoTheme.base  (histórico, solo comentario)",
-                "/* PaperMenu también vivía aquí */",
+                "/* PaperStepper también vivía aquí */",
             ])
             self.assertEqual(drift.check([src], ["no-legacy-api"]), [])
 
