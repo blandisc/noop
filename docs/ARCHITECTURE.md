@@ -835,6 +835,36 @@ scroll (parallax). The hero is **not** part of the background: it scrolls with t
   `enableSetNeedsDisplay` and redraws on demand when the offset changes, at scroll speed, while
   the ambient clock stays at 20 Hz.
 
+### Design-system enforcement (gates, baseline, censo) — épico FER-261
+
+`StrandDesign` is the source of visual truth **in fact, not just on paper**, because a tooling layer
+makes debt unable to grow:
+
+- **One linter, three legs.** `Tools/check-design-drift.py` (pure Python/regex, milliseconds) runs
+  the same rules in the pre-commit hook, `Tools/verify.sh quick` and `.github/workflows/design-lint.yml`
+  (ubuntu). Rules cover literals (hex, font, radius, opacity, shadow, spacing), copy (em-dash),
+  sheet-glass, **retired-generation call-sites** (`no-legacy-api`) and the escape hatch itself
+  (`token-exempt` is ratcheted debt). Widgets/Watch are carved out of the two FER-263 rules in
+  `check()` itself (FER-219: fixed system geometry, `InstrumentoTheme` is canonical there).
+- **One baseline, merge-written.** `Tools/design-drift-baseline.json` freezes debt per
+  `{rule: {file: count}}`. `--write-baseline` merges per FILE (partial scans keep un-walked budgets;
+  deleted files drop; corrupt JSON is refused) and a count can only go down: the `baseline-monotony`
+  job compares the PR's JSON against the PR's base **running the guard script from the base commit**,
+  and the only legal raise is a dedicated baseline-only PR carrying the owner-applied
+  `baseline-alta` label — both conditions machine-checked, so a PR with code can never bless itself.
+- **Parity is a check, not a hope.** `Tools/check-gate-parity.py` parses the three legs and fails
+  CI (and `verify.sh`) if they diverge from the machine-readable gate matrix in
+  [`docs/design-system/CONTRATO.md`](design-system/CONTRATO.md) — including any `--baseline`
+  pointing away from the canonical JSON. The contract doc (hand-written; DESIGN.md is generated) also
+  defines the exemption taxonomy, the ×3 rule, the collision-arbitration policy and the legal-raise path.
+- **Census and catalog.** `Tools/DesignCensus/` is an ISOLATED swift-syntax executable (never a
+  dependency of `StrandDesign`, never in CI's hot path) that regenerates
+  `docs/design-system/CENSO.md`+`.json` — 8 dimensions, evasion sieve, exemption taxonomy, collision
+  candidates — re-run before each quarterly batch. `StrandDesignTokens` additionally emits the Liquid
+  dictionary and the component index `docs/design-system/CATALOGO.md`, guarded by `design-tokens.yml`.
+  `DesignDriftTokenTests` is the value oracle (token == wrapped literal); the `ImageRenderer`
+  harnesses stay harnesses, never pixel assertions.
+
 ---
 
 ## 11. Design principles, restated
