@@ -861,6 +861,19 @@ final class StrengthSessionModelTests: XCTestCase {
         XCTAssertNil(s.runs[0].supersetGroup, "swapping the exercise breaks its superset membership")
     }
 
+    /// Nancy · ronda 4: un historial con `reps = 0` (dejado por el bug que las rondas 1-2 cerraron)
+    /// no puede sembrar en 0 la serie de un ejercicio agregado a media sesión — las DOS rutas de
+    /// «＋ Agregar ejercicio» llevan el mismo piso `max(1, …)` que la siembra del plan y `addSet`.
+    func testAddExerciseFloorsSeededRepsAtOne() {
+        let s = make([StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 1),
+                                                    exercise: ex("bench", "Bench"), lastSets: [])])
+        s.addExercise(ex("row", "Row"), lastWeightKg: 40, lastReps: 0)
+        XCTAssertEqual(s.runs.last?.sets.first?.reps, 1, "agregar al final no nace en 0")
+
+        s.insertExerciseAfterCurrent(ex("curl", "Curl"), lastWeightKg: 10, lastReps: 0)
+        XCTAssertEqual(s.runs[s.currentIndex + 1].sets.first?.reps, 1, "insertar tras el foco no nace en 0")
+    }
+
     // MARK: - Una serie de peso×reps sin repeticiones NO se registra (Nancy · ronda 2, bloqueante)
     //
     // El candado vive en el motor, no en una sola piel: el ✓ de la tabla, el de Foco, el «Completar»

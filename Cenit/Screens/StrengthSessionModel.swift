@@ -693,7 +693,7 @@ final class StrengthSessionModel: ObservableObject {
     func addExercise(_ exercise: Exercise, lastWeightKg: Double? = nil, lastReps: Int? = nil) {
         let usesReps = exercise.type == .weightReps || exercise.type == .bodyweight
         let weight = lastWeightKg ?? 0
-        let reps = usesReps ? (lastReps ?? 8) : 0
+        let reps = usesReps ? max(1, lastReps ?? 8) : 0   // Nancy · ronda 4: historial con reps 0 no siembra en 0
         let set = WorkingSet(id: UUID().uuidString, weightKg: weight, reps: reps, done: false)
         let run = ExerciseRun(id: UUID().uuidString, exerciseId: exercise.id,
                               name: StrengthDisplay.name(exercise), type: exercise.type,
@@ -715,7 +715,7 @@ final class StrengthSessionModel: ObservableObject {
     func insertExerciseAfterCurrent(_ exercise: Exercise, lastWeightKg: Double? = nil, lastReps: Int? = nil) {
         let usesReps = exercise.type == .weightReps || exercise.type == .bodyweight
         let weight = lastWeightKg ?? 0
-        let reps = usesReps ? (lastReps ?? 8) : 0
+        let reps = usesReps ? max(1, lastReps ?? 8) : 0   // Nancy · ronda 4: historial con reps 0 no siembra en 0
         let set = WorkingSet(id: UUID().uuidString, weightKg: weight, reps: reps, done: false)
         let run = ExerciseRun(id: UUID().uuidString, exerciseId: exercise.id,
                               name: StrengthDisplay.name(exercise), type: exercise.type,
