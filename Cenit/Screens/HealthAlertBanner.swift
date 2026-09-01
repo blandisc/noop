@@ -4,9 +4,9 @@ import StrandDesign
 /// Strain/illness early-warning banner. Observes AppModel in isolation so the ~1 Hz HR stream
 /// re-renders only this small view, not the whole screen. Renders nothing when there's no alert.
 ///
-/// Liquid Glass · El Eje (FER-245): `LiquidPatternBlock` inside `liquidTarjetaSeccion` — same
-/// aviso recipe as DataSourcesView. Judgment color lives only on the 2.5 pt side bar; overline
-/// is tinta500, body is tinta700. No warning triangle.
+/// Liquid Glass · El Eje (FER-245 / FER-280·2c): receta → `LiquidAviso` (ganadora
+/// `LiquidPatternBlock` + `liquidTarjetaSeccion`). Judgment color lives only on the side bar;
+/// overline is tinta500, body is tinta700. No warning triangle.
 struct HealthAlertBanner: View {
     @Environment(AppModel.self) var model
 
@@ -43,31 +43,25 @@ struct HealthAlertBanner: View {
     }
 
     private func contenido(_ alert: String, severidad: Severidad) -> some View {
-        LiquidPatternBlock(
-            overline: severidad.overline,
-            lineas: [alert],
-            tono: severidad.tono)
-        .liquidTarjetaSeccion()
+        LiquidAviso(titulo: severidad.overline, cuerpo: alert, tono: severidad.tono)
     }
 }
 
 #if DEBUG
 #Preview("HealthAlert · Atención") {
-    LiquidPatternBlock(
-        overline: String(localized: "healthAlert.overline.atencion", defaultValue: "Heads up"),
-        lineas: ["Your resting heart rate has been higher than usual. Consider easing up today."],
+    LiquidAviso(
+        titulo: String(localized: "healthAlert.overline.atencion", defaultValue: "Heads up"),
+        cuerpo: "Your resting heart rate has been higher than usual. Consider easing up today.",
         tono: LiquidColor.atencion)
-    .liquidTarjetaSeccion()
     .padding(.horizontal, LiquidSpace.s600)
     .background(LiquidColor.papelGradient)
 }
 
 #Preview("HealthAlert · Alerta") {
-    LiquidPatternBlock(
-        overline: String(localized: "healthAlert.overline.alerta", defaultValue: "Alert"),
-        lineas: ["Signals look strained beyond your normal. Take it easy and check how you feel."],
+    LiquidAviso(
+        titulo: String(localized: "healthAlert.overline.alerta", defaultValue: "Alert"),
+        cuerpo: "Signals look strained beyond your normal. Take it easy and check how you feel.",
         tono: LiquidColor.negativo)
-    .liquidTarjetaSeccion()
     .padding(.horizontal, LiquidSpace.s600)
     .background(LiquidColor.papelGradient)
 }
