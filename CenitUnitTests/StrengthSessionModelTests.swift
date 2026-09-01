@@ -877,6 +877,19 @@ final class StrengthSessionModelTests: XCTestCase {
         XCTAssertEqual(s.lastRestStartedAt, t0, "…pero el ancla de staleness queda")
     }
 
+    /// Nancy · ronda 8: el ancla avanza en TODO cierre de serie, incluidas las ramas que salen a
+    /// `.capturing` sin descanso — «Sin descanso» (rest 0) era la fuga: un toque de reloj encolado
+    /// antes del cierre pasaba el candado y registraba la serie siguiente sin que la usuaria la hiciera.
+    func testStalenessAnchorAdvancesOnRestlessRegister() {
+        let slot = StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 3, rest: 0),
+                                                 exercise: ex("bench", "Bench"), lastSets: [])
+        let s = make([slot])
+        let t1 = Date()
+        s.registerCurrentSet(now: t1)
+        XCTAssertEqual(s.phase, .capturing, "«Sin descanso» sigue de largo…")
+        XCTAssertEqual(s.lastRestStartedAt, t1, "…pero el cierre de la serie re-arma el ancla")
+    }
+
     /// Nancy · ronda 4: un historial con `reps = 0` (dejado por el bug que las rondas 1-2 cerraron)
     /// no puede sembrar en 0 la serie de un ejercicio agregado a media sesión — las DOS rutas de
     /// «＋ Agregar ejercicio» llevan el mismo piso `max(1, …)` que la siembra del plan y `addSet`.

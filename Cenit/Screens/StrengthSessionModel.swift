@@ -261,10 +261,11 @@ final class StrengthSessionModel: ObservableObject {
     /// When the current rest started — the anchor for `elapsedS` in the HR readiness rule (FER-506). Set
     /// alongside `restEndsAt`; not moved by ±15 so the floor counts from the real start.
     @Published var restStartedAt: Date?
-    /// La última vez que una serie cerró su descanso — o lo omitió («Sin descanso»): `startRest` la
-    /// re-arma SIEMPRE, y a diferencia de `restStartedAt` NO se limpia al salir del descanso (Nancy ·
-    /// rondas 6–7). Es el ancla de staleness de los canales durables (inbox de la Live Activity y cola
-    /// del reloj): un toque encolado antes de esta fecha pertenece a un contexto ya cerrado.
+    /// La última vez que cambió el contexto que un toque remoto pudo estar viendo: se re-arma en CADA
+    /// cierre de serie (`registerCurrentSet`, por cualquiera de sus ramas — descanso, superserie, «Sin
+    /// descanso», fin de rutina) y en `startRest`, y a diferencia de `restStartedAt` NO se limpia al
+    /// salir del descanso (Nancy · rondas 6–8). Es el ancla de staleness de los canales durables (inbox
+    /// de la Live Activity y cola del reloj): un toque anterior a esta fecha se descarta.
     private(set) var lastRestStartedAt: Date?
     /// The HR «ready» target (bpm) for this rest, computed once on entry (FER-495/506). nil = use FER-348's
     /// resting+margin default (when `currentRestMode == .heartRate`).
@@ -575,6 +576,11 @@ final class StrengthSessionModel: ObservableObject {
         let doneTs = Int(now.timeIntervalSince1970)
         runs[currentIndex].sets[i].done = true
         runs[currentIndex].sets[i].doneTs = doneTs
+        // Nancy · ronda 8: el ancla de staleness se re-arma AQUÍ, en el único punto por el que pasa
+        // TODO cierre de serie — no solo en `startRest`: el salto de superserie, «Sin descanso» y el
+        // fin de rutina salen a `.capturing` sin descanso, y un toque encolado (reloj/Live Activity)
+        // anterior a este instante ya vio un contexto que dejó de existir.
+        lastRestStartedAt = now
 
         // FER-931: superset round-robin — A1 done moves straight to A2, no rest in between; the rest
         // lands when the ROUND closes (the last member with pending work). r18 (owner edge case):
