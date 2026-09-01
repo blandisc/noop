@@ -91,14 +91,14 @@ struct DataSourcesView: View {
                       allowsMultipleSelection: false) { result in
             handleImportResult(result, for: importTarget)
         }
-        // FER-837: a backup/export result is an inline banner — it must not cover the screen.
+        // FER-837 / FER-280·2c: backup/export result → `LiquidAviso` (receta HealthAlert);
+        // inset, tap-to-dismiss y auto-descarte de 8 s quedan en el caller.
         .overlay(alignment: .top) {
             if showBackupAlert {
-                LiquidPatternBlock(
-                    overline: backupAlertTitle,
-                    lineas: [backupAlertMessage],
+                LiquidAviso(
+                    titulo: backupAlertTitle,
+                    cuerpo: backupAlertMessage,
                     tono: backupAlertIsError ? LiquidColor.negativo : LiquidColor.positivo)
-                    .liquidTarjetaSeccion()
                     .padding(.horizontal, LiquidSpace.s550)
                     .padding(.top, LiquidSpace.s300)
                     .onTapGesture { showBackupAlert = false }
