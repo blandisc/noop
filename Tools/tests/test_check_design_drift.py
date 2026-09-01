@@ -61,6 +61,9 @@ class LegacyApiRule(unittest.TestCase):
         for line in [
             "let theme = InstrumentoTheme.base",
             "PaperMenu { … }",
+            "PaperMenuItem(r.name, systemImage: nil) { }",   # el tipo que la app SÍ usa (review Grok r1)
+            ".paperMenu(isPresented: $show, items: items)",
+            "InstrumentoSectionBand(\"By sport\")",
             "view.instrumentoTheme(.dia)",
             "StrandPalette.ink",
         ]:
@@ -128,7 +131,74 @@ class TokenExemptPseudoRule(unittest.TestCase):
             self.assertEqual(len(over), 1, "the second (new) exemption must be over budget")
 
 
+class WidgetWatchCarveOut(unittest.TestCase):
+    """FER-219: CenitWidgets/CenitWatch quedan fuera de las dos reglas nuevas EN check(), no solo
+    por invocación — una corrida con raíces default no debe pintarlos de rojo."""
+
+    def test_legacy_and_exempt_skip_widget_and_watch_paths(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            w = _swift(tmp, "CenitWidgets/RestLiveActivity.swift",
+                       ["let t = InstrumentoTheme.base", ".padding(8) // token-exempt: isla fija"])
+            k = _swift(tmp, "CenitWatch/WatchFace.swift", ["let t = InstrumentoTheme.base"])
+            self.assertEqual(drift.check([w, k], ["no-legacy-api", "token-exempt"]), [])
+
+
+class MergeWriteRobustness(unittest.TestCase):
+    def test_corrupt_json_is_refused_not_clobbered(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            baseline = os.path.join(tmp, "baseline.json")
+            with open(baseline, "w", encoding="utf-8") as fh:
+                fh.write("{not json <<<<<<< HEAD")
+            src = _swift(tmp, "Cenit/Screens/X.swift", ["VStack(spacing: 14) {}"])
+            rc = drift.main(["--rules", "no-spacing-literal", "--write-baseline", baseline, src])
+            self.assertEqual(rc, 2)
+            self.assertEqual(open(baseline, encoding="utf-8").read(), "{not json <<<<<<< HEAD",
+                             "un JSON corrupto se rechaza, jamás se reescribe")
+
+    def test_partial_scan_preserves_unwalked_files_of_the_same_rule(self):
+        # Como en el uso real: cwd = raíz del repo, rutas relativas (las claves del JSON lo son).
+        with tempfile.TemporaryDirectory() as tmp:
+            cwd = os.getcwd()
+            try:
+                os.chdir(tmp)
+                _swift(tmp, "Cenit/Screens/A.swift", ["VStack(spacing: 14) {}"])
+                _swift(tmp, "Cenit/Screens/B.swift", ["VStack(spacing: 9) {}"])
+                drift.main(["--rules", "no-spacing-literal", "--write-baseline", "baseline.json",
+                            "Cenit/Screens/A.swift", "Cenit/Screens/B.swift"])
+                drift.main(["--rules", "no-spacing-literal", "--write-baseline", "baseline.json",
+                            "Cenit/Screens/A.swift"])
+                merged = json.load(open("baseline.json", encoding="utf-8"))
+                self.assertIn("Cenit/Screens/B.swift", merged["no-spacing-literal"],
+                              "un scan parcial no puede tirar el presupuesto de archivos no caminados")
+            finally:
+                os.chdir(cwd)
+
+    def test_deleted_file_drops_out_on_rerecord(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cwd = os.getcwd()
+            try:
+                os.chdir(tmp)
+                _swift(tmp, "Cenit/Screens/A.swift", ["VStack(spacing: 14) {}"])
+                _swift(tmp, "Cenit/Screens/Gone.swift", ["VStack(spacing: 9) {}"])
+                drift.main(["--rules", "no-spacing-literal", "--write-baseline", "baseline.json",
+                            "Cenit/Screens/A.swift", "Cenit/Screens/Gone.swift"])
+                os.remove("Cenit/Screens/Gone.swift")
+                drift.main(["--rules", "no-spacing-literal", "--write-baseline", "baseline.json",
+                            "Cenit/Screens/A.swift"])
+                merged = json.load(open("baseline.json", encoding="utf-8"))
+                self.assertNotIn("Cenit/Screens/Gone.swift", merged.get("no-spacing-literal", {}))
+            finally:
+                os.chdir(cwd)
+
+
 class Ratchet(unittest.TestCase):
+    def test_stale_notes_only_for_walked_files(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src = _swift(tmp, "Cenit/Screens/X.swift", ["Text(\"a\")"])
+            baseline = {"no-spacing-literal": {"Cenit/App/NotWalked.swift": 6}}
+            hits = drift.check([src], ["no-spacing-literal"])
+            _over, stale = drift.apply_baseline(hits, baseline, walked={drift._key(src)})
+            self.assertEqual(stale, [], "sin caminar el archivo, la nota «fewer» miente")
     def test_within_budget_passes_and_below_budget_reports_stale(self):
         with tempfile.TemporaryDirectory() as tmp:
             src = _swift(tmp, "Cenit/Screens/X.swift", ["VStack(spacing: 9) {}"])

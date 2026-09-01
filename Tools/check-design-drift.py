@@ -105,8 +105,9 @@ RE_SPACING = re.compile(
 # canonical Live-Activity/watch theme there); CenitShared never imports StrandDesign.
 RE_LEGACY_API = re.compile(
     r"\b(InstrumentoTheme|InstrumentoFlowTitle|InstrumentoToolChip|InstrumentoTabHeader"
-    r"|PaperMenu|PaperStepper|SectionBand|StrandPalette)\b"
+    r"|PaperMenu|PaperMenuItem|PaperStepper|SectionBand|InstrumentoSectionBand|StrandPalette)\b"
     r"|\.instrumentoTheme\("
+    r"|\.paperMenu\("
 )
 
 RULE_PATTERNS = {
@@ -136,7 +137,12 @@ def check(paths, rules):
     hits = []
     for path in iter_swift_files(paths):
         # no-hex only applies OUTSIDE the design package (the package is where hex is allowed).
-        in_design_pkg = DESIGN_PKG in path.replace("\\", "/")
+        norm = path.replace("\\", "/")
+        in_design_pkg = DESIGN_PKG in norm
+        # FER-219 carve-out, enforced HERE and not only by invocation: CenitWidgets/CenitWatch keep
+        # `InstrumentoTheme` as their canonical Live-Activity/watch theme and their fixed-geometry
+        # exemptions. A default-roots run must not paint them red for the two FER-263 rules.
+        in_widget_watch = "CenitWidgets/" in norm or "CenitWatch/" in norm
         try:
             lines = open(path, encoding="utf-8").read().splitlines()
         except FileNotFoundError:
@@ -147,13 +153,15 @@ def check(paths, rules):
                 continue
             if EXEMPT.search(line):
                 # token-exempt is itself ratcheted debt (FER-263): count the hatch, then skip the rules.
-                if "token-exempt" in rules:
+                if "token-exempt" in rules and not in_widget_watch:
                     hits.append((path, i, "token-exempt", stripped[:100]))
                 continue
             for rule in rules:
                 if rule == "token-exempt":
                     continue
                 if rule in ("no-hex", "no-legacy-api") and in_design_pkg:
+                    continue
+                if rule == "no-legacy-api" and in_widget_watch:
                     continue
                 if rule == "no-emdash-string":
                     if _emdash_string_hit(line):
@@ -177,9 +185,11 @@ def tally(hits):
     return out
 
 
-def apply_baseline(hits, baseline):
+def apply_baseline(hits, baseline, walked=None):
     """Split hits into (over-budget, stale-note). A file keeps the count the baseline allows it;
-    the hits above that allowance are what fails."""
+    the hits above that allowance are what fails. A stale note is only honest for a file this run
+    actually WALKED (FER-263): a partial scan (e.g. the Screens-only CI step) must not report
+    "fewer" for files that simply were not looked at."""
     allowed = {r: dict(f) for r, f in baseline.items()}
     over = []
     for hit in hits:
@@ -189,7 +199,8 @@ def apply_baseline(hits, baseline):
             allowed[rule][_key(path)] = budget - 1
         else:
             over.append(hit)
-    stale = [(rule, f, left) for rule, files in allowed.items() for f, left in files.items() if left > 0]
+    stale = [(rule, f, left) for rule, files in allowed.items() for f, left in files.items()
+             if left > 0 and (walked is None or f in walked)]
     return over, stale
 
 
@@ -220,21 +231,27 @@ def main(argv):
         return 2
     roots = files or DEFAULT_ROOTS
     hits = check(roots, rules)
+    walked = {_key(p) for p in iter_swift_files(roots)}
     if write_baseline:
-        # Merge-write (FER-263): only the rules that RAN are re-recorded; the other rules' keys
-        # survive byte-for-byte. Before this, `--rules no-spacing-literal --write-baseline` would
-        # silently clobber every other rule's budget.
+        # Merge-write (FER-263), per FILE and not just per rule: a partial scan re-records only the
+        # files it actually walked; budgets of un-walked files survive, deleted files drop out, and a
+        # walked file that came back clean drops its key. A corrupt JSON is refused, never clobbered.
         merged = {}
-        try:
-            merged = json.load(open(write_baseline, encoding="utf-8"))
-        except (FileNotFoundError, json.JSONDecodeError):
-            pass
+        if os.path.exists(write_baseline):
+            try:
+                merged = json.load(open(write_baseline, encoding="utf-8"))
+            except json.JSONDecodeError as e:
+                print(f"refusing to write: {write_baseline} is not valid JSON ({e}) — fix it first")
+                return 2
         fresh = tally(hits)
         for rule in rules:
-            if rule in fresh:
-                merged[rule] = fresh[rule]
+            kept = {f: c for f, c in merged.get(rule, {}).items()
+                    if f not in walked and os.path.exists(f)}
+            kept.update(fresh.get(rule, {}))
+            if kept:
+                merged[rule] = kept
             else:
-                merged.pop(rule, None)  # a rule that ran clean drops its key (debt reached 0)
+                merged.pop(rule, None)  # a rule with no debt left drops its key
         with open(write_baseline, "w", encoding="utf-8") as fh:
             json.dump(merged, fh, indent=2, sort_keys=True, ensure_ascii=False)
             fh.write("\n")
@@ -247,7 +264,7 @@ def main(argv):
         except FileNotFoundError:
             print(f"baseline not found: {baseline_path}")
             return 2
-        hits, stale = apply_baseline(hits, {r: v for r, v in baseline.items() if r in rules})
+        hits, stale = apply_baseline(hits, {r: v for r, v in baseline.items() if r in rules}, walked)
     if hits:
         # The remedy depends on the rule (FER-263): suggesting a token for a legacy call-site, or an
         # exemption for an over-budget exemption, would prescribe exactly the wrong medicine.
