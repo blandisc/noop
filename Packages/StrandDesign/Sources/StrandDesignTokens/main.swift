@@ -510,7 +510,14 @@ public let catalogEntries: [CatalogEntry] = [
                  archivo: "LiquidGlass/LiquidCalendario90.swift",
                  cuandoUsarlo: "Mosaico de 90 días en hojas Liquid (Stress/Strain/Sleep).",
                  cuandoNo: "No usar `Calendario90`/`YearHeatStrip` del índice viejo (0 call-sites APP)."),
-<<<<<<< HEAD
+    CatalogEntry(rol: "Encabezado de sección (Liquid)", simbolo: "LiquidSectionHeader",
+                 archivo: "LiquidGlass/LiquidSectionHeader.swift",
+                 cuandoUsarlo: "Abrir una sección en una pantalla Liquid Glass — kicker + aire, sin banda de fondo (FER-273; adopción en Ola 3).",
+                 cuandoNo: "No en pantallas «Instrumento diurno» aún sin migrar (usa `InstrumentoSectionBand`, que sí lleva banda de papel)."),
+    CatalogEntry(rol: "Cápsula de acción (Hoja)", simbolo: "HojaCapsulaAccion",
+                 archivo: "Entrenar/HojaCapsulaAccion.swift",
+                 cuandoUsarlo: "Acción compacta sobre vidrio DENTRO de una hoja de Entrenar que no promete navegación — flecha opcional, apagada por default (FER-280·1c).",
+                 cuandoNo: "No para una puerta a otra pantalla/hoja (usa `EntrenarCapsulaPuerta`); no para un CTA de pantalla completa (usa `LiquidGlassButton`/`StrandCTAButton`)."),
     // —— FER-280 · piezas que matan clases (ola 2p) ——
     CatalogEntry(rol: "Cápsula outline de acción", simbolo: "OutlineCapsule",
                  archivo: "OutlineCapsule.swift",
@@ -520,16 +527,6 @@ public let catalogEntries: [CatalogEntry] = [
                  archivo: "LiquidGlass/LiquidStatePill.swift",
                  cuandoUsarlo: "Estado vivo/listo sobre cristal (`.pastillaSolida`) o chip de valencia Δ% — sustituye `statusPill` a mano y chips de signo.",
                  cuandoNo: "No pastilla Instrumento de chrome (`StatePill`); no procedencia (`LiquidOrigenChip`/`SourceBadge`); no filtro removible (`LiquidChipSeleccion`)."),
-=======
-    CatalogEntry(rol: "Encabezado de sección (Liquid)", simbolo: "LiquidSectionHeader",
-                 archivo: "LiquidGlass/LiquidSectionHeader.swift",
-                 cuandoUsarlo: "Abrir una sección en una pantalla Liquid Glass — kicker + aire, sin banda de fondo (FER-273; adopción en Ola 3).",
-                 cuandoNo: "No en pantallas «Instrumento diurno» aún sin migrar (usa `InstrumentoSectionBand`, que sí lleva banda de papel)."),
-    CatalogEntry(rol: "Cápsula de acción (Hoja)", simbolo: "HojaCapsulaAccion",
-                 archivo: "Entrenar/HojaCapsulaAccion.swift",
-                 cuandoUsarlo: "Acción compacta sobre vidrio DENTRO de una hoja de Entrenar que no promete navegación — flecha opcional, apagada por default (FER-280·1c).",
-                 cuandoNo: "No para una puerta a otra pantalla/hoja (usa `EntrenarCapsulaPuerta`); no para un CTA de pantalla completa (usa `LiquidGlassButton`/`StrandCTAButton`)."),
->>>>>>> origin/iOS
 ]
 
 func catalogoTable() -> String {
