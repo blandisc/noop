@@ -264,6 +264,22 @@ public struct RoutineExercise: Codable, Sendable, Identifiable, Equatable {
     public func effectiveRest(for set: RoutineSet) -> RestConfig { set.rest ?? restConfig }
 }
 
+public extension Array where Element == RoutineExercise {
+    /// Insertion index right AFTER the exercise with `afterRunId` — skipping to the end of its
+    /// superset block first (membership is positional adjacency of equal `supersetGroup`), so an
+    /// insert can never split a block. `nil` or unknown id → append at the end. The ONE shared rule
+    /// for every «agregar ejercicio a media sesión» persistence path (Nancy · rondas 11-12: two
+    /// hand-rolled copies of this computation diverged and one kept splitting supersets).
+    func insertionIndex(afterRunId id: String?) -> Int {
+        guard let id, let idx = firstIndex(where: { $0.id == id }) else { return count }
+        var hi = idx
+        if let g = self[idx].supersetGroup {
+            while hi + 1 < count, self[hi + 1].supersetGroup == g { hi += 1 }
+        }
+        return hi + 1
+    }
+}
+
 /// A performed strength session. Optionally linked to a routine and to the strap
 /// (`deviceId`) that supplied heart rate / strain.
 public struct StrengthSession: Codable, Sendable, Identifiable, Equatable {

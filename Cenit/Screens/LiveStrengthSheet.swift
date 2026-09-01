@@ -1263,9 +1263,10 @@ struct LiveStrengthSheet: View {
             guard let store = await model.repo.storeHandle(),
                   var res = try? await store.routineExercises(routineId: rid),
                   let routine = (try? await store.routines())?.first(where: { $0.id == rid }) else { return }
-            var insertAt = activeRunId.flatMap { id in
-                res.firstIndex(where: { $0.id == id }).map { $0 + 1 }
-            } ?? res.count
+            // Nancy · ronda 12: misma regla que la sesión viva (insertExercise) — el punto de
+            // inserción salta al final del bloque de superserie; la computación vive en UN solo
+            // helper (`insertionIndex(afterRunId:)`) para que las dos entradas no vuelvan a divergir.
+            var insertAt = res.insertionIndex(afterRunId: activeRunId)
             for ex in picks {
                 let re = RoutineExercise(routineId: rid, exerciseId: ex.id, position: insertAt,
                                          targetSets: 1, targetReps: 8,

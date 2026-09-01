@@ -966,6 +966,19 @@ final class StrengthSessionModelTests: XCTestCase {
         XCTAssertEqual(s.supersetMembers(at: 0), [0, 1], "la superserie sigue entera")
     }
 
+    /// Nancy · ronda 12: la regla ÚNICA de inserción en la rutina persistida — tras el bloque de
+    /// superserie, nunca en medio (dos copias a mano divergieron; ahora ambas usan este helper).
+    func testRoutineInsertionIndexSkipsSupersetBlock() {
+        let res = [re("a1", exerciseId: "a1", sets: 2, superset: 1),
+                   re("a2", exerciseId: "a2", sets: 2, superset: 1),
+                   re("b", exerciseId: "b", sets: 2)]
+        XCTAssertEqual(res.insertionIndex(afterRunId: "a1"), 2, "tras el bloque, no en medio")
+        XCTAssertEqual(res.insertionIndex(afterRunId: "a2"), 2, "el miembro terminal da lo mismo")
+        XCTAssertEqual(res.insertionIndex(afterRunId: "b"), 3)
+        XCTAssertEqual(res.insertionIndex(afterRunId: nil), 3, "sin ancla → al final")
+        XCTAssertEqual(res.insertionIndex(afterRunId: "zz"), 3, "id desconocido → al final")
+    }
+
     /// Nancy · ronda 4: un historial con `reps = 0` (dejado por el bug que las rondas 1-2 cerraron)
     /// no puede sembrar en 0 la serie de un ejercicio agregado a media sesión — las DOS rutas de
     /// «＋ Agregar ejercicio» llevan el mismo piso `max(1, …)` que la siembra del plan y `addSet`.
