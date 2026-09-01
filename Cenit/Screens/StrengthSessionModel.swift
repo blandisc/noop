@@ -671,8 +671,10 @@ final class StrengthSessionModel: ObservableObject {
     func addSet() {
         guard runs.indices.contains(currentIndex) else { return }
         let template = runs[currentIndex].sets.last
+        let usaReps = runs[currentIndex].type == .weightReps || runs[currentIndex].type == .bodyweight
+        let reps = usaReps ? max(1, template?.reps ?? 8) : (template?.reps ?? 0)   // Nancy · ronda 5
         let set = WorkingSet(id: UUID().uuidString,
-                             weightKg: template?.weightKg ?? 0, reps: template?.reps ?? 8, done: false)
+                             weightKg: template?.weightKg ?? 0, reps: reps, done: false)
         runs[currentIndex].sets.append(set)
         runs[currentIndex].currentSet = runs[currentIndex].sets.count - 1
         phase = .capturing
