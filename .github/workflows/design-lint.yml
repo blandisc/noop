@@ -16,6 +16,9 @@ name: Design Lint
 on:
   pull_request:
     branches: [iOS, main]
+    # labeled/unlabeled: el alta legal (`baseline-alta`) se aplica DESPUÉS de abrir el PR —
+    # sin estos types el job de monotonía se quedaría en rojo hasta un push vacío (Grok r1 #5).
+    types: [opened, synchronize, reopened, labeled, unlabeled]
     paths:
       - 'Packages/StrandDesign/**'
       - 'Cenit/**'
@@ -25,6 +28,8 @@ on:
       - 'Tools/check-baseline-monotony.py'
       - 'Tools/design-drift-baseline.json'
       - 'Tools/tests/**'
+      - 'Tools/verify.sh'
+      - 'Tools/git-hooks/pre-commit'
       - '.github/workflows/design-lint.yml'
   workflow_dispatch:
 
@@ -67,15 +72,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Baseline de la base del PR
+      - name: Baseline y guardia de la base del PR
         run: |
           git fetch --depth=1 origin ${{ github.event.pull_request.base.sha }}
           git show ${{ github.event.pull_request.base.sha }}:Tools/design-drift-baseline.json > /tmp/base.json || echo '{}' > /tmp/base.json
+          # El guardia se ejecuta desde la BASE, no desde el PR: un PR no puede traer su propio
+          # check-baseline-monotony.py parchado (Grok r1 #2). Fallback al del PR solo mientras el
+          # script aún no exista en iOS (primer aterrizaje).
+          git show ${{ github.event.pull_request.base.sha }}:Tools/check-baseline-monotony.py > /tmp/check-monotony.py \
+            || cp Tools/check-baseline-monotony.py /tmp/check-monotony.py
       - name: El baseline solo baja
         env:
           PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
         run: |
           # diff de dos puntos (no tres): el checkout es shallow y HEAD ya es el merge del PR sobre la base
           DIFF_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} HEAD | tr '\n' ',')
-          python3 Tools/check-baseline-monotony.py /tmp/base.json Tools/design-drift-baseline.json \
+          python3 /tmp/check-monotony.py /tmp/base.json Tools/design-drift-baseline.json \
             --labels "$PR_LABELS" --diff-files "$DIFF_FILES"
