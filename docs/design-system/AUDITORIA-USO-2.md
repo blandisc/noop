@@ -34,8 +34,8 @@
 
 ```
 InstrumentoTheme | InstrumentoFlowTitle | InstrumentoToolChip | InstrumentoTabHeader
-| PaperMenu | PaperMenuItem | PaperStepper | SectionBand | InstrumentoSectionBand | StrandPalette
-| .instrumentoTheme( | .paperMenu(
+| PaperStepper | SectionBand | InstrumentoSectionBand | StrandPalette
+| .instrumentoTheme(
 ```
 
 Raíces: `Cenit/{Screens,Onboarding,System,App,Data,LiveActivity,Media}`.  
@@ -103,7 +103,7 @@ Ejemplos call-site: `AppMap.swift:544` (`.instrumentoConfirm`), `LiveStrengthShe
 #### C3-7 · BAJO — Lo que el gate sí congela (sin sorpresa)
 
 Símbolos de la lista en APP (conteo vivo, dentro de raíces):  
-`InstrumentoSectionBand` 15 · `InstrumentoFlowTitle` 6 · `PaperStepper` 4 · `InstrumentoToolChip` 4 · `InstrumentoTabHeader` 1 · `.paperMenu` / `PaperMenuItem` abundantes (WeeklyPlan, Hoja, Library…).  
+`InstrumentoSectionBand` 15 · `InstrumentoFlowTitle` 6 · `PaperStepper` 4 · `InstrumentoToolChip` 4 · `InstrumentoTabHeader` 1 · `LiquidMenu` / `LiquidMenuItem` (WeeklyPlan, Hoja, Library…; migrados desde PaperMenu en FER-283).  
 `StatTile` / `.instrumentoCard` — **0 consumidores APP** (solo PKG + preview).  
 Baseline monótono: OK.
 

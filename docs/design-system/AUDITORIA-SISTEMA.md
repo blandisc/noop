@@ -12,7 +12,7 @@
 
 Conteos con `rg --glob '*.swift'` (hits / archivos distintos). Formato reportado: `N hits / F files`.
 
-Familias censadas: `LiquidColor.`, `StrandPalette.`, `InstrumentoTheme`, `theme.(paper|ink|…)`, `CenitColor.`, `LiquidSpace.`, `CenitMetrics.`, `LiquidRadius.`, `LiquidChip.`, `LiquidControl.`, `LiquidElevation.`, `liquidShadow(`, `StrandElevation.`, `strandElevation(`, `LiquidType.`, `StrandFont.`, `InstrumentoType.`, `LiquidMotion.`, `StrandMotion.`, `LiquidHaptica`, `EntrenarHaptic`, `ChartHaptics`, `StrandOpacity.`, `WidgetMetrics.`, `HomeWidgetMetrics.`, `WatchMetrics.`, más ~110 componentes/APIs (`liquidGlass(`, `PaperMenu`, `StatTile`, …) y miembros sueltos de `LiquidSpace` / `CenitMetrics` / `StrandMotion` / `LiquidMotion` / `LiquidElevation`.
+Familias censadas: `LiquidColor.`, `StrandPalette.`, `InstrumentoTheme`, `theme.(paper|ink|…)`, `CenitColor.`, `LiquidSpace.`, `CenitMetrics.`, `LiquidRadius.`, `LiquidChip.`, `LiquidControl.`, `LiquidElevation.`, `liquidShadow(`, `StrandElevation.`, `strandElevation(`, `LiquidType.`, `StrandFont.`, `InstrumentoType.`, `LiquidMotion.`, `StrandMotion.`, `LiquidHaptica`, `EntrenarHaptic`, `ChartHaptics`, `StrandOpacity.`, `WidgetMetrics.`, `HomeWidgetMetrics.`, `WatchMetrics.`, más ~110 componentes/APIs (`liquidGlass(`, `LiquidMenu`, `StatTile`, …) y miembros sueltos de `LiquidSpace` / `CenitMetrics` / `StrandMotion` / `LiquidMotion` / `LiquidElevation`.
 
 **Tamaño del paquete:** 207 archivos `.swift` · ~48.8k LOC · ~338 tipos `public` (enum/struct/class/…) en 196 archivos.
 
@@ -36,7 +36,7 @@ Leyenda de **ruta**: **fusionar** (alias → un nombre) · **renombrar** · **de
 | **Opacidad** | (vidrio en `LiquidColor.vidrio*`) | `StrandOpacity` (`Palette.swift:200`) — compartido | — | `StrandOpacity` **15/9** APP / **19/9** PKG | Neutral compartido útil. Se queda. Corregir docs que hablan de `opacity.disabled` → el token real es `StrandOpacity.dim` (`:208`). |
 | **Z-index** | — | *(capa z-index huérfana — archivo ya ausente del árbol)* | **0/0** | **0/0** | **Ya muerto** — no reintroducir. |
 | **Widgets / Watch** | — | `WidgetMetrics`, `HomeWidgetMetrics`, `WatchMetrics` (`Components.swift:66+`) | `WidgetMetrics` vía typealias en Live Activity; `HomeWidgetMetrics` vía `typealias M` en home widgets; `WatchMetrics` **13/2** | carve-out CONTRATO | **Decidido:** fuera de varios gates. No mezclar con `LiquidSpace`. |
-| **Superficie** | `liquidGlass(_:)` / `liquidGlass(tono:regimen:)` (`LiquidGlassRecipes.swift:18`, `:132`) | `.instrumentoCard` (`InstrumentoCard.swift:68`); Paper* | `liquidGlass(` **33/17** APP (+ **61/40** PKG) | `instrumentoCard(` **0** APP (solo PKG); `PaperMenu` **26/10** | Vidrio Liquid gana. Paper/`InstrumentoTheme` en `/migracion`. `instrumentoCard` ya sin consumidor APP → candidato a borrar tras quitar previews. |
+| **Superficie** | `liquidGlass(_:)` / `liquidGlass(tono:regimen:)` (`LiquidGlassRecipes.swift:18`, `:132`) | `.instrumentoCard` (`InstrumentoCard.swift:68`); Paper* residual | `liquidGlass(` **33/17** APP (+ **61/40** PKG) | `instrumentoCard(` **0** APP (solo PKG); `LiquidMenu` reemplaza a `PaperMenu` (FER-283) | Vidrio Liquid gana. `InstrumentoTheme` en `/migracion`. `instrumentoCard` ya sin consumidor APP → candidato a borrar tras quitar previews. |
 
 ### Pares numéricos exactos (espacio/radio) — candidatos a alias
 
@@ -196,10 +196,9 @@ Dónde el sistema hace difícil lo correcto.
 - Charts: scrub compartido (`ChartScrubMath` / `ChartHaptics`) bien factorizado; la piel Liquid vs Instrumento aún duplica contenedores (`TrendChart` APP **5/2** vs `LiquidTrendChart` **1/1**).  
 - Estados de pantalla Instrumento (`EmptyStateView` et al.) huérfanos mientras cada pantalla Liquid inventa su vacío — falta **un** empty Liquid en el catálogo.
 
-### 4.6 `PaperMenu` gated como legacy pero dominante
+### 4.6 `PaperMenu` → `LiquidMenu` (resuelto en FER-283)
 
-`no-legacy-api` incluye `PaperMenu` (`Tools/check-design-drift.py:107–108`) y APP tiene **26/10**. El trinquete congela deuda; no guía al reemplazo.  
-**Propuesta:** issue de pieza `LiquidMenu` (o extender `ConfirmCard`/`LiquidChipSeleccion`) + lote `/migracion` — no relajar el gate (**decidido**).
+Al censo, `no-legacy-api` incluía `PaperMenu` y APP tenía **26/10**. FER-281 entregó `LiquidMenu` (API espejo); FER-283 migró los call-sites de la app y retiró `PaperMenu` del paquete y del gate.
 
 ---
 
@@ -290,14 +289,14 @@ Cada una es un issue proponible. **Sin implementar aquí.**
 
 ### 5 — API `LiquidMetricTile` + empty Liquid + menú Liquid (dolor medio × costo medio)
 
-**Problema:** call-sites reinventan tiles sin delta; empties huérfanos; `PaperMenu` eterno.  
-**Issue:** «Completar piezas: tile sin delta; `LiquidEmptyState`; reemplazo de PaperMenu».  
+**Problema:** call-sites reinventan tiles sin delta; empties huérfanos; menú Paper eterno (menú resuelto en FER-281/283 → `LiquidMenu`).  
+**Issue:** «Completar piezas: tile sin delta; `LiquidEmptyState`» (menú ya migrado).  
 **Criterios:**
 
 1. `LiquidMetricTile` usable sin delta (API + Preview + test).  
 2. Apple Health puede llamar la pieza pública (o issue hijo de migración).  
 3. Un empty/loading/error Liquid en CATALOGO con Preview; estados Instrumento marcados legacy o borrados.  
-4. Diseño de menú Liquid aprobado (preview HTML/`#Preview`) antes de migrar los 10 archivos PaperMenu — migración puede ser issue hermano `/migracion`.
+4. ~~Diseño de menú Liquid + migración PaperMenu~~ — hecho (FER-281 pieza, FER-283 adopción/retiro).
 
 ---
 
@@ -318,7 +317,7 @@ Cada una es un issue proponible. **Sin implementar aquí.**
 | `StrandMotion.` | 59/25 | 30/24 |
 | `liquidGlass(` | 33/17 | 61/40 |
 | `LiquidGlassButton` | 48/17 | 7/3 |
-| `PaperMenu` | 26/10 | 18/1 |
+| `LiquidMenu` (ex-`PaperMenu`, FER-283) | migrado | definición en PKG |
 | `InstrumentoSectionBand` | 15/4 | 9/2 |
 | `LiquidElevation.` | 3/1 | 12/6 |
 | `StrandElevation.` / `strandElevation(` | 0/0 | 1/1 · 4/3 |
