@@ -146,7 +146,7 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
 
     private var otraFormaPill: some View {
         Button {
-            withAnimation(reduceMotion ? StrandMotion.fade : StrandMotion.gentle) { onToggleOtraForma() }
+            withAnimation(reduceMotion ? LiquidMotion.fundido : LiquidMotion.suave) { onToggleOtraForma() }
         } label: {
             HStack(spacing: CenitMetrics.space1) {
                 Text("Other ways")

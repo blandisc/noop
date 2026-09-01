@@ -859,7 +859,7 @@ struct LiveStrengthSheet: View {
             }
         }
         .frame(height: EntrenarMetrics.progressBar)
-        .animation(StrandMotion.gentle, value: sessionProgressFraction)
+        .animation(LiquidMotion.suave, value: sessionProgressFraction)
         .accessibilityElement()
         .accessibilityLabel(Text("Session progress"))
         .accessibilityValue(Text("\(Int((sessionProgressFraction * 100).rounded())) percent complete"))
@@ -1459,7 +1459,7 @@ struct LiveStrengthSheet: View {
         if session.receiptCountUpPlayed || reduceMotion {
             receiptCountUp = true
         } else {
-            withAnimation(StrandMotion.countUp) { receiptCountUp = true }
+            withAnimation(LiquidMotion.conteo) { receiptCountUp = true }
         }
         session.receiptCountUpPlayed = true
     }

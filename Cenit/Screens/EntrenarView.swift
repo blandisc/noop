@@ -943,7 +943,7 @@ private struct EntrenarLanding: View {
     /// literal del handoff.
     private func otraFormaEnlace(fillsWidth: Bool = true) -> some View {
         Button {
-            withAnimation(reduceMotion ? StrandMotion.fade : StrandMotion.gentle) {
+            withAnimation(reduceMotion ? LiquidMotion.fundido : LiquidMotion.suave) {
                 otraFormaAbierta.toggle()
             }
         } label: {
