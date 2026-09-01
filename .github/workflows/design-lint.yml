@@ -16,12 +16,20 @@ name: Design Lint
 on:
   pull_request:
     branches: [iOS, main]
+    # labeled/unlabeled: el alta legal (`baseline-alta`) se aplica DESPUÉS de abrir el PR —
+    # sin estos types el job de monotonía se quedaría en rojo hasta un push vacío (Grok r1 #5).
+    types: [opened, synchronize, reopened, labeled, unlabeled]
     paths:
       - 'Packages/StrandDesign/**'
       - 'Cenit/**'
       - 'CenitWidgets/**'
       - 'CenitWatch/**'
       - 'Tools/check-design-drift.py'
+      - 'Tools/check-baseline-monotony.py'
+      - 'Tools/design-drift-baseline.json'
+      - 'Tools/tests/**'
+      - 'Tools/verify.sh'
+      - 'Tools/git-hooks/pre-commit'
       - '.github/workflows/design-lint.yml'
   workflow_dispatch:
 
@@ -43,7 +51,41 @@ jobs:
         run: python3 Tools/check-design-drift.py --rules no-emdash-string Cenit/Screens Cenit/Onboarding
       - name: Design-drift linter — no raw shadow, use StrandElevation (migrated screens)
         run: python3 Tools/check-design-drift.py --rules no-raw-shadow Cenit/Screens
-      - name: Design-drift linter — no spacing/stroke literal, ratchet (FER-258)
-        run: python3 Tools/check-design-drift.py --rules no-spacing-literal --baseline Tools/design-drift-baseline.json Cenit/Screens
+      - name: Linter self-tests (FER-263/264)
+        run: python3 -m unittest discover -s Tools/tests -p 'test_*.py'
+      - name: Design-drift linter — no spacing/stroke literal, ratchet (FER-258/263)
+        run: python3 Tools/check-design-drift.py --rules no-spacing-literal --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App
+      - name: Design-drift linter — no legacy API, ratchet (FER-263)
+        run: python3 Tools/check-design-drift.py --rules no-legacy-api --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media
+      - name: Design-drift linter — token-exempt es deuda, ratchet (FER-263)
+        run: python3 Tools/check-design-drift.py --rules token-exempt --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media Packages/StrandDesign/Sources
       - name: Sin vidrio dentro de una hoja (papel opaco)
         run: python3 Tools/check-design-drift.py --rules no-sheet-glass Packages/StrandDesign/Sources Cenit CenitApp CenitShared CenitWidgets
+
+  # FER-264 (épico FER-261): el baseline SOLO puede bajar. Compara el JSON del PR contra el de la
+  # base real del PR; cualquier conteo que sube falla. Alta legal ÚNICA: PR dedicado solo-baseline
+  # (+docs) con la label `baseline-alta` que aplica el dueño — ambas condiciones las verifica el
+  # script, así un PR con código jamás puede bendecirse solo. Ver docs/design-system/CONTRATO.md.
+  baseline-monotony:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Baseline y guardia de la base del PR
+        run: |
+          git fetch --depth=1 origin ${{ github.event.pull_request.base.sha }}
+          git show ${{ github.event.pull_request.base.sha }}:Tools/design-drift-baseline.json > /tmp/base.json || echo '{}' > /tmp/base.json
+          # El guardia se ejecuta desde la BASE, no desde el PR: un PR no puede traer su propio
+          # check-baseline-monotony.py parchado (Grok r1 #2). Fallback al del PR solo mientras el
+          # script aún no exista en iOS (primer aterrizaje).
+          git show ${{ github.event.pull_request.base.sha }}:Tools/check-baseline-monotony.py > /tmp/check-monotony.py \
+            || cp Tools/check-baseline-monotony.py /tmp/check-monotony.py
+      - name: El baseline solo baja
+        env:
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          # diff de dos puntos (no tres): el checkout es shallow y HEAD ya es el merge del PR sobre la base
+          DIFF_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} HEAD | tr '\n' ',')
+          python3 /tmp/check-monotony.py /tmp/base.json Tools/design-drift-baseline.json \
+            --labels "$PR_LABELS" --diff-files "$DIFF_FILES"
