@@ -171,24 +171,11 @@ struct WorkoutHistoryScreen: View {
         // The detail push (`WorkoutSessionRoute`) is registered once on the Entrenar NavigationStack in
         // RootTabView (alongside the other train routes), so it isn't re-declared here.
         // «Undo» toast after a delete (FER-527), now seeded by the list OR the detail via the coordinator.
+        // FER-280·2c: undoBanner NO adopta UndoToast — pad H 18 / V handoff14 ≠ receta de la pieza.
         .overlay(alignment: .bottom) { if let d = coordinator.pendingUndo { undoBanner(d) } }
-        // FER-969: undo-restore failure banner (delete itself lives on the detail screen).
-        .overlay(alignment: .top) {
-            if saveError {
-                Text("Couldn't save the workout. Try again.")
-                    .font(LiquidType.cuerpoBanner)
-                    .foregroundStyle(theme.ink)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .patternBlock(theme, bar: theme.critical)
-                    .padding(.horizontal, CenitMetrics.cardPadding)
-                    .transition(LiquidMotion.fallingFadeTransition)
-                    .task {
-                        try? await Task.sleep(for: .seconds(4))
-                        saveError = false
-                    }
-            }
-        }
-        .animation(StrandMotion.fade, value: saveError)
+        // FER-969 / FER-280·2c: undo-restore failure → `.saveErrorToast` (pad 16 ≡ cardPadding).
+        .saveErrorToast(isPresented: $saveError,
+                        message: String(localized: "Couldn't save the workout. Try again."))
         .sensoryFeedback(trigger: coordinator.pendingUndo?.id) { _, new in
             new != nil ? LiquidHaptica.advertencia.feedback : nil
         }
@@ -1596,23 +1583,9 @@ struct WorkoutSessionDetailScreen: View {
         // pantalla llega empujada (`WorkoutSessionRoute`) y conserva su navegación/toolbar del
         // stack ambiente tal cual, sin cabecera propia que sustituir.
         .entrenarHojaFondo(tono: .neutro)
-        // FER-969 / X-05a: delete (or undo-restore) failure — banner; do NOT pop or seed pendingUndo.
-        .overlay(alignment: .top) {
-            if saveError {
-                Text("Couldn't delete the workout. Try again.")
-                    .font(LiquidType.cuerpoBanner)
-                    .foregroundStyle(theme.ink)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .patternBlock(theme, bar: theme.critical)
-                    .padding(.horizontal, CenitMetrics.cardPadding)
-                    .transition(LiquidMotion.fallingFadeTransition)
-                    .task {
-                        try? await Task.sleep(for: .seconds(4))
-                        saveError = false
-                    }
-            }
-        }
-        .animation(StrandMotion.fade, value: saveError)
+        // FER-969 / X-05a / FER-280·2c: delete failure → `.saveErrorToast`; do NOT pop or seed pendingUndo.
+        .saveErrorToast(isPresented: $saveError,
+                        message: String(localized: "Couldn't delete the workout. Try again."))
         // «Editar» / «Borrar entrenamiento» — visible from the detail, so deleting no longer needs the
         // list's long-press, and editing a saved session is finally possible (FER-556).
         .toolbar {
