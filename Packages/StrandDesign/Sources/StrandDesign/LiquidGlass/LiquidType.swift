@@ -109,6 +109,8 @@ public enum LiquidType {
     /// Tracking del reloj compacto de la sesión (15/400 tabular): paridad con
     /// `InstrumentoType.groteskSessionClockCompactTracking` (FER-303 · QA D5).
     public static let relojCompactoTracking: CGFloat = -0.2
+    /// Reloj compacto de la sesión: 15/400 tabular (paridad `groteskSessionClockCompact`).
+    public static let relojCompacto = InstrumentoType.groteskNumber(15, weight: .regular)
 
     /// `título/fila` — 13/600. Título de ListRow.
     public static let tituloFila = InstrumentoType.grotesk(13, weight: .semibold)
@@ -245,6 +247,15 @@ public enum LiquidType {
     /// `caption` — 10.5/500. Sin consumidor en componentes (los deltas usan
     /// `captionLectura`); se conserva para previews/debug.
     public static let caption = InstrumentoType.grotesk(10.5, weight: .medium)
+    /// Variantes de peso del caption grotesk. `Font.weight(_:)` NO cambia la cara de una
+    /// fuente `.custom` nombrada por PostScript (SpaceGrotesk-Medium se queda Medium), así
+    /// que el peso se pide por token, nunca con `.weight(...)` sobre un token grotesk (FER-303).
+    public static let captionRegular = InstrumentoType.grotesk(10.5, weight: .regular)
+    public static let captionFuerte = InstrumentoType.grotesk(10.5, weight: .semibold)
+    public static let captionNegrita = InstrumentoType.grotesk(10.5, weight: .bold)
+    /// `captionLectura` en negrita (escala, relativo a .caption2).
+    public static let captionLecturaNegrita = InstrumentoType.grotesk(10.5, weight: .bold,
+                                                                      relativeTo: .caption2)
     /// La etiqueta de eje dentro de una gráfica de la Matriz (los «0.8 · 1.3» de la campana de
     /// Carga): 8/500 tabular, la voz más chica del sistema — solo dentro de un `Canvas`.
     public static let etiquetaEje = InstrumentoType.grotesk(8, weight: .medium)

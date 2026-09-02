@@ -81,7 +81,7 @@ struct HojaFoco: View {
                     heroes(run: run, ei: ei)
                     if let ant = vivo.antPlayhead(run) {
                         Text(verbatim: ant)
-                            .font(LiquidType.captionLectura.weight(.bold))
+                            .font(LiquidType.captionLecturaNegrita)
                             .tracking(FocoMetrics.antTracking)
                             .foregroundStyle(LiquidColor.tinta500)
                             .padding(.top, FocoMetrics.antTop)
@@ -394,7 +394,7 @@ struct HojaFoco: View {
 
     private func combustibleSegmento(_ label: String, activo: Bool, action: @escaping () -> Void) -> some View {
         Text(verbatim: label)
-            .font(LiquidType.caption.weight(.semibold)).tracking(0.6).textCase(.uppercase)
+            .font(LiquidType.captionFuerte).tracking(0.6).textCase(.uppercase)
             .foregroundStyle(activo ? LiquidColor.papelTarjeta : LiquidColor.tinta500)
             .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s125).frame(minHeight: EntrenarMetrics.secondaryButton)
             .background { if activo { Capsule().fill(LiquidColor.tinta900) } }
@@ -493,7 +493,7 @@ struct HojaFoco: View {
         let pct = maxHR > 0 ? Double(bpm) / maxHR : 0
         let zone = max(1, min(5, Int((pct * 5).rounded(.up))))
         return Text("ZONE \(zone) · \(bpm)")
-            .font(LiquidType.caption.weight(.bold)).foregroundStyle(LiquidColor.tinta500)
+            .font(LiquidType.captionNegrita).foregroundStyle(LiquidColor.tinta500)
             .outlineCapsule(.outline, size: .sm, theme: vivo.sheet.theme)
     }
 

@@ -107,7 +107,7 @@ struct SessionKeypad: View {
                 HStack(spacing: 0) {
                     ForEach(Array(Self.rirLabels.enumerated()), id: \.offset) { idx, label in
                         let selected = selectedRIR == idx
-                        Text(label).font(LiquidType.caption.weight(.semibold))
+                        Text(label).font(LiquidType.captionFuerte)
                             .foregroundStyle(selected ? LiquidColor.papelTarjeta : LiquidColor.tinta700)
                             .frame(width: EntrenarMetrics.rirButton, height: EntrenarMetrics.rirButton)
                             .background(selected ? LiquidColor.tinta900 : Color.clear)

@@ -120,7 +120,7 @@ struct HojaTarjetaEjercicioSesion: View {
                     Text(String(localized: "Take the raise to \(vivo.plateNumber(vivo.displayWeight(raise.toKg))) \(vivo.weightUnit())"))
                 }
             }
-            .font(LiquidType.caption.weight(.semibold)).foregroundStyle(LiquidColor.tinta900)
+            .font(LiquidType.captionFuerte).foregroundStyle(LiquidColor.tinta900)
         }
     }
 
@@ -132,7 +132,7 @@ struct HojaTarjetaEjercicioSesion: View {
             switch display {
             case .propose(let fromKg, let toKg):
                 Text(String(localized: "\(ProgressionMath.deloadStallThreshold) sessions unmoved · proposes \(vivo.plateNumber(vivo.displayWeight(toKg))) \(vivo.weightUnit())"))
-                    .font(LiquidType.caption.weight(.semibold)).foregroundStyle(LiquidColor.tinta900)
+                    .font(LiquidType.captionFuerte).foregroundStyle(LiquidColor.tinta900)
                 Spacer(minLength: LiquidSpace.s150)
                 Button { vivo.applyDeload(ei: ei, toKg: toKg) } label: {
                     Text("Drop to \(vivo.plateNumber(vivo.displayWeight(toKg)))")
@@ -141,12 +141,12 @@ struct HojaTarjetaEjercicioSesion: View {
                 .buttonStyle(.plain)
                 Button { vivo.dismissDeload(ei: ei) } label: {
                     Text("Keep \(vivo.plateNumber(vivo.displayWeight(fromKg)))")
-                        .font(LiquidType.caption.weight(.semibold)).foregroundStyle(LiquidColor.tinta700)
+                        .font(LiquidType.captionFuerte).foregroundStyle(LiquidColor.tinta700)
                 }
                 .buttonStyle(.plain)
             case .warnOnly(let sessions):
                 Text(String(localized: "\(sessions) sessions unmoved · goal not met"))
-                    .font(LiquidType.caption.weight(.semibold)).foregroundStyle(LiquidColor.tinta700)
+                    .font(LiquidType.captionFuerte).foregroundStyle(LiquidColor.tinta700)
                 Spacer(minLength: LiquidSpace.s150)
                 Button { vivo.dismissDeload(ei: ei) } label: {
                     Image(systemName: "xmark").font(LiquidType.infoGlifoCompacto).foregroundStyle(LiquidColor.tinta500)
@@ -208,12 +208,12 @@ struct HojaTarjetaEjercicioSesion: View {
                     withAnimation(vivo.reduceMotion ? nil : .snappy) { vivo.raiseRevertOpenRunId = nil }
                 } label: {
                     Text("Keep \(vivo.plateNumber(vivo.displayWeight(raise.toKg))) \(vivo.weightUnit())")
-                        .font(LiquidType.caption.weight(.semibold)).foregroundStyle(LiquidColor.verdePrimario)
+                        .font(LiquidType.captionFuerte).foregroundStyle(LiquidColor.verdePrimario)
                 }
                 .buttonStyle(.plain)
                 Button { vivo.revertRaise(ei: ei) } label: {
                     Text("Back to \(vivo.plateNumber(vivo.displayWeight(raise.fromKg))) \(vivo.weightUnit())")
-                        .font(LiquidType.caption.weight(.semibold)).foregroundStyle(LiquidColor.tinta700)
+                        .font(LiquidType.captionFuerte).foregroundStyle(LiquidColor.tinta700)
                 }
                 .buttonStyle(.plain)
             }
@@ -316,7 +316,7 @@ struct HojaTarjetaEjercicioSesion: View {
                         Text(texto).numeroVivo(value: texto)
                     }
                 }
-                .font(LiquidType.valorL.weight(.bold)).foregroundStyle(LiquidColor.tinta900)
+                .font(LiquidType.valorL).foregroundStyle(LiquidColor.tinta900)
                 if let metaS, metaS > 0 {
                     Text("goal \(SessionClock.format(metaS))").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                 }
@@ -393,11 +393,11 @@ struct HojaTarjetaEjercicioSesion: View {
                 HStack(spacing: LiquidSpace.s250) {
                     OutlineCapsule(theme: vivo.sheet.theme, size: .md, action: { vivo.correctAbsurdCapture() }) {
                         Text("It was \(vivo.plateNumber(vivo.displayWeight(target.weightKg / 10)))")
-                            .font(LiquidType.caption.weight(.semibold)).foregroundStyle(LiquidColor.tinta900)
+                            .font(LiquidType.captionFuerte).foregroundStyle(LiquidColor.tinta900)
                     }
                     Button { vivo.confirmAbsurdCaptureAsIs() } label: {
                         Text("Yes, \(vivo.plateNumber(vivo.displayWeight(target.weightKg)))")
-                            .font(LiquidType.caption.weight(.semibold)).foregroundStyle(LiquidColor.negativo)
+                            .font(LiquidType.captionFuerte).foregroundStyle(LiquidColor.negativo)
                     }
                     .buttonStyle(.plain)
                 }
@@ -417,7 +417,7 @@ struct HojaTarjetaEjercicioSesion: View {
                     withAnimation(vivo.reduceMotion ? nil : .snappy) { vivo.session.addSet(exercise: ei) }
                 }) {
                     Text(verbatim: "＋ \(String(localized: "SET"))")
-                        .font(LiquidType.captionLectura.weight(.bold)).tracking(1)
+                        .font(LiquidType.captionLecturaNegrita).tracking(1)
                         .foregroundStyle(LiquidColor.tinta900)
                 }
                 .accessibilityLabel(Text("Add set"))
