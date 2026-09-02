@@ -99,7 +99,7 @@ struct ExerciseDetailScreen: View {
             VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 // Two-speed rhythm (handoff): the chrome block — title, hero, segmented — sits
                 // tight at `gap`; `sectionGap` breathes only between the block and the tab content.
-                VStack(alignment: .leading, spacing: CenitMetrics.gap) {
+                VStack(alignment: .leading, spacing: LiquidSpace.s300) {
                     header
                     // Reserved media hero (FER-751, handoff 1g/1h): sits between the title and the
                     // segmented control. FER-722/778 fill this same slot with the cached loop/thumb
@@ -117,9 +117,9 @@ struct ExerciseDetailScreen: View {
                 // under any of the three tabs — not only Guía.
                 measurementSection
             }
-            .padding(.top, CenitMetrics.gap)
-            .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.bottom, CenitMetrics.screenPadding)
+            .padding(.top, LiquidSpace.s300)
+            .padding(.horizontal, LiquidSpace.s600)
+            .padding(.bottom, LiquidSpace.s600)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         // FER-198 (Ola 2, épico FER-195): fondo de vidrio El Eje (Ola 1, FER-197) — este tipo no
@@ -179,10 +179,10 @@ struct ExerciseDetailScreen: View {
             NavigationStack {
                 ExerciseDetailScreen(exercise: ex)
                     .toolbar { ToolbarItem(placement: .confirmationAction) {
-                        Button("Done") { variant = nil }.foregroundStyle(theme.ink)
+                        Button("Done") { variant = nil }.foregroundStyle(LiquidColor.tinta900)
                     } }
                     .navigationBarTitleDisplayMode(.inline)
-                    .toolbarBackground(theme.paper, for: .navigationBar)
+                    .toolbarBackground(LiquidColor.papelTarjeta, for: .navigationBar)
             }
             .instrumentoTheme(theme)
             .environmentObject(repo)
@@ -225,8 +225,8 @@ struct ExerciseDetailScreen: View {
                     .accessibilityHidden(true)
                 Button { isLoopPlaying.toggle() } label: {
                     Image(systemName: isLoopPlaying ? "pause.fill" : "play.fill")
-                        .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(.white)
-                        .padding(CenitMetrics.space2).background(.black.opacity(StrandOpacity.strokeSoft), in: Circle())
+                        .font(LiquidType.infoGlifoCompacto.weight(.semibold)).foregroundStyle(.white)
+                        .padding(LiquidSpace.s200).background(.black.opacity(StrandOpacity.strokeSoft), in: Circle())
                 }
                 .buttonStyle(EntrenarPressStyle())
                 // FER-121: círculo visible ≈28pt; el toque real crece a 44 (HIG) sin mover el
@@ -236,24 +236,24 @@ struct ExerciseDetailScreen: View {
                 .padding(LiquidSpace.filaRespiro)
                 .accessibilityLabel(Text(isLoopPlaying ? "Pause preview" : "Play preview"))
             }
-            // Handoff: the hero carries a 2px frame in the movement family's hue — the same frame
-            // the Library draws on its thumbnails.
+            // Handoff: the hero carries a frame in the movement family's hue — the same frame
+            // the Library draws on its thumbnails (1.5pt El Eje).
             .overlay(RoundedRectangle(cornerRadius: ExerciseThumbnail.heroCornerRadius, style: .continuous)
-                .strokeBorder(familyTint, lineWidth: 2))
+                .strokeBorder(familyTint, lineWidth: 1.5))  // token-exempt: aro del hero El Eje (1.5)
             .accessibilityElement(children: .contain)
             .accessibilityLabel(Text("\(exercise.name) preview"))
         } else {
-            VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s200) {
                 ZStack {
                     ExerciseThumbnail(hero: nil)
-                    if loadingMedia { ProgressView().tint(theme.inkTertiary) }
+                    if loadingMedia { ProgressView().tint(LiquidColor.tinta500) }
                 }
                 // `ExerciseThumbnail(hero:)` draws its own fixed 176pt slot (shared component, not
                 // touched) — clipped down to the screen's own 150pt token so the placeholder matches
                 // the real media hero above without a second height living on the component itself.
                 .frame(maxWidth: .infinity).frame(height: EntrenarMetrics.detailHeroMedia).clipped()
                 .overlay(RoundedRectangle(cornerRadius: ExerciseThumbnail.heroCornerRadius, style: .continuous)
-                    .strokeBorder(familyTint, lineWidth: 2))
+                    .strokeBorder(familyTint, lineWidth: 1.5))  // token-exempt: aro del hero El Eje (1.5)
                 if !mediaCoordinator.isEnabled { mediaOffHint }
             }
         }
@@ -274,12 +274,12 @@ struct ExerciseDetailScreen: View {
             tabRouter.select(.settings)
             dismiss()
         } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "play.rectangle").font(StrandFont.glyph(.chevron))
+            HStack(spacing: LiquidSpace.s150) {
+                Image(systemName: "play.rectangle").font(LiquidType.iconSF(size: 12))
                 Text("Turn on library downloads in Settings to see video")
-                    .font(StrandFont.footnote)
+                    .font(LiquidType.cuerpo)
             }
-            .foregroundStyle(theme.inkTertiary)
+            .foregroundStyle(LiquidColor.tinta500)
         }
         .buttonStyle(EntrenarPressStyle())
     }
@@ -292,7 +292,7 @@ struct ExerciseDetailScreen: View {
                 progressSection
                 recordsSection
                 Text("From your best set with the Epley (1985) formula. A progress signal, not a target to load.")
-                    .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -313,36 +313,38 @@ struct ExerciseDetailScreen: View {
         let sessions = historySessions
         return VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(sessions.enumerated()), id: \.offset) { idx, day in
-                VStack(alignment: .leading, spacing: CenitMetrics.space2) {
-                    HStack(spacing: CenitMetrics.space2) {
+                VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+                    HStack(spacing: LiquidSpace.s200) {
                         RoundedRectangle(cornerRadius: 3, style: .continuous)  // token-exempt: geometría del punto de familia (8×8)
                             .fill(familyTint).frame(width: 8, height: 8)
                         historyDayText(day.ts, routineName: day.routineName)
-                            .font(StrandFont.body.weight(.medium)).foregroundStyle(theme.ink)
-                        Spacer(minLength: CenitMetrics.space2)
+                            .font(LiquidType.tituloGemela).foregroundStyle(LiquidColor.tinta900)
+                        Spacer(minLength: LiquidSpace.s200)
                         if day.isRecord {
                             Text("RECORD")
-                                .font(InstrumentoType.grotesk(10, weight: .bold)).tracking(0.5)
-                                .foregroundStyle(theme.paper)
-                                .padding(.horizontal, 7).padding(.vertical, 2)  // token-exempt: badge del handoff
+                                .font(LiquidType.microEstado).tracking(0.5)
+                                .foregroundStyle(LiquidColor.papelTarjeta)
+                                .padding(.horizontal, LiquidSpace.s200).padding(.vertical, LiquidSpace.s050)
                                 .background(familyTint, in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
                         }
                     }
                     historyDaySubtitle(day)
-                        .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-                    ChipFlow(spacing: 7) {
+                        .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
+                    ChipFlow(spacing: LiquidSpace.s200) {
                         ForEach(Array(day.sets.enumerated()), id: \.offset) { _, s in
                             Text(verbatim: "\(StrengthDisplay.weightNumber(s.kg, system: system)) × \(s.reps)")
-                                .font(InstrumentoType.grotesk(13, weight: .semibold)).monospacedDigit()
-                                .foregroundStyle(theme.ink)
+                                .font(LiquidType.tituloFila).monospacedDigit()
+                                .foregroundStyle(LiquidColor.tinta900)
                                 .padding(.horizontal, LiquidChip.compactoHorizontal).padding(.vertical, LiquidChip.compactoVertical)
                                 .liquidGlass(.pastillaSolida)
                         }
                     }
                 }
-                .padding(.vertical, CenitMetrics.gap)
+                .padding(.vertical, LiquidSpace.s300)
                 .accessibilityElement(children: .combine)
-                if idx < sessions.count - 1 { Divider().overlay(theme.hairline) }
+                if idx < sessions.count - 1 {
+                    Rectangle().fill(LiquidColor.tinta10).frame(height: LiquidRadius.hairline)
+                }
             }
         }
     }
@@ -413,21 +415,13 @@ struct ExerciseDetailScreen: View {
     // MARK: - Header
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 3) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s075) {
             Text(metaLine)
-                .instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                .liquidKicker().foregroundStyle(LiquidColor.tinta700)
             Text(StrengthDisplay.name(exercise))
-                // §8.7: redesigned sheets title in Grotesk (handoff: 700 26px, tight tracking).
-                // FER-149 deviation (documented, not silent): spec C asked for 30pt IF a reasonable
-                // role token existed to add to StrandDesign. The closest existing role,
-                // `InstrumentoType.groteskScreenTitle`, is 25pt — not 30, and not this screen's own
-                // 26pt either. Minting a brand-new 30pt token whose only caller would be this one
-                // screen isn't "a reasonable role token", it's a bespoke number wearing a token's
-                // clothes — exactly what the design system rule (StrandDesign law, no one-off sizes)
-                // exists to prevent. Kept at 26 per the system's own guard rail; a real 30pt role
-                // token is a system-level design decision for `/ui`, not this issue.
-                .font(InstrumentoType.grotesk(26, weight: .bold)).tracking(InstrumentoType.groteskHeroTrackingScaled(26))
-                .foregroundStyle(theme.ink)
+                // FER-291: displayS (22) — HTML fuente de verdad; no se mintió un token nuevo de 30.
+                .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
+                .foregroundStyle(LiquidColor.tinta900)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -450,14 +444,17 @@ struct ExerciseDetailScreen: View {
     // MARK: - Measurement type (FER-541) — let the user re-type any exercise, incl. a catalog one
 
     private var measurementSection: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
-            Divider().overlay(theme.hairline).padding(.bottom, LiquidSpace.seccionCanto)
-            Text("Measured by").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            HStack(spacing: CenitMetrics.gap) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+            Rectangle().fill(LiquidColor.tinta10).frame(height: LiquidRadius.hairline)
+                .padding(.bottom, LiquidSpace.seccionCanto)
+            Text("Measured by").liquidKicker().foregroundStyle(LiquidColor.tinta700)
+            HStack(spacing: LiquidSpace.s300) {
                 Button { showTypeMenu = true } label: {
-                    HStack(spacing: 6) {
-                        Text(StrengthDisplay.typeLabel(effectiveType)).font(StrandFont.body).foregroundStyle(theme.ink)
-                        StrandIcon.down.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
+                    HStack(spacing: LiquidSpace.s150) {
+                        Text(StrengthDisplay.typeLabel(effectiveType))
+                            .font(LiquidType.tituloGemela).foregroundStyle(LiquidColor.tinta900)
+                        StrandIcon.down.image.font(LiquidType.iconSF(size: 12))
+                            .foregroundStyle(LiquidColor.tinta500)
                     }
                 }
                 .buttonStyle(EntrenarPressStyle())
@@ -465,12 +462,9 @@ struct ExerciseDetailScreen: View {
                     LiquidMenuItem(StrengthDisplay.typeName(t),
                                   systemImage: t == effectiveType ? "checkmark" : nil) { setType(t) }
                 })
-                Spacer(minLength: CenitMetrics.space2)
+                Spacer(minLength: LiquidSpace.s200)
                 if hasTypeOverride {
-                    Button { revertType() } label: {
-                        Text("Revert to default").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    }
-                    .buttonStyle(EntrenarPressStyle())
+                    OutlineCapsule("Revert to default", theme: theme, size: .sm, action: revertType)
                 }
             }
             .frame(minHeight: EntrenarMetrics.secondaryButton)
@@ -519,15 +513,15 @@ struct ExerciseDetailScreen: View {
 
     @ViewBuilder private var musclesSection: some View {
         if !exercise.primaryMuscles.isEmpty || !exercise.secondaryMuscles.isEmpty {
-            VStack(alignment: .leading, spacing: CenitMetrics.space2) {
-                Text("Muscles").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                ChipFlow(spacing: CenitMetrics.space2) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+                Text("Muscles").liquidKicker().foregroundStyle(LiquidColor.tinta700)
+                ChipFlow(spacing: LiquidSpace.s200) {
                     ForEach(exercise.primaryMuscles, id: \.self) { m in muscleChip(m, primary: true) }
                     ForEach(exercise.secondaryMuscles, id: \.self) { m in muscleChip(m, primary: false) }
                 }
                 if !exercise.secondaryMuscles.isEmpty {
                     Text("Primary in color · assisting in gray")
-                        .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                        .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
                 }
             }
         }
@@ -539,10 +533,10 @@ struct ExerciseDetailScreen: View {
         Group {
             if primary {
                 Text("\(StrengthDisplay.muscle(muscle)) · \(String(localized: "primary"))")
-                    .font(StrandFont.subhead).foregroundStyle(familyTint)
+                    .font(LiquidType.tituloFila).foregroundStyle(familyTint)
             } else {
                 Text(StrengthDisplay.muscle(muscle))
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta700)
             }
         }
         .padding(.horizontal, LiquidChip.compactoHorizontal).padding(.vertical, LiquidChip.compactoVertical)
@@ -561,7 +555,7 @@ struct ExerciseDetailScreen: View {
         func body(content: Content) -> some View {
             if primary {
                 content.background(familyTint.opacity(StrandOpacity.tintFill),
-                                   in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+                                   in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
             } else {
                 content.liquidGlass(.pastillaSolida)
             }
@@ -575,10 +569,9 @@ struct ExerciseDetailScreen: View {
     /// exercise or one whose primary muscle nothing else shares.
     @ViewBuilder private var variantsSection: some View {
         if !variants.isEmpty {
-            VStack(alignment: .leading, spacing: CenitMetrics.space2) {
-                Divider().overlay(theme.hairline).padding(.bottom, CenitMetrics.space1)
-                Text("Variants").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                ChipFlow(spacing: CenitMetrics.space2) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+                LiquidSectionHeader("Variants")
+                ChipFlow(spacing: LiquidSpace.s200) {
                     ForEach(variants) { ex in variantChip(ex) }
                 }
             }
@@ -586,14 +579,11 @@ struct ExerciseDetailScreen: View {
     }
 
     private func variantChip(_ ex: Exercise) -> some View {
-        Button { variant = ex } label: {
+        OutlineCapsule(theme: theme, size: .sm, action: { variant = ex }) {
             Text(StrengthDisplay.name(ex))
-                .font(StrandFont.subhead).foregroundStyle(theme.ink)
-                .padding(.horizontal, LiquidChip.compactoHorizontal).padding(.vertical, LiquidChip.compactoVertical)
-                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
-                    .strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                .font(LiquidType.tituloFila)
+                .foregroundStyle(LiquidColor.tinta900)
         }
-        .buttonStyle(EntrenarPressStyle())
         .accessibilityLabel(Text(StrengthDisplay.name(ex)))
     }
 
@@ -614,26 +604,28 @@ struct ExerciseDetailScreen: View {
     private var howToSection: some View {
         let cues = exercise.displayInstructions(localized: StrengthDisplay.localized)
         return VStack(alignment: .leading, spacing: 0) {
-            Text("How to").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            LiquidSectionHeader("How to")
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(Array(cues.enumerated()), id: \.offset) { index, cue in
-                    // Handoff: the step number leads in the family hue (Grotesk 15 bold), the cue in
-                    // ink, hairline-divided rows.
-                    HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.gap) {
+                    // Handoff: the step number leads in the family hue, the cue in ink,
+                    // capillary-divided rows.
+                    HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s300) {
                         Text(verbatim: "\(index + 1)")
-                            .font(InstrumentoType.grotesk(15, weight: .bold)).monospacedDigit()
+                            .font(LiquidType.titulo).monospacedDigit()
                             .foregroundStyle(familyTint)
                             .frame(width: 15, alignment: .leading)
                         Text(cue)
-                            .font(StrandFont.subhead).foregroundStyle(theme.ink)
+                            .font(Font.system(size: LiquidType.lecturaHojaBase))
+                            .foregroundStyle(LiquidColor.tinta900)
                             .fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .padding(.vertical, CenitMetrics.rowVPad)
-                    if index < cues.count - 1 { Divider().overlay(theme.hairline) }
+                    .padding(.vertical, LiquidSpace.filaRespiro)
+                    if index < cues.count - 1 {
+                        Rectangle().fill(LiquidColor.tinta10).frame(height: LiquidRadius.hairline)
+                    }
                 }
             }
-            .padding(.top, 2)  // token-exempt: ajuste óptico
         }
     }
 
@@ -650,22 +642,26 @@ struct ExerciseDetailScreen: View {
                 openURL(url)
             }
         } label: {
-            // Handoff: a flat row over a top hairline — no card. The icon sits in a small sunken square.
+            // Handoff: a flat row over a top capillary — no card. The icon sits in a small sunken square.
             VStack(spacing: 0) {
-                Divider().overlay(theme.hairline)
-                HStack(spacing: CenitMetrics.gap) {
-                    Image(systemName: "play.rectangle").font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkSecondary)
+                Rectangle().fill(LiquidColor.tinta10).frame(height: LiquidRadius.hairline)
+                HStack(spacing: LiquidSpace.s300) {
+                    Image(systemName: "play.rectangle")
+                        .font(LiquidType.iconSF(size: 15))
+                        .foregroundStyle(LiquidColor.tinta700)
                         .frame(width: 34, height: 34)
                         .liquidGlass(.pastillaSolida)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("Watch on YouTube").font(StrandFont.subhead).foregroundStyle(theme.ink)
+                    VStack(alignment: .leading, spacing: LiquidSpace.s025) {
+                        Text("Watch on YouTube")
+                            .font(LiquidType.tituloGemela).foregroundStyle(LiquidColor.tinta900)
                         Text("Opens outside the app · uses the internet")
-                            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                            .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
                     }
-                    Spacer(minLength: CenitMetrics.space2)
-                    StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
+                    Spacer(minLength: LiquidSpace.s200)
+                    StrandIcon.disclosure.image.font(LiquidType.iconSF(size: 12))
+                        .foregroundStyle(LiquidColor.tinta500)
                 }
-                .padding(.top, CenitMetrics.gap)
+                .padding(.top, LiquidSpace.s300)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -685,39 +681,30 @@ struct ExerciseDetailScreen: View {
             // claims «TODAY»/«HOY» over stale data (the old bug the spec's collateral fix targeted)
             // because it says «90 DAYS», not a same-day claim, regardless of when the last log was.
             Text("TREND · ESTIMATED 1RM · 90 DAYS")
-                .instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.gap) {
+                .liquidKicker().foregroundStyle(LiquidColor.tinta700)
+            HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s300) {
                 if let latest = oneRM.last {
-                    // FER-149 spec A ("numeral 22 índigo") is literal, not "the family's tint" — the
-                    // fixed hue `theme.dataSleep` is the SAME token the rest of the codebase already
-                    // calls «índigo» (`LiquidActaVeredicto`, `MedidorLunar`, et al.). The chart accent
-                    // and the frame/muscle-dot below stay on `familyTint` (untouched, out of this
-                    // issue's scope) — only the hero numeral itself follows the arbitrated spec.
-                    HStack(alignment: .firstTextBaseline, spacing: 3) {
+                    // FER-291: numeral 22 índigo via LiquidType.valorL + LiquidColor.indigo.
+                    // Chart accent / frame / muscle-dot stay on `familyTint`.
+                    HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s075) {
                         Text(verbatim: StrengthDisplay.weightNumber(latest, system: system))
-                            .font(InstrumentoType.groteskHeroNumeral(22)).tracking(InstrumentoType.groteskHeroTrackingScaled(22))
-                            .foregroundStyle(theme.dataSleep)
+                            .font(LiquidType.valorL)
+                            .foregroundStyle(LiquidColor.indigo)
                         Text(verbatim: StrengthDisplay.weightUnit(system))
-                            .font(InstrumentoType.grotesk(15, weight: .bold)).foregroundStyle(theme.inkTertiary)
+                            .font(LiquidType.titulo).foregroundStyle(LiquidColor.tinta500)
                     }
                 }
                 // Fortnight-vs-fortnight delta over the fixed 90-day window (`trendDeltaPercent`,
-                // FER-149 · CSO+CDO-signed formula) — replaces the old first-vs-entire-history delta
-                // wholesale, not alongside it. Green when the trend reads up, `warning` (the other
-                // data tone the sign can honestly ask for) when it reads down; the noise floor
-                // already guarantees this never fires at 0%.
+                // FER-149 · CSO+CDO-signed formula). Up → positivo; down → atencionTexto (AA on small text).
                 if let deltaPercent {
-                    let tone = deltaPercent > 0 ? theme.dataRecovery : theme.warning
-                    Text(verbatim: "≈ \(deltaPercent > 0 ? "+" : "")\(deltaPercent) %")
-                        .font(InstrumentoType.grotesk(13, weight: .bold)).monospacedDigit()
-                        .foregroundStyle(tone)
-                        .padding(.horizontal, 9).padding(.vertical, 3)  // token-exempt: chip delta del handoff
-                        .background(tone.opacity(StrandOpacity.tintFill),
-                                    in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
-                        .accessibilityLabel(deltaAccessibilityLabel(deltaPercent))
+                    LiquidStatePill(
+                        valencia: "≈ \(deltaPercent > 0 ? "+" : "")\(deltaPercent) %",
+                        tono: deltaPercent > 0 ? LiquidColor.positivo : LiquidColor.atencionTexto
+                    )
+                    .accessibilityLabel(deltaAccessibilityLabel(deltaPercent))
                 }
             }
-            .padding(.top, 3)  // token-exempt: ajuste óptico
+            .padding(.top, LiquidSpace.s075)
 
             // The axis chart, in a raised card (handoff: gridlines + y labels + MAY/JUN/HOY).
             if oneRM.count >= 2, !historyDays.isEmpty {
@@ -726,9 +713,9 @@ struct ExerciseDetailScreen: View {
                                    .map { Date(timeIntervalSince1970: TimeInterval($0.ts)) },
                                xFirst: monthLabel(historyDays.last?.ts),
                                xMid: monthLabel(historyDays[historyDays.count / 2].ts),
-                               accent: familyTint, theme: theme,
+                               accent: familyTint,
                                valueFormat: { StrengthDisplay.weight($0, system: system) })
-                    .padding(.top, CenitMetrics.cardPadding)
+                    .padding(.top, LiquidSpace.s400)
                     .accessibilityLabel(Text("Est. 1RM") + Text(verbatim: " trend"))
             }
         }
@@ -772,21 +759,23 @@ struct ExerciseDetailScreen: View {
         let cycle = cycleLine
         if bestSet != nil || bestVolume != nil || cycle != nil {
             VStack(alignment: .leading, spacing: 0) {
-                Text("Records").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                    .padding(.bottom, CenitMetrics.space2)
+                LiquidSectionHeader("Records")
                 if let bestSet {
                     recordRow(Text("Best weight"), bestSet)
-                    if bestVolume != nil || cycle != nil { Divider().overlay(theme.hairline) }
+                    if bestVolume != nil || cycle != nil {
+                        Rectangle().fill(LiquidColor.tinta10).frame(height: LiquidRadius.hairline)
+                    }
                 }
                 if let bestVolume {
                     recordRow(Text("Best volume in one session"), bestVolume)
-                    if cycle != nil { Divider().overlay(theme.hairline) }
+                    if cycle != nil {
+                        Rectangle().fill(LiquidColor.tinta10).frame(height: LiquidRadius.hairline)
+                    }
                 }
                 if let cycle {
                     recordRow(Text("Progression cycle"), cycle)
                 }
             }
-            .padding(.top, LiquidSpace.handoff14)
         }
     }
 
@@ -794,12 +783,12 @@ struct ExerciseDetailScreen: View {
     /// foreground color per case (set by its source below) — this helper only sets the shared font,
     /// so it never overrides the «▲» accent `cycleLine` paints on `.readyToAdvance`.
     private func recordRow(_ label: Text, _ value: Text) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.gap) {
-            label.font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-            Spacer(minLength: CenitMetrics.space2)
-            value.font(InstrumentoType.grotesk(15, weight: .semibold)).monospacedDigit()
+        HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s300) {
+            label.font(Font.system(size: LiquidType.lecturaHojaBase)).foregroundStyle(LiquidColor.tinta700)
+            Spacer(minLength: LiquidSpace.s200)
+            value.font(LiquidType.datoMenor).monospacedDigit()
         }
-        .padding(.vertical, CenitMetrics.gap)
+        .padding(.vertical, LiquidSpace.s300)
         .accessibilityElement(children: .combine)
     }
 
@@ -807,7 +796,7 @@ struct ExerciseDetailScreen: View {
     private var bestSetLine: Text? {
         guard let best = history.max(by: { $0.weightKg < $1.weightKg }) else { return nil }
         return Text(verbatim: "\(StrengthDisplay.weight(best.weightKg, system: system)) × \(best.reps)")
-            .foregroundColor(theme.ink)
+            .foregroundColor(LiquidColor.tinta900)
     }
 
     /// «Mejor volumen en una sesión» — grouped by `WorkSetHistoryRow.sessionId`, NEVER by calendar
@@ -818,7 +807,7 @@ struct ExerciseDetailScreen: View {
             (sessionId: $0.sessionId, startTs: $0.startTs, weightKg: $0.weightKg, reps: $0.reps)
         }) else { return nil }
         return Text(verbatim: StrengthHistoryFormat.volume(best.volumeKg, system: system))
-            .foregroundColor(theme.ink)
+            .foregroundColor(LiquidColor.tinta900)
     }
 
     /// «Ciclo de progresión» — where this exercise's progression stands, in one sentence with real
@@ -829,7 +818,7 @@ struct ExerciseDetailScreen: View {
         switch state {
         case .inCycle(let done, let of):
             let at = historyDays.last.map { kg($0.weightKg) } ?? ""
-            return Text("You're \(done) of \(of) sessions in with \(at).").foregroundColor(theme.ink)
+            return Text("You're \(done) of \(of) sessions in with \(at).").foregroundColor(LiquidColor.tinta900)
         case .readyToAdvance(let newKg):
             // FER-149: the OLD copy named the destination weight («arrives with 65 kg»); the CSO's
             // records row instead names the INCREMENT — «raise 2.5 kg today» — with a green «▲»
@@ -845,8 +834,8 @@ struct ExerciseDetailScreen: View {
             // fallback keeps the row from crashing rather than claiming perfect data.
             let current = cycleFromKg ?? historyDaysAscending.last?.weightKg ?? newKg
             let increment = max(0, newKg - current)
-            return Text("Raise \(kg(increment)) today").foregroundColor(theme.ink)
-                + Text(verbatim: " ▲").foregroundColor(theme.dataRecovery)
+            return Text("Raise \(kg(increment)) today").foregroundColor(LiquidColor.tinta900)
+                + Text(verbatim: " ▲").foregroundColor(LiquidColor.positivo)
         case .deferred(let newKg):
             // FER-82: the cause is the day's verdict, not a recovery score. Naming the score here
             // was a third voice that could contradict both Hoy and Entrenar on the same morning.
@@ -855,13 +844,13 @@ struct ExerciseDetailScreen: View {
             // rango». El texto prometía una condición más estrecha que la real, y se cumplía sola
             // el día que la pantalla llamaba de otro modo.
             return Text("The raise to \(kg(newKg)) waits for a day that doesn't hold it back. You can take it anyway.")
-                .foregroundColor(theme.ink)
+                .foregroundColor(LiquidColor.tinta900)
         case .stalled(let sessions):
             return Text("\(sessions) sessions without hitting the goal at this weight.")
-                .foregroundColor(theme.ink)
+                .foregroundColor(LiquidColor.tinta900)
         case .deloading(let fromKg, let toKg):
             return Text("Proposed deload: \(kg(fromKg)) → \(kg(toKg)), then rebuild.")
-                .foregroundColor(theme.ink)
+                .foregroundColor(LiquidColor.tinta900)
         }
     }
 
@@ -888,18 +877,17 @@ struct ExerciseDetailScreen: View {
 
     private var emptyHistory: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Divider().overlay(theme.hairline)
-            VStack(spacing: CenitMetrics.space2) {
+            Rectangle().fill(LiquidColor.tinta10).frame(height: LiquidRadius.hairline)
+            VStack(alignment: .leading, spacing: LiquidSpace.s200) {
                 Image(systemName: "clock.arrow.circlepath")
-                    .font(.system(size: 30)).foregroundStyle(theme.inkTertiary) // token-exempt: 30pt, .empty(34) sería +4pt (>±1pt)
-                Text("Not logged yet").font(StrandFont.title2).foregroundStyle(theme.ink)
+                    .font(LiquidType.infoGlifoTitular).foregroundStyle(LiquidColor.tinta500)
+                Text("Not logged yet").font(LiquidType.titulo).foregroundStyle(LiquidColor.tinta900)
                 Text("Your best mark, your last session and your estimated 1RM appear here once you complete a work set.")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    .multilineTextAlignment(.center)
+                    .font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, CenitMetrics.cardPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, LiquidSpace.s400)
         }
     }
 
@@ -917,7 +905,6 @@ private struct TrendAxisChart: View {
     let xFirst: String
     let xMid: String
     let accent: Color
-    let theme: InstrumentoTheme
     let valueFormat: (Double) -> String
 
     @State private var scrubIndex: Int? = nil
@@ -932,16 +919,16 @@ private struct TrendAxisChart: View {
     /// Scrub readout: value + date of the pinned sample; empty until you drag.
     @ViewBuilder private var scrubReadout: some View {
         if let i = scrubIndex, values.indices.contains(i) {
-            HStack(spacing: 6) {
+            HStack(spacing: LiquidSpace.s150) {
                 Text(verbatim: valueFormat(values[i]))
-                    .font(InstrumentoType.grotesk(13, weight: .bold)).monospacedDigit()
+                    .font(LiquidType.valorS).monospacedDigit()
                     .foregroundStyle(accent)
                 if dates.indices.contains(i) {
                     Text(dates[i], format: .dateTime.day().month(.abbreviated))
-                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        .font(LiquidType.filaConteo).foregroundStyle(LiquidColor.tinta500)
                 }
             }
-            .padding(.bottom, 2)  // token-exempt: ajuste óptico
+            .padding(.bottom, LiquidSpace.s050)
         }
     }
 
@@ -956,12 +943,12 @@ private struct TrendAxisChart: View {
                     let span: Double = topY - botY
                     let yVal: Double = topY - span * Double(i) / 3.0
                     let yLabel: Int = Int(yVal.rounded())
-                    HStack(spacing: 6) {
+                    HStack(spacing: LiquidSpace.s150) {
                         Text(verbatim: "\(yLabel)")
-                            .font(InstrumentoType.grotesk(10, weight: .semibold)).monospacedDigit()
-                            .foregroundStyle(theme.inkTertiary)
+                            .font(LiquidType.caption).monospacedDigit()
+                            .foregroundStyle(LiquidColor.tinta500)
                             .frame(width: 28, alignment: .trailing)
-                        Rectangle().fill(i == 3 ? theme.hairlineStrong : theme.hairline).frame(height: 1)
+                        Rectangle().fill(i == 3 ? LiquidColor.tinta10 : LiquidColor.tinta7).frame(height: 1)
                     }
                     if i < 3 { Spacer(minLength: 0) }
                 }
@@ -985,13 +972,13 @@ private struct TrendAxisChart: View {
                         p.addLine(to: CGPoint(x: last.x, y: h))
                         p.closeSubpath()
                     }
-                    .fill(accent.opacity(0.10))  // token-exempt: área 10% del handoff
+                    .fill(accent.opacity(0.10))  // token-exempt: área 10% del handoff — LiquidChart.gridAlfa no es public fuera de StrandDesign
                     Path { (p: inout Path) in
                         guard let first = points.first else { return }
                         p.move(to: first)
                         points.dropFirst().forEach { (pt: CGPoint) in p.addLine(to: pt) }
                     }
-                    .stroke(accent, style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+                    .stroke(accent, style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))  // token-exempt: linea 2.2 del handoff — LiquidChart.lineaAncho no es public fuera de StrandDesign
                     if let last = points.last, scrubIndex == nil {
                         Circle().fill(accent.opacity(0.18)).frame(width: 16, height: 16).position(last)  // token-exempt: halo del handoff
                         Circle().fill(accent).frame(width: 9, height: 9).position(last)
@@ -1002,7 +989,7 @@ private struct TrendAxisChart: View {
                             p.move(to: CGPoint(x: points[i].x, y: 0))
                             p.addLine(to: CGPoint(x: points[i].x, y: h))
                         }
-                        .stroke(theme.hairlineStrong, lineWidth: 1)
+                        .stroke(LiquidColor.tinta10, lineWidth: 1)  // token-exempt: capilar de scrub
                         Circle().fill(accent.opacity(0.18)).frame(width: 16, height: 16).position(points[i])  // token-exempt: halo del handoff
                         Circle().fill(accent).frame(width: 9, height: 9).position(points[i])
                     }
@@ -1030,28 +1017,28 @@ private struct TrendAxisChart: View {
     private var xCaptions: some View {
         HStack(spacing: 0) {
             Text(verbatim: xFirst)
-                .font(InstrumentoType.grotesk(9, weight: .semibold)).tracking(0.6)
-                .foregroundStyle(theme.inkTertiary)
+                .font(LiquidType.dato).tracking(LiquidType.datoTracking)
+                .foregroundStyle(LiquidColor.tinta500)
                 .frame(maxWidth: .infinity, alignment: .leading)
             Text(verbatim: xMid)
-                .font(InstrumentoType.grotesk(9, weight: .semibold)).tracking(0.6)
-                .foregroundStyle(theme.inkTertiary)
+                .font(LiquidType.dato).tracking(LiquidType.datoTracking)
+                .foregroundStyle(LiquidColor.tinta500)
                 .frame(maxWidth: .infinity, alignment: .center)
             Text("Today").textCase(.uppercase)
-                .font(InstrumentoType.grotesk(9, weight: .bold)).tracking(0.6)
+                .font(LiquidType.dato).tracking(LiquidType.datoTracking)
                 .foregroundStyle(accent)
                 .frame(maxWidth: .infinity, alignment: .trailing)
         }
-        .padding(.leading, 34)  // token-exempt(dato): geometría de gráfica — mismo offset que la serie (línea 1023) para alinear las etiquetas X con el eje
+        .padding(.leading, 34)  // token-exempt(dato): geometría de gráfica — mismo offset que la serie para alinear las etiquetas X con el eje
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s150) {
             scrubReadout
             chartPlot
             xCaptions
         }
-        .padding(.top, CenitMetrics.cardPadding).padding(.horizontal, LiquidSpace.handoff14).padding(.bottom, CenitMetrics.gap)
+        .padding(.top, LiquidSpace.s400).padding(.horizontal, LiquidSpace.handoff14).padding(.bottom, LiquidSpace.s300)
         .liquidGlass(.superficieSolida)
     }
 }
