@@ -281,59 +281,20 @@ public extension View {
     }
 }
 
-// MARK: - PresetPill (editor de descanso / RPE — gramática rectangular FER-951)
-
-/// Preset rectangular «Instrumento»: thumb de TINTA al seleccionar, contorno `hairlineStrong` en
-/// reposo. Una sola gramática para todos los presets de las hojas de la sesión (auditoría UI O2).
-public struct PresetPill: View {
-    let text: String
-    let selected: Bool
-    let theme: InstrumentoTheme
-    let action: () -> Void
-
-    public init(_ text: String, selected: Bool, theme: InstrumentoTheme, action: @escaping () -> Void) {
-        self.text = text; self.selected = selected; self.theme = theme; self.action = action
-    }
-
-    public var body: some View {
-        Button(action: action) {
-            Text(text).font(StrandFont.caption).monospacedDigit()
-                .foregroundStyle(selected ? theme.paper : theme.inkSecondary)
-                .lineLimit(1).minimumScaleFactor(0.8)
-                .padding(.horizontal, 11).padding(.vertical, 7)
-                .background(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
-                    .fill(selected ? theme.ink : Color.clear))
-                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
-                    .strokeBorder(selected ? Color.clear : theme.hairlineStrong, lineWidth: 1))
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-}
-
 #if DEBUG
-#Preview("TroquelChip · PresetPill") {
+#Preview("TroquelChip") {
     let t = InstrumentoTheme.base
-    return VStack(spacing: 20) {
-        HStack(spacing: 8) {
-            HStack(spacing: 6) {
-                Image(systemName: "clock").foregroundStyle(t.dataStrain)
-                Text("90 s").font(StrandFont.caption.weight(.medium)).foregroundStyle(t.ink)
-            }
-            .troquelChip(t)
-            HStack(spacing: 6) {
-                Image(systemName: "square.and.pencil").foregroundStyle(t.dataHrv)
-                Text("Nota").font(StrandFont.caption).foregroundStyle(t.inkSecondary)
-            }
-            .troquelChip(t)
+    return HStack(spacing: 8) {
+        HStack(spacing: 6) {
+            Image(systemName: "clock").foregroundStyle(t.dataStrain)
+            Text("90 s").font(StrandFont.caption.weight(.medium)).foregroundStyle(t.ink)
         }
-        .padding(14)
-        .background(t.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-        HStack(spacing: 8) {
-            PresetPill("Sin descanso", selected: false, theme: t) {}
-            PresetPill("1:00", selected: true, theme: t) {}
-            PresetPill("2:00", selected: false, theme: t) {}
+        .troquelChip(t)
+        HStack(spacing: 6) {
+            Image(systemName: "square.and.pencil").foregroundStyle(t.dataHrv)
+            Text("Nota").font(StrandFont.caption).foregroundStyle(t.inkSecondary)
         }
+        .troquelChip(t)
     }
     .padding(24)
     .background(t.paper)

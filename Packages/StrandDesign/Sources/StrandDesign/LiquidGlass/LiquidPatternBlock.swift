@@ -1,11 +1,10 @@
 import SwiftUI
 
-// MARK: - Liquid Glass · Bloque de patrón (épico hoja Liquid, F2)
+// MARK: - Liquid Glass · Bloque de patrón (épico hoja Liquid, F2 · FER-293)
 //
-// «Tu patrón» y «Para esta noche» en una sola pieza: overline en caja alta + una o varias
-// frases honestas de lectura, con la barra lateral en el tono de la métrica como única marca
-// de color (el gesto «patrón/conexión» del bloque Instrumento, `vitalPatternBlock` /
-// `PaperSideBarBlock`).
+// «Tu patrón» y «Para esta noche» en una sola pieza: overline opcional en caja alta + una o
+// varias frases honestas de lectura, con la barra lateral en el tono de la métrica como
+// única marca de color (el gesto «patrón/conexión» del bloque Instrumento).
 //
 // Decisión de fondo: SIN vidrio. El bloque Instrumento llevaba `theme.surface` porque el
 // surface papel es un wash plano y quieto; el `.liquidGlass(.superficie)` equivalente trae
@@ -15,17 +14,18 @@ import SwiftUI
 //
 // Contrato D3: strings YA localizados (findings ya resueltos a texto); el DS no conoce
 // locales. El caller oculta el bloque cuando no hay líneas (paridad con el guard de
-// `vitalPatternBlock`).
+// `vitalPatternBlock`). FER-293: `overline` pasa a opcional — `nil` = solo barra + líneas
+// (plan B); con valor, el overline sube las tres palabras que abrían la frase.
 
 public struct LiquidPatternBlock: View {
-    private let overline: String
+    private let overline: String?
     private let lineas: [String]
     private let tono: Color
 
     /// Ancho de la barra lateral — es trazo, no espaciado (paridad con el bloque Instrumento).
     private static let barraAncho: CGFloat = 2.5
 
-    public init(overline: String, lineas: [String], tono: Color) {
+    public init(overline: String? = nil, lineas: [String], tono: Color) {
         self.overline = overline
         self.lineas = lineas
         self.tono = tono
@@ -43,7 +43,9 @@ public struct LiquidPatternBlock: View {
                 .fill(tono)
                 .frame(width: Self.barraAncho)
             VStack(alignment: .leading, spacing: LiquidSpace.s150) {
-                Text(overline).liquidLabel().foregroundStyle(LiquidColor.tinta500)
+                if let overline, !overline.isEmpty {
+                    Text(overline).liquidLabel().foregroundStyle(LiquidColor.tinta500)
+                }
                 ForEach(lineas.indices, id: \.self) { i in
                     Text(verbatim: lineas[i])
                         .font(LiquidType.captionLectura)
@@ -75,6 +77,11 @@ public struct LiquidPatternBlock: View {
                 "Entrenar fuerte hoy suele leerse mañana, no hoy.",
             ],
             tono: LiquidColor.cian)
+
+        // FER-293: sin overline (plan B).
+        LiquidPatternBlock(
+            lineas: ["Si en 5 min no bajas, la sesión continúa igual."],
+            tono: LiquidColor.verdeCarga)
     }
     .padding(LiquidSpace.s550)
     .background(LiquidSheetFondo(tone: LiquidColor.cian))

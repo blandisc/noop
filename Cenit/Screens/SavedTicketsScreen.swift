@@ -7,6 +7,7 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 // SavedTicketsScreen.swift — «Tickets guardados»: grid of thermal mini-receipts for completed
 // strength sessions. Read-only — never edits or deletes. Pushed from WorkoutHistoryScreen via
 // `SavedTicketsRoute` on the Entrenar NavigationStack. Tap → existing `WorkoutSessionRoute` detail.
+// FER-293: piel Liquid Glass · El Eje (cabecera de flujo, vacío alineado a la izquierda, LiquidAviso).
 
 struct SavedTicketsScreen: View {
     @Environment(\.instrumentoTheme) private var theme
@@ -38,8 +39,8 @@ struct SavedTicketsScreen: View {
     }
 
     private let columns = [
-        GridItem(.flexible(), spacing: CenitMetrics.gap),
-        GridItem(.flexible(), spacing: CenitMetrics.gap)
+        GridItem(.flexible(), spacing: LiquidSpace.s300),
+        GridItem(.flexible(), spacing: LiquidSpace.s300)
     ]
 
     /// Filtered list for the active segment. Newest-first order is preserved from `recentSessions`.
@@ -69,8 +70,8 @@ struct SavedTicketsScreen: View {
                 }
             }
             .padding(.top, LiquidSpace.topeScroll)
-            .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.bottom, CenitMetrics.screenPadding)
+            .padding(.horizontal, LiquidSpace.s600)
+            .padding(.bottom, LiquidSpace.s600)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         // FER-199 (Ola 3, épico FER-195): fondo de vidrio El Eje en vez del papel plano — la
@@ -86,12 +87,10 @@ struct SavedTicketsScreen: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            InstrumentoFlowTitle(Text("Saved tickets"))
-            Text("\(sessions.count) receipts · tap one to reprint")
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
+        // FER-293: la línea de conteo SUBE a kicker (mismo orden que Biblioteca / Detalle).
+        LiquidFlowTitle(
+            kicker: String(localized: "\(sessions.count) receipts · tap one to reprint"),
+            titulo: String(localized: "Saved tickets"))
     }
 
     private var segmentControl: some View {
@@ -105,7 +104,7 @@ struct SavedTicketsScreen: View {
     }
 
     private var ticketGrid: some View {
-        LazyVGrid(columns: columns, spacing: CenitMetrics.gap) {
+        LazyVGrid(columns: columns, spacing: LiquidSpace.s300) {
             ForEach(Array(filteredSessions.enumerated()), id: \.element.id) { index, session in
                 Button { openReceipt(session) } label: {
                     MiniTicketView(ticket: TicketMapping.miniTicket(
@@ -116,35 +115,40 @@ struct SavedTicketsScreen: View {
                         system: system
                     ))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.liquidPress)
             }
         }
     }
 
     private var emptyState: some View {
-        VStack(spacing: CenitMetrics.gap) {
-            Image(systemName: "doc.plaintext")
-                .font(StrandFont.glyph(.empty)).foregroundStyle(theme.inkTertiary)
-                .accessibilityHidden(true)
-            Text(emptyTitle).font(InstrumentoType.groteskHeadline(20)).foregroundStyle(theme.ink)
-            Text(emptyCaption)
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+        // FER-293: misma receta del Detalle — alineado a la IZQUIERDA (única desviación de «solo piel»).
+        VStack(alignment: .leading, spacing: 0) {
+            Rectangle().fill(LiquidColor.tinta10).frame(height: 0.5)
+            VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+                Image(systemName: "doc.plaintext")
+                    .font(LiquidType.infoGlifoTitular)
+                    .foregroundStyle(LiquidColor.tinta500)
+                    .accessibilityHidden(true)
+                Text(emptyTitle)
+                    .font(LiquidType.titulo)
+                    .foregroundStyle(LiquidColor.tinta900)
+                Text(emptyCaption)
+                    .font(LiquidType.cuerpoBanner)
+                    .foregroundStyle(LiquidColor.tinta700)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, LiquidSpace.s400)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, CenitMetrics.sectionGap)
     }
 
-    /// «Error de lectura» (Estados, decisión #16 del épico): sustituye la ilustración de «sin datos» —
-    /// mismo tratamiento visual que el `saveError` de `WorkoutHistoryScreen`/`WorkoutEditSheet`
-    /// (`patternBlock` con barra crítica); no se descarta solo porque la condición no cambia sin un
-    /// reintento.
+    /// «Error de lectura» (Estados, decisión #16 del épico): LiquidAviso sustituye el
+    /// `patternBlock` crítico (FER-293).
     private var readErrorBanner: some View {
-        Text("Couldn't read your saved tickets. Try again.")
-            .font(.system(size: 13))   // token-exempt: cuerpo de banner (13pt, igual que saveError/ConfirmCard)
-            .foregroundStyle(theme.ink)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .patternBlock(theme, bar: theme.critical)
+        LiquidAviso(
+            titulo: String(localized: "Couldn't read your saved tickets"),
+            cuerpo: String(localized: "Try again."),
+            tono: LiquidColor.negativo)
     }
 
     private var emptyTitle: LocalizedStringKey {

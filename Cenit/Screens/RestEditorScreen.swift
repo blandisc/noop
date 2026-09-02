@@ -4,7 +4,7 @@ import StrandTraining
 import StrandAnalytics
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 
-// MARK: - Rest editor (1e, FER-716)
+// MARK: - Rest editor (1e, FER-716 · FER-293 Liquid Glass · El Eje)
 //
 // The full-screen rest editor pushed from the session (the rest card's «Change rest» / an exercise's rest
 // chip). Handoff «Flujo Entrenar v3 · 1e»: the threshold is the one dominant datum (color only on it); a
@@ -154,11 +154,7 @@ struct RestEditorScreen: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: LiquidSpace.seccionAire) {
-                // FER-198 (Ola 2): la cabecera de la familia El Eje absorbe el `header` a mano
-                // (BackButton) Y el `InstrumentoFlowTitle` de abajo — mismas DOS cadenas ya
-                // localizadas (título/overline), sin copy nueva. `Salida.cancelar` unifica el
-                // cierre en un único control de texto (antes chevron/aspa según `closeAsDismiss`
-                // — ese flag queda inerte en esta hoja, ver nota en `closeAsDismiss`).
+                // FER-198 (Ola 2): cabecera El Eje. FER-293: el resto de la hoja pasa a Liquid.
                 EntrenarHojaCabecera(
                     titulo: String(localized: "Rest when you finish"),
                     subtitulo: setNumber.map { String(localized: "\(exerciseName) · set \($0)") } ?? exerciseName,
@@ -181,15 +177,20 @@ struct RestEditorScreen: View {
                 // exercise chip there's no «this set» to point at — the edit is exercise-wide by definition.
                 if setNumber != nil { scopeSection }
                 if persistsToRoutine {
-                    Toggle(isOn: $saveToRoutine) {
-                        Text("Save to the routine (next sessions)").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    EntrenarFilaHerramienta(
+                        rotulo: String(localized: "Save to the routine (next sessions)"),
+                        divider: false) {
+                        Toggle("", isOn: $saveToRoutine)
+                            .labelsHidden()
+                            .toggleStyle(.liquid)
                     }
-                    .toggleStyle(.instrumento)
+                    .padding(.vertical, LiquidSpace.s100)
+                    .liquidGlass(.pastillaSolida)
                 }
                 cta
             }
-            .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.top, 12).padding(.bottom, CenitMetrics.screenPadding)
+            .padding(.horizontal, LiquidSpace.s600)
+            .padding(.top, LiquidSpace.s300).padding(.bottom, LiquidSpace.s600)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .entrenarHojaFondo(tono: .verde)
@@ -208,12 +209,15 @@ struct RestEditorScreen: View {
     private var hrSection: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.bloqueAjuste) {
             Text("Rest ends when your pulse drops to the threshold. The phone buzzes when you're ready.")
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary).fixedSize(horizontal: false, vertical: true)
+                .font(.system(size: LiquidType.lecturaHojaBase))
+                .foregroundStyle(LiquidColor.tinta700)
+                .fixedSize(horizontal: false, vertical: true)
             // Owner call 2026-07-15: your OWN resting HR named up front — the anchor every margin
             // below is computed against.
             if let resting = restingHR {
                 Text(String(localized: "your rest") + ": " + "\(Int(resting.rounded())) bpm")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .font(LiquidType.cuerpo)
+                    .foregroundStyle(LiquidColor.tinta500)
             }
             // FER-89: el cuerpo refleja SIEMPRE el `hrRef` activo — así un config ya guardado en una
             // de las 3 formas de «más opciones» se ve completo aunque el disclosure siga plegado.
@@ -234,15 +238,11 @@ struct RestEditorScreen: View {
         }
     }
 
-    /// «Más opciones» (FER-89, primera vez que esta hoja pliega algo): las 3 formas que no van al
-    /// frente. Candidato de reuso evaluado — `Metodo<Content>` (`TendenciasDetalle.swift:322`), el
-    /// `DisclosureGroup` ya estandarizado (radio 12, padding 14, plegado por defecto) — su label es un
-    /// `Text` genérico, no prosa forzada, así que encaja sin fork: se reusa tal cual en vez de construir
-    /// `EntrenarDisclosure` para lo mismo.
+    /// «Más opciones» (FER-89): `Metodo` re-piel Liquid (FER-293) — misma pieza, tokens El Eje.
     private var moreOptionsSection: some View {
         Metodo(title: String(localized: "More options"), theme: theme) {
             SegmentedPillControl([HRRestReference.karvonenReserve, .peakDrop, .fixedBpm], selection: $hrRef,
-                                 theme: theme, inkThumb: true, thumbTint: theme.dataHrv) {
+                                 theme: theme, inkThumb: true, thumbTint: LiquidColor.cian) {
                 switch $0 {
                 case .karvonenReserve: return String(localized: "Karvonen")
                 case .peakDrop:        return String(localized: "Peak drop")
@@ -260,28 +260,33 @@ struct RestEditorScreen: View {
         // dominante, la ARITMÉTICA dicha completa («reposo 58 + margen 20 bpm») y el slider con sus
         // puntas «+5 exigente / +30 suave» — los presets salieron (el handoff no los trae).
         VStack(alignment: .leading, spacing: LiquidSpace.bloqueAjuste) {
-            VStack(alignment: .center, spacing: 4) {
-                Text("Rest down to").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
+            VStack(alignment: .center, spacing: LiquidSpace.s100) {
+                Text("Rest down to").liquidKicker().foregroundStyle(LiquidColor.tinta700)
+                HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s200) {
                     Text(marginTargetBpm.map { "\($0)" } ?? "+\(margin)")
-                        .groteskSheetNumeral().monospacedDigit().foregroundStyle(theme.dataRecovery)
-                    Text(verbatim: "bpm").font(InstrumentoType.grotesk(14, weight: .bold)).foregroundStyle(theme.inkSecondary)
+                        .font(LiquidType.numeralHoja).monospacedDigit()
+                        .foregroundStyle(LiquidTono.verde.rotulo)
+                    Text(verbatim: "bpm")
+                        .font(LiquidType.numeralHojaUnidad)
+                        .foregroundStyle(LiquidColor.tinta500)
                 }
                 if let resting = restingHR {
                     Text("rest \(Int(resting.rounded())) + margin \(margin) bpm")
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        .font(.system(size: LiquidType.lecturaHojaBase))
+                        .foregroundStyle(LiquidColor.tinta700)
                 } else {
                     Text("your rest + \(margin) bpm margin")
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        .font(.system(size: LiquidType.lecturaHojaBase))
+                        .foregroundStyle(LiquidColor.tinta700)
                 }
             }
             .frame(maxWidth: .infinity)
             Slider(value: Binding(get: { Double(margin) }, set: { margin = Int($0.rounded()) }),
-                   in: 5...30, step: 1).tint(theme.dataRecovery)
+                   in: 5...30, step: 1).tint(LiquidColor.verdeCarga)
             HStack {
-                Text("+5 hard").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                Text("+5 hard").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                 Spacer()
-                Text("+30 easy").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                Text("+30 easy").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
             }
         }
     }
@@ -291,22 +296,26 @@ struct RestEditorScreen: View {
         // Misma anatomía del handoff que el margen: el bpm en el que ACABAS como numeral, la
         // aritmética dicha, y las puntas del slider con su valencia.
         VStack(alignment: .leading, spacing: LiquidSpace.bloqueAjuste) {
-            VStack(alignment: .center, spacing: 4) {
-                Text("Rest down to").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
+            VStack(alignment: .center, spacing: LiquidSpace.s100) {
+                Text("Rest down to").liquidKicker().foregroundStyle(LiquidColor.tinta700)
+                HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s200) {
                     Text(thresholdBpm.map { "\($0)" } ?? "\(Int(reserve * 100))")
-                        .groteskSheetNumeral().monospacedDigit().foregroundStyle(theme.dataRecovery)
-                    Text(verbatim: thresholdBpm != nil ? "bpm" : "%").font(InstrumentoType.grotesk(14, weight: .bold)).foregroundStyle(theme.inkSecondary)
+                        .font(LiquidType.numeralHoja).monospacedDigit()
+                        .foregroundStyle(LiquidTono.verde.rotulo)
+                    Text(verbatim: thresholdBpm != nil ? "bpm" : "%")
+                        .font(LiquidType.numeralHojaUnidad)
+                        .foregroundStyle(LiquidColor.tinta500)
                 }
                 (Text(verbatim: "\(Int((reserve * 100).rounded()))% ") + Text("of your heart-rate reserve"))
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .font(.system(size: LiquidType.lecturaHojaBase))
+                    .foregroundStyle(LiquidColor.tinta700)
             }
             .frame(maxWidth: .infinity)
-            Slider(value: $reserve, in: 0.30...0.55, step: 0.01).tint(theme.dataRecovery)
+            Slider(value: $reserve, in: 0.30...0.55, step: 0.01).tint(LiquidColor.verdeCarga)
             HStack {
-                Text("30% hard").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                Text("30% hard").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                 Spacer()
-                Text("55% easy").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                Text("55% easy").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
             }
         }
     }
@@ -318,22 +327,26 @@ struct RestEditorScreen: View {
     /// igual que Karvonen sin perfil de FC.
     private var peakDropBody: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.bloqueAjuste) {
-            VStack(alignment: .center, spacing: 4) {
-                Text("Rest down to").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
+            VStack(alignment: .center, spacing: LiquidSpace.s100) {
+                Text("Rest down to").liquidKicker().foregroundStyle(LiquidColor.tinta700)
+                HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s200) {
                     Text(verbatim: "\(Int((peakDropFraction * 100).rounded()))")
-                        .groteskSheetNumeral().monospacedDigit().foregroundStyle(theme.dataRecovery)
-                    Text(verbatim: "%").font(InstrumentoType.grotesk(14, weight: .bold)).foregroundStyle(theme.inkSecondary)
+                        .font(LiquidType.numeralHoja).monospacedDigit()
+                        .foregroundStyle(LiquidTono.verde.rotulo)
+                    Text(verbatim: "%")
+                        .font(LiquidType.numeralHojaUnidad)
+                        .foregroundStyle(LiquidColor.tinta500)
                 }
                 (Text(verbatim: "\(Int((peakDropFraction * 100).rounded()))% ") + Text("below your peak heart rate"))
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .font(.system(size: LiquidType.lecturaHojaBase))
+                    .foregroundStyle(LiquidColor.tinta700)
             }
             .frame(maxWidth: .infinity)
-            Slider(value: $peakDropFraction, in: 0.10...0.50, step: 0.01).tint(theme.dataRecovery)
+            Slider(value: $peakDropFraction, in: 0.10...0.50, step: 0.01).tint(LiquidColor.verdeCarga)
             HStack {
-                Text("10% hard").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                Text("10% hard").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                 Spacer()
-                Text("50% easy").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                Text("50% easy").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
             }
         }
     }
@@ -343,23 +356,27 @@ struct RestEditorScreen: View {
     /// hasta esta fase.
     private var fixedBpmBody: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.bloqueAjuste) {
-            VStack(alignment: .center, spacing: 4) {
-                Text("Rest down to").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
+            VStack(alignment: .center, spacing: LiquidSpace.s100) {
+                Text("Rest down to").liquidKicker().foregroundStyle(LiquidColor.tinta700)
+                HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s200) {
                     Text(verbatim: "\(fixedTargetBpm)")
-                        .groteskSheetNumeral().monospacedDigit().foregroundStyle(theme.dataRecovery)
-                    Text(verbatim: "bpm").font(InstrumentoType.grotesk(14, weight: .bold)).foregroundStyle(theme.inkSecondary)
+                        .font(LiquidType.numeralHoja).monospacedDigit()
+                        .foregroundStyle(LiquidTono.verde.rotulo)
+                    Text(verbatim: "bpm")
+                        .font(LiquidType.numeralHojaUnidad)
+                        .foregroundStyle(LiquidColor.tinta500)
                 }
                 Text("the same bpm every session, not from your resting heart rate")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .font(.system(size: LiquidType.lecturaHojaBase))
+                    .foregroundStyle(LiquidColor.tinta700)
             }
             .frame(maxWidth: .infinity)
             Slider(value: Binding(get: { Double(fixedTargetBpm) }, set: { fixedTargetBpm = Int($0.rounded()) }),
-                   in: 80...170, step: 1).tint(theme.dataRecovery)
+                   in: 80...170, step: 1).tint(LiquidColor.verdeCarga)
             HStack {
-                Text("80 bpm hard").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                Text("80 bpm hard").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                 Spacer()
-                Text("170 bpm easy").font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                Text("170 bpm easy").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
             }
         }
     }
@@ -368,13 +385,17 @@ struct RestEditorScreen: View {
 
     private var timeSection: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.bloqueAjuste) {
-            HStack(spacing: 16) {
-                stepper("minus") { seconds = max(0, seconds - 15) }
-                Text(Self.clock(seconds)).groteskSheetNumeral().monospacedDigit().foregroundStyle(theme.ink)
-                stepper("plus") { seconds = min(600, seconds + 15) }
-            }
+            // Reloj en tinta (no es el dato con color); umbral de FC es el que va en verde.
+            EntrenarStepper(
+                valor: Self.clock(seconds),
+                tono: .neutro,
+                talla: .hoja,
+                puedeBajar: seconds > 0,
+                puedeSubir: seconds < 600,
+                onBajar: { seconds = max(0, seconds - 15) },
+                onSubir: { seconds = min(600, seconds + 15) })
             .frame(maxWidth: .infinity, alignment: .center)
-            HStack(spacing: 8) {
+            HStack(spacing: LiquidSpace.s200) {
                 // r9 (owner): «Sin descanso» — 0 s registra y sigue de largo, sin fase de descanso.
                 secondsPreset(String(localized: "No rest"), 0)
                 secondsPreset("1:00", 60); secondsPreset("2:00", 120); secondsPreset("3:00", 180)
@@ -383,19 +404,21 @@ struct RestEditorScreen: View {
         }
     }
 
-    private func stepper(_ system: String, _ action: @escaping () -> Void) -> some View {
-        StepperButton(system: system, size: 44, shape: .roundedControl,
-                      glyph: StrandFont.glyph(.lead), theme: theme, action: action)
-    }
     private func secondsPreset(_ label: String, _ s: Int) -> some View {
-        PresetPill(label, selected: seconds == s, theme: theme) { seconds = s }
+        let selected = seconds == s
+        return OutlineCapsule(theme: theme, size: .sm, filled: selected, action: { seconds = s }) {
+            Text(verbatim: label)
+                .font(LiquidType.tituloFila)
+                .monospacedDigit()
+                .foregroundStyle(selected ? LiquidColor.papelTarjeta : LiquidColor.tinta900)
+        }
     }
 
     // MARK: Scope + note + CTA
 
     private var scopeSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Scope").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+        VStack(alignment: .leading, spacing: 0) {
+            LiquidSectionHeader("Scope")
             SegmentedPillControl([false, true], selection: $applyToAll, theme: theme, inkThumb: true) {
                 $0 ? String(localized: "All sets") : String(localized: "This set")
             }
@@ -403,15 +426,10 @@ struct RestEditorScreen: View {
     }
 
     private var capNote: some View {
-        HStack(spacing: 8) {
-            Circle().fill(theme.dataRecovery).frame(width: 7, height: 7)
-            Text("Safety cap: if you don't drop within 5 min, the session continues anyway.")
-                .font(StrandFont.caption).foregroundStyle(theme.inkSecondary).fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(.horizontal, 12).padding(.vertical, 10)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
-            .strokeBorder(theme.hairline, lineWidth: 1))
+        LiquidPatternBlock(
+            overline: String(localized: "Safety cap"),
+            lineas: [String(localized: "If you don't drop within 5 min, the session continues anyway.")],
+            tono: LiquidColor.verdeCarga)
     }
 
     private var cta: some View {
@@ -421,7 +439,7 @@ struct RestEditorScreen: View {
                 peakDropFraction: peakDropFraction, fixedTargetBpm: fixedTargetBpm)
             onApply(config, applyToAll, saveToRoutine && persistsToRoutine)
         }
-        .padding(.top, 4)
+        .padding(.top, LiquidSpace.s100)
     }
 
     static func clock(_ seconds: Int) -> String { SessionClock.format(seconds) }

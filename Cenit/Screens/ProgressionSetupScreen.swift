@@ -3,13 +3,13 @@ import StrandDesign
 import StrandTraining
 import StrandAnalytics
 
-// MARK: - Progression setup (2c, FER-D)
+// MARK: - Progression setup (2c, FER-D · FER-293 Liquid Glass · El Eje)
 //
 // The per-exercise load-progression plan, pushed from the exercise's «···» (and later from the session's
 // «por qué» sheet / the detail's «Ciclo actual»). Handoff «Progresión de carga · 2c», with two agreed
 // deviations from the mock: the screen SAVES ON BACK like every Instrumento editor (no «OK» button —
-// RestEditorScreen's pattern), and the toggle is the house ink `InstrumentoToggleStyle`, not green
-// («color solo en el dato»: the switch is chrome; green stays on the increment and the consequence).
+// RestEditorScreen's pattern), and the toggle is chrome (LiquidToggleStyle) — color stays on the
+// increment and the consequence bar (verde de carga).
 //
 // Model honesty (vinculante): el «Objetivo de reps» de aquí escribe el PISO (`RoutineSet.reps`) de
 // cada serie de trabajo (el llamador es dueño de esa escritura). Desde FER-94 existe además un TECHO
@@ -82,66 +82,62 @@ struct ProgressionSetupScreen: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                // FER-198 (Ola 2): la cabecera de la familia El Eje absorbe el `header` a mano
-                // (BackButton solo) Y el `InstrumentoFlowTitle` de abajo — mismas DOS cadenas ya
-                // localizadas («Progression»/«Raise with the plan»), sin copy nueva, sin duplicar
-                // el título. Revisión adversarial: `.cerrar` (aspa) mentía — esta hoja GUARDA al
-                // salir, no descarta, y su ruta fría es un push, no un modal. `.guardar("Save")`
-                // es la afordancia honesta: dice «Guardar» y sigue disparando `saveAndClose`.
+                // FER-198 (Ola 2): cabecera El Eje. FER-293: el resto de la hoja pasa a Liquid.
                 EntrenarHojaCabecera(titulo: String(localized: "Raise with the plan"),
                                      subtitulo: String(localized: "Progression"),
                                      tono: .verde, salida: .guardar(String(localized: "Save")), onSalir: saveAndClose)
                 Text("Cénit proposes the raise when you earn it. You can always edit the cell in session.")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .font(.system(size: LiquidType.lecturaHojaBase))
+                    .foregroundStyle(LiquidColor.tinta700)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 6)
+                    .padding(.top, LiquidSpace.s150)
 
-                Toggle(isOn: $enabled) {
-                    Text("Automatic progression").font(StrandFont.body).foregroundStyle(theme.ink)
+                EntrenarFilaHerramienta(rotulo: String(localized: "Automatic progression"),
+                                        divider: false) {
+                    Toggle("", isOn: $enabled)
+                        .labelsHidden()
+                        .toggleStyle(.liquid)
                 }
-                .toggleStyle(.instrumento)
-                .padding(.vertical, 9)
-                .overlay(alignment: .top) { Divider().overlay(theme.hairline) }
-                .overlay(alignment: .bottom) { Divider().overlay(theme.hairline) }
-                .padding(.top, 16)
+                .padding(.vertical, LiquidSpace.s100)
+                .liquidGlass(.pastillaSolida)
+                .padding(.top, LiquidSpace.s400)
 
-                consequence.padding(.top, 14)
+                consequence.padding(.top, LiquidSpace.bloqueAjuste)
 
-                Group {
-                    row(title: Text("Rep goal"),
-                        subtitle: Text("applies to all \(workSetCount) work sets")) {
+                VStack(spacing: 0) {
+                    fila(rotulo: String(localized: "Rep goal"),
+                         nota: String(localized: "applies to all \(workSetCount) work sets")) {
                         SegmentedPillControl(Self.repOptions, selection: $targetReps, theme: theme) { "\($0)" }
                     }
-                    row(title: Text("You raise when"),
-                        subtitle: Text("every set at the goal")) {
+                    fila(rotulo: String(localized: "You raise when"),
+                         nota: String(localized: "every set at the goal")) {
                         SegmentedPillControl([1, 2], selection: $sessions, theme: theme) {
                             $0 == 1 ? String(localized: "1 session") : String(localized: "2 in a row")
                         }
                     }
                     incrementRow
-                    row(title: Text("If you stall 3 sessions"),
-                        subtitle: Text("drop ~7.5% and rebuild")) {
+                    fila(rotulo: String(localized: "If you stall 3 sessions"),
+                         nota: String(localized: "drop ~7.5% and rebuild")) {
                         SegmentedPillControl([DeloadPolicy.propose, .warn], selection: $deload, theme: theme) {
                             $0 == .propose ? String(localized: "Propose") : String(localized: "Warn only")
                         }
                     }
-                    // FER-85: el rótulo decía «Recuperación baja» porque antes la compuerta era el
-                    // score. Ahora la pone el veredicto, y también aplaza los días ámbar, que no son
-                    // recuperación baja: el ajuste tiene que describir lo que de verdad hace.
-                    row(title: Text("Days that aren't in range"),
-                        subtitle: Text("defers the raise, doesn't cancel it: you take it with one tap in the session"),
-                        lastRow: true) {
+                    // FER-85: el rótulo describe el aplazamiento del veredicto (ámbar + fuera de rango).
+                    fila(rotulo: String(localized: "Days that aren't in range"),
+                         nota: String(localized: "defers the raise, doesn't cancel it: you take it with one tap in the session"),
+                         divider: false) {
                         SegmentedPillControl([false, true], selection: $ignoreRecovery, theme: theme) {
                             $0 ? String(localized: "Ignore") : String(localized: "Defer")
                         }
                     }
                 }
+                .liquidGlass(.superficieSolida)
                 .disabled(!enabled)
-                .opacity(enabled ? 1 : StrandPalette.disabledOpacity)
-                .padding(.top, 14)
+                .opacity(enabled ? 1 : StrandOpacity.dim)
+                .padding(.top, LiquidSpace.bloqueAjuste)
             }
-            .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.top, 12).padding(.bottom, CenitMetrics.screenPadding)
+            .padding(.horizontal, LiquidSpace.s600)
+            .padding(.top, LiquidSpace.s300).padding(.bottom, LiquidSpace.s600)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .entrenarHojaFondo(tono: .verde)
@@ -153,48 +149,27 @@ struct ProgressionSetupScreen: View {
 
     // MARK: Rows
 
-    private func row(title: Text, subtitle: Text, lastRow: Bool = false,
-                     @ViewBuilder control: () -> some View) -> some View {
-        HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 1) {
-                title.font(StrandFont.subhead).foregroundStyle(theme.ink)
-                subtitle.font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            // The themed pill wants `maxWidth: .infinity` per segment; cap it so it can't starve the
-            // title's width (which collapsed the row labels to 0pt). Title flexes, control is bounded.
-            control().frame(maxWidth: 184, alignment: .trailing)
-        }
-        // FER-89: 52, no `EntrenarMetrics.row` (44) — la fila lleva título + subtítulo en DOS
-        // líneas, no un solo control; 52 ya cumple el piso de 44 (HIG), así que no se fuerza al
-        // token exacto solo por igualarlo (auditoría de re-vestido, sin forzar el número).
-        .frame(minHeight: 52)
-        .overlay(alignment: .bottom) { if !lastRow { Divider().overlay(theme.hairline) } }
+    private func fila<Control: View>(rotulo: String, nota: String, divider: Bool = true,
+                                     @ViewBuilder control: () -> Control) -> some View {
+        EntrenarFilaHerramienta(rotulo: rotulo, nota: nota, divider: divider, control: control)
     }
 
     /// The increment: green because it IS the datum. ± steps by the derived minimum; landing back on the
     /// derived value clears the override (subtitle says which mode you're in).
     private var incrementRow: some View {
-        row(title: Text("Increment"),
-            subtitle: incrementOverride == nil
-                ? Text("from your plates: the minimum is \(kgText(derivedIncrementKg))")
-                : Text("set by hand · your plates make \(kgText(derivedIncrementKg))")) {
-            HStack(spacing: 10) {
-                incrementStep("minus") { incrementKg = max(derivedIncrementKg, incrementKg - derivedIncrementKg) }
-                Text("+\(kgText(incrementKg)) kg")
-                    .font(InstrumentoType.grotesk(15, weight: .bold)).monospacedDigit()
-                    .foregroundStyle(theme.dataRecovery)
-                incrementStep("plus") { incrementKg = min(20, incrementKg + derivedIncrementKg) }
-            }
+        fila(rotulo: String(localized: "Increment"),
+             nota: incrementOverride == nil
+                ? String(localized: "from your plates: the minimum is \(kgText(derivedIncrementKg))")
+                : String(localized: "set by hand · your plates make \(kgText(derivedIncrementKg))")) {
+            EntrenarStepper(
+                valor: "+\(kgText(incrementKg)) kg",
+                tono: .verde,
+                talla: .fila,
+                puedeBajar: incrementKg > derivedIncrementKg + 0.0001,
+                puedeSubir: incrementKg < 20 - 0.0001,
+                onBajar: { incrementKg = max(derivedIncrementKg, incrementKg - derivedIncrementKg) },
+                onSubir: { incrementKg = min(20, incrementKg + derivedIncrementKg) })
         }
-    }
-
-    /// FER-89: era 32 pt (bajo el piso de 44, HIG) — `StepperButton` recorta su propio
-    /// `contentShape` al `size` que recibe, así que no hay forma de agrandar SOLO el toque sin
-    /// tocar el paquete; se sube el dibujo al piso.
-    private func incrementStep(_ system: String, _ action: @escaping () -> Void) -> some View {
-        StepperButton(system: system, size: EntrenarMetrics.row, shape: .circle,
-                      glyph: StrandFont.caption, theme: theme, action: action)
     }
 
     // MARK: Consequence
@@ -203,32 +178,26 @@ struct ProgressionSetupScreen: View {
     private var consequence: some View {
         Group {
             if enabled, let kg = currentWeightKg {
-                connectionBlock(
-                    Text("With this plan: \(workSetCount)×\(targetReps) with \(kgText(kg)) kg \(sessions == 1 ? String(localized: "one session") : String(localized: "two sessions in a row")) → next time you train with **\(kgText(kg + incrementKg))**."),
-                    accented: true)
+                let sessionsPhrase = sessions == 1
+                    ? String(localized: "one session")
+                    : String(localized: "two sessions in a row")
+                let next = kgText(kg + incrementKg)
+                LiquidPatternBlock(
+                    overline: String(localized: "With this plan"),
+                    lineas: ["\(workSetCount)×\(targetReps) with \(kgText(kg)) kg \(sessionsPhrase) → next time you train with \(next)."],
+                    tono: LiquidColor.verdeCarga)
             } else if enabled {
-                connectionBlock(Text("Log a session of \(exerciseName) and the plan starts counting from its weight."),
-                                accented: true)
+                LiquidPatternBlock(
+                    overline: String(localized: "With this plan"),
+                    lineas: [String(localized: "Log a session of \(exerciseName) and the plan starts counting from its weight.")],
+                    tono: LiquidColor.verdeCarga)
             } else {
-                connectionBlock(Text("Turn it on and Cénit proposes the raise. Off, you move the weight by hand each session."),
-                                accented: false)
+                LiquidPatternBlock(
+                    overline: String(localized: "With this plan"),
+                    lineas: [String(localized: "Turn it on and Cénit proposes the raise. Off, you move the weight by hand each session.")],
+                    tono: LiquidColor.tinta10)
             }
         }
-    }
-
-    private func connectionBlock(_ text: Text, accented: Bool) -> some View {
-        text.font(StrandFont.caption).foregroundStyle(accented ? theme.ink : theme.inkSecondary)
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, LiquidChip.compactoHorizontal).padding(.vertical, LiquidChip.compactoVertical)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.surface.opacity(0.001)) // token-exempt: hit-testing dentro del ScrollView
-            .background(
-                UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 0,
-                                       bottomTrailingRadius: 8, topTrailingRadius: 8)
-                    .fill(theme.hairline.opacity(0.55)))   // token-exempt: relleno decorativo de hairline
-            .overlay(alignment: .leading) {
-                if accented { Rectangle().fill(theme.dataRecovery).frame(width: 2.5) }
-            }
     }
 }
 
