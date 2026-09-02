@@ -10,10 +10,10 @@
 //   • bar slot  — per-set segments (active) ↔ draining bar (rest) ↔ inert bar (pause / stale)
 //   • actions   — «Completar» (active) ↔ −30/+30/Saltar (rest) ↔ «Reanudar» (pause) ↔ open-app (stale)
 //
-// «Instrumento diurno» DNA on a system surface: warm paper, ONE dominant number, color only in the live
-// datum (`dataStrain` countdown, `dataHeart` pulse), hierarchy by space, primary action by border + not
-// by fill. Custom fonts aren't registered in the widget extension, so numerals use the system rounded face
-// (FER-817's firm decision); every color is an `InstrumentoTheme` token — no hex/font/spacing inline.
+// Liquid Glass · El Eje on system surfaces (DECISIONS 2026-09-03): lock-screen / banner on
+// `LiquidColor.fondoAlto` with tinta/dato Liquid; Dynamic Island on `LiquidOLED` chrome + the same
+// data tones (`LiquidColor.ambar` / `rosa`). Custom fonts aren't registered in the widget extension,
+// so numerals use the system rounded face (FER-817); fixed geometry lives in `WidgetMetrics`.
 
 #if canImport(ActivityKit)
 import ActivityKit
@@ -26,43 +26,23 @@ import UIKit
 #endif
 
 struct RestLiveActivity: Widget {
-    private let theme = InstrumentoTheme.base
-
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: RestActivityAttributes.self) { context in
             // Lock-screen / banner presentation. `context.isStale` (the app went quiet past `staleDate`)
             // drives the muted, action-less «Abre Cénit para continuar» rendering.
-            SessionLockScreenCard(state: context.state, theme: theme, stale: context.isStale)
-                .activityBackgroundTint(theme.paper)
-                .activitySystemActionForegroundColor(theme.ink)
+            SessionLockScreenCard(state: context.state, stale: context.isStale)
+                .activityBackgroundTint(LiquidColor.fondoAlto)
+                .activitySystemActionForegroundColor(LiquidColor.tinta900)
         } dynamicIsland: { context in
-            SessionDynamicIsland.make(state: context.state, theme: theme, islandTheme: dynamicIslandTheme)
+            SessionDynamicIsland.make(state: context.state)
         }
-    }
-
-    /// The Dynamic Island is always rendered by ActivityKit on the system's true black — never on
-    /// `theme.paper` — so `.base`'s ink/data hues (tuned for AA on warm paper) need the same relight
-    /// `.watch` does for the wrist, PLUS the specific amber/rose bump the handoff calls out for THIS
-    /// surface (README.md §Live Activity: «sobre negro de la isla el ámbar/rosa suben a #E8923F/#D97A90
-    /// por contraste»). The lock-screen card keeps `.base` unchanged — it paints its own `theme.paper`.
-    private var dynamicIslandTheme: InstrumentoTheme {
-        InstrumentoTheme(
-            paper: .black, surface: InstrumentoTheme.watch.surface,
-            hairline: InstrumentoTheme.watch.hairline, hairlineStrong: InstrumentoTheme.watch.hairlineStrong,
-            ink: InstrumentoTheme.watch.ink, inkSecondary: InstrumentoTheme.watch.inkSecondary, inkTertiary: InstrumentoTheme.watch.inkTertiary,
-            dataRecovery: InstrumentoTheme.watch.dataRecovery, dataStrain: Color(hex: "#E8923F"),  // token-exempt: handoff-mandated Dynamic Island contrast bump (README.md §Live Activity)
-            dataSleep: InstrumentoTheme.watch.dataSleep, dataHrv: InstrumentoTheme.watch.dataHrv,
-            dataHeart: Color(hex: "#D97A90"), dataSpO2: InstrumentoTheme.watch.dataSpO2,  // token-exempt: handoff-mandated Dynamic Island contrast bump (README.md §Live Activity)
-            dataOxygen: InstrumentoTheme.watch.dataOxygen, dataSteps: InstrumentoTheme.watch.dataSteps,
-            verdict: InstrumentoTheme.watch.verdict, warning: InstrumentoTheme.watch.warning, critical: InstrumentoTheme.watch.critical
-        )
     }
 }
 
 // MARK: - Live Activity metrics
 
 /// The card's own scale now lives in the design system as `WidgetMetrics` (auditoría jul-2026, H5) —
-/// FIXED Dynamic-Island / Lock-Screen geometry, exempt from Dynamic Type, never `CenitMetrics`. The
+/// FIXED Dynamic-Island / Lock-Screen geometry, exempt from Dynamic Type. The
 /// height discipline (≤160 pt) is documented at the token. This alias keeps the tight `M.*` call sites.
 private typealias LiveActivityMetrics = WidgetMetrics
 
@@ -87,20 +67,19 @@ private extension RestActivityAttributes.ContentState {
 
 private struct SessionLockScreenCard: View {
     let state: RestActivityAttributes.ContentState
-    let theme: InstrumentoTheme
     let stale: Bool
 
     private typealias M = LiveActivityMetrics
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            IdentityRow(state: state, theme: theme, stale: stale)
-            HeroZone(state: state, theme: theme, stale: stale)
+            IdentityRow(state: state, stale: stale)
+            HeroZone(state: state, stale: stale)
                 .frame(height: M.heroSlot, alignment: .bottom)
                 .padding(.top, M.heroTopGap)
-            BarSlot(state: state, theme: theme, stale: stale)
+            BarSlot(state: state, stale: stale)
                 .padding(.top, M.barTopGap)
-            ActionsRow(state: state, theme: theme, stale: stale)
+            ActionsRow(state: state, stale: stale)
                 .padding(.top, M.actionsTopGap)
                 .accessibilitySortPriority(1)   // actions read last
         }
@@ -112,19 +91,19 @@ private struct SessionLockScreenCard: View {
 
 private struct IdentityRow: View {
     let state: RestActivityAttributes.ContentState
-    let theme: InstrumentoTheme
     let stale: Bool
     private typealias M = LiveActivityMetrics
 
+    // token-exempt(sistema): geometría de Live Activity
     var body: some View {
         HStack(spacing: M.headerGap) {
             thumb
             VStack(alignment: .leading, spacing: M.captionGap) {
                 Text(state.exerciseName)
-                    .font(.system(size: M.name, weight: .semibold))
-                    .foregroundStyle(stale ? theme.inkTertiary : theme.ink)
+                    .font(Font.system(size: M.name, weight: .semibold))
+                    .foregroundStyle(stale ? LiquidColor.tinta500 : LiquidColor.tinta900)
                     .lineLimit(1).minimumScaleFactor(0.8)   // name truncates first; height doesn't move
-                Overline(overlineText, theme: theme, stale: stale)
+                Overline(overlineText, stale: stale)
             }
             Spacer(minLength: M.headerGap)
             trailing
@@ -138,17 +117,17 @@ private struct IdentityRow: View {
             image.resizable().scaledToFill()
                 .frame(width: M.thumb, height: M.thumb)
                 .clipShape(Circle())
-                .overlay(Circle().strokeBorder(theme.hairline, lineWidth: 1))
+                .overlay(Circle().strokeBorder(LiquidColor.vidrioCanto, lineWidth: 1))
                 .opacity(stale ? 0.6 : 1)
                 .accessibilityHidden(true)
         } else {
             Text(initials)
-                .font(.system(size: 13, weight: .semibold))  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
-                .foregroundStyle(stale ? theme.inkDim : theme.inkSecondary)
+                .font(Font.system(size: M.thumbInitials, weight: .semibold))
+                .foregroundStyle(stale ? lockInkDim : LiquidColor.tinta700)
                 .frame(width: M.thumb, height: M.thumb)
-                .background(theme.surface)
+                .background(LiquidColor.papelTarjeta)
                 .clipShape(Circle())
-                .overlay(Circle().strokeBorder(theme.hairline, lineWidth: 1))
+                .overlay(Circle().strokeBorder(LiquidColor.vidrioCanto, lineWidth: 1))
                 .accessibilityHidden(true)
         }
     }
@@ -160,12 +139,12 @@ private struct IdentityRow: View {
             EmptyView()
         } else if state.isHRRest {
             VStack(alignment: .trailing, spacing: M.microGap) {
-                Overline(String(localized: "Cap"), theme: theme, stale: false)
+                Overline(String(localized: "Cap"), stale: false)
                 RestTimerText(state: state, size: M.pillLabel + 1, weight: .semibold, alignment: .trailing)
-                    .foregroundStyle(theme.inkSecondary)
+                    .foregroundStyle(LiquidColor.tinta700)
             }
         } else {
-            PulseChip(state: state, theme: theme, size: M.pillLabel + 1)
+            PulseChip(state: state, size: M.pillLabel + 1)
         }
     }
 
@@ -201,10 +180,10 @@ private struct IdentityRow: View {
 
 private struct HeroZone: View {
     let state: RestActivityAttributes.ContentState
-    let theme: InstrumentoTheme
     let stale: Bool
     private typealias M = LiveActivityMetrics
 
+    // token-exempt(sistema): geometría de Live Activity
     var body: some View {
         HStack(alignment: .bottom) {
             heroLeading.accessibilitySortPriority(4)   // the datum reads first
@@ -218,24 +197,24 @@ private struct HeroZone: View {
         switch state.resolvedPhase {
         case .active:
             // «Serie X de Y» — the «de Y» in a quieter tint/weight so the number leads.
-            (Text("\(state.setNumber) ").font(.system(size: M.hero, weight: .semibold, design: .rounded))
-                .foregroundColor(stale ? theme.inkTertiary : theme.ink)
+            (Text("\(state.setNumber) ").font(Font.system(size: M.hero, weight: .semibold, design: .rounded))
+                .foregroundColor(stale ? LiquidColor.tinta500 : LiquidColor.tinta900)
                 + Text(String(localized: "of \(state.setTotal)"))
-                    .font(.system(size: M.hero * 0.7, weight: .medium, design: .rounded))
-                    .foregroundColor(theme.inkTertiary))
+                    .font(Font.system(size: M.hero * 0.7, weight: .medium, design: .rounded))
+                    .foregroundColor(LiquidColor.tinta500))
                 .monospacedDigit()
                 .contentTransition(.numericText())
                 .accessibilityLabel(Text(String(localized: "set \(state.setNumber) of \(state.setTotal)")))
         case .resting where state.isHRMode:
-            PulseHero(state: state, theme: theme, stale: stale)
+            PulseHero(state: state, stale: stale)
         case .resting:
             RestTimerText(state: state, size: M.hero, weight: .semibold)
-                .foregroundStyle(stale ? theme.inkDim : theme.dataStrain)
+                .foregroundStyle(stale ? lockInkDim : LiquidColor.ambar)
                 .contentTransition(.numericText())
         case .paused:
             Text(String(localized: "On pause"))
-                .font(.system(size: M.hero, weight: .semibold, design: .rounded))
-                .foregroundStyle(theme.inkSecondary)
+                .font(Font.system(size: M.hero, weight: .semibold, design: .rounded))
+                .foregroundStyle(LiquidColor.tinta700)
         }
     }
 
@@ -246,39 +225,39 @@ private struct HeroZone: View {
         case .active:
             if !state.returnDetail.isEmpty {
                 Text(state.returnDetail)
-                    .font(.system(size: M.name, weight: .medium))
-                    .foregroundStyle(stale ? theme.inkTertiary : theme.inkSecondary)
+                    .font(Font.system(size: M.name, weight: .medium))
+                    .foregroundStyle(stale ? LiquidColor.tinta500 : LiquidColor.tinta700)
                     .monospacedDigit()
             }
         case .resting, .paused:
-            ReturnBlock(state: state, theme: theme, stale: stale)
+            ReturnBlock(state: state, stale: stale)
         }
     }
 }
 
-/// The HR-rest hero: the live pulse leads (`dataHeart`) with the «→ target» it's falling toward.
+/// The HR-rest hero: the live pulse leads (`LiquidColor.rosa`) with the «→ target» it's falling toward.
 private struct PulseHero: View {
     let state: RestActivityAttributes.ContentState
-    let theme: InstrumentoTheme
     let stale: Bool
     private typealias M = LiveActivityMetrics
 
+    // token-exempt(sistema): geometría de Live Activity
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: M.pulseIconGap) {
-            Image(systemName: "heart.fill").font(.system(size: M.hero * 0.45))
+            Image(systemName: "heart.fill").font(Font.system(size: M.hero * 0.45))
             // FER-246 — nunca inventar 0 lpm; Watch usa «--» / «sin lectura».
             (state.bpm.map { Text("\($0)") } ?? Text(verbatim: "--"))
-                .font(.system(size: M.hero, weight: .semibold, design: .rounded))
+                .font(Font.system(size: M.hero, weight: .semibold, design: .rounded))
                 .monospacedDigit()
                 .contentTransition(.numericText())
             if let target = state.hrTarget {
                 Text("→ \(target)")
-                    .font(.system(size: M.name + 1, weight: .medium))
-                    .foregroundStyle(theme.inkTertiary)
+                    .font(Font.system(size: M.name + 1, weight: .medium))
+                    .foregroundStyle(LiquidColor.tinta500)
                     .monospacedDigit()
             }
         }
-        .foregroundStyle(stale || state.bpm == nil ? theme.inkDim : theme.dataHeart)
+        .foregroundStyle(stale || state.bpm == nil ? lockInkDim : LiquidColor.rosa)
         .accessibilityLabel(pulseLabel)
     }
 
@@ -294,16 +273,16 @@ private struct PulseHero: View {
 /// The «Al volver / Sigue» block: overline + the set the lifter returns to, in ink semibold.
 private struct ReturnBlock: View {
     let state: RestActivityAttributes.ContentState
-    let theme: InstrumentoTheme
     let stale: Bool
     private typealias M = LiveActivityMetrics
 
+    // token-exempt(sistema): geometría de Live Activity
     var body: some View {
         VStack(alignment: .trailing, spacing: M.microGap) {
-            Overline(label, theme: theme, stale: stale)
+            Overline(label, stale: stale)
             Text(value)
-                .font(.system(size: M.returnValue, weight: .semibold))
-                .foregroundStyle(stale ? theme.inkTertiary : theme.ink)
+                .font(Font.system(size: M.returnValue, weight: .semibold))
+                .foregroundStyle(stale ? LiquidColor.tinta500 : LiquidColor.tinta900)
                 .monospacedDigit()
                 .lineLimit(1).minimumScaleFactor(0.7)
         }
@@ -338,19 +317,18 @@ private struct ReturnBlock: View {
 
 private struct BarSlot: View {
     let state: RestActivityAttributes.ContentState
-    let theme: InstrumentoTheme
     let stale: Bool
     private typealias M = LiveActivityMetrics
 
     var body: some View {
         Group {
             if stale {
-                inertBar(theme.inkDim)
+                inertBar(lockInkDim)
             } else {
                 switch state.resolvedPhase {
                 case .active:  segments
                 case .resting: drainingBar
-                case .paused:  inertBar(theme.inkDim)
+                case .paused:  inertBar(lockInkDim)
                 }
             }
         }
@@ -365,19 +343,19 @@ private struct BarSlot: View {
         HStack(spacing: M.segmentGap) {
             ForEach(0..<max(state.setTotal, 1), id: \.self) { i in
                 RoundedRectangle(cornerRadius: M.bar / 2)
-                    .fill(i < state.setNumber ? theme.ink : theme.hairline)
+                    .fill(i < state.setNumber ? LiquidColor.tinta900 : LiquidColor.vidrioCanto)
             }
         }
     }
 
-    // The rest countdown, drained locally by ActivityKit. `dataStrain` for a clock rest, `dataHeart` in HR
+    // The rest countdown, drained locally by ActivityKit. `ambar` for a clock rest, `rosa` in HR
     // mode (the bar tracks the cap while the pulse leads).
     private var drainingBar: some View {
         ProgressView(timerInterval: state.restStartedAt...state.restEndsAt, countsDown: true) {
             EmptyView()
         } currentValueLabel: { EmptyView() }
             .progressViewStyle(.linear)
-            .tint(state.isHRMode ? theme.dataHeart : theme.dataStrain)
+            .tint(state.isHRMode ? LiquidColor.rosa : LiquidColor.ambar)
     }
 
     // Frozen / dead: a full inert track — no hue, since there's no live datum behind it.
@@ -390,20 +368,20 @@ private struct BarSlot: View {
 
 private struct ActionsRow: View {
     let state: RestActivityAttributes.ContentState
-    let theme: InstrumentoTheme
     let stale: Bool
     private typealias M = LiveActivityMetrics
 
+    // token-exempt(sistema): geometría de Live Activity
     var body: some View {
         if stale {
             // Dead card: no intents. The whole card taps through to open the app (default LA behaviour),
             // so this is a styled label, not a button.
             Text(String(localized: "Open Cénit to continue"))
-                .font(.system(size: M.pillLabel, weight: .semibold))
-                .foregroundStyle(theme.inkSecondary)
+                .font(Font.system(size: M.pillLabel, weight: .semibold))
+                .foregroundStyle(LiquidColor.tinta700)
                 .frame(maxWidth: .infinity, minHeight: M.control)
-                .background(theme.surface)
-                .overlay(RoundedRectangle(cornerRadius: M.controlRadius).strokeBorder(theme.hairline, lineWidth: 1))
+                .background(LiquidColor.papelTarjeta)
+                .overlay(RoundedRectangle(cornerRadius: M.controlRadius).strokeBorder(LiquidColor.vidrioCanto, lineWidth: 1))
                 .clipShape(RoundedRectangle(cornerRadius: M.controlRadius))
         } else {
             switch state.resolvedPhase {
@@ -417,7 +395,7 @@ private struct ActionsRow: View {
     // Active set: one primary «✓ Completar serie» that logs the set and enters the rest (lámina
     // «Fuera de la app · Live Activity»: the checkmark is part of the label, not a separate glyph).
     private var activeActions: some View {
-        PrimaryButton(title: Text(verbatim: "✓ ") + Text("Complete set"), intent: RestCompleteSetIntent(), theme: theme)
+        PrimaryButton(title: Text(verbatim: "✓ ") + Text("Complete set"), intent: RestCompleteSetIntent())
             .accessibilityLabel(Text("Complete set"))
             .accessibilityHint(Text("Logs the set and advances"))
     }
@@ -427,21 +405,21 @@ private struct ActionsRow: View {
     @ViewBuilder private var restActions: some View {
         if state.isHRMode {
             // FER-225/246 — «Saltar descanso» en todas las superficies.
-            PillButton(title: Text("Skip rest"), intent: RestSkipIntent(), theme: theme)
+            PillButton(title: Text("Skip rest"), intent: RestSkipIntent())
                 .accessibilityLabel(Text("Skip rest"))
         } else {
             HStack(spacing: M.pillGap) {
-                PillButton(title: Text("−30 s"), intent: RestRemoveThirtyIntent(), theme: theme)
+                PillButton(title: Text("−30 s"), intent: RestRemoveThirtyIntent())
                     .disabled(restExhausted)
                     .opacity(restExhausted ? M.disabledOpacity : 1)
                     .accessibilityLabel(Text("Remove 30 seconds"))
-                PillButton(title: Text("+30 s"), intent: RestAddThirtyIntent(), theme: theme)
+                PillButton(title: Text("+30 s"), intent: RestAddThirtyIntent())
                     .accessibilityLabel(Text("Add 30 seconds"))
                 // FER-246 — visible «Saltar descanso» (antes «Skip» por ancho de fila; el canon gana).
-                PillButton(title: Text("Skip rest"), intent: RestSkipIntent(), theme: theme)
+                PillButton(title: Text("Skip rest"), intent: RestSkipIntent())
                     .accessibilityLabel(Text("Skip rest"))
                 if state.isFinish {
-                    GlyphButton(systemImage: "flag.fill", intent: RestFinishWorkoutIntent(), theme: theme)
+                    GlyphButton(systemImage: "flag.fill", intent: RestFinishWorkoutIntent())
                         .accessibilityLabel(Text("Finish"))
                         .accessibilityHint(Text("Logs the last set and ends the workout"))
                 }
@@ -451,7 +429,7 @@ private struct ActionsRow: View {
 
     // Paused: one primary «Reanudar».
     private var pausedActions: some View {
-        PrimaryButton(title: Text("Resume"), intent: RestResumeIntent(), theme: theme)
+        PrimaryButton(title: Text("Resume"), intent: RestResumeIntent())
             .accessibilityLabel(Text("Resume workout"))
     }
 
@@ -465,17 +443,17 @@ private struct ActionsRow: View {
 private struct PrimaryButton<Title: View, I: AppIntent>: View {
     let title: Title
     let intent: I
-    let theme: InstrumentoTheme
     private typealias M = LiveActivityMetrics
 
+    // token-exempt(sistema): geometría de Live Activity
     var body: some View {
         Button(intent: intent) {
             title
-                .font(.system(size: M.name, weight: .semibold))
-                .foregroundStyle(theme.ink)
+                .font(Font.system(size: M.name, weight: .semibold))
+                .foregroundStyle(LiquidColor.tinta900)
                 .frame(maxWidth: .infinity, minHeight: M.control)
-                .background(theme.surface)
-                .overlay(RoundedRectangle(cornerRadius: M.controlRadius).strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                .background(LiquidColor.papelTarjeta)
+                .overlay(RoundedRectangle(cornerRadius: M.controlRadius).strokeBorder(LiquidColor.tinta10, lineWidth: 1))
                 .clipShape(RoundedRectangle(cornerRadius: M.controlRadius))
         }
         .buttonStyle(.plain)
@@ -488,17 +466,17 @@ private struct PrimaryButton<Title: View, I: AppIntent>: View {
 private struct PillButton<Title: View, I: AppIntent>: View {
     let title: Title
     let intent: I
-    let theme: InstrumentoTheme
     private typealias M = LiveActivityMetrics
 
+    // token-exempt(sistema): geometría de Live Activity
     var body: some View {
         Button(intent: intent) {
             title
-                .font(.system(size: M.pillLabel, weight: .semibold))
-                .foregroundStyle(theme.inkSecondary)
+                .font(Font.system(size: M.pillLabel, weight: .semibold))
+                .foregroundStyle(LiquidColor.tinta700)
                 .frame(maxWidth: .infinity, minHeight: M.control)
-                .background(theme.surface)
-                .overlay(RoundedRectangle(cornerRadius: M.controlRadius).strokeBorder(theme.hairline, lineWidth: 1))
+                .background(LiquidColor.papelTarjeta)
+                .overlay(RoundedRectangle(cornerRadius: M.controlRadius).strokeBorder(LiquidColor.vidrioCanto, lineWidth: 1))
                 .clipShape(RoundedRectangle(cornerRadius: M.controlRadius))
         }
         .buttonStyle(.plain)
@@ -509,17 +487,17 @@ private struct PillButton<Title: View, I: AppIntent>: View {
 private struct GlyphButton<I: AppIntent>: View {
     let systemImage: String
     let intent: I
-    let theme: InstrumentoTheme
     private typealias M = LiveActivityMetrics
 
+    // token-exempt(sistema): geometría de Live Activity
     var body: some View {
         Button(intent: intent) {
             Image(systemName: systemImage)
-                .font(.system(size: M.glyph, weight: .semibold))
-                .foregroundStyle(theme.ink)
+                .font(Font.system(size: M.glyph, weight: .semibold))
+                .foregroundStyle(LiquidColor.tinta900)
                 .frame(width: M.control, height: M.control)
-                .background(theme.surface)
-                .overlay(RoundedRectangle(cornerRadius: M.controlRadius).strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                .background(LiquidColor.papelTarjeta)
+                .overlay(RoundedRectangle(cornerRadius: M.controlRadius).strokeBorder(LiquidColor.tinta10, lineWidth: 1))
                 .clipShape(RoundedRectangle(cornerRadius: M.controlRadius))
         }
         .buttonStyle(.plain)
@@ -528,22 +506,25 @@ private struct GlyphButton<I: AppIntent>: View {
 
 // MARK: - Shared pieces
 
+/// Tint intentionally below the AA text floor for no-data / stale chrome on the lock-screen card.
+private var lockInkDim: Color { OKLab.mix(LiquidColor.tinta500, LiquidColor.fondoAlto, 0.5) }
+
 /// An uppercase tracking overline — «Descanso · 8/18 series», «Al volver», «Tope».
 private struct Overline: View {
     let text: String
-    let theme: InstrumentoTheme
     let stale: Bool
     private typealias M = LiveActivityMetrics
 
-    init(_ text: String, theme: InstrumentoTheme, stale: Bool) {
-        self.text = text; self.theme = theme; self.stale = stale
+    init(_ text: String, stale: Bool) {
+        self.text = text; self.stale = stale
     }
 
+    // token-exempt(sistema): geometría de Live Activity
     var body: some View {
         Text(text.uppercased())
-            .font(.system(size: M.overline, weight: .semibold))
+            .font(Font.system(size: M.overline, weight: .semibold))
             .tracking(M.overlineTracking)
-            .foregroundStyle(stale ? theme.inkDim : theme.inkTertiary)
+            .foregroundStyle(stale ? lockInkDim : LiquidColor.tinta500)
             .lineLimit(1).minimumScaleFactor(0.7)
     }
 }
@@ -557,9 +538,10 @@ private struct RestTimerText: View {
     var size: CGFloat
     var weight: Font.Weight = .semibold
     var alignment: Alignment = .leading
+    // token-exempt(sistema): geometría de Live Activity
     var body: some View {
         Text(timerInterval: state.restStartedAt...state.restEndsAt, countsDown: true)
-            .font(.system(size: size, weight: weight, design: .rounded))
+            .font(Font.system(size: size, weight: weight, design: .rounded))
             .monospacedDigit()
             .frame(maxWidth: size * WidgetMetrics.timerWidthMultiplier, alignment: alignment)
     }
@@ -568,15 +550,15 @@ private struct RestTimerText: View {
 /// The identity-row pulse chip: «♥ 128». Renders NOTHING without band data — no dash, no zero.
 private struct PulseChip: View {
     let state: RestActivityAttributes.ContentState
-    let theme: InstrumentoTheme
     var size: CGFloat
+    // token-exempt(sistema): geometría de Live Activity
     var body: some View {
         if let bpm = state.bpm {
             HStack(spacing: WidgetMetrics.captionGap) {
-                Image(systemName: "heart.fill").font(.system(size: size * 0.8))
-                Text("\(bpm)").font(.system(size: size, weight: .semibold, design: .rounded)).monospacedDigit()
+                Image(systemName: "heart.fill").font(Font.system(size: size * 0.8))
+                Text("\(bpm)").font(Font.system(size: size, weight: .semibold, design: .rounded)).monospacedDigit()
             }
-            .foregroundStyle(theme.dataHeart)
+            .foregroundStyle(LiquidColor.rosa)
             .accessibilityLabel(Text("\(bpm) beats per minute"))
         }
     }
@@ -585,126 +567,145 @@ private struct PulseChip: View {
 // MARK: - Dynamic Island
 
 private enum SessionDynamicIsland {
-    /// `theme` (`.base`) is unused here on purpose — every region below paints on ActivityKit's own true
-    /// black, never `theme.paper`, so it takes `islandTheme` (the relit-for-black palette, see
-    /// `RestLiveActivity.dynamicIslandTheme`) instead.
-    static func make(state s: RestActivityAttributes.ContentState, theme: InstrumentoTheme, islandTheme: InstrumentoTheme) -> DynamicIsland {
+    /// Every region paints on ActivityKit's true black — chrome from `LiquidOLED`, data tones from
+    /// `LiquidColor` (DECISIONS 2026-09-03: the datum does not change color by surface).
+    static func make(state s: RestActivityAttributes.ContentState) -> DynamicIsland {
         DynamicIsland {
-            DynamicIslandExpandedRegion(.leading) { expandedLeading(s, islandTheme) }
-            DynamicIslandExpandedRegion(.trailing) { expandedTrailing(s, islandTheme) }
-            DynamicIslandExpandedRegion(.bottom) { expandedBottom(s, islandTheme) }
+            DynamicIslandExpandedRegion(.leading) { expandedLeading(s) }
+            DynamicIslandExpandedRegion(.trailing) { expandedTrailing(s) }
+            DynamicIslandExpandedRegion(.bottom) { expandedBottom(s) }
         } compactLeading: {
-            compactLeading(s, islandTheme)
+            compactLeading(s)
         } compactTrailing: {
-            compactTrailing(s, islandTheme)
+            compactTrailing(s)
         } minimal: {
-            minimal(s, islandTheme)
+            minimal(s)
         }
         .widgetURL(URL(string: "noopdev://session"))
-        .keylineTint(s.isHRRest ? islandTheme.dataHeart : islandTheme.dataStrain)
+        .keylineTint(s.isHRRest ? LiquidColor.rosa : LiquidColor.ambar)
     }
 
+    // Contraste sobre negro (WCAG): `LiquidColor.ambar` #C4631F ≈ 5.15:1 OK;
+    // `LiquidColor.rosa` #B85068 ≈ 4.39:1 (bajo el 4.5:1 de texto normal; AA-large 3:1 sí).
+    // DECISIONS 2026-09-03: el tono de dato no cambia por superficie → se conserva `rosa`.
+
     // Compact leading: the phase's dominant glyph — set count / countdown / pulse.
-    @ViewBuilder private static func compactLeading(_ s: RestActivityAttributes.ContentState, _ theme: InstrumentoTheme) -> some View {
+    // token-exempt(sistema): geometría de Live Activity
+    @ViewBuilder private static func compactLeading(_ s: RestActivityAttributes.ContentState) -> some View {
         switch s.resolvedPhase {
         case .active:
             Text("\(s.setNumber)/\(s.setTotal)")
-                .font(.system(size: 13, weight: .semibold)).monospacedDigit()  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
-                .foregroundStyle(theme.ink)
+                .font(Font.system(size: WidgetMetrics.islandCompact, weight: .semibold)).monospacedDigit()
+                .foregroundStyle(LiquidOLED.tinta)
         case .paused:
-            Image(systemName: "pause.fill").font(.system(size: 12)).foregroundStyle(theme.inkSecondary)  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
+            Image(systemName: "pause.fill")
+                .font(Font.system(size: WidgetMetrics.islandCompactGlyph))
+                .foregroundStyle(LiquidOLED.tintaSecundaria)
         case .resting where s.isHRMode:
-            HStack(spacing: 2) {
-                Image(systemName: "heart.fill").font(.system(size: 10))  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
+            HStack(spacing: WidgetMetrics.islandHeartStackGap) {
+                Image(systemName: "heart.fill").font(Font.system(size: WidgetMetrics.islandCompactHeart))
                 (s.bpm.map { Text("\($0)") } ?? Text(verbatim: "--"))
-                    .font(.system(size: 13, weight: .semibold)).monospacedDigit()  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
-            }.foregroundStyle(s.bpm == nil ? theme.inkDim : theme.dataHeart)
+                    .font(Font.system(size: WidgetMetrics.islandCompact, weight: .semibold)).monospacedDigit()
+            }.foregroundStyle(s.bpm == nil ? LiquidOLED.tintaTerciaria : LiquidColor.rosa)
         case .resting:
-            RestTimerText(state: s, size: 15).foregroundStyle(theme.dataStrain)
+            RestTimerText(state: s, size: WidgetMetrics.islandCompactTimer).foregroundStyle(LiquidColor.ambar)
         }
     }
 
     // Compact trailing: pulse chip (or the «→ target» in HR mode); nothing without band data.
-    @ViewBuilder private static func compactTrailing(_ s: RestActivityAttributes.ContentState, _ theme: InstrumentoTheme) -> some View {
+    // token-exempt(sistema): geometría de Live Activity
+    @ViewBuilder private static func compactTrailing(_ s: RestActivityAttributes.ContentState) -> some View {
         if s.isHRRest, let target = s.hrTarget {
-            Text("→ \(target)").font(.system(size: 13, weight: .semibold)).monospacedDigit()  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
-                .foregroundStyle(theme.inkSecondary)
+            Text("→ \(target)").font(Font.system(size: WidgetMetrics.islandCompact, weight: .semibold)).monospacedDigit()
+                .foregroundStyle(LiquidOLED.tintaSecundaria)
         } else if let bpm = s.bpm {
-            HStack(spacing: 2) {
-                Image(systemName: "heart.fill").font(.system(size: 10))  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
-                Text("\(bpm)").font(.system(size: 13, weight: .semibold)).monospacedDigit()  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
-            }.foregroundStyle(theme.dataHeart)
+            HStack(spacing: WidgetMetrics.islandHeartStackGap) {
+                Image(systemName: "heart.fill").font(Font.system(size: WidgetMetrics.islandCompactHeart))
+                Text("\(bpm)").font(Font.system(size: WidgetMetrics.islandCompact, weight: .semibold)).monospacedDigit()
+            }.foregroundStyle(LiquidColor.rosa)
         }
     }
 
-    @ViewBuilder private static func minimal(_ s: RestActivityAttributes.ContentState, _ theme: InstrumentoTheme) -> some View {
+    // token-exempt(sistema): geometría de Live Activity
+    @ViewBuilder private static func minimal(_ s: RestActivityAttributes.ContentState) -> some View {
         switch s.resolvedPhase {
         case .active:
-            Text("\(s.setNumber)/\(s.setTotal)").font(.system(size: 12, weight: .semibold)).monospacedDigit()  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
-                .foregroundStyle(theme.ink)
+            Text("\(s.setNumber)/\(s.setTotal)").font(Font.system(size: WidgetMetrics.islandMinimal, weight: .semibold)).monospacedDigit()
+                .foregroundStyle(LiquidOLED.tinta)
         case .paused:
-            Image(systemName: "pause.fill").font(.system(size: 11)).foregroundStyle(theme.inkSecondary)  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
+            Image(systemName: "pause.fill")
+                .font(Font.system(size: WidgetMetrics.islandMinimalGlyph))
+                .foregroundStyle(LiquidOLED.tintaSecundaria)
         case .resting where s.isHRMode:
             (s.bpm.map { Text("\($0)") } ?? Text(verbatim: "--"))
-                .font(.system(size: 12, weight: .semibold)).monospacedDigit()  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
-                .foregroundStyle(s.bpm == nil ? theme.inkDim : theme.dataHeart)
+                .font(Font.system(size: WidgetMetrics.islandMinimal, weight: .semibold)).monospacedDigit()
+                .foregroundStyle(s.bpm == nil ? LiquidOLED.tintaTerciaria : LiquidColor.rosa)
         case .resting:
-            RestTimerText(state: s, size: 12).foregroundStyle(theme.dataStrain)
+            RestTimerText(state: s, size: WidgetMetrics.islandMinimal).foregroundStyle(LiquidColor.ambar)
         }
     }
 
     // Expanded leading: the hero datum.
-    @ViewBuilder private static func expandedLeading(_ s: RestActivityAttributes.ContentState, _ theme: InstrumentoTheme) -> some View {
+    // token-exempt(sistema): geometría de Live Activity
+    @ViewBuilder private static func expandedLeading(_ s: RestActivityAttributes.ContentState) -> some View {
         switch s.resolvedPhase {
         case .active:
-            (Text("\(s.setNumber)").font(.system(size: 26, weight: .semibold, design: .rounded))  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
-                .foregroundColor(theme.ink)
-                + Text(" / \(s.setTotal)").font(.system(size: 16, weight: .medium, design: .rounded))  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
-                    .foregroundColor(theme.inkTertiary))
+            (Text("\(s.setNumber)").font(Font.system(size: WidgetMetrics.islandExpandedHero, weight: .semibold, design: .rounded))
+                .foregroundColor(LiquidOLED.tinta)
+                + Text(" / \(s.setTotal)").font(Font.system(size: WidgetMetrics.islandExpandedSecondary, weight: .medium, design: .rounded))
+                    .foregroundColor(LiquidOLED.tintaTerciaria))
                 .monospacedDigit()
         case .paused:
-            Text("On pause").font(.system(size: 20, weight: .semibold, design: .rounded))  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
-                .foregroundStyle(theme.inkSecondary)
+            Text("On pause").font(Font.system(size: WidgetMetrics.islandExpandedPause, weight: .semibold, design: .rounded))
+                .foregroundStyle(LiquidOLED.tintaSecundaria)
         case .resting where s.isHRMode:
-            HStack(spacing: 4) {
-                Image(systemName: "heart.fill").font(.system(size: 14))  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
+            HStack(spacing: WidgetMetrics.islandExpandedStackGap) {
+                Image(systemName: "heart.fill").font(Font.system(size: WidgetMetrics.islandExpandedHeart))
                 (s.bpm.map { Text("\($0)") } ?? Text(verbatim: "--"))
-                    .font(.system(size: 26, weight: .semibold, design: .rounded)).monospacedDigit()  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
+                    .font(Font.system(size: WidgetMetrics.islandExpandedHero, weight: .semibold, design: .rounded)).monospacedDigit()
                 if let target = s.hrTarget {
-                    Text("→ \(target)").font(.system(size: 15, weight: .medium)).foregroundStyle(theme.inkTertiary).monospacedDigit()  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
+                    Text("→ \(target)")
+                        .font(Font.system(size: WidgetMetrics.islandExpandedTarget, weight: .medium))
+                        .foregroundStyle(LiquidOLED.tintaTerciaria).monospacedDigit()
                 }
-            }.foregroundStyle(s.bpm == nil ? theme.inkDim : theme.dataHeart)
+            }.foregroundStyle(s.bpm == nil ? LiquidOLED.tintaTerciaria : LiquidColor.rosa)
         case .resting:
-            HStack(spacing: 6) {
-                Image(systemName: "timer").font(.system(size: 13, weight: .semibold))  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
-                RestTimerText(state: s, size: 26)
-            }.foregroundStyle(theme.dataStrain)
+            HStack(spacing: WidgetMetrics.islandTimerStackGap) {
+                Image(systemName: "timer").font(Font.system(size: WidgetMetrics.islandExpandedTimerGlyph, weight: .semibold))
+                RestTimerText(state: s, size: WidgetMetrics.islandExpandedHero)
+            }.foregroundStyle(LiquidColor.ambar)
         }
     }
 
     // Expanded trailing: the pulse (rest/active) or the «Tope» cap (HR).
-    @ViewBuilder private static func expandedTrailing(_ s: RestActivityAttributes.ContentState, _ theme: InstrumentoTheme) -> some View {
+    // token-exempt(sistema): geometría de Live Activity
+    @ViewBuilder private static func expandedTrailing(_ s: RestActivityAttributes.ContentState) -> some View {
         if s.isHRRest {
-            VStack(alignment: .trailing, spacing: 2) {
-                Text(String(localized: "Cap").uppercased()).font(.system(size: 9, weight: .semibold)).tracking(1).foregroundStyle(theme.inkTertiary)  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
-                RestTimerText(state: s, size: 14, alignment: .trailing).foregroundStyle(theme.inkSecondary)
+            VStack(alignment: .trailing, spacing: WidgetMetrics.microGap) {
+                Text(String(localized: "Cap").uppercased())
+                    .font(Font.system(size: WidgetMetrics.islandCapLabel, weight: .semibold))
+                    .tracking(1)
+                    .foregroundStyle(LiquidOLED.tintaTerciaria)
+                RestTimerText(state: s, size: WidgetMetrics.islandCapTimer, alignment: .trailing)
+                    .foregroundStyle(LiquidOLED.tintaSecundaria)
             }
         } else if let bpm = s.bpm {
-            HStack(spacing: 4) {
-                Image(systemName: "heart.fill").font(.system(size: 13))  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
-                Text("\(bpm)").font(.system(size: 16, weight: .semibold, design: .rounded)).monospacedDigit()  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
-            }.foregroundStyle(theme.dataHeart)
+            HStack(spacing: WidgetMetrics.islandExpandedStackGap) {
+                Image(systemName: "heart.fill").font(Font.system(size: WidgetMetrics.islandExpandedPulseGlyph))
+                Text("\(bpm)").font(Font.system(size: WidgetMetrics.islandExpandedPulse, weight: .semibold, design: .rounded)).monospacedDigit()
+            }.foregroundStyle(LiquidColor.rosa)
         }
     }
 
     // Expanded bottom: the «¿qué sigue?» caption for rest/pause; the exercise name in the active set.
-    @ViewBuilder private static func expandedBottom(_ s: RestActivityAttributes.ContentState, _ theme: InstrumentoTheme) -> some View {
+    // token-exempt(sistema): geometría de Live Activity
+    @ViewBuilder private static func expandedBottom(_ s: RestActivityAttributes.ContentState) -> some View {
         Text(bottomCaption(s))
-            .font(.system(size: 12, weight: .medium))  // token-exempt: Live Activity geometry (Dynamic Island / Lock Screen, fixed)
-            .foregroundStyle(theme.inkSecondary)
+            .font(Font.system(size: WidgetMetrics.islandBottomCaption, weight: .medium))
+            .foregroundStyle(LiquidOLED.tintaSecundaria)
             .lineLimit(1).minimumScaleFactor(0.7)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 3)   // air above/below so descenders don't kiss the island's bottom edge
+            .padding(.vertical, WidgetMetrics.islandBottomPad)   // air above/below so descenders don't kiss the island's bottom edge
     }
 
     private static func bottomCaption(_ s: RestActivityAttributes.ContentState) -> String {

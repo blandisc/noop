@@ -1,24 +1,24 @@
 // FER-95 · E14 — «Hoy: {rutina} · Empezar», the small home-screen widget.
 //
 // Reads `TrainWidgetSnapshot` from the App Group — nothing here computes a verdict or a routine
-// assignment; both are already resolved by `AppModel`. «Instrumento diurno» on a system surface, same
-// discipline as `RestLiveActivity`: warm paper, color only in the verdict word, no custom Grotesk face
-// (it isn't registered in the widget extension — FER-817), fixed sizes from `HomeWidgetMetrics` rather
-// than a Dynamic-Type promise WidgetKit can't keep.
+// assignment; both are already resolved by `AppModel`. Liquid Glass · El Eje on a system surface
+// (DECISIONS 2026-09-03), same discipline as `RestLiveActivity`: `LiquidColor.fondoAlto`, color only
+// in the verdict word, no custom Grotesk face (it isn't registered in the widget extension — FER-817),
+// fixed sizes from `HomeWidgetMetrics` rather than a Dynamic-Type promise WidgetKit can't keep.
 
 import SwiftUI
 import WidgetKit
 import CenitDesign
 
-/// `TrainWidgetSnapshot.VerdictTone` → `EntrenarHilo.Tone`, so the widget can call the REAL
-/// `.word(theme)` — the same reading-tone Entrenar's own hilo shows — instead of re-deriving a color.
+/// `TrainWidgetSnapshot.VerdictTone` → reading color on the Liquid canvas (same roles Entrenar's
+/// hilo shows: positivo / atención / negativo / tinta secundaria).
 extension TrainWidgetSnapshot.VerdictTone {
-    var strandTone: EntrenarHilo.Tone {
+    var liquidWord: Color {
         switch self {
-        case .clear:   return .clear
-        case .caution: return .caution
-        case .ease:    return .ease
-        case .hollow:  return .hollow
+        case .clear:   return LiquidColor.positivo
+        case .caution: return LiquidColor.atencionTexto
+        case .ease:    return LiquidColor.negativo
+        case .hollow:  return LiquidColor.tinta700
         }
     }
 }
@@ -56,29 +56,27 @@ struct TrainTodayProvider: TimelineProvider {
 
 struct TrainTodayWidgetView: View {
     let entry: TrainTodayEntry
-    private let theme = InstrumentoTheme.base
     private typealias M = HomeWidgetMetrics
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            theme.paper
-            content.padding(M.padding)
-        }
+        content
+            .padding(M.padding)
+            .containerBackground(LiquidColor.fondoAlto, for: .widget)
     }
 
     @ViewBuilder private var content: some View {
         if let snapshot = entry.snapshot {
             if snapshot.isStale(asOf: entry.date) {
-                OpenAppBody(theme: theme)
+                OpenAppBody()
             } else if let today = snapshot.today {
-                RoutineBody(today: today, verdict: snapshot.verdict, theme: theme)
+                RoutineBody(today: today, verdict: snapshot.verdict)
             } else {
-                RestBody(verdict: snapshot.verdict, theme: theme)
+                RestBody(verdict: snapshot.verdict)
             }
         } else {
             // Primera instalación: sin snapshot, nunca datos inventados. `redacted` es la única
             // decoración — el mismo layout que `RoutineBody` pintaría, opaco.
-            RoutineBody(today: .init(routineName: "Empuje", sessionLive: false), verdict: nil, theme: theme)
+            RoutineBody(today: .init(routineName: "Empuje", sessionLive: false), verdict: nil)
                 .redacted(reason: .placeholder)
                 .allowsHitTesting(false)
         }
@@ -90,31 +88,31 @@ struct TrainTodayWidgetView: View {
 private struct RoutineBody: View {
     let today: TrainWidgetSnapshot.TodayPlan
     let verdict: TrainWidgetSnapshot.Verdict?
-    let theme: InstrumentoTheme
     private typealias M = HomeWidgetMetrics
 
+    // token-exempt(sistema): geometría de Live Activity
     var body: some View {
         Button(intent: StartTodayRoutineIntent()) {
             VStack(alignment: .leading, spacing: M.rowGap) {
                 Text("Today")
-                    .font(.system(size: M.overline, weight: .semibold))
+                    .font(Font.system(size: M.overline, weight: .semibold))
                     .tracking(M.overlineTracking)
-                    .foregroundStyle(theme.inkTertiary)
+                    .foregroundStyle(LiquidColor.tinta500)
                 Text(verbatim: today.routineName)
-                    .font(.system(size: M.title, weight: .bold, design: .rounded))
-                    .foregroundStyle(theme.ink)
+                    .font(Font.system(size: M.title, weight: .bold, design: .rounded))
+                    .foregroundStyle(LiquidColor.tinta900)
                     .lineLimit(2)
                     .minimumScaleFactor(0.8)
                 if let verdict {
                     Text(verbatim: verdict.word)
-                        .font(.system(size: M.verdict, weight: .medium))
-                        .foregroundStyle(verdict.tone.strandTone.word(theme))
+                        .font(Font.system(size: M.verdict, weight: .medium))
+                        .foregroundStyle(verdict.tone.liquidWord)
                         .lineLimit(1)
                 }
                 Spacer(minLength: 0)
                 Text(today.sessionLive ? "Continue" : "Start")
-                    .font(.system(size: M.cta, weight: .semibold))
-                    .foregroundStyle(theme.ink)
+                    .font(Font.system(size: M.cta, weight: .semibold))
+                    .foregroundStyle(LiquidColor.tinta900)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         }
@@ -134,22 +132,22 @@ private struct RoutineBody: View {
 /// Día de descanso: sin rutina asignada hoy, sin CTA de arrancar sesión (spec FER-95).
 private struct RestBody: View {
     let verdict: TrainWidgetSnapshot.Verdict?
-    let theme: InstrumentoTheme
     private typealias M = HomeWidgetMetrics
 
+    // token-exempt(sistema): geometría de Live Activity
     var body: some View {
         VStack(alignment: .leading, spacing: M.rowGap) {
             Text("Today")
-                .font(.system(size: M.overline, weight: .semibold))
+                .font(Font.system(size: M.overline, weight: .semibold))
                 .tracking(M.overlineTracking)
-                .foregroundStyle(theme.inkTertiary)
+                .foregroundStyle(LiquidColor.tinta500)
             Text("Rest day")
-                .font(.system(size: M.title, weight: .bold, design: .rounded))
-                .foregroundStyle(theme.ink)
+                .font(Font.system(size: M.title, weight: .bold, design: .rounded))
+                .foregroundStyle(LiquidColor.tinta900)
             if let verdict {
                 Text(verbatim: verdict.word)
-                    .font(.system(size: M.verdict, weight: .medium))
-                    .foregroundStyle(verdict.tone.strandTone.word(theme))
+                    .font(Font.system(size: M.verdict, weight: .medium))
+                    .foregroundStyle(verdict.tone.liquidWord)
                     .lineLimit(1)
             }
             Spacer(minLength: 0)
@@ -163,19 +161,19 @@ private struct RestBody: View {
 /// Snapshot rancio: la app no ha publicado en el horizonte declarado. Nunca una rutina vieja
 /// disfrazada de vigente — solo la invitación honesta a abrir la app (FER-95).
 private struct OpenAppBody: View {
-    let theme: InstrumentoTheme
     private typealias M = HomeWidgetMetrics
 
+    // token-exempt(sistema): geometría de Live Activity
     var body: some View {
         VStack(alignment: .leading, spacing: M.rowGap) {
             Text("Today")
-                .font(.system(size: M.overline, weight: .semibold))
+                .font(Font.system(size: M.overline, weight: .semibold))
                 .tracking(M.overlineTracking)
-                .foregroundStyle(theme.inkTertiary)
+                .foregroundStyle(LiquidColor.tinta500)
             Spacer(minLength: 0)
             Text("Open Cénit")
-                .font(.system(size: M.title, weight: .bold, design: .rounded))
-                .foregroundStyle(theme.ink)
+                .font(Font.system(size: M.title, weight: .bold, design: .rounded))
+                .foregroundStyle(LiquidColor.tinta900)
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)

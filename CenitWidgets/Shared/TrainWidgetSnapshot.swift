@@ -59,7 +59,8 @@ public struct TrainWidgetSnapshot: Codable, Equatable, Sendable {
     /// rather than reusing `Tone` directly — the same reason `RestActivityBridge.Action` doesn't reuse
     /// a session-domain type: this file compiles into both the app and the extension, and a raw-string
     /// enum is the simplest thing that survives `JSONEncoder`/`JSONDecoder` across the process boundary.
-    /// `CenitWidgets/HomeWidgets` maps it back to `EntrenarHilo.Tone` to call the real `.word(theme)`.
+    /// `CenitWidgets/HomeWidgets` maps it to Liquid reading colors (`positivo` / `atencionTexto` /
+    /// `negativo` / `tinta700`) so the widget never re-derives the verdict.
     public enum VerdictTone: String, Codable, Equatable, Sendable {
         case clear, caution, ease, hollow
     }

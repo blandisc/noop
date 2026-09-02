@@ -105,6 +105,31 @@ public enum WidgetMetrics {
     /// un `size * 3` sin nombre en `RestTimerText`.
     public static let timerWidthMultiplier: CGFloat = 3
     public static let disabledOpacity: CGFloat = 0.4
+    /// Iniciales del thumb cuando no hay miniatura (Lock Screen).
+    public static let thumbInitials: CGFloat = 13
+    // Dynamic Island — geometría fija de ActivityKit (FER-311). Una sola familia de tamaños
+    // por región; los call sites citan estos tokens con `token-exempt(sistema)`.
+    public static let islandCompact: CGFloat = 13
+    public static let islandCompactGlyph: CGFloat = 12
+    public static let islandCompactHeart: CGFloat = 10
+    public static let islandCompactTimer: CGFloat = 15
+    public static let islandMinimal: CGFloat = 12
+    public static let islandMinimalGlyph: CGFloat = 11
+    public static let islandExpandedHero: CGFloat = 26
+    public static let islandExpandedSecondary: CGFloat = 16
+    public static let islandExpandedPause: CGFloat = 20
+    public static let islandExpandedTarget: CGFloat = 15
+    public static let islandExpandedHeart: CGFloat = 14
+    public static let islandExpandedTimerGlyph: CGFloat = 13
+    public static let islandExpandedPulse: CGFloat = 16
+    public static let islandExpandedPulseGlyph: CGFloat = 13
+    public static let islandCapLabel: CGFloat = 9
+    public static let islandCapTimer: CGFloat = 14
+    public static let islandBottomCaption: CGFloat = 12
+    public static let islandHeartStackGap: CGFloat = 2
+    public static let islandExpandedStackGap: CGFloat = 4
+    public static let islandTimerStackGap: CGFloat = 6
+    public static let islandBottomPad: CGFloat = 3
 }
 
 // MARK: - Home-screen widget metrics (FER-95 · E14)

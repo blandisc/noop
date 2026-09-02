@@ -5,7 +5,7 @@
 // as its own WidgetKit view: `WeekTokens` (CenitDesign) is a SwiftUI `View` built for the app's live
 // theme environment, not something a widget extension can reuse verbatim. No family tint here (out of
 // scope — decisión #13 del épico, resuelta en otra rama): a filled token means «trained», not «which
-// routine».
+// routine». Liquid Glass · El Eje (DECISIONS 2026-09-03): `LiquidColor.fondoAlto` + tinta Liquid.
 
 import SwiftUI
 import WidgetKit
@@ -46,14 +46,12 @@ struct WeekProvider: TimelineProvider {
 
 struct WeekWidgetView: View {
     let entry: WeekEntry
-    private let theme = InstrumentoTheme.base
     private typealias M = HomeWidgetMetrics
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            theme.paper
-            content.padding(M.padding)
-        }
+        content
+            .padding(M.padding)
+            .containerBackground(LiquidColor.fondoAlto, for: .widget)
     }
 
     @ViewBuilder private var content: some View {
@@ -74,20 +72,21 @@ struct WeekWidgetView: View {
     @ViewBuilder private func body(snapshot: TrainWidgetSnapshot) -> some View {
         VStack(alignment: .leading, spacing: M.weekGap) {
             header(snapshot: snapshot)
-            WeekStrip(days: snapshot.week, theme: theme)
+            WeekStrip(days: snapshot.week)
         }
     }
 
+    // token-exempt(sistema): geometría de Live Activity
     private var staleHeader: some View {
         VStack(alignment: .leading, spacing: M.rowGap) {
             Text("This week")
-                .font(.system(size: M.overline, weight: .semibold))
+                .font(Font.system(size: M.overline, weight: .semibold))
                 .tracking(M.overlineTracking)
-                .foregroundStyle(theme.inkTertiary)
+                .foregroundStyle(LiquidColor.tinta500)
             Spacer(minLength: 0)
             Text("Open Cénit")
-                .font(.system(size: M.title, weight: .bold, design: .rounded))
-                .foregroundStyle(theme.ink)
+                .font(Font.system(size: M.title, weight: .bold, design: .rounded))
+                .foregroundStyle(LiquidColor.tinta900)
             Spacer(minLength: 0)
         }
         .accessibilityElement(children: .ignore)
@@ -113,31 +112,32 @@ struct WeekWidgetView: View {
         }
     }
 
+    // token-exempt(sistema): geometría de Live Activity
     private func headerRow(title: Text, verdict: TrainWidgetSnapshot.Verdict?, cta: LocalizedStringKey?) -> some View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: M.microGap) {
                 Text("Today")
-                    .font(.system(size: M.overline, weight: .semibold))
+                    .font(Font.system(size: M.overline, weight: .semibold))
                     .tracking(M.overlineTracking)
-                    .foregroundStyle(theme.inkTertiary)
+                    .foregroundStyle(LiquidColor.tinta500)
                 title
-                    .font(.system(size: M.title, weight: .bold, design: .rounded))
-                    .foregroundStyle(theme.ink)
+                    .font(Font.system(size: M.title, weight: .bold, design: .rounded))
+                    .foregroundStyle(LiquidColor.tinta900)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
-            Spacer(minLength: 8)
+            Spacer(minLength: LiquidSpace.s200)
             VStack(alignment: .trailing, spacing: M.microGap) {
                 if let verdict {
                     Text(verbatim: verdict.word)
-                        .font(.system(size: M.verdict, weight: .medium))
-                        .foregroundStyle(verdict.tone.strandTone.word(theme))
+                        .font(Font.system(size: M.verdict, weight: .medium))
+                        .foregroundStyle(verdict.tone.liquidWord)
                         .lineLimit(1)
                 }
                 if let cta {
                     Text(cta)
-                        .font(.system(size: M.cta, weight: .semibold))
-                        .foregroundStyle(theme.ink)
+                        .font(Font.system(size: M.cta, weight: .semibold))
+                        .foregroundStyle(LiquidColor.tinta900)
                 }
             }
         }
@@ -148,17 +148,17 @@ struct WeekWidgetView: View {
 /// (Monday-first, matching the app's `orderedWeekdays`).
 private struct WeekStrip: View {
     let days: [TrainWidgetSnapshot.WeekDay]
-    let theme: InstrumentoTheme
     private typealias M = HomeWidgetMetrics
 
+    // token-exempt(sistema): geometría de Live Activity
     var body: some View {
         HStack(spacing: 0) {
             ForEach(Array(days.enumerated()), id: \.offset) { _, day in
                 VStack(spacing: M.dayTokenGap) {
                     token(day.state)
                     Text(verbatim: day.label)
-                        .font(.system(size: M.dayLabel, weight: .medium))
-                        .foregroundStyle(theme.inkTertiary)
+                        .font(Font.system(size: M.dayLabel, weight: .medium))
+                        .foregroundStyle(LiquidColor.tinta500)
                 }
                 .frame(maxWidth: .infinity)
                 .accessibilityElement(children: .ignore)
@@ -171,13 +171,13 @@ private struct WeekStrip: View {
         let side = M.dayToken
         switch state {
         case .done:
-            Circle().fill(theme.ink).frame(width: side, height: side)
+            Circle().fill(LiquidColor.tinta900).frame(width: side, height: side)
         case .today:
-            Circle().strokeBorder(theme.ink, lineWidth: M.ringToday).frame(width: side, height: side)
+            Circle().strokeBorder(LiquidColor.tinta900, lineWidth: M.ringToday).frame(width: side, height: side)
         case .upcoming:
-            Circle().strokeBorder(theme.hairlineStrong, lineWidth: M.ringUpcoming).frame(width: side, height: side)
+            Circle().strokeBorder(LiquidColor.tinta10, lineWidth: M.ringUpcoming).frame(width: side, height: side)
         case .rest:
-            Circle().strokeBorder(theme.inkTertiary, style: StrokeStyle(lineWidth: M.ringRest, dash: M.ringRestDash))
+            Circle().strokeBorder(LiquidColor.tinta500, style: StrokeStyle(lineWidth: M.ringRest, dash: M.ringRestDash))
                 .frame(width: side, height: side)
         }
     }
