@@ -173,14 +173,14 @@ private struct WatchFaceMetrics: View {
                 Text("Almost")
                     .font(LiquidType.displayM)
                     .tracking(LiquidType.displayMTracking)
-                    .foregroundStyle(LiquidColor.rosa)
+                    .foregroundStyle(LiquidOLED.rosa)
                     .minimumScaleFactor(0.5)
                     .lineLimit(1)
             } else {
                 (Text("you need").font(LiquidType.subtituloFila).foregroundStyle(LiquidOLED.tintaSecundaria)
                  + Text(verbatim: " ")
                  // displayM (40) es el grotesk más cercano a heroReadiness (36)
-                 + Text(verbatim: "\(gap)").font(LiquidType.displayM).tracking(LiquidType.displayMTracking).foregroundStyle(LiquidColor.rosa)
+                 + Text(verbatim: "\(gap)").font(LiquidType.displayM).tracking(LiquidType.displayMTracking).foregroundStyle(LiquidOLED.rosa)
                  + Text(verbatim: " ")
                  + Text("bpm").font(LiquidType.subtituloFila).foregroundStyle(LiquidOLED.tintaSecundaria))
                     .minimumScaleFactor(0.5)
@@ -234,7 +234,7 @@ private struct WatchFaceMetrics: View {
         HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s100) {
             pulseValue
                 .font(LiquidType.numeralHoja)
-                .foregroundStyle(pulseDashed ? LiquidOLED.tintaTerciaria : LiquidColor.rosa) // inkDim → tintaTerciaria (rol más cercano)
+                .foregroundStyle(pulseDashed ? LiquidOLED.tintaTerciaria : LiquidOLED.rosa) // inkDim → tintaTerciaria (rol más cercano)
                 .minimumScaleFactor(0.5)
                 .lineLimit(1)
             Text("bpm").font(LiquidType.unidad).foregroundStyle(LiquidOLED.tintaSecundaria).accessibilityHidden(true)
@@ -275,7 +275,7 @@ private struct WatchFaceMetrics: View {
         HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s100) {
             pulseValue
                 .font(Font.system(.subheadline).monospacedDigit()) // bodyNumber → cuerpoLista tabular
-                .foregroundStyle(pulseDashed ? LiquidOLED.tintaTerciaria : LiquidColor.rosa) // inkDim → tintaTerciaria
+                .foregroundStyle(pulseDashed ? LiquidOLED.tintaTerciaria : LiquidOLED.rosa) // inkDim → tintaTerciaria
             Text("bpm").font(LiquidType.unidad).foregroundStyle(LiquidOLED.tintaSecundaria).accessibilityHidden(true)
         }
         .accessibilityElement(children: .ignore)
@@ -341,7 +341,7 @@ private struct WatchControlPage: View {
                 Text("Finish").frame(maxWidth: .infinity, minHeight: WatchMetrics.controlHeight)
             }
             // token-exempt(sistema): control nativo watchOS
-            .buttonStyle(.bordered).tint(LiquidColor.negativo)
+            .buttonStyle(.bordered).tint(LiquidOLED.negativo)
             Spacer()
         }
         .padding(.horizontal, LiquidSpace.s300)

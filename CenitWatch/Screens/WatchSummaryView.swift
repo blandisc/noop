@@ -79,7 +79,7 @@ struct WatchSummaryView: View {
                 Text("Couldn't save to Health")
             }
             .font(LiquidType.filaConteo)
-            .foregroundStyle(LiquidColor.negativo)
+            .foregroundStyle(LiquidOLED.negativo)
             .lineLimit(nil)
         }
     }

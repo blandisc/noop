@@ -7,7 +7,7 @@ import CenitDesign
 /// overlays (no reading / no permission / no iPhone) from the finer published state.
 ///
 /// El suelo es `LiquidOLED.fondo` (negro OLED). `.instrumentoTheme(.watch)` se conserva solo para
-/// `EntrenarHilo`/`OrbeVivo`, que todavía leen `\.instrumentoTheme` en el paquete (deuda de CenitDesign,
+/// `EntrenarHilo`, que todavía leen `\.instrumentoTheme` en el paquete (deuda de CenitDesign,
 /// fuera de este issue).
 struct WatchSessionRootView: View {
     @EnvironmentObject var manager: WatchWorkoutManager
@@ -90,7 +90,7 @@ struct WatchIdleView: View {
                 if manager.authorizationRequestFailed {
                     Text("Couldn't ask for Health access. Open Cénit on your iPhone.")
                         .font(LiquidType.pie)
-                        .foregroundStyle(LiquidColor.negativo)
+                        .foregroundStyle(LiquidOLED.negativo)
                         .multilineTextAlignment(.center)
                 }
             }
@@ -159,7 +159,7 @@ struct WatchHealthKitFailureView: View {
             // iconSF(36) ≈ 28 pt (factor 0.78), el rol de title1 en el Watch
             Image(systemName: "heart.text.square")
                 .font(LiquidType.iconSF(size: 36))
-                .foregroundStyle(LiquidColor.negativo)
+                .foregroundStyle(LiquidOLED.negativo)
             Text("Couldn't start the workout")
                 .font(LiquidType.tituloHoja)
                 .foregroundStyle(LiquidOLED.tinta)
