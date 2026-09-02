@@ -94,7 +94,7 @@ enum HojaCabeceraSesion {
     /// FER-250: píldora discreta «Terminar» en cabecera — mismo lenguaje que
     /// `LiveStrengthSheet.sessionHeaderPill` (papel + canto), no el CTA verde de sesión completa.
     private static func terminarSecundario(vivo: HojaSesionViva) -> some View {
-        OutlineCapsule(theme: vivo.sheet.theme, size: .lg, estilo: .papel,
+        OutlineCapsule(size: .lg, estilo: .papel,
                        action: { vivo.confirmFinish = true }) {
             Text("Finish")
                 .entrenarSessionEndLabel()

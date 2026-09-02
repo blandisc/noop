@@ -10,7 +10,6 @@ import CenitDesign
 // keyboard idiom's blue «return»), so it carries the one accent (`dataRecovery`).
 
 struct SessionKeypad: View {
-    let theme: InstrumentoTheme
     /// Magnitud del paso rápido, con el signo `±` (métrico «±2,5», imperial «±5», reps «±1») — la
     /// rejilla la parte en las dos teclas «+…»/«−…» (FER-134 ítem 8; antes era el texto de una sola
     /// píldora que solo sumaba).
@@ -218,8 +217,7 @@ struct SessionKeypad: View {
                     size: .aMedida(
                         insets: EntrenarMetrics.keypadPillInsets,
                         minHeight: EntrenarMetrics.keypadPill,
-                        touchInset: EntrenarMetrics.keypadPillTouchInset),
-                    theme: theme)
+                        touchInset: EntrenarMetrics.keypadPillTouchInset))
         }
         .buttonStyle(EntrenarPressStyle())
         .disabled(!enabled)
@@ -320,7 +318,7 @@ struct SessionKeypad: View {
 #Preview("SessionKeypad") {
     VStack {
         Spacer()
-        SessionKeypad(theme: .base, stepLabel: "±2,5", canCopyPrevious: true,
+        SessionKeypad(stepLabel: "±2,5", canCopyPrevious: true,
                       onDigit: { _ in }, onComma: {}, onBackspace: {}, onNext: {},
                       onCopyPrevious: {}, onStep: {})
     }

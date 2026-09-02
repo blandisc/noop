@@ -24,7 +24,6 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
     private let pliegue: Pliegue
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.instrumentoTheme) private var theme
     /// Ronda 2 · D2: `heroNombres`/`subPillTexto` eran `Font.system(size:)` fijo — texto de LECTURA
     /// sin escalar. `@ScaledMetric` en la vista (el `enum` de tokens no tiene entorno); la base sigue
     /// en `EntrenarHubMetrics`. `subPillTextoSize` ancla a `.subheadline`, el MISMO `relativeTo` que
@@ -94,8 +93,7 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
 
     private func subPill(_ line: Text) -> some View {
         // 2A: cromo vía `OutlineCapsule.Estilo.tenida(.verde)` (alfas en `EntrenarHubMetrics.subPill*`).
-        OutlineCapsule(theme: theme,
-                       size: .aMedida(insets: EntrenarHubMetrics.subPillInsets, minHeight: nil, touchInset: 0),
+        OutlineCapsule(size: .aMedida(insets: EntrenarHubMetrics.subPillInsets, minHeight: nil, touchInset: 0),
                        estilo: .tenida(.verde), action: onOpenRaise) {
             HStack(spacing: LiquidSpace.s200) {
                 Circle()
@@ -131,8 +129,7 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
 
     private var otraFormaPill: some View {
         // 2A: cromo vía `OutlineCapsule.Estilo.vidrio` + talla `.lg` (alfas en `EntrenarHubMetrics.otraForma*`).
-        OutlineCapsule(theme: theme,
-                       size: .aMedida(insets: EntrenarHubMetrics.otraFormaInsets, minHeight: EntrenarMetrics.row, touchInset: 0),
+        OutlineCapsule(size: .aMedida(insets: EntrenarHubMetrics.otraFormaInsets, minHeight: EntrenarMetrics.row, touchInset: 0),
                        estilo: .vidrio, action: {
             withAnimation(reduceMotion ? LiquidMotion.fundido : LiquidMotion.suave) { onToggleOtraForma() }
         }) {

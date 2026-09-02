@@ -21,7 +21,6 @@ struct WorkoutImportView: View {
     /// Called after routines are created, so the hub can reload «Mis rutinas».
     var onComplete: () async -> Void
 
-    @Environment(\.instrumentoTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @EnvironmentObject private var repo: Repository
@@ -95,7 +94,7 @@ struct WorkoutImportView: View {
             // `.cerrar` de la familia) — no se unifica a `EntrenarHojaCabecera` aquí (ver nota
             // en `.entrenarHojaFondo` arriba).
             if phase == .mapping || phase == .done {
-                BackButton(role: .close, theme: theme, action: dismissImport)
+                BackButton(role: .close, theme: .base, action: dismissImport)
                     .padding(.trailing, LiquidSpace.s200).padding(.top, LiquidSpace.s200)
             }
         }
@@ -125,7 +124,7 @@ struct WorkoutImportView: View {
                     if let chosen = picks.first { resolve(target.name, with: chosen) }
                 }
             }
-            .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+            .environmentObject(repo).preferredColorScheme(.light)
         }
         // FER-995: «create new» opens the library's own create form, pre-filled with the plan's name,
         // the type it declared and a muscle proposed from the name — instead of silently saving an
@@ -135,7 +134,7 @@ struct WorkoutImportView: View {
                                 initialType: declaredType(target.name)) { exercise in
                 createNew(target.name, as: exercise)
             }
-            .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+            .environmentObject(repo).preferredColorScheme(.light)
         }
         .enableInjection()
     }
@@ -467,7 +466,7 @@ struct WorkoutImportView: View {
             (reconciler?.resolve(ex) ?? resolution[norm(ex.name)])?.primaryMuscles
         }
         let region = RoutineClassifier.classify(primaryMusclesPerExercise: muscles)
-        let accent = region.tint(theme)
+        let accent = region.tint()
         let mapped = mappedCount(routine)
         return HStack(alignment: .top, spacing: LiquidSpace.s300) {
             VStack(alignment: .leading, spacing: LiquidSpace.s200) {

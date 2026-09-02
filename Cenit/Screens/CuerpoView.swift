@@ -37,13 +37,10 @@ import Foundation
 // on-device computed scores live in daily-metrics under `strap-noop`, so `series("strap")` is
 // empty for a BLE user — `displayDays` resolves for both import and strap users (FER-149).
 
-/// Theme wrapper: anchors `\.instrumentoTheme` to the single warm day paper (`.base`), then hands off
-/// to `CuerpoLanding`, which reads the resolved theme from the environment. (FER-398 retired the
-/// by-the-hour tint; the app no longer changes colour with the clock.)
+/// Landing de Tendencias. (FER-398 retired the by-the-hour tint; the app no longer changes colour with the clock.)
 struct CuerpoView: View {
     var body: some View {
         CuerpoLanding()
-            .instrumentoTheme(.base)
     }
 }
 
@@ -103,7 +100,6 @@ private struct EdgeSwipeBack: ViewModifier {
 }
 
 private struct DetailChrome<Content: View>: View {
-    let theme: InstrumentoTheme
     /// Pops the detail — clears the presenting state so the parent removes this layer (with a trailing
     /// slide-out transition). Replaces `@Environment(\.dismiss)`: the detail is now an in-hierarchy layer
     /// over the Tendencias landing, NOT a `fullScreenCover` (which hid the landing behind a blank platter).
@@ -183,7 +179,6 @@ private struct CuerpoLanding: View {
     @EnvironmentObject var repo: Repository
     @Environment(AppModel.self) var model
     @EnvironmentObject var health: HealthKitBridge
-    @Environment(\.instrumentoTheme) private var theme
 
     /// Light metric sheet (the same one Today opens), for metrics that have a `MetricInfo` factory.
     /// Unified Detalle de Métrica (FER-185): the three vitals (HRV / FC reposo / Respiración) open this
@@ -321,7 +316,7 @@ private struct CuerpoLanding: View {
                     .recEntranceGate()
                     .zIndex(1)
             } else if detailPresented {
-                DetailChrome(theme: theme, onClose: dismissDetail) { detailOverlayContent }
+                DetailChrome(onClose: dismissDetail) { detailOverlayContent }
                     .transition(LiquidMotion.trailingTransition)
                     // The entrance keyframes wait for the slide to land: a detail that already has its
                     // datum (Estrés / Temp. de piel / Carga) built its hero on the first frame, so its
@@ -338,8 +333,7 @@ private struct CuerpoLanding: View {
             // `.sheet` boundary, FER-162) and the env objects are re-supplied (a sheet starts a fresh
             // environment branch). No nested NavigationStack (FER-171); you drag to dismiss. (FER-268)
             CompareView()
-                .instrumentoTheme(theme)
-                .environmentObject(repo)
+                                .environmentObject(repo)
                 .environment(model)
                 .environmentObject(health)
         }
@@ -357,8 +351,7 @@ private struct CuerpoLanding: View {
                         }
                     }
             }
-            .instrumentoTheme(theme)
-            .environmentObject(repo)
+                        .environmentObject(repo)
             .environment(model)
             .environmentObject(health)
         }
@@ -401,14 +394,13 @@ private struct CuerpoLanding: View {
                 WorkoutSessionDetailScreen(route: route)
             }
             .navigationDestination(for: WorkoutRow.self) { row in
-                WorkoutDetailScreen(theme: theme, row: row,
+                WorkoutDetailScreen(row: row,
                                     onChange: { workoutsCoordinator.bumpReload() })
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .pantallaFondo()
-        .instrumentoTheme(theme)
-        .environmentObject(repo)
+                .environmentObject(repo)
         .environment(model)
         .environmentObject(health)
         .environmentObject(workoutsCoordinator)
@@ -422,7 +414,6 @@ private struct CuerpoLanding: View {
             MetricDetailScreen(
                 spec: spec,
                 depth: .full,
-                theme: theme,
                 // VO₂max is Apple-only: invite connecting Apple Health from its empty state when nothing's
                 // connected and there's no reading (mirrors the Fitness Age VO₂max nudge). (FER-257)
                 appleConnectHint: spec.descriptor.key == "vo2max"
@@ -452,13 +443,13 @@ private struct CuerpoLanding: View {
         } else if let item = recoveryDetail {
             PreparacionDetailScreen(modelo: item.modelo)
         } else if let item = strainDetail {
-            StrainDetailScreen(theme: theme, model: item.model, estimated: item.estimated)
+            StrainDetailScreen(model: item.model, estimated: item.estimated)
         } else if let item = sleepDetail {
-            SleepDetailScreen(theme: theme, model: item.model,
+            SleepDetailScreen(model: item.model,
                               sinPermiso: health.auth != .authorized && health.auth != .unavailable)
         } else if let item = stressDetail {
             // FER-1027: el mapa intradía de estrés es de banda; en Apple-only no se muestra.
-            StressDetailScreen(theme: theme, model: item.model,
+            StressDetailScreen(model: item.model,
                                dayMap: nil,
                                patternsLoader: { await StressDayMapPresenter.timeOfDayPatterns(
                                    repo: repo, maxHR: model.profile.hrMax, restingHR: stressRestingHR) },
@@ -467,7 +458,7 @@ private struct CuerpoLanding: View {
         } else if let item = trainingLoadItem {
             TrainingLoadSheet(model: item.model)
         } else if let item = skinTempDetail {
-            SkinTempDetailScreen(theme: theme, model: item.model,
+            SkinTempDetailScreen(model: item.model,
                                  loadWarmingMagnitudes: { await repo.nocturnalWarmingMagnitudes() })
         } else if showActivityCost {
             activityRecoverySheet
@@ -478,13 +469,11 @@ private struct CuerpoLanding: View {
                                  appleConnectHint: health.auth != .authorized && health.auth != .unavailable
                                      && latestAppleVO2max == nil,
                                  vo2Trend: vo2maxTrend,
-                                 vo2Series: vitalSeries(for: "vo2max").map(\.value),
-                                 theme: theme)
+                                 vo2Series: vitalSeries(for: "vo2max").map(\.value))
         } else if showBodyAge {
             BodyAgeSheet(
                 result: vitalityResult,
-                inputs: vitalityInputs ?? VitalityEngine.Inputs(chronoAge: Double(model.profile.age)),
-                theme: theme)
+                inputs: vitalityInputs ?? VitalityEngine.Inputs(chronoAge: Double(model.profile.age)))
         }
     }
 
@@ -1267,13 +1256,11 @@ private struct CuerpoLanding: View {
         }
     }
 
-    /// The light Activity-recovery detail (FER-139), theme passed explicitly (it doesn't cross the
-    /// `.sheet` boundary). The Apple-connect line appears only when nothing's connected and there are no
-    /// sessions to draw from.
+    /// The light Activity-recovery detail (FER-139). The Apple-connect line appears only when nothing's
+    /// connected and there are no sessions to draw from.
     private var activityRecoverySheet: some View {
         ActivityRecoverySheet(
             costs: activityCosts,
-            theme: theme,
             appleConnectHint: health.auth != .authorized && health.auth != .unavailable && workoutCount == 0
         )
     }
@@ -1282,8 +1269,7 @@ private struct CuerpoLanding: View {
 
     /// Data Sources, now reskinned to the light «Instrumento» language (FER-338), presented
     /// self-contained: its own NavigationStack + Done button (so «Ver datos importados» pushes the
-    /// Apple Health viewer), the theme injected at the root (it doesn't cross the `.sheet` boundary,
-    /// FER-162), and the environment objects re-injected (a sheet starts a fresh environment branch).
+    /// Apple Health viewer), and the environment objects re-injected (a sheet starts a fresh environment branch).
     /// A light sheet from a light tab keeps the status bar honest (no dark pin needed).
     private func darkSheetContent(_ sheet: CuerpoSheet) -> some View {
         NavigationStack {
@@ -1300,8 +1286,7 @@ private struct CuerpoLanding: View {
                 }
             }
         }
-        .instrumentoTheme(theme)
-        .environmentObject(repo)
+                .environmentObject(repo)
         .environment(model)
         .environmentObject(health)
         .preferredColorScheme(.light)

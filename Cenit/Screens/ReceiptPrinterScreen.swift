@@ -12,7 +12,6 @@ import StrandTraining
 // intentionally shows everything (owner-approved) — no toggles here, by design.
 
 struct ReceiptPrinterScreen: View {
-    let theme: InstrumentoTheme
     let summary: StrengthSummary
     let sessionId: String
     let onClose: () -> Void
@@ -83,7 +82,6 @@ struct ReceiptPrinterScreen: View {
         // ticket, en pantalla y en el `ImageRenderer` exportable) NO se toca: conserva su
         // identidad térmica (decisión del dueño).
         .entrenarHojaFondo(tono: .neutro)
-        .instrumentoTheme(theme)
         .preferredColorScheme(.light)
         // El arrastre del ticket es VERTICAL, así que el guard de dominancia horizontal del gesto
         // de borde los mantiene separados.
@@ -101,7 +99,7 @@ struct ReceiptPrinterScreen: View {
             Spacer(minLength: 0)
         }
         .overlay(alignment: .topTrailing) {
-            BackButton(role: .close, theme: theme, action: onClose)
+            BackButton(role: .close, theme: .base, action: onClose)
                 .padding(.trailing, LiquidSpace.s200)
         }
     }
@@ -112,7 +110,7 @@ struct ReceiptPrinterScreen: View {
     private var centerContent: some View {
         if showClassic {
             ScrollView {
-                ShareCardView(theme: theme, summary: summary,
+                ShareCardView(summary: summary,
                               includeHR: true, includeKcal: true, includeRecords: true)
                     .frame(width: ShareCardView.width)
                     .frame(maxWidth: .infinity)
@@ -121,7 +119,6 @@ struct ReceiptPrinterScreen: View {
         } else if ticketState == .removed {
             VStack(spacing: LiquidSpace.s400) {
                 ReceiptSavedSeal()
-                    .environment(\.instrumentoTheme, theme)
                 CenitCTAButton("REIMPRIMIR", kind: .outline) { reprint() }
                     .frame(maxWidth: 220)
             }

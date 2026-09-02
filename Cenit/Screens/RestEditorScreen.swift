@@ -49,7 +49,6 @@ enum RestEditorMapping {
 }
 
 struct RestEditorScreen: View {
-    let theme: InstrumentoTheme
     let exerciseName: String
     /// 1-based set number for the overline (nil = editing at the exercise level, no specific set).
     let setNumber: Int?
@@ -90,11 +89,11 @@ struct RestEditorScreen: View {
     @State private var applyToAll: Bool
     @State private var saveToRoutine: Bool
 
-    init(theme: InstrumentoTheme, exerciseName: String, setNumber: Int?, current: RestConfig,
+    init(exerciseName: String, setNumber: Int?, current: RestConfig,
          persistsToRoutine: Bool, restingHR: Double?, maxHR: Double?, defaultApplyToAll: Bool,
          closeAsDismiss: Bool = false,
          onCancel: @escaping () -> Void, onApply: @escaping (RestConfig, Bool, Bool) -> Void) {
-        self.theme = theme; self.exerciseName = exerciseName; self.setNumber = setNumber
+        self.exerciseName = exerciseName; self.setNumber = setNumber
         self.persistsToRoutine = persistsToRoutine; self.restingHR = restingHR; self.maxHR = maxHR
         self.closeAsDismiss = closeAsDismiss
         self.onCancel = onCancel; self.onApply = onApply
@@ -163,7 +162,7 @@ struct RestEditorScreen: View {
                 // FC). Las otras 3 (Karvonen, caída desde el pico, lpm fijo) viven en «más opciones»
                 // dentro de `hrSection`; si una de ellas está activa, ningún segmento de este control
                 // se resalta — es honesto: ninguna de las 2 de aquí es la que de verdad está activa.
-                SegmentedPillControl([FrontChoice.fixed, .restingMargin], selection: frontChoice, theme: theme,
+                SegmentedPillControl([FrontChoice.fixed, .restingMargin], selection: frontChoice,
                                      inkThumb: true,
                                      icon: { $0 == .restingMargin ? "heart.fill" : nil }) {
                     $0 == .fixed ? String(localized: "By time") : String(localized: "Over your rest")
@@ -194,7 +193,6 @@ struct RestEditorScreen: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .entrenarHojaFondo(tono: .verde)
-        .instrumentoTheme(theme)
         // FER-988: el gesto de volver, vetado a favor de `onCancel` — la salida de esta pantalla
         // aplica/descarta según su modo, y un pop crudo se la saltaría. Inerte como hoja (`.close`).
         .keepsSwipeBack { onCancel(); return false }
@@ -240,9 +238,9 @@ struct RestEditorScreen: View {
 
     /// «Más opciones» (FER-89): `Metodo` re-piel Liquid (FER-293) — misma pieza, tokens El Eje.
     private var moreOptionsSection: some View {
-        Metodo(title: String(localized: "More options"), theme: theme) {
+        Metodo(title: String(localized: "More options")) {
             SegmentedPillControl([HRRestReference.karvonenReserve, .peakDrop, .fixedBpm], selection: $hrRef,
-                                 theme: theme, inkThumb: true, thumbTint: LiquidColor.cian) {
+                                 inkThumb: true, thumbTint: LiquidColor.cian) {
                 switch $0 {
                 case .karvonenReserve: return String(localized: "Karvonen")
                 case .peakDrop:        return String(localized: "Peak drop")
@@ -406,7 +404,7 @@ struct RestEditorScreen: View {
 
     private func secondsPreset(_ label: String, _ s: Int) -> some View {
         let selected = seconds == s
-        return OutlineCapsule(theme: theme, size: .sm, filled: selected, action: { seconds = s }) {
+        return OutlineCapsule(size: .sm, filled: selected, action: { seconds = s }) {
             Text(verbatim: label)
                 .font(LiquidType.tituloFila)
                 .monospacedDigit()
@@ -419,7 +417,7 @@ struct RestEditorScreen: View {
     private var scopeSection: some View {
         VStack(alignment: .leading, spacing: .zero) {
             LiquidSectionHeader("Scope")
-            SegmentedPillControl([false, true], selection: $applyToAll, theme: theme, inkThumb: true) {
+            SegmentedPillControl([false, true], selection: $applyToAll, inkThumb: true) {
                 $0 ? String(localized: "All sets") : String(localized: "This set")
             }
         }

@@ -30,7 +30,6 @@ struct ExerciseLibraryScreen: View {
     /// Non-nil → ADD mode: multi-select with an "Add N" action that returns the picks. Nil → BROWSE.
     var onAdd: (([Exercise]) -> Void)? = nil
 
-    @Environment(\.instrumentoTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var repo: Repository
     @EnvironmentObject private var mediaCoordinator: MediaDownloadCoordinator
@@ -112,13 +111,13 @@ struct ExerciseLibraryScreen: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
             }
-            .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+            .environmentObject(repo).preferredColorScheme(.light)
         }
         .sheet(isPresented: $showCreate) {
             CreateExerciseSheet(catalog: exercises) { ex in
                 Task { try? await repo.saveCustomExercise(ex); await reload() }
             }
-            .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+            .environmentObject(repo).preferredColorScheme(.light)
         }
         // FER-995: completing an exercise created before the muscle was required — the same form,
         // pre-filled, keeping the id so the save edits in place.
@@ -126,7 +125,7 @@ struct ExerciseLibraryScreen: View {
             CreateExerciseSheet(catalog: exercises, editing: ex) { updated in
                 Task { try? await repo.saveCustomExercise(updated); await reload() }
             }
-            .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+            .environmentObject(repo).preferredColorScheme(.light)
         }
         .enableInjection()
     }
@@ -185,7 +184,7 @@ struct ExerciseLibraryScreen: View {
                 selection.wrappedValue = opt
             }
         }
-        return OutlineCapsule(theme: theme, size: .md, filled: active != nil,
+        return OutlineCapsule(size: .md, filled: active != nil,
                               action: { isPresented.wrappedValue = true }) {
             HStack(spacing: LiquidSpace.s200) {
                 Text(active.map(label) ?? title)
@@ -257,6 +256,15 @@ struct ExerciseLibraryScreen: View {
 
     /// A user-created exercise with no primary muscle: it doesn't count toward the muscle map or the
     /// weekly volume, so the library offers to complete it instead of opening its (empty) detail (FER-995).
+
+    /// Clasificación push/pull/legs a partir de músculos primarios (misma regla que el catálogo de movimiento).
+    private static func movementFamily(primaryMuscles: [String]) -> EntrenarFamily {
+        let m = primaryMuscles.joined(separator: " ").lowercased()
+        if ["lats", "back", "biceps", "traps", "forearms"].contains(where: m.contains) { return .pull }
+        if ["quadriceps", "hamstrings", "glutes", "calves", "abductors", "adductors"].contains(where: m.contains) { return .legs }
+        return .push
+    }
+
     private func needsMuscle(_ ex: Exercise) -> Bool {
         customIds.contains(ex.id) && ex.primaryMuscles.isEmpty
     }
@@ -267,7 +275,7 @@ struct ExerciseLibraryScreen: View {
         let incomplete = needsMuscle(ex)
         let family: EntrenarFamily? = {
             guard let primary = ex.primaryMuscles.first, !primary.isEmpty else { return nil }
-            return theme.movementFamily(primaryMuscles: [primary])
+            return Self.movementFamily(primaryMuscles: [primary])
         }()
         let dato: (valor: String, rotulo: String)? = {
             guard showsHistory, let kg = bestKg[ex.id] else { return nil }

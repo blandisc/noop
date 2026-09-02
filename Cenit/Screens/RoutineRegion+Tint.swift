@@ -16,8 +16,7 @@ extension RoutineRegion {
 
     /// Color de identidad de la rutina por región. Misma tabla que `EntrenarFamily.tint`
     /// (push ámbar · pull cian · legs/fullBody índigo) — FER-88 / FER-304 Liquid.
-    func tint(_ theme: InstrumentoTheme) -> Color {
-        _ = theme
+    func tint() -> Color {
         switch self {
         case .push:     return LiquidColor.ambar
         case .pull:     return LiquidColor.cian
@@ -28,33 +27,32 @@ extension RoutineRegion {
 
 extension Optional where Wrapped == RoutineRegion {
     /// nil (sin ejercicios clasificables) cae a ámbar — preserva el render actual.
-    func tint(_ theme: InstrumentoTheme) -> Color {
-        self?.tint(theme) ?? LiquidColor.ambar
+    func tint() -> Color {
+        self?.tint() ?? LiquidColor.ambar
     }
 }
 
 #if DEBUG
 #Preview("RoutineRegion tint") {
-    let t = InstrumentoTheme.base
     HStack(spacing: LiquidSpace.s400) {
         VStack(spacing: LiquidSpace.s200) {
-            Circle().fill(RoutineRegion.push.tint(t)).frame(width: 24, height: 24)
+            Circle().fill(RoutineRegion.push.tint()).frame(width: 24, height: 24)
             Text("push").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
         }
         VStack(spacing: LiquidSpace.s200) {
-            Circle().fill(RoutineRegion.pull.tint(t)).frame(width: 24, height: 24)
+            Circle().fill(RoutineRegion.pull.tint()).frame(width: 24, height: 24)
             Text("pull").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
         }
         VStack(spacing: LiquidSpace.s200) {
-            Circle().fill(RoutineRegion.legs.tint(t)).frame(width: 24, height: 24)
+            Circle().fill(RoutineRegion.legs.tint()).frame(width: 24, height: 24)
             Text("legs").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
         }
         VStack(spacing: LiquidSpace.s200) {
-            Circle().fill(RoutineRegion.fullBody.tint(t)).frame(width: 24, height: 24)
+            Circle().fill(RoutineRegion.fullBody.tint()).frame(width: 24, height: 24)
             Text("fullBody").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
         }
         VStack(spacing: LiquidSpace.s200) {
-            Circle().fill((nil as RoutineRegion?).tint(t)).frame(width: 24, height: 24)
+            Circle().fill((nil as RoutineRegion?).tint()).frame(width: 24, height: 24)
             Text("nil").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
         }
     }

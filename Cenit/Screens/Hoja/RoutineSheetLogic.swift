@@ -502,7 +502,7 @@ extension RoutineSheet {
         for g in MuscleGroup.allCases where (tally[g] ?? 0) > bestCount {
             best = g; bestCount = tally[g] ?? 0
         }
-        routineTint = best?.tint(theme) ?? LiquidColor.tinta500
+        routineTint = best?.tint() ?? LiquidColor.tinta500
         groupTitle = best?.title ?? String(localized: "Mixed")
     }
 

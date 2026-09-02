@@ -16,9 +16,8 @@ import Foundation
 //     normal range, night vitals (where the spec has them) and method.
 //   • `.full`  (from Cuerpo) — every block the spec declares.
 //
-// It is ONE view tree filtered by depth, never two screens. The theme is passed EXPLICITLY (it does
-// NOT propagate through `.sheet`'s fresh environment — FER-162) and it is presented via `.sheet(item:)`
-// WITHOUT a nested NavigationStack (a nested stack crossing the tab's path crashed SwiftUI — FER-171).
+// It is ONE view tree filtered by depth, never two screens. Presented via `.sheet(item:)` WITHOUT a
+// nested NavigationStack (a nested stack crossing the tab's path crashed SwiftUI — FER-171).
 //
 // Data: the three vitals come from `repo.displayDays` for a BLE user (computed scores live under
 // `strap-noop`, so `series("strap")` is empty) — the caller injects the loaders. The hero is the
@@ -29,8 +28,6 @@ struct MetricDetailScreen: View {
     let spec: MetricDetailSpec
     /// Hoy opens `.focus`; Cuerpo opens `.full`.
     var depth: Depth = .full
-    /// The live «Instrumento» theme, passed explicitly (sheets start a fresh environment). (FER-162)
-    var theme: InstrumentoTheme = .base
     /// When the metric is Apple-sourced and there's no reading + no permission, the empty state adds a
     /// quiet "Connect Apple Health" line. Only used by the sparse VO₂max empty state today. (FER-257)
     var appleConnectHint: Bool = false

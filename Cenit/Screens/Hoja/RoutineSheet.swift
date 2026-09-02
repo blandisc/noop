@@ -39,7 +39,6 @@ struct RoutineSheet: View {
     // NO `private`: `RoutineSheetLogic.swift`/`RoutineSheetKeypad.swift`/`HojaCabecera.swift`/etc.
     // son extensiones y vistas HERMANAS en archivos distintos que necesitan leerlas (`private` en
     // Swift es de ARCHIVO, no de tipo).
-    @Environment(\.instrumentoTheme) var theme
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var repo: Repository
     @Environment(AppModel.self) var model
@@ -194,7 +193,6 @@ struct RoutineSheet: View {
         .safeAreaInset(edge: .bottom, spacing: .zero) { keypadInset }
         .navigationDestination(item: $restTarget) { t in
             RestEditorScreen(
-                theme: theme,
                 exerciseName: StrengthDisplay.name(items[t.ei].exercise),
                 setNumber: nil,
                 current: exerciseRest(t.ei),
@@ -214,7 +212,6 @@ struct RoutineSheet: View {
         .navigationDestination(item: $progressionTarget) { t in
             let ex = items[t.ei].exercise
             ProgressionSetupScreen(
-                theme: theme,
                 exercise: items[t.ei].re,
                 exerciseName: StrengthDisplay.name(ex),
                 currentWeightKg: items[t.ei].re.plannedSets.first { $0.kind == .work }?.weightKg,
@@ -243,7 +240,7 @@ struct RoutineSheet: View {
         }
         .sheet(isPresented: $showLibrary) {
             ExerciseLibraryScreen { picks in addOrReplace(with: picks) }
-                .instrumentoTheme(theme).environmentObject(repo).environmentObject(mediaCoordinator).preferredColorScheme(.light)
+                .environmentObject(repo).environmentObject(mediaCoordinator).preferredColorScheme(.light)
         }
         .sheet(item: $detailExercise) { ex in
             NavigationStack {
@@ -254,7 +251,7 @@ struct RoutineSheet: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
             }
-            .instrumentoTheme(theme).environmentObject(repo).environmentObject(mediaCoordinator).preferredColorScheme(.light)
+            .environmentObject(repo).environmentObject(mediaCoordinator).preferredColorScheme(.light)
         }
         .sheet(item: $noteTarget) { target in
             noteSheet(target)
@@ -474,7 +471,7 @@ struct RoutineSheet: View {
     private func noteSheet(_ target: LiveStrengthSheet.NoteTarget) -> some View {
         if let idx = items.firstIndex(where: { $0.re.id == target.id }) {
             NoteSheet(
-                theme: theme, target: target, initialScope: .exercise,
+                target: target, initialScope: .exercise,
                 exerciseText: items[idx].re.note ?? "", setText: "",
                 history: noteHistory,
                 onSave: { _, text in

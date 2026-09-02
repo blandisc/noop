@@ -69,7 +69,6 @@ extension HojaSesionViva {
         let run = session.runs.indices.contains(ei) ? session.runs[ei] : nil
         let resting = session.phase == .resting
         SessionKeypad(
-            theme: sheet.theme,
             stepLabel: isWeightCell(cell) ? (imperial ? "±5" : "±2,5") : "±1",
             canCopyPrevious: run.map { previousText($0) != nil } ?? false,
             platesEnabled: isWeightCell(cell) && usesBarbell(ei),

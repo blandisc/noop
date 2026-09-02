@@ -31,16 +31,12 @@ import Foundation
 // «Low/Base/Activated» en la gráfica, «Low/Moderate/High» en calendario y héroe): se unifican
 // a la escalera del motor (Low/Medium/High, la misma palabra que la Matriz de Hoy).
 //
-// Se presenta desde Cuerpo Y desde Hoy vía `.sheet(item:)` (FER-452), con el tema vivo pasado
-// EXPLÍCITO (FER-162 — la hoja Liquid ya no lo referencia; se conserva por compatibilidad de
-// firma con los call sites) y SIN `NavigationStack` anidado (FER-171).
+// Se presenta desde Cuerpo Y desde Hoy vía `.sheet(item:)` (FER-452), SIN `NavigationStack`
+// anidado (FER-171).
 
 /// Detalle de Estrés en vidrio Liquid. Se arma desde un `StressModel` (el caller inyecta el
 /// modelo para que la pantalla siga sin tocar la base de datos). `model == nil` → vacío honesto.
 struct StressDetailScreen: View {
-    /// El tema vivo «Instrumento», retenido por compatibilidad con los call sites — la hoja
-    /// Liquid ya no lo referencia (mismo trato que `SleepDetailScreen`/`StrainDetailScreen`).
-    var theme: InstrumentoTheme = .base
     /// The transparent 0–3 stress model, built by the caller from `repo.displayDays` + the stored series.
     /// `nil` when there's no usable signal at all → the empty hero.
     let model: StressModel?
@@ -108,7 +104,7 @@ struct StressDetailScreen: View {
                     // Level 1.5 · mapa del día BEFORE «qué lo mueve» (FER-433).
                     if let dayMap {
                         seccion(String(localized: "Stress through the day")) {
-                            StressDayMapBlock(model: dayMap, theme: theme, tono: tono)
+                            StressDayMapBlock(model: dayMap, tono: tono)
                         }
                     }
                     if model.heroIsFresh {

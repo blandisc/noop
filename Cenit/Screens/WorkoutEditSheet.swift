@@ -18,7 +18,6 @@ struct WorkoutEditSheet: View {
     /// Called after a successful save (the detail reloads + bumps the list).
     let onSaved: () async -> Void
 
-    @Environment(\.instrumentoTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var repo: Repository
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
@@ -86,10 +85,10 @@ struct WorkoutEditSheet: View {
                 ToolbarItem(placement: .cancellationAction) {
                     // FER-998: el disco de papel en vez de la palabra «Cancel» — la misma salida que
                     // el resto de la app. `cancel()` conserva la confirmación de descartar.
-                    BackButton(role: .close, theme: theme) { cancel() }
+                    BackButton(role: .close, theme: .base) { cancel() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    HeaderActionButton(Text("Save"), enabled: canSave, theme: theme) { save() }
+                    HeaderActionButton(Text("Save"), enabled: canSave, theme: .base) { save() }
                 }
             }
         }
@@ -132,7 +131,7 @@ struct WorkoutEditSheet: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
             }
-            .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+            .environmentObject(repo).preferredColorScheme(.light)
         }
         .task {
             routines = await repo.routines()
@@ -217,7 +216,7 @@ struct WorkoutEditSheet: View {
                     // El punto vive solo junto a la rutina YA elegida (Alcance punto 5) — el picker
                     // (`LiquidMenuItem`) es un componente general de la app, sin swatch por opción.
                     if let region = routineId.flatMap({ routineRegions[$0] }) {
-                        EntrenarFamilyDot(region.tint(theme))
+                        EntrenarFamilyDot(region.tint())
                     }
                     Text(routineLabel)
                         .font(LiquidType.tituloGemela)

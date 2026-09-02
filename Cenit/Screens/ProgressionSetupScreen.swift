@@ -7,7 +7,7 @@ import StrandAnalytics
 //
 // The per-exercise load-progression plan, pushed from the exercise's «···» (and later from the session's
 // «por qué» sheet / the detail's «Ciclo actual»). Handoff «Progresión de carga · 2c», with two agreed
-// deviations from the mock: the screen SAVES ON BACK like every Instrumento editor (no «OK» button —
+// deviations from the mock: the screen SAVES ON BACK like every editor here (no «OK» button —
 // RestEditorScreen's pattern), and the toggle is chrome (LiquidToggleStyle) — color stays on the
 // increment and the consequence bar (verde de carga).
 //
@@ -19,7 +19,6 @@ import StrandAnalytics
 // (`PlateMath.minimumIncrement`, FER-C) salvo override a mano.
 
 struct ProgressionSetupScreen: View {
-    let theme: InstrumentoTheme
     let exerciseName: String
     /// Current working weight (kg) for the consequence copy; nil = no history yet.
     let currentWeightKg: Double?
@@ -39,11 +38,10 @@ struct ProgressionSetupScreen: View {
     @State private var deload: DeloadPolicy
     @State private var ignoreRecovery: Bool
 
-    init(theme: InstrumentoTheme, exercise: RoutineExercise, exerciseName: String,
+    init(exercise: RoutineExercise, exerciseName: String,
          currentWeightKg: Double?, derivedIncrementKg: Double,
          onBack: @escaping () -> Void,
          onSave: @escaping (Bool, Int, Int, Double?, DeloadPolicy, Bool) -> Void) {
-        self.theme = theme
         self.exerciseName = exerciseName
         self.currentWeightKg = currentWeightKg
         self.workSetCount = max(1, exercise.plannedSets.filter { $0.kind == .work }.count)
@@ -107,18 +105,18 @@ struct ProgressionSetupScreen: View {
                 VStack(spacing: .zero) {
                     fila(rotulo: String(localized: "Rep goal"),
                          nota: String(localized: "applies to all \(workSetCount) work sets")) {
-                        SegmentedPillControl(Self.repOptions, selection: $targetReps, theme: theme) { "\($0)" }
+                        SegmentedPillControl(Self.repOptions, selection: $targetReps) { "\($0)" }
                     }
                     fila(rotulo: String(localized: "You raise when"),
                          nota: String(localized: "every set at the goal")) {
-                        SegmentedPillControl([1, 2], selection: $sessions, theme: theme) {
+                        SegmentedPillControl([1, 2], selection: $sessions) {
                             $0 == 1 ? String(localized: "1 session") : String(localized: "2 in a row")
                         }
                     }
                     incrementRow
                     fila(rotulo: String(localized: "If you stall 3 sessions"),
                          nota: String(localized: "drop ~7.5% and rebuild")) {
-                        SegmentedPillControl([DeloadPolicy.propose, .warn], selection: $deload, theme: theme) {
+                        SegmentedPillControl([DeloadPolicy.propose, .warn], selection: $deload) {
                             $0 == .propose ? String(localized: "Propose") : String(localized: "Warn only")
                         }
                     }
@@ -126,7 +124,7 @@ struct ProgressionSetupScreen: View {
                     fila(rotulo: String(localized: "Days that aren't in range"),
                          nota: String(localized: "defers the raise, doesn't cancel it: you take it with one tap in the session"),
                          divider: false) {
-                        SegmentedPillControl([false, true], selection: $ignoreRecovery, theme: theme) {
+                        SegmentedPillControl([false, true], selection: $ignoreRecovery) {
                             $0 ? String(localized: "Ignore") : String(localized: "Defer")
                         }
                     }
@@ -142,8 +140,7 @@ struct ProgressionSetupScreen: View {
         }
         .entrenarHojaFondo(tono: .verde)
         .pantallaFondo()
-        .instrumentoTheme(theme)
-        // FER-988: deslizar guarda igual que «Guardar» — la convención del editor Instrumento.
+        // FER-988: deslizar guarda igual que «Guardar» — la convención del editor.
         .keepsSwipeBack { saveAndClose(); return false }
     }
 
@@ -204,7 +201,6 @@ struct ProgressionSetupScreen: View {
 #if DEBUG
 #Preview("Progresión · activada") {
     ProgressionSetupScreen(
-        theme: .base,
         exercise: RoutineExercise(routineId: "rt", exerciseId: "squat", position: 0, targetSets: 4,
                                   targetReps: 8, targetWeightKg: 100,
                                   progressionEnabled: true),
@@ -215,7 +211,6 @@ struct ProgressionSetupScreen: View {
 
 #Preview("Progresión · apagada") {
     ProgressionSetupScreen(
-        theme: .base,
         exercise: RoutineExercise(routineId: "rt", exerciseId: "curl", position: 0, targetSets: 3,
                                   targetReps: 10),
         exerciseName: "Curl femoral",
