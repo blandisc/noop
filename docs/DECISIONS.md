@@ -157,3 +157,11 @@ El dueño delegó todas las decisiones de la corrida («tú toma todas las decis
 4. **El peso de una fuente grotesk se pide por token, nunca con `.weight(...)`.** `Font.weight` no cambia la cara de una fuente `.custom` nombrada por PostScript; `LiquidType` gana `captionRegular/Fuerte/Negrita`, `captionLecturaNegrita`, `relojCompacto` y las sucesoras de `StrandFont` (`pie`, `cuerpoLista`, `subtituloFila`, `filaConteoNumero`).
 5. **Las dos reglas nuevas del gate nacen como prohibición pura.** `no-deprecated-metrics` y `no-instrumento-theme` tienen deuda cero en iOS tras L1–L7; el Watch y los Widgets conservan el carve-out FER-219.
 6. **`SetActionPills` es vista muerta**: se migró de paso pero nadie la consume; va a backlog para borrarla, no se rediseña.
+
+## 2026-09-03 · Watch y Widgets salen del carve-out Instrumento (FER-309, dueño)
+
+Orden del dueño («también hay que migrar watch y widgets, entra en loop… hasta que ya no tengas hallazgos»). Revierte explícitamente el carve-out FER-219: `InstrumentoTheme` deja de ser canónico en `CenitWatch/` y `CenitWidgets/`. Decisiones del director para ejecutarlo:
+
+1. **Widgets de pantalla de inicio y Live Activity en pantalla bloqueada: lienzo Liquid** (`fondoAlto`, `LiquidType`, `LiquidSpace`, tonos de dato de `LiquidColor`), igual que la app.
+2. **Watch y Dynamic Island: Liquid sobre OLED.** El negro se queda (OLED + HIG del Watch); las tintas vienen del set nuevo `LiquidOLED` (`fondo`, `superficie`, `tinta`, `tintaSecundaria`, `tintaTerciaria`, `borde`, `bordeFuerte`, `verde`, `ámbar`). Los tonos de dato son los mismos que en el iPhone: el dato no cambia de color por pantalla.
+3. El gate deja de excluir `CenitWidgets/` y `CenitWatch/` de `no-legacy-api`, `no-instrumento-theme`, `no-deprecated-metrics` y `no-weight-on-grotesk` cuando la deuda de cada raíz llegue a cero (misma disciplina que FER-306: prohibición pura, sin baseline).
