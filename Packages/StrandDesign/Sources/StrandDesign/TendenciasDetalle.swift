@@ -23,7 +23,7 @@ import SwiftUI
 /// sobre el hue de la pantalla). Del handoff: secundarios 0.72–0.78, cápsula 0.16.
 enum OnFieldOpacity {
     /// Texto secundario sobre el campo («/100», «vs tu base», el driver del veredicto).
-    static let secondary: Double = 0.75
+    public static let secondary: Double = 0.75
     /// Fondo de la cápsula secundaria («+6 vs tu base», «en curso»).
     static let capsule: Double = 0.16
     /// Chrome atenuado (el trazo del ⓘ).

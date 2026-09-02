@@ -50,7 +50,7 @@ struct LiquidFranjaAno: View {
     struct Dia: Sendable {
         let fecha: Date
         /// 0…1 ya normalizada por el caller. Fuera de rango se clampa; `nil`/NaN = sin dato.
-        let intensidad: Double?
+        public let intensidad: Double?
 
         init(fecha: Date, intensidad: Double?) {
             self.fecha = fecha
@@ -65,7 +65,7 @@ struct LiquidFranjaAno: View {
     /// es decisión del caller, y la corta es la que cabe.
     struct MarcaMes: Sendable {
         let indice: Int
-        let etiqueta: String
+        public let etiqueta: String
 
         init(indice: Int, etiqueta: String) {
             self.indice = indice
@@ -184,7 +184,7 @@ struct LiquidFranjaAno: View {
     /// la franja, no una fórmula paralela: así el marco y la rejilla no pueden discrepar.
     /// (Para un año contiguo coincide con `ceil((primeraFila + total) / 7)`, la fórmula del
     /// papel — hay una prueba que lo amarra.)
-    static func columnas(para dias: [Dia]) -> Int {
+    public static func columnas(para dias: [Dia]) -> Int {
         rejilla(dias).semanas.count
     }
 
@@ -192,7 +192,7 @@ struct LiquidFranjaAno: View {
 
     /// El resultado de resolver la franja contra un ancho medido.
     struct Medidas: Sendable {
-        let columnas: Int
+        public let columnas: Int
         let celda: CGFloat
         let separacion: CGFloat
         /// ¿Se dibuja el gutter de iniciales de día?

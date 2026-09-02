@@ -18,7 +18,7 @@ enum MatrizDither {
     /// ¿Se pinta la celda (x, y) con densidad `densidad` ∈ [0,1]?
     /// Umbral ordenado y determinista: densidad 0 no pinta nada, 1 lo pinta todo,
     /// 0.5 pinta exactamente la mitad de las celdas de cada bloque 4×4.
-    static func encendido(x: Int, y: Int, densidad: Double) -> Bool {
+    public static func encendido(x: Int, y: Int, densidad: Double) -> Bool {
         let umbral = Double(bayer4x4[((y & 3) << 2) | (x & 3)]) / 16.0
         return densidad > umbral
     }

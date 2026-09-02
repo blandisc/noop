@@ -47,7 +47,7 @@ struct RestPulseRail: View {
     /// «ya estás listo». Sin umbral no hay contra qué compararte, y un riel lleno sin evidencia es
     /// justo la mentira que esta app persigue. Vacío dice lo que de verdad sabemos: nada todavía.
     /// La prueba lo ancla.
-    static func fraccion(bpm: Int, target: Int?) -> Double {
+    public static func fraccion(bpm: Int, target: Int?) -> Double {
         guard let target else { return 0 }
         let hi = Double(target + 40), lo = Double(target)
         guard hi > lo else { return 1 }

@@ -145,7 +145,7 @@ enum EntradaSimulacion {
     /// La posición dispersa (flotante) de la partícula `i`, en coords del lienzo. Determinista:
     /// la misma partícula nace siempre en el mismo punto, así que el campo es estable entre
     /// cuadros y sólo la deriva lo mueve.
-    static func dispersa(_ i: Int) -> CGPoint {
+    public static func dispersa(_ i: Int) -> CGPoint {
         let fx = Geometria.dispersionX.lowerBound
             + (Geometria.dispersionX.upperBound - Geometria.dispersionX.lowerBound) * CGFloat(hash01(i, 0x1111))
         let fy = Geometria.dispersionY.lowerBound
@@ -186,7 +186,7 @@ enum EntradaSimulacion {
         /// 0 = tinta neutra · 1 = el clima del veredicto.
         var tinte: Double
         /// Alfa del especular.
-        var especular: Double
+        public var especular: Double
         /// Alfa global de la entrada — el fundido con el que se retira.
         var alfa: Double
     }
@@ -228,7 +228,7 @@ enum EntradaSimulacion {
     }
 
     /// Cuánto vive la entrada de punta a punta (coreografía + fundido de salida).
-    static func duracion(reduce: Bool = false) -> TimeInterval {
+    public static func duracion(reduce: Bool = false) -> TimeInterval {
         (reduce ? LiquidEntradaMotion.duracionReduce : LiquidEntradaMotion.duracionTotal)
             + LiquidEntradaMotion.salida
     }

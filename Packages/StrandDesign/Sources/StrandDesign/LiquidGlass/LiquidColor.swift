@@ -164,7 +164,7 @@ public enum LiquidColor {
 
     /// Interpola en sRGB de la tinta neutra a `destino` (`k` = 0 neutra … 1 destino). Es el
     /// teñido de la entrada: un solo color por frame, sin capas apiladas que se laven.
-    static func particulaTeñida(hacia destino: (r: Double, g: Double, b: Double),
+    public static func particulaTeñida(hacia destino: (r: Double, g: Double, b: Double),
                                        k: Double) -> Color {
         let u = min(1, max(0, k))
         let n = ParticulaRGB.neutra

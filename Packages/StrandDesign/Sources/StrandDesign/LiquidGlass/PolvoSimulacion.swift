@@ -49,7 +49,7 @@ enum PolvoSimulacion {
         static let derivaYMin: Double = 1.4
         static let derivaYRango: Double = 4.5
         /// Cuánto se mueve el campo con el scroll (fracción del desplazamiento).
-        static let parallax: CGFloat = 0.22
+        public static let parallax: CGFloat = 0.22
         /// Sin veredicto (calibración, T3, T4, T5, base rancia): tinta neutra y alfa × 0.55.
         static let alfaNeutra: Double = 0.55
         /// Los bordes se desvanecen en estos puntos: sin esto una mota que sale por arriba (densidad

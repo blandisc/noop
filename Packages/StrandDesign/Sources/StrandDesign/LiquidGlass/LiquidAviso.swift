@@ -21,7 +21,7 @@ enum LiquidAvisoMetrics {
     /// Pad de la tarjeta — default de `liquidTarjetaSeccion` (HealthAlertBanner:50).
     static let tarjetaPadding: CGFloat = LiquidSpace.s400
     /// Tamaño del icono opcional — `connectNudge` (CuerpoView:1172) usa 17.
-    static let iconSize: CGFloat = 17
+    public static let iconSize: CGFloat = 17
     /// Separación icono↔bloque / bloque↔CTA — `LiquidSpace.s300`.
     static let slotSpacing: CGFloat = LiquidSpace.s300
     /// Ancho de la barra lateral — el de `LiquidPatternBlock` (2.5).

@@ -198,7 +198,7 @@ struct BarcodeGlyph: View {
 /// The Cénit dial reduced to ink on white for the receipt header: a ring, four cardinal marks, and
 /// the «now» dot at the upper-right. Monochrome by design (a printed mark, not a themed datum).
 struct ThermalDialGlyph: View {
-    var diameter: CGFloat
+    public var diameter: CGFloat
     init(diameter: CGFloat = 22) { self.diameter = diameter }
 
     /// Drawing lives in a free-standing typed function so `body` only has a one-line Canvas

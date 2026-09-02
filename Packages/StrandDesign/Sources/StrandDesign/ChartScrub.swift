@@ -110,7 +110,7 @@ struct ChartTooltipPlacement {
     /// Compute the tooltip centre for an anchor (typically the snapped point under
     /// the finger), given the tooltip's measured size and the chart bounds.
     /// Prefers to sit above-and-right of the anchor, flipping when near an edge.
-    static func position(
+    public static func position(
         anchor: CGPoint,
         tooltipSize: CGSize,
         in container: CGSize,

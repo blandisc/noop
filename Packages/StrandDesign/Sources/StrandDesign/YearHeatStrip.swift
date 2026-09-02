@@ -28,7 +28,7 @@ struct YearHeatStrip: View {
     var showsMonthLabels: Bool
     /// Whether hovering a cell highlights it with a ring and shows a tooltip
     /// (date + score + recovery state word). Defaults on.
-    var showsScrub: Bool
+    public var showsScrub: Bool
     /// Tints a day's cell from its recovery score. Defaults to the dark-system recovery gradient so
     /// the shipped (dark) Trends caller is unchanged; the light «Instrumento» detail passes a warm
     /// band-color closure instead, so the calendar reads on warm paper. (FER-225)
@@ -40,12 +40,12 @@ struct YearHeatStrip: View {
     var emptyStroke: Color
     /// Color of the month + weekday gutter labels. Defaults to the dark `textTertiary`; the light
     /// detail passes warm `inkTertiary`. (FER-225)
-    var labelColor: Color
+    public var labelColor: Color
     /// When set, tapping a day calls this with the tapped `RecoveryDay` — touch-friendly selection, since
     /// `onContinuousHover` never fires on touch (iPhone). The tapped cell gets a selection ring, and the
     /// caller shows the day's read-out. Default `nil` keeps the shipped (dark, hover-only) behavior, so
     /// the Trends caller is unchanged. (FER-235)
-    var onSelect: ((RecoveryDay) -> Void)?
+    public var onSelect: ((RecoveryDay) -> Void)?
     /// Color of the tap-selection ring. Defaults to the dark `hairlineStrong`; the light detail passes
     /// warm ink. (FER-235)
     var selectionColor: Color
@@ -53,7 +53,7 @@ struct YearHeatStrip: View {
     /// `Calendario90` (Instrumento detail screens) passes 5 for a rounder cell.
     var cellCornerRadius: CGFloat
     /// Formats a day's score for the tooltip's bold line.
-    var valueFormat: (Double) -> String
+    public var valueFormat: (Double) -> String
     /// The metric word in the `.help` / VoiceOver label («date · <word> 67»). Defaults to "recovery"; a
     /// non-recovery caller (e.g. diet adherence) passes its own so the cell doesn't read "recovery". (FER-410)
     var valueWord: String

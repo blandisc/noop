@@ -21,7 +21,7 @@ struct LiquidZoneMeter: View {
         let peso: Double
         let color: Color
         let activa: Bool
-        let etiqueta: String
+        public let etiqueta: String
 
         init(peso: Double, color: Color, activa: Bool, etiqueta: String) {
             self.peso = peso

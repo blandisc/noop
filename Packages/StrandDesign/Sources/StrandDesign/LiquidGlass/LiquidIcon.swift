@@ -112,7 +112,7 @@ struct LiquidIconShape: Shape {
     let glyph: LiquidIcon.Glyph
     var strokedWidth: CGFloat?
     /// `true` = dibuja la capa secundaria tenue del glifo (paths2).
-    var secondary: Bool = false
+    public var secondary: Bool = false
     /// `true` = dibuja la capa de geometría YA rellena del glifo (`pathsFilled`, los nodos
     /// de la curva de Tendencias). Ignora `strokedWidth`: el path se rellena tal cual.
     var relleno: Bool = false
