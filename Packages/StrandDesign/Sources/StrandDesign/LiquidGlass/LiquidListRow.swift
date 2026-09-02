@@ -155,17 +155,17 @@ public struct LiquidListRow<Accessory: View>: View {
 }
 
 /// La tarjeta contenedora de filas: vidrio/superficie con el padding 2/14 del handoff.
-struct LiquidListCard<Content: View>: View {
+public struct LiquidListCard<Content: View>: View {
     private let content: Content
 
-    init(@ViewBuilder content: () -> Content) {
+    public init(@ViewBuilder content: () -> Content) {
         self.content = content()
     }
 
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 0) { content }
             .padding(.vertical, LiquidSpace.s050)
-            .padding(.horizontal, 14)
+            .padding(.horizontal, LiquidSpace.handoff14)
             .liquidGlass(.superficie) // token-exempt: fila de lista de pantalla, no de hoja
     }
 }
