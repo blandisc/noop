@@ -137,14 +137,16 @@ struct ExerciseLibraryScreen: View {
         // Handoff V10 (FER-139): a single kicker line — «Biblioteca · N ejercicios» — not the older
         // count-as-hero-title pattern (FER-942). The count reflects the REAL loaded catalog (never a
         // made-up figure); until it loads, the line falls back to the section name alone.
-        Group {
-            if loaded {
-                Text("Library · \(exercises.count) exercises")
-            } else {
-                Text(createFlow ? "New routine · pick exercises" : (addMode ? "Add to routine" : "Library"))
-            }
+        kickerText
+            .liquidKicker()
+            .foregroundStyle(LiquidColor.tinta700)
+    }
+
+    private var kickerText: Text {
+        if loaded {
+            return Text("Library · \(exercises.count) exercises")
         }
-        .liquidKicker().foregroundStyle(LiquidColor.tinta700)
+        return Text(createFlow ? "New routine · pick exercises" : (addMode ? "Add to routine" : "Library"))
     }
 
     private var searchField: some View {
