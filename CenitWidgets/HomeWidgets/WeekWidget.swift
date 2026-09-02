@@ -76,16 +76,15 @@ struct WeekWidgetView: View {
         }
     }
 
-    // token-exempt(sistema): geometría de Live Activity
     private var staleHeader: some View {
         VStack(alignment: .leading, spacing: M.rowGap) {
             Text("This week")
-                .font(Font.system(size: M.overline, weight: .semibold))
+                .font(LiquidType.unidad.weight(.semibold))
                 .tracking(M.overlineTracking)
                 .foregroundStyle(LiquidColor.tinta500)
             Spacer(minLength: 0)
             Text("Open Cénit")
-                .font(Font.system(size: M.title, weight: .bold, design: .rounded))
+                .font(.system(size: M.title, weight: .bold, design: .rounded))
                 .foregroundStyle(LiquidColor.tinta900)
             Spacer(minLength: 0)
         }
@@ -112,16 +111,15 @@ struct WeekWidgetView: View {
         }
     }
 
-    // token-exempt(sistema): geometría de Live Activity
     private func headerRow(title: Text, verdict: TrainWidgetSnapshot.Verdict?, cta: LocalizedStringKey?) -> some View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: M.microGap) {
                 Text("Today")
-                    .font(Font.system(size: M.overline, weight: .semibold))
+                    .font(LiquidType.unidad.weight(.semibold))
                     .tracking(M.overlineTracking)
                     .foregroundStyle(LiquidColor.tinta500)
                 title
-                    .font(Font.system(size: M.title, weight: .bold, design: .rounded))
+                    .font(.system(size: M.title, weight: .bold, design: .rounded))
                     .foregroundStyle(LiquidColor.tinta900)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
@@ -130,13 +128,13 @@ struct WeekWidgetView: View {
             VStack(alignment: .trailing, spacing: M.microGap) {
                 if let verdict {
                     Text(verbatim: verdict.word)
-                        .font(Font.system(size: M.verdict, weight: .medium))
+                        .font(LiquidType.cuerpoBanner.weight(.medium))
                         .foregroundStyle(verdict.tone.liquidWord)
                         .lineLimit(1)
                 }
                 if let cta {
                     Text(cta)
-                        .font(Font.system(size: M.cta, weight: .semibold))
+                        .font(LiquidType.cuerpoBanner.weight(.semibold))
                         .foregroundStyle(LiquidColor.tinta900)
                 }
             }
@@ -150,14 +148,13 @@ private struct WeekStrip: View {
     let days: [TrainWidgetSnapshot.WeekDay]
     private typealias M = HomeWidgetMetrics
 
-    // token-exempt(sistema): geometría de Live Activity
     var body: some View {
         HStack(spacing: 0) {
             ForEach(Array(days.enumerated()), id: \.offset) { _, day in
                 VStack(spacing: M.dayTokenGap) {
                     token(day.state)
                     Text(verbatim: day.label)
-                        .font(Font.system(size: M.dayLabel, weight: .medium))
+                        .font(.system(size: M.dayLabel, weight: .medium))
                         .foregroundStyle(LiquidColor.tinta500)
                 }
                 .frame(maxWidth: .infinity)

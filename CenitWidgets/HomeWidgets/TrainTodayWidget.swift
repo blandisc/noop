@@ -90,28 +90,27 @@ private struct RoutineBody: View {
     let verdict: TrainWidgetSnapshot.Verdict?
     private typealias M = HomeWidgetMetrics
 
-    // token-exempt(sistema): geometría de Live Activity
     var body: some View {
         Button(intent: StartTodayRoutineIntent()) {
             VStack(alignment: .leading, spacing: M.rowGap) {
                 Text("Today")
-                    .font(Font.system(size: M.overline, weight: .semibold))
+                    .font(LiquidType.unidad.weight(.semibold))
                     .tracking(M.overlineTracking)
                     .foregroundStyle(LiquidColor.tinta500)
                 Text(verbatim: today.routineName)
-                    .font(Font.system(size: M.title, weight: .bold, design: .rounded))
+                    .font(.system(size: M.title, weight: .bold, design: .rounded))
                     .foregroundStyle(LiquidColor.tinta900)
                     .lineLimit(2)
                     .minimumScaleFactor(0.8)
                 if let verdict {
                     Text(verbatim: verdict.word)
-                        .font(Font.system(size: M.verdict, weight: .medium))
+                        .font(LiquidType.cuerpoBanner.weight(.medium))
                         .foregroundStyle(verdict.tone.liquidWord)
                         .lineLimit(1)
                 }
                 Spacer(minLength: 0)
                 Text(today.sessionLive ? "Continue" : "Start")
-                    .font(Font.system(size: M.cta, weight: .semibold))
+                    .font(LiquidType.cuerpoBanner.weight(.semibold))
                     .foregroundStyle(LiquidColor.tinta900)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
@@ -134,19 +133,18 @@ private struct RestBody: View {
     let verdict: TrainWidgetSnapshot.Verdict?
     private typealias M = HomeWidgetMetrics
 
-    // token-exempt(sistema): geometría de Live Activity
     var body: some View {
         VStack(alignment: .leading, spacing: M.rowGap) {
             Text("Today")
-                .font(Font.system(size: M.overline, weight: .semibold))
+                .font(LiquidType.unidad.weight(.semibold))
                 .tracking(M.overlineTracking)
                 .foregroundStyle(LiquidColor.tinta500)
             Text("Rest day")
-                .font(Font.system(size: M.title, weight: .bold, design: .rounded))
+                .font(.system(size: M.title, weight: .bold, design: .rounded))
                 .foregroundStyle(LiquidColor.tinta900)
             if let verdict {
                 Text(verbatim: verdict.word)
-                    .font(Font.system(size: M.verdict, weight: .medium))
+                    .font(LiquidType.cuerpoBanner.weight(.medium))
                     .foregroundStyle(verdict.tone.liquidWord)
                     .lineLimit(1)
             }
@@ -163,16 +161,15 @@ private struct RestBody: View {
 private struct OpenAppBody: View {
     private typealias M = HomeWidgetMetrics
 
-    // token-exempt(sistema): geometría de Live Activity
     var body: some View {
         VStack(alignment: .leading, spacing: M.rowGap) {
             Text("Today")
-                .font(Font.system(size: M.overline, weight: .semibold))
+                .font(LiquidType.unidad.weight(.semibold))
                 .tracking(M.overlineTracking)
                 .foregroundStyle(LiquidColor.tinta500)
             Spacer(minLength: 0)
             Text("Open Cénit")
-                .font(Font.system(size: M.title, weight: .bold, design: .rounded))
+                .font(.system(size: M.title, weight: .bold, design: .rounded))
                 .foregroundStyle(LiquidColor.tinta900)
             Spacer(minLength: 0)
         }
