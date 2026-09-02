@@ -34,7 +34,7 @@ struct EntrenarHubHistorial: View {
                 Button(action: onOpenHistory) {
                     HStack(alignment: .firstTextBaseline) {
                         Text("History").liquidRegla().foregroundStyle(LiquidColor.tinta500)
-                        Spacer(minLength: CenitMetrics.space2)
+                        Spacer(minLength: LiquidSpace.s200)
                         StrandIcon.disclosure.image
                             .font(StrandFont.glyph(.inline, weight: .semibold))
                             .foregroundStyle(LiquidColor.tinta500)

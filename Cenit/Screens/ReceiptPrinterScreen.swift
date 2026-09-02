@@ -73,8 +73,8 @@ struct ReceiptPrinterScreen: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             actionBar
-                .padding(.horizontal, CenitMetrics.screenPadding)
-                .padding(.bottom, CenitMetrics.screenPadding)
+                .padding(.horizontal, LiquidSpace.s600)
+                .padding(.bottom, LiquidSpace.s600)
         }
         // FER-199 (Ola 3, épico FER-195): fondo de vidrio El Eje EN VEZ del papel plano — el
         // `BackButton(role: .close)` de `printerMouthRow` ya ES la salida `.cerrar` de la familia
@@ -125,7 +125,7 @@ struct ReceiptPrinterScreen: View {
                 StrandCTAButton("REIMPRIMIR", kind: .outline) { reprint() }
                     .frame(maxWidth: 220)
             }
-            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.horizontal, LiquidSpace.s600)
         } else if let receipt {
             ticketStage(receipt)
         } else if loadFailed {

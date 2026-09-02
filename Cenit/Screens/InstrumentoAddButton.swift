@@ -70,7 +70,7 @@ struct InstrumentoAddButton: View {
         InstrumentoAddButton(theme: .base, label: "Crear rutina con 3", prominent: true) {}
         InstrumentoAddButton(theme: .base, label: "Elige al menos un ejercicio", disabled: true) {}
     }
-    .padding(CenitMetrics.screenPadding)
+    .padding(LiquidSpace.s600)
     .background(InstrumentoTheme.base.paper)
 }
 #endif

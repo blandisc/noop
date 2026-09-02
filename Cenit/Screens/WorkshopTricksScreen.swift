@@ -66,11 +66,11 @@ struct WorkshopTricksScreen: View {
                         if t.id != tricks.last?.id { Divider().overlay(theme.hairline) }
                     }
                 }
-                .padding(.top, CenitMetrics.gap)
+                .padding(.top, LiquidSpace.s300)
             }
             .padding(.top, CenitMetrics.screenTop)
-            .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.bottom, CenitMetrics.screenPadding)
+            .padding(.horizontal, LiquidSpace.s600)
+            .padding(.bottom, LiquidSpace.s600)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         // FER-200 (Anillo 2, épico FER-195): fondo de vidrio El Eje en vez del papel plano — llega
@@ -81,7 +81,7 @@ struct WorkshopTricksScreen: View {
     }
 
     private func trickRow(_ t: Trick) -> some View {
-        HStack(alignment: .top, spacing: CenitMetrics.gap) {
+        HStack(alignment: .top, spacing: LiquidSpace.s300) {
             Image(systemName: t.systemImage)
                 .font(StrandFont.glyph(.inline))
                 .foregroundStyle(theme[keyPath: t.tint])
@@ -96,7 +96,7 @@ struct WorkshopTricksScreen: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(.vertical, CenitMetrics.gap)
+        .padding(.vertical, LiquidSpace.s300)
         .accessibilityElement(children: .combine)
     }
 }

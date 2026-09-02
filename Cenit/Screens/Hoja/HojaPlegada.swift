@@ -24,11 +24,11 @@ enum HojaPlegada {
             withAnimation(.snappy) { sheet.openID = item.id }
         } label: {
             EntrenarModulo(tono: .neutro) {
-                HStack(spacing: CenitMetrics.gap) {
+                HStack(spacing: LiquidSpace.s300) {
                     Text(StrengthDisplay.name(item.exercise))
                         .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(sheet.theme.ink)
                         .lineLimit(1)
-                    Spacer(minLength: CenitMetrics.space2)
+                    Spacer(minLength: LiquidSpace.s200)
                     HStack(spacing: LiquidSpace.s050) {
                         Text(receta)
                         if !equal { Text(verbatim: "›") }
@@ -53,7 +53,7 @@ enum HojaPlegada {
             sheet.replaceIndex = nil
             sheet.showLibrary = true
         } label: {
-            HStack(spacing: CenitMetrics.space2) {
+            HStack(spacing: LiquidSpace.s200) {
                 Image(systemName: "plus").font(.system(size: 12, weight: .semibold))  // token-exempt: glifo del troquel
                 Text("Add exercise").font(InstrumentoType.grotesk(13, weight: .semibold))
             }

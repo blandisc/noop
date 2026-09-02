@@ -32,7 +32,7 @@ struct HojaTarjetaEjercicio: View {
                 }
                 notaF
                 tabla
-                if !sheet.locked { agregarSerie.padding(.top, CenitMetrics.space2) }
+                if !sheet.locked { agregarSerie.padding(.top, LiquidSpace.s200) }
             }
         }
         .liquidEntrada()
@@ -82,7 +82,7 @@ struct HojaTarjetaEjercicio: View {
     private var menuButton: some View {
         Button { sheet.menuExerciseIndex = idx } label: {
             StrandIcon.more.image.font(StrandFont.glyph(.inline, weight: .semibold))
-                .foregroundStyle(sheet.theme.inkTertiary).frame(width: 30, height: CenitMetrics.touchTarget).contentShape(Rectangle())
+                .foregroundStyle(sheet.theme.inkTertiary).frame(width: 30, height: LiquidControl.hitTarget).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("More options"))   // R12 (QA D13 = Grok G9)
@@ -97,7 +97,7 @@ struct HojaTarjetaEjercicio: View {
 
     private var notaF: some View {
         Button { sheet.openNote(idx) } label: {
-            HStack(alignment: .top, spacing: CenitMetrics.space1) {
+            HStack(alignment: .top, spacing: LiquidSpace.s100) {
                 Text(verbatim: "✎").font(StrandFont.footnote)
                 let note = item.re.note?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
                 Text(note.isEmpty ? String(localized: "Add note") : note)
@@ -197,7 +197,7 @@ struct HojaTarjetaEjercicio: View {
                 .font(InstrumentoType.grotesk(9.5, weight: .bold, relativeTo: .caption2))
                 .tracking(1)
                 .foregroundStyle(LiquidColor.tinta900)
-                .padding(.horizontal, CenitMetrics.gap).padding(.vertical, LiquidSpace.s150)
+                .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s150)
                 .frame(minHeight: HojaMetrics.hitMin)
                 .background {
                     // FER-167 ronda 2 (R21, Grok 15 + QA O5): la MISMA constante que la Hoja viva

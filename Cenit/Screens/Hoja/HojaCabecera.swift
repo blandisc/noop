@@ -15,7 +15,7 @@ enum HojaCabecera {
 
     /// Fila superior: ✕ (cierra) + Deshacer/Guardado.
     static func header(sheet: RoutineSheet) -> some View {
-        HStack(spacing: CenitMetrics.space2) {
+        HStack(spacing: LiquidSpace.s200) {
             BackButton(role: .close, theme: sheet.theme) { sheet.back() }
                 .padding(.leading, -2)
             Spacer()
@@ -24,7 +24,7 @@ enum HojaCabecera {
             if sheet.dirty, !sheet.locked {
                 Button { sheet.undo() } label: {
                     Text(String(localized: "Undo")).font(StrandFont.body).foregroundStyle(sheet.theme.ink)
-                        .frame(minHeight: CenitMetrics.touchTarget).contentShape(Rectangle())
+                        .frame(minHeight: LiquidControl.hitTarget).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text(String(localized: "Undo")))
@@ -34,18 +34,18 @@ enum HojaCabecera {
                     .foregroundStyle(sheet.theme.inkTertiary)
             }
         }
-        .padding(.horizontal, CenitMetrics.screenPadding)
+        .padding(.horizontal, LiquidSpace.s600)
     }
 
     /// Overline por origen, el nombre EDITABLE (TextField, ✎ decorativo al lado) y la meta punteada.
     static func titleBlock(sheet: RoutineSheet) -> some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s200) {
             HStack(alignment: .firstTextBaseline) {
                 Text(sheet.overline).groteskOverline().foregroundStyle(sheet.theme.inkTertiary)
-                Spacer(minLength: CenitMetrics.space2)
+                Spacer(minLength: LiquidSpace.s200)
                 if sheet.isPlanDay { dayMenu(sheet: sheet) }
             }
-            HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space2) {
+            HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s200) {
                 TextField("Routine name", text: Binding(
                     get: { sheet.routine?.name ?? "" },
                     set: { sheet.routine?.name = $0; sheet.dirty = true }
@@ -95,7 +95,7 @@ enum HojaCabecera {
     private static func dayMenu(sheet: RoutineSheet) -> some View {
         Button { sheet.showDayMenu = true } label: {
             StrandIcon.more.image.font(StrandFont.glyph(.inline, weight: .semibold))
-                .foregroundStyle(sheet.theme.inkTertiary).frame(width: CenitMetrics.touchTarget, height: CenitMetrics.touchTarget).contentShape(Rectangle())
+                .foregroundStyle(sheet.theme.inkTertiary).frame(width: LiquidControl.hitTarget, height: LiquidControl.hitTarget).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("Day options"))
@@ -112,9 +112,9 @@ enum HojaCabecera {
     /// El CTA fijo — «Empezar»/«Resume», la ÚNICA puerta al ejercicio guiado (F2 lo sustituye).
     static func ctaBar(sheet: RoutineSheet) -> some View {
         LiquidGlassButton(sheet.ctaTitle, variant: .primary, expands: true) { sheet.start() }
-            .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.top, CenitMetrics.space2)
-            .padding(.bottom, CenitMetrics.space2)
+            .padding(.horizontal, LiquidSpace.s600)
+            .padding(.top, LiquidSpace.s200)
+            .padding(.bottom, LiquidSpace.s200)
             .entrenarHojaBarraFondo(tono: .indigo)
     }
 }

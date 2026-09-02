@@ -66,9 +66,9 @@ struct StarterTemplatesSheet: View {
                     useThisPlanFooter
                 }
             }
-            .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.top, CenitMetrics.gap)
-            .padding(.bottom, CenitMetrics.screenPadding)
+            .padding(.horizontal, LiquidSpace.s600)
+            .padding(.top, LiquidSpace.s300)
+            .padding(.bottom, LiquidSpace.s600)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         // FER-200 (Anillo 2, épico FER-195): fondo de vidrio El Eje — se CONSERVA el chrome actual
@@ -151,7 +151,7 @@ struct StarterTemplatesSheet: View {
                 StrandIcon.disclosure.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
             }
-            .padding(.horizontal, CenitMetrics.cardPadding).frame(minHeight: 56).contentShape(Rectangle())
+            .padding(.horizontal, LiquidSpace.s400).frame(minHeight: 56).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityHint(Text("Preview this template"))
@@ -237,11 +237,11 @@ struct StarterTemplatesSheet: View {
             Text(restChipText(slot.restSeconds))
                 .font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary)
                 .padding(.horizontal, 7).padding(.vertical, 2)
-                .background(theme.paper, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
+                .background(theme.paper, in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous)
                     .strokeBorder(theme.hairline, lineWidth: 1))
         }
-        .padding(.horizontal, CenitMetrics.cardPadding).padding(.vertical, CenitMetrics.gap)
+        .padding(.horizontal, LiquidSpace.s400).padding(.vertical, LiquidSpace.s300)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text("\(name), \(schemeText(slot)), rest \(restAccessibility(slot.restSeconds))"))
     }

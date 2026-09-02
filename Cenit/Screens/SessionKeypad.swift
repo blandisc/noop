@@ -89,7 +89,7 @@ struct SessionKeypad: View {
     // MARK: QUEDABAN (RIR)
 
     private func rirRow(_ onSelectRIR: @escaping (Int) -> Void) -> some View {
-        HStack(spacing: CenitMetrics.space2) {
+        HStack(spacing: LiquidSpace.s200) {
             // Clave propia, distinta de «Remaining» (que IntervalTimerView ya usa para el tiempo
             // restante del temporizador de intervalos): compartir esa clave habría pisado su copy
             // es-MX con «quedaban» (revisión ronda 3, hallazgo grave).
@@ -97,7 +97,7 @@ struct SessionKeypad: View {
             // `footnote` (11pt/`.caption2`) es el token existente más cercano al 11.5 SF del handoff —
             // `.caption` (12pt) quedaba un escalón grande de más (revisión ronda 2, hallazgo menor).
             Text("at check-off").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
-            Spacer(minLength: CenitMetrics.space2)
+            Spacer(minLength: LiquidSpace.s200)
             // Un solo gesto sobre TODA la píldora, no cinco `Button`s vecinos con `contentShape`
             // agrandado: cinco blancos de 44pt apretados en 30pt de dibujo se traslapan entre sí
             // (revisión ronda 3, hallazgo menor — un toque cerca del filo visual podía registrar el
@@ -144,12 +144,12 @@ struct SessionKeypad: View {
                     }
                 )
             }
-            .frame(height: CenitMetrics.touchTarget)
+            .frame(height: LiquidControl.hitTarget)
             // 2A: track `.pastillaSolida` (gesto de posición y 5 elementos VoiceOver intactos).
             .clipShape(Capsule())
             .liquidGlass(.pastillaSolida)
         }
-        .padding(.horizontal, CenitMetrics.cardPadding).padding(.vertical, CenitMetrics.space2)
+        .padding(.horizontal, LiquidSpace.s400).padding(.vertical, LiquidSpace.s200)
     }
 
     // MARK: Accessory bar
@@ -204,7 +204,7 @@ struct SessionKeypad: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Next field"))
             }
-            .padding(.horizontal, CenitMetrics.cardPadding).padding(.vertical, CenitMetrics.space2)
+            .padding(.horizontal, LiquidSpace.s400).padding(.vertical, LiquidSpace.s200)
         }
     }
 
@@ -240,7 +240,7 @@ struct SessionKeypad: View {
         }
         // Mismo inset que la fila QUEDABAN y la barra de accesorios: en el prototipo las tres viven
         // en el mismo contenedor (10 16 18), así que el borde de «1 · 4 · 7 · ,» se alinea con ellas.
-        .padding(.horizontal, CenitMetrics.cardPadding).padding(.top, CenitMetrics.space2).padding(.bottom, 22)   // bottom respects the home indicator
+        .padding(.horizontal, LiquidSpace.s400).padding(.top, LiquidSpace.s200).padding(.bottom, 22)   // bottom respects the home indicator
     }
 
     private var keyRows: [[Key]] {

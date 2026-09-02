@@ -677,13 +677,13 @@ extension HojaSesionViva {
     /// alimentado por `session.restEndsAt`, que el motor fija SIEMPRE, en las dos rutas) es la MISMA
     /// vista que esta rama pide, solo que elegida a propósito en vez de por falta de señal.
     @ViewBuilder func restBand(esRonda: Bool = false, large: Bool = false, forzarTiempo: Bool = false) -> some View {
-        VStack(alignment: large ? .center : .leading, spacing: CenitMetrics.space2) {
+        VStack(alignment: large ? .center : .leading, spacing: LiquidSpace.s200) {
             if session.paused {
                 // B5 (FER-169): «pausada» congela el descanso — la banda no sigue diciendo REST/tu
                 // pulso bajando (ninguno de los dos avanza mientras `paused`); una línea honesta en
                 // vez, con el mismo tiempo restante que ya estaba (`restBandCore` congela el número —
                 // aquí solo se apaga el color/kicker para que no MIENTA que sigue corriendo).
-                HStack(spacing: CenitMetrics.space2) {
+                HStack(spacing: LiquidSpace.s200) {
                     Text("REST · PAUSED").instrumentoOverline().foregroundStyle(sheet.theme.inkTertiary)
                     Spacer(minLength: LiquidSpace.s150)
                     Text("waits with you").font(StrandFont.caption).foregroundStyle(sheet.theme.inkTertiary)

@@ -38,7 +38,7 @@ struct EntrenarHubPar: View {
         if hasRaises || hasRest {
             Group {
                 if hasRaises, hasRest {
-                    HStack(alignment: .top, spacing: CenitMetrics.gap) { subidasTile; descansoTile }
+                    HStack(alignment: .top, spacing: LiquidSpace.s300) { subidasTile; descansoTile }
                 } else if hasRaises {
                     subidasTile
                 } else {
@@ -70,7 +70,7 @@ struct EntrenarHubPar: View {
                             HStack(alignment: .firstTextBaseline) {
                                 Text(verbatim: subida.name).font(.system(size: subLsFilaSize))
                                     .foregroundStyle(LiquidColor.tinta700)
-                                Spacer(minLength: CenitMetrics.space2)
+                                Spacer(minLength: LiquidSpace.s200)
                                 subidaValor(subida)
                             }
                         }

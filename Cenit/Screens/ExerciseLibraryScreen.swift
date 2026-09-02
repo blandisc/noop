@@ -72,7 +72,7 @@ struct ExerciseLibraryScreen: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s300) {
                 header
                 searchField
                 filterChips
@@ -80,9 +80,9 @@ struct ExerciseLibraryScreen: View {
                 createRow
             }
             .padding(.top, CenitMetrics.screenTop)
-            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.horizontal, LiquidSpace.s600)
             // The safeAreaInset already carves out the addBar's height — no magic 88.
-            .padding(.bottom, CenitMetrics.screenPadding)
+            .padding(.bottom, LiquidSpace.s600)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         // FER-198 (Ola 2, épico FER-195): fondo de vidrio El Eje (Ola 1, FER-197) — esta pantalla
@@ -334,7 +334,7 @@ struct ExerciseLibraryScreen: View {
             dismiss()
         }
         .disabled(selected.isEmpty)
-        .padding(.horizontal, CenitMetrics.screenPadding)
+        .padding(.horizontal, LiquidSpace.s600)
         // Libra el dock, que se queda visible (decisión Fer): el `safeAreaInset` inferior comparte carril
         // con la barra de pestañas y el botón quedaba medio tapado. Sin banda de papel detrás — la lámina
         // casi-opaca se desbordaba por abajo y se veía como un borde suelto; ahora solo flota la cápsula,
@@ -470,14 +470,14 @@ struct CreateExerciseSheet: View {
                         .foregroundStyle(theme.ink)
                 }
 
-                VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+                VStack(alignment: .leading, spacing: LiquidSpace.s200) {
                     Text("Name").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     TextField("e.g. Svend press", text: $name)
                         .font(StrandFont.body).foregroundStyle(theme.ink)
-                        .padding(.horizontal, CenitMetrics.gap).padding(.vertical, CenitMetrics.rowVPad)
+                        .padding(.horizontal, LiquidSpace.s300).padding(.vertical, CenitMetrics.rowVPad)
                         // Same skin as the Library's search field — one text-field look per flow.
-                        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
+                        .background(theme.surface, in: RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
                             .strokeBorder(theme.hairlineStrong, lineWidth: 1))
                 }
 
@@ -490,12 +490,12 @@ struct CreateExerciseSheet: View {
                          : "Without it the exercise won't count toward your muscle map or weekly volume.")
                         .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                         .fixedSize(horizontal: false, vertical: true)
-                        .padding(.bottom, CenitMetrics.space1)
+                        .padding(.bottom, LiquidSpace.s100)
                     Divider().overlay(theme.hairline)
                     pickerRow("Equipment", isPresented: $showEquipPicker, selection: $equip, options: equipment, placeholder: String(localized: "Pick equipment"), label: StrengthDisplay.equipment)
                 }
 
-                VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+                VStack(alignment: .leading, spacing: LiquidSpace.s200) {
                     Text("Record type").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                     ForEach(ExerciseType.allCases, id: \.self) { t in typeOption(t) }
                 }
@@ -504,13 +504,13 @@ struct CreateExerciseSheet: View {
                     Text(isEditing ? "Save changes" : "Create exercise")
                         .font(InstrumentoType.grotesk(15, weight: .bold))
                         .foregroundStyle(canCreate ? theme.ink : theme.inkTertiary)
-                        .frame(maxWidth: .infinity).padding(.vertical, CenitMetrics.gap)
+                        .frame(maxWidth: .infinity).padding(.vertical, LiquidSpace.s300)
                         .liquidGlass(.pastillaSolida)
                         .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
                 }
                 .buttonStyle(EntrenarPressStyle()).disabled(!canCreate)
             }
-            .padding(.top, CenitMetrics.screenTop).padding(.horizontal, CenitMetrics.screenPadding).padding(.bottom, CenitMetrics.screenPadding)
+            .padding(.top, CenitMetrics.screenTop).padding(.horizontal, LiquidSpace.s600).padding(.bottom, LiquidSpace.s600)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         // FER-198 (Ola 2): fondo de vidrio El Eje — se CONSERVA el chrome actual (título Grotesk a
@@ -528,7 +528,7 @@ struct CreateExerciseSheet: View {
         HStack(spacing: 12) {
             Text(title).font(StrandFont.body).foregroundStyle(theme.ink).frame(maxWidth: .infinity, alignment: .leading)
             Button { isPresented.wrappedValue = true } label: {
-                HStack(spacing: CenitMetrics.space1) {
+                HStack(spacing: LiquidSpace.s100) {
                     Text(selection.wrappedValue.isEmpty ? placeholder : label(selection.wrappedValue))
                         .font(StrandFont.body).foregroundStyle(selection.wrappedValue.isEmpty ? theme.inkTertiary : theme.inkSecondary)
                     StrandIcon.down.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
@@ -546,7 +546,7 @@ struct CreateExerciseSheet: View {
 
     private func typeOption(_ t: ExerciseType) -> some View {
         Button { type = t } label: {
-            HStack(spacing: CenitMetrics.gap) {
+            HStack(spacing: LiquidSpace.s300) {
                 Image(systemName: StrengthDisplay.typeIcon(t)).font(StrandFont.glyph(.lead))
                     .foregroundStyle(type == t ? theme.ink : theme.inkTertiary).frame(width: 22)
                 VStack(alignment: .leading, spacing: 1) {
@@ -556,9 +556,9 @@ struct CreateExerciseSheet: View {
                 Spacer(minLength: 8)
                 if type == t { StrandIcon.confirm.image.font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.ink) }
             }
-            .padding(.horizontal, CenitMetrics.gap).padding(.vertical, CenitMetrics.rowVPad).contentShape(Rectangle())
-            .background(type == t ? theme.surface : Color.clear, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))  // token-exempt: fondo condicional
-            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
+            .padding(.horizontal, LiquidSpace.s300).padding(.vertical, CenitMetrics.rowVPad).contentShape(Rectangle())
+            .background(type == t ? theme.surface : Color.clear, in: RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous))  // token-exempt: fondo condicional
+            .overlay(RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
                 .strokeBorder(type == t ? theme.ink : theme.hairline, lineWidth: type == t ? 1.5 : 1))
         }
         .buttonStyle(EntrenarPressStyle())

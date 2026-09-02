@@ -17,7 +17,7 @@ enum HojaCabeceraSesion {
     /// Fila de cabecera: ‹ minimiza · dot de familia + nombre + «Serie N de M» · ♥ (R14, solo con
     /// FC viva) · reloj · ⤢ Foco (R2a) · ‖.
     static func header(vivo: HojaSesionViva) -> some View {
-        HStack(spacing: CenitMetrics.space2) {
+        HStack(spacing: LiquidSpace.s200) {
             Button {
                 vivo.sheet.model.strengthSheetPresented = false   // B17: minimizar, nunca termina
             } label: {
@@ -87,7 +87,7 @@ enum HojaCabeceraSesion {
                 .accessibilityLabel(vivo.session.paused ? Text("Resume session") : Text("Pause session"))
             }
         }
-        .padding(.horizontal, CenitMetrics.screenPadding)
+        .padding(.horizontal, LiquidSpace.s600)
         .padding(.top, LiquidSpace.s150)
     }
 
@@ -107,7 +107,7 @@ enum HojaCabeceraSesion {
     /// animado a propósito: el numeral ya es la señal de vida.
     @ViewBuilder private static func heartRate(vivo: HojaSesionViva) -> some View {
         if let bpm = vivo.sheet.model.watchBpm {
-            HStack(spacing: CenitMetrics.space1) {
+            HStack(spacing: LiquidSpace.s100) {
                 StrandIcon.heart.image.font(StrandFont.glyph(.chevron))
                 Text("\(bpm)").font(StrandFont.subhead.weight(.semibold))
             }
@@ -127,7 +127,7 @@ enum HojaCabeceraSesion {
             }
         }
         .frame(height: EntrenarMetrics.progressBar)
-        .padding(.horizontal, CenitMetrics.screenPadding)
+        .padding(.horizontal, LiquidSpace.s600)
         .padding(.top, CenitMetrics.rowVPad)
         .accessibilityLabel(Text(verbatim: vivo.serieSubtitle))
     }
@@ -142,9 +142,9 @@ enum HojaCabeceraSesion {
             Text("Your receipt is waiting on the other side")
                 .font(StrandFont.caption).foregroundStyle(vivo.sheet.theme.inkTertiary)
         }
-        .padding(.horizontal, CenitMetrics.screenPadding)
-        .padding(.top, CenitMetrics.space2)
-        .padding(.bottom, CenitMetrics.space2)
+        .padding(.horizontal, LiquidSpace.s600)
+        .padding(.top, LiquidSpace.s200)
+        .padding(.bottom, LiquidSpace.s200)
         .entrenarHojaBarraFondo(tono: .indigo)
     }
 }

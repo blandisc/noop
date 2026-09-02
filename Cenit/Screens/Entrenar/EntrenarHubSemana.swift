@@ -28,7 +28,7 @@ struct EntrenarHubSemana: View {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .firstTextBaseline) {
                     Text("Your week").liquidRegla().foregroundStyle(LiquidColor.tinta500)
-                    Spacer(minLength: CenitMetrics.space2)
+                    Spacer(minLength: LiquidSpace.s200)
                     semVal
                 }
                 // Teselas de ancho FIJO con gap chico (mock `.semRow{gap:8px}`) — no `WeekTokens`, cuya
@@ -39,10 +39,10 @@ struct EntrenarHubSemana: View {
                         tesela(day, label: i < labels.count ? labels[i] : "",
                               action: i == todayIndex ? onTapToday : onTapOtherDay)
                     }
-                    Spacer(minLength: CenitMetrics.space2)
+                    Spacer(minLength: LiquidSpace.s200)
                     EntrenarCapsulaPuerta(String(localized: "Edit").uppercased(), action: onEdit)
                 }
-                .padding(.top, CenitMetrics.space2)
+                .padding(.top, LiquidSpace.s200)
             }
         }
         .liquidEntrada(index: 1)

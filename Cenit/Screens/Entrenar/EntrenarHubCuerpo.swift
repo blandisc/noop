@@ -33,7 +33,7 @@ struct EntrenarHubCuerpo: View {
                  + Text("the rest, fresh").foregroundStyle(LiquidColor.tinta700))
                     .font(.system(size: cuerpoLineaSize))
                     .lineLimit(2)
-                Spacer(minLength: CenitMetrics.space1)
+                Spacer(minLength: LiquidSpace.s100)
                 EntrenarCapsulaPuerta(String(localized: "Body map").uppercased(), action: onOpenMap)
             }
         }

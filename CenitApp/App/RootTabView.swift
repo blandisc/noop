@@ -248,8 +248,8 @@ struct RootTabView: View {
         .overlay(alignment: .bottom) {
             if appModel.strengthSession != nil && !appModel.strengthSheetPresented {
                 ActiveSessionPillHost(model: appModel, confirmDiscard: $confirmDiscardSession)
-                    .padding(.horizontal, CenitMetrics.screenPadding)
-                    .padding(.bottom, barHeight + CenitMetrics.space2)
+                    .padding(.horizontal, LiquidSpace.s600)
+                    .padding(.bottom, barHeight + LiquidSpace.s200)
                     .transition(LiquidMotion.risingFadeTransition)
             }
         }

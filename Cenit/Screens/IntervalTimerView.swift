@@ -106,9 +106,9 @@ struct IntervalTimerView: View {
                     overviewCard
                 }
             }
-            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.horizontal, LiquidSpace.s600)
             .padding(.top, LiquidSpace.s550)
-            .padding(.bottom, CenitMetrics.screenPadding)
+            .padding(.bottom, LiquidSpace.s600)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         // FER-201 (Anillo 4, épico FER-195): fondo de cristal El Eje — se CONSERVA el
