@@ -19,7 +19,8 @@ LOG="$(mktemp -t capture-appmap).log"
 # Tests a correr (default: todos los estados de Hoy). Cada uno escribe hoy su PNG crudo.
 if [ "$#" -gt 0 ]; then TESTS=("$@"); else
   TESTS=(test_today_empty test_today_calibrating test_today_downloading test_today_insufficient \
-         test_today_primed test_today_balanced test_today_strained test_today_rundown); fi
+         test_today_primed test_today_balanced test_today_strained test_today_rundown \
+         test_components); fi   # FER-315: el grupo «Componentes» del muro
 ONLY=(); for t in "${TESTS[@]}"; do ONLY+=(-only-testing "CenitUITests/CenitScreenshotTests/$t"); done
 
 echo "▸ Regenerando proyecto…"
@@ -35,10 +36,13 @@ xcrun simctl status_bar "$SIM_NAME" override --time "9:41" \
 
 echo "▸ Corriendo harness en '$SIM_NAME' (${#TESTS[@]} estados; tarda unos minutos)…"
 set +e
+# FIRMADO (`-allowProvisioningUpdates`, equipo desde project.yml): una app SIN firma no trae el
+# entitlement del App Group y el canario `AppGroup.warnIfGroupUnprovisioned()` la aborta en el
+# simulador antes del primer frame (FER-49) — el harness moría con «app never reached foreground».
 GIT_CONFIG=/dev/null xcodebuild test \
   -project Cenit.xcodeproj -scheme Cenit \
   -destination "platform=iOS Simulator,name=$SIM_NAME" \
-  CODE_SIGNING_ALLOWED=NO -jobs 4 "${ONLY[@]}" > "$LOG" 2>&1
+  -allowProvisioningUpdates -jobs 4 "${ONLY[@]}" > "$LOG" 2>&1
 RC=$?
 set -e
 [ "$RC" -ne 0 ] && grep -q "FIXTURE_WRITTEN" "$LOG" || true

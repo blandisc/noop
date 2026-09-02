@@ -228,6 +228,33 @@ final class CenitScreenshotTests: XCTestCase {
         }
     }
 
+    // MARK: - Componentes (FER-315 · catálogo del sistema de diseño)
+
+    /// El núcleo de piezas de `CenitDesign` que la galería expone (grupo «Componentes» del muro).
+    /// DEBE seguir a `ComponentGallery.entries` (Cenit/App/ComponentGallery.swift, la fuente que
+    /// renderiza) y a `COMPONENTS` en `Tools/build-appmap.py` (que las agrupa por familia). Es
+    /// black-box: el test no puede importar el módulo de la app, así que la lista vive aquí también.
+    private static let componentNames = [
+        "LiquidGlassButton",
+        "LiquidMetricTile",
+        "LiquidChipSeleccion",
+    ]
+
+    /// Captura un PNG por pieza: cada una se monta a pantalla completa vía `-noop.component <Nombre>`
+    /// (ver `ComponentGalleryHost`). Un solo test, un relanzamiento por pieza — igual disciplina que
+    /// los estados de Hoy, para que una permission-alert en una no bloquee a las demás.
+    func test_components() throws {
+        for name in Self.componentNames {
+            let a = XCUIApplication()
+            a.launchArguments = Self.baseArgs + ["-noop.component", name]
+            a.launch()
+            XCTAssertTrue(a.wait(for: .runningForeground, timeout: 15), "app never foregrounded for \(name)")
+            wait(2)   // sin coreografía de entrada aquí (la galería tapa la raíz), pero deja asentar el layout
+            snap("component_\(name)", app: a)
+            a.terminate()
+        }
+    }
+
     // MARK: - Today detail (top → bottom scroll for design review)
 
     private func captureToday(state: String) {

@@ -108,7 +108,7 @@ def group_html(g, src_of):
     maxx = max(x+NODE_W for (_,_,_,x,y) in nodes.values()) + 240
     maxy = max(y+IMG_H+120 for (_,_,_,x,y) in nodes.values()) + 160
     label=(f'<div class="glabel"><h2>{esc(g["name"])}</h2><p>{esc(g["blurb"])}</p>'
-           f'<span class="count">{len(nodes)} estados</span></div>')
+           f'<span class="count">{len(nodes)} {g.get("unit","estados")}</span></div>')
     return f'<section class="board" style="width:{maxx}px;height:{maxy}px">{label}{body}</section>'
 
 STYLE = """
@@ -375,6 +375,37 @@ SHOT_SRC = {
     "entrenar-sesion.png":  "train-sesion.png",
 }
 SHOT_W = 800   # ancho al que se reescalan las capturas para el repo/muro (nítido, ligero)
+
+# --- FER-315 · grupo «Componentes» (catálogo del sistema de diseño) ---
+# (name, family). DEBE seguir a `ComponentGallery.entries` (Cenit/App/ComponentGallery.swift, la
+# fuente que renderiza) y a `componentNames` en `CenitScreenshotTests`. Extender aquí al crecer el
+# núcleo: un renglón por pieza y el resto se acomoda solo (grid por familia + puente de captura).
+COMPONENTS = [
+    ("LiquidGlassButton",   "Botones"),
+    ("LiquidMetricTile",    "Tiles"),
+    ("LiquidChipSeleccion", "Chips"),
+]
+
+def _component_group():
+    """Un board tipo cuadrícula: cada pieza es un nodo (PNG real), agrupadas por familia."""
+    from itertools import groupby
+    COLS, cellW, cellH = 4, NODE_W + 130, IMG_H + 150
+    nodes, row = {}, 0
+    for fam, grp in groupby(sorted(COMPONENTS, key=lambda c: (c[1], c[0])), key=lambda c: c[1]):
+        col = 0
+        for name, _ in grp:
+            nodes[name] = (f"componente-{name}.png", name, fam, col*cellW, row*cellH)
+            col += 1
+            if col >= COLS: col, row = 0, row + 1
+        if col != 0: row += 1
+    return {"name": "Componentes · CenitDesign",
+            "blurb": "Piezas del sistema Liquid Glass · El Eje, renderizadas reales sobre el lienzo. "
+                     "Busca por nombre.",
+            "nodes": nodes, "edges": [], "unit": "componentes"}
+
+MAP.append(_component_group())
+for _name, _fam in COMPONENTS:
+    SHOT_SRC[f"componente-{_name}.png"] = f"component_{_name}.png"
 
 def sync_shots(staging_dir):
     """Copia+reescala los PNG crudos del harness (staging_dir) a docs/appmap/shots/ con el
