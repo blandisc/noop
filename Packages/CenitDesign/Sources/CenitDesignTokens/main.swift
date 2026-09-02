@@ -347,11 +347,14 @@ let liquidSpaceEntries: [(String, CGFloat, String?)] = [
     ("s100", ls.s100, nil),
     ("s125", ls.s125, "gap rótulo ↔ ratio / diámetro"),
     ("s150", ls.s150, "gota ↔ label"),
+    ("s175", ls.s175, "paso fino entre s150 y s200 (FER-318)"),
     ("s200", ls.s200, "gap del grid de tiles"),
     ("s225", ls.s225, "padding vertical interior de la pastilla táctil"),
     ("s250", ls.s250, "gap entre módulos de «El Tablero»"),
     ("s300", ls.s300, "padding H de tile, separación entre bloques chicos"),
+    ("s350", ls.s350, "padding del recibo térmico / screenTop (FER-309)"),
     ("s400", ls.s400, "padding H de pastilla / interior horizontal de módulo"),
+    ("s450", ls.s450, "paso entre s400 y s550 (FER-318)"),
     ("s550", ls.s550, "margen horizontal de pantalla (legacy Liquid)"),
     ("s600", ls.s600, "margen horizontal de la pantalla «El Tablero»"),
     ("s700", ls.s700, "gap entre secciones de una hoja/lista"),
@@ -370,12 +373,61 @@ let liquidSpaceEntries: [(String, CGFloat, String?)] = [
 
 let liquidRadiusEntries: [(String, CGFloat, String?)] = [
     ("hairline", lr.hairline, "antialiasing del trazo de 1pt (capilar divisor)"),
+    ("chip", lr.chip, "badge chico del handoff (FER-275)"),
     ("insetTarjeta", lr.insetTarjeta, "sub-tarjeta anidada dentro de otra tarjeta"),
     ("control", lr.control, "swatches, chips de día, inputs"),
+    ("tile", lr.tile, "esquina del tile de métrica de Hoy (FER-309)"),
     ("tarjeta", lr.tarjeta, "tiles, tarjetas, contenedores de lista"),
     ("modulo", lr.modulo, "módulos de vidrio de «El Tablero»"),
     ("hoja", lr.hoja, "sheets y modales"),
     ("pastilla", lr.pastilla, "botones, dock, barras, badges (Capsule)"),
+]
+
+// MARK: - LiquidControl / LiquidOLED / LiquidType (FER-318 — catálogo al día)
+//
+// Misma disciplina que `liquidColorEntries` / `liquidSpaceEntries`: lista curada del API
+// público. `Font` no expone tamaño/peso de forma fiable (SwiftUI), así que tipografía
+// lista nombre + metadatos curados (tamaño, peso, ¿escala con Dynamic Type?).
+
+let lctl = LiquidControl.self
+let liquidControlEntries: [(String, CGFloat, String?)] = [
+    ("hitTarget", lctl.hitTarget, "objetivo táctil mínimo HIG (44 pt)"),
+    ("sm", lctl.sm, "chips, filas densas"),
+    ("md", lctl.md, "control por defecto (== hitTarget)"),
+    ("lg", lctl.lg, "CTAs, controles destacados"),
+    ("tileAltura", lctl.tileAltura, "altura única del tile de métrica (FER-309)"),
+]
+
+let loled = LiquidOLED.self
+let liquidOLEDEntries: [PEntry2] = [
+    PEntry2(name: "fondo", color: loled.fondo, desc: "negro puro (OLED apaga el píxel)"),
+    PEntry2(name: "superficie", color: loled.superficie, desc: "superficie elevada sobre negro"),
+    PEntry2(name: "tinta", color: loled.tinta, desc: "tinta principal sobre negro"),
+    PEntry2(name: "tintaSecundaria", color: loled.tintaSecundaria, desc: "tinta secundaria"),
+    PEntry2(name: "tintaTerciaria", color: loled.tintaTerciaria, desc: "tinta terciaria / apagada"),
+    PEntry2(name: "borde", color: loled.borde, desc: "canto fino sobre negro"),
+    PEntry2(name: "bordeFuerte", color: loled.bordeFuerte, desc: "canto fuerte sobre negro"),
+    PEntry2(name: "verde", color: loled.verde, desc: "verde de veredicto AA sobre negro"),
+    PEntry2(name: "ambar", color: loled.ambar, desc: "ámbar de atención sobre negro"),
+    PEntry2(name: "negativo", color: loled.negativo, desc: "rojo de error legible sobre negro"),
+    PEntry2(name: "rosa", color: loled.rosa, desc: "rosa de FC sobre negro"),
+]
+
+/// Tipografía: `Font` no se introspecciona; metadatos curados del source de `LiquidType`.
+struct TypeEntry { let name: String; let size: String; let weight: String; let dynamicType: String }
+let liquidTypeEntries: [TypeEntry] = [
+    TypeEntry(name: "captionRegular", size: "10.5", weight: "regular", dynamicType: "no"),
+    TypeEntry(name: "captionFuerte", size: "10.5", weight: "semibold", dynamicType: "no"),
+    TypeEntry(name: "captionNegrita", size: "10.5", weight: "bold", dynamicType: "no"),
+    TypeEntry(name: "captionLecturaNegrita", size: "10.5", weight: "bold", dynamicType: "sí (.caption2)"),
+    TypeEntry(name: "tituloFilaMedia", size: "13", weight: "medium", dynamicType: "no"),
+    TypeEntry(name: "tituloFilaNegrita", size: "13", weight: "bold", dynamicType: "no"),
+    TypeEntry(name: "tituloGemelaMedia", size: "15", weight: "medium", dynamicType: "no"),
+    TypeEntry(name: "relojCompacto", size: "15 tabular", weight: "regular", dynamicType: "no"),
+    TypeEntry(name: "pie", size: ".caption2", weight: "regular", dynamicType: "sí"),
+    TypeEntry(name: "cuerpoLista", size: ".subheadline", weight: "regular", dynamicType: "sí"),
+    TypeEntry(name: "subtituloFila", size: ".footnote", weight: "regular", dynamicType: "sí"),
+    TypeEntry(name: "filaConteoNumero", size: ".caption tabular", weight: "medium", dynamicType: "sí"),
 ]
 
 // MARK: - Catálogo de componentes (FER-267)
@@ -608,17 +660,38 @@ func catalogoDoc() -> String {
     |---|---|---|
     \(liquidColorEntries.map { "| `\($0.name)` | `\(value($0.color))` | \($0.desc ?? "—") |" }.joined(separator: "\n"))
 
+    ### OLED (Watch y Dynamic Island) (`LiquidOLED`)
+
+    | Token | Valor | Uso |
+    |---|---|---|
+    \(liquidOLEDEntries.map { "| `\($0.name)` | `\(value($0.color))` | \($0.desc ?? "—") |" }.joined(separator: "\n"))
+
     ### Espaciado (`LiquidSpace` / mixtos de `LiquidLayout`)
 
     | Token | Valor | Uso |
     |---|---|---|
     \(liquidSpaceEntries.map { "| `\($0.0)` | \(numberValue($0.1))pt | \($0.2 ?? "—") |" }.joined(separator: "\n"))
 
+    ### Controles (`LiquidControl`)
+
+    | Token | Valor | Uso |
+    |---|---|---|
+    \(liquidControlEntries.map { "| `\($0.0)` | \(numberValue($0.1))pt | \($0.2 ?? "—") |" }.joined(separator: "\n"))
+
     ### Radios (`LiquidRadius`)
 
     | Token | Valor | Uso |
     |---|---|---|
     \(liquidRadiusEntries.map { "| `\($0.0)` | \(numberValue($0.1))pt | \($0.2 ?? "—") |" }.joined(separator: "\n"))
+
+    ### Tipografía (`LiquidType` — familia nueva)
+
+    `Font` no se introspecciona desde el generador; nombre + tamaño/peso/Dynamic Type curados
+    del source. Solo la familia tipográfica nueva (FER-303/306/310/318).
+
+    | Token | Tamaño | Peso | Dynamic Type |
+    |---|---|---|---|
+    \(liquidTypeEntries.map { "| `\($0.name)` | \($0.size) | \($0.weight) | \($0.dynamicType) |" }.joined(separator: "\n"))
 
     ## Índice de componentes
 
@@ -721,12 +794,15 @@ do {
         fail("✗ could not locate the \"color.liquid\" object in \(jsonURL.path)")
     }
     newJSON = afterColorLiquid
+    // `after:` ancla en la clave PADRE: `"opacity"` → space.liquid; `"radius"` → radius.liquid.
+    // NO usar `after: "space"` para el radio: `"space":` queda ANTES de su propio `"liquid":`,
+    // así que el splice reescribía space.liquid con los radios y dejaba radius.liquid vacío.
     guard let afterSpaceLiquid = replaceJSONObject(in: newJSON, key: "liquid", after: "opacity",
                                                     with: numberBlock("liquid", liquidSpaceEntries)) else {
         fail("✗ could not locate the \"space.liquid\" object in \(jsonURL.path)")
     }
     newJSON = afterSpaceLiquid
-    guard let afterRadiusLiquid = replaceJSONObject(in: newJSON, key: "liquid", after: "space",
+    guard let afterRadiusLiquid = replaceJSONObject(in: newJSON, key: "liquid", after: "radius",
                                                      with: numberBlock("liquid", liquidRadiusEntries)) else {
         fail("✗ could not locate the \"radius.liquid\" object in \(jsonURL.path)")
     }
@@ -745,7 +821,7 @@ do {
     if existingCatalogo != newCatalogo { try newCatalogo.write(to: catalogoURL, atomically: true, encoding: .utf8) }
 
     print("✓ Instrumento tokens regenerated from Instrumento.swift (\(roles.count) roles)")
-    print("✓ Liquid Glass catálogo regenerated (\(liquidColorEntries.count) colors, \(liquidSpaceEntries.count) space, \(liquidRadiusEntries.count) radius, \(catalogEntries.count) components)")
+    print("✓ Liquid Glass catálogo regenerated (\(liquidColorEntries.count) colors, \(liquidOLEDEntries.count) oled, \(liquidSpaceEntries.count) space, \(liquidControlEntries.count) control, \(liquidRadiusEntries.count) radius, \(liquidTypeEntries.count) type, \(catalogEntries.count) components)")
     print("  · \(jsonURL.path)")
     print("  · \(designURL.path)")
     print("  · \(catalogoURL.path)")

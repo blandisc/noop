@@ -69,6 +69,22 @@ lo refleja.
 | `vidrioAtmosfera` | `rgba(255,255,255,0.30)` | relleno del módulo de vidrio sobre la atmósfera |
 | `vidrioAtmosferaSolida` | `rgba(255,255,255,0.45)` | plan B opaco de la receta de atmósfera |
 
+### OLED (Watch y Dynamic Island) (`LiquidOLED`)
+
+| Token | Valor | Uso |
+|---|---|---|
+| `fondo` | `#000000` | negro puro (OLED apaga el píxel) |
+| `superficie` | `#1F1C18` | superficie elevada sobre negro |
+| `tinta` | `#ECE9E0` | tinta principal sobre negro |
+| `tintaSecundaria` | `#A6A298` | tinta secundaria |
+| `tintaTerciaria` | `#8B8370` | tinta terciaria / apagada |
+| `borde` | `rgba(236,233,224,0.14)` | canto fino sobre negro |
+| `bordeFuerte` | `rgba(236,233,224,0.28)` | canto fuerte sobre negro |
+| `verde` | `#2EB27D` | verde de veredicto AA sobre negro |
+| `ambar` | `#E29A50` | ámbar de atención sobre negro |
+| `negativo` | `#CD4A42` | rojo de error legible sobre negro |
+| `rosa` | `#BD546C` | rosa de FC sobre negro |
+
 ### Espaciado (`LiquidSpace` / mixtos de `LiquidLayout`)
 
 | Token | Valor | Uso |
@@ -79,11 +95,14 @@ lo refleja.
 | `s100` | 4pt | — |
 | `s125` | 5pt | gap rótulo ↔ ratio / diámetro |
 | `s150` | 6pt | gota ↔ label |
+| `s175` | 7pt | paso fino entre s150 y s200 (FER-318) |
 | `s200` | 8pt | gap del grid de tiles |
 | `s225` | 9pt | padding vertical interior de la pastilla táctil |
 | `s250` | 10pt | gap entre módulos de «El Tablero» |
 | `s300` | 12pt | padding H de tile, separación entre bloques chicos |
+| `s350` | 14pt | padding del recibo térmico / screenTop (FER-309) |
 | `s400` | 16pt | padding H de pastilla / interior horizontal de módulo |
+| `s450` | 18pt | paso entre s400 y s550 (FER-318) |
 | `s550` | 22pt | margen horizontal de pantalla (legacy Liquid) |
 | `s600` | 24pt | margen horizontal de la pantalla «El Tablero» |
 | `s700` | 28pt | gap entre secciones de una hoja/lista |
@@ -99,17 +118,49 @@ lo refleja.
 | `chipCompactoH` | 11pt | chip compacto del handoff — horizontal (FER-273) |
 | `chipCompactoV` | 5pt | chip compacto del handoff — vertical (FER-273) |
 
+### Controles (`LiquidControl`)
+
+| Token | Valor | Uso |
+|---|---|---|
+| `hitTarget` | 44pt | objetivo táctil mínimo HIG (44 pt) |
+| `sm` | 32pt | chips, filas densas |
+| `md` | 44pt | control por defecto (== hitTarget) |
+| `lg` | 56pt | CTAs, controles destacados |
+| `tileAltura` | 104pt | altura única del tile de métrica (FER-309) |
+
 ### Radios (`LiquidRadius`)
 
 | Token | Valor | Uso |
 |---|---|---|
 | `hairline` | 0.5pt | antialiasing del trazo de 1pt (capilar divisor) |
+| `chip` | 8pt | badge chico del handoff (FER-275) |
 | `insetTarjeta` | 10pt | sub-tarjeta anidada dentro de otra tarjeta |
 | `control` | 12pt | swatches, chips de día, inputs |
+| `tile` | 17pt | esquina del tile de métrica de Hoy (FER-309) |
 | `tarjeta` | 18pt | tiles, tarjetas, contenedores de lista |
 | `modulo` | 20pt | módulos de vidrio de «El Tablero» |
 | `hoja` | 28pt | sheets y modales |
 | `pastilla` | 999pt | botones, dock, barras, badges (Capsule) |
+
+### Tipografía (`LiquidType` — familia nueva)
+
+`Font` no se introspecciona desde el generador; nombre + tamaño/peso/Dynamic Type curados
+del source. Solo la familia tipográfica nueva (FER-303/306/310/318).
+
+| Token | Tamaño | Peso | Dynamic Type |
+|---|---|---|---|
+| `captionRegular` | 10.5 | regular | no |
+| `captionFuerte` | 10.5 | semibold | no |
+| `captionNegrita` | 10.5 | bold | no |
+| `captionLecturaNegrita` | 10.5 | bold | sí (.caption2) |
+| `tituloFilaMedia` | 13 | medium | no |
+| `tituloFilaNegrita` | 13 | bold | no |
+| `tituloGemelaMedia` | 15 | medium | no |
+| `relojCompacto` | 15 tabular | regular | no |
+| `pie` | .caption2 | regular | sí |
+| `cuerpoLista` | .subheadline | regular | sí |
+| `subtituloFila` | .footnote | regular | sí |
+| `filaConteoNumero` | .caption tabular | medium | sí |
 
 ## Índice de componentes
 

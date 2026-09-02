@@ -20,6 +20,8 @@ public enum LiquidSpace {
     public static let s125: CGFloat = 5
     /// 6 — gota ↔ label.
     public static let s150: CGFloat = 6
+    /// 7 — paso fino entre s150 y s200 (TrainingBody / LiveStrength / Plates).
+    public static let s175: CGFloat = 7
     /// 8 — gap del grid de tiles.
     public static let s200: CGFloat = 8
     /// 9 — padding vertical INTERIOR de la pastilla táctil (carga/guardián/fila del ecosistema):
@@ -33,6 +35,8 @@ public enum LiquidSpace {
     public static let s350: CGFloat = 14
     /// 16 — padding H de pastilla / interior horizontal de módulo.
     public static let s400: CGFloat = 16
+    /// 18 — paso entre s400 y s550 (TrainingBody / LiveStrength / Plates).
+    public static let s450: CGFloat = 18
     /// 22 — margen horizontal de pantalla (legacy Liquid).
     public static let s550: CGFloat = 22
     /// 24 — margen horizontal de la pantalla «El Tablero» (FER-28): un punto más de aire
