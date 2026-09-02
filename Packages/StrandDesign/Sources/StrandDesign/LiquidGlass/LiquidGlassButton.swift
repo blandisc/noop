@@ -28,18 +28,22 @@ public struct LiquidGlassButton: View {
     private let variant: Variant
     private let expands: Bool
     private let minWidth: CGFloat?
+    private let systemImage: String?
     private let action: () -> Void
 
     /// - Parameter expands: `true` estira el botón al ancho disponible (CTA de pantalla);
     ///   `false` lo deja abrazar su contenido (acciones inline, quiet).
     /// - Parameter minWidth: ancho mínimo opcional del label (p. ej. CTA del héroe); `nil` no fija.
+    /// - Parameter systemImage: SF Symbol opcional antes del label (`LiquidType.iconSF(15)`,
+    ///   gap `s150`) — p. ej. «Imprimir recibo» con `"printer"`.
     public init(_ label: String, variant: Variant = .primary, expands: Bool = false,
-                minWidth: CGFloat? = nil,
+                minWidth: CGFloat? = nil, systemImage: String? = nil,
                 action: @escaping () -> Void) {
         self.label = label
         self.variant = variant
         self.expands = expands
         self.minWidth = minWidth
+        self.systemImage = systemImage
         self.action = action
     }
 
@@ -51,16 +55,25 @@ public struct LiquidGlassButton: View {
     }
 
     @ViewBuilder
-    private var core: some View {
-        let text = Text(label)
-            .font(LiquidType.boton).tracking(LiquidType.botonTracking)
-            .lineLimit(1)
-            .padding(.horizontal, LiquidSpace.s550)
-            .frame(minWidth: minWidth, maxWidth: expands ? .infinity : nil, minHeight: 44)
+    private var labelContent: some View {
+        HStack(spacing: LiquidSpace.s150) {
+            if let systemImage {
+                Image(systemName: systemImage)
+                    .font(LiquidType.iconSF(size: 15))
+            }
+            Text(label)
+                .font(LiquidType.boton).tracking(LiquidType.botonTracking)
+                .lineLimit(1)
+        }
+        .padding(.horizontal, LiquidSpace.s550)
+        .frame(minWidth: minWidth, maxWidth: expands ? .infinity : nil, minHeight: 44)
+    }
 
+    @ViewBuilder
+    private var core: some View {
         switch variant {
         case .primary:
-            text
+            labelContent
                 .foregroundStyle(LiquidColor.tintaSobreVerde)
                 .background {
                     Capsule().fill(LinearGradient(
@@ -83,18 +96,18 @@ public struct LiquidGlassButton: View {
                 .clipShape(Capsule())
                 .liquidShadow([.init(color: LiquidColor.verdePrimario.opacity(0.30), radius: 7, y: 5)])
         case .glass:
-            text
+            labelContent
                 .foregroundStyle(LiquidColor.tinta900)
                 .liquidGlass(.pastilla) // token-exempt: boton de pantalla, no de hoja
         case .solida:
-            text
+            labelContent
                 .foregroundStyle(LiquidColor.tinta900)
                 .liquidGlass(.pastillaSolida)
         case .quiet:
-            text
+            labelContent
                 .foregroundStyle(LiquidColor.verdeProfundo)
         case .destructive:
-            text
+            labelContent
                 .foregroundStyle(LiquidColor.negativo)
                 .overlay {
                     Capsule().strokeBorder(LiquidColor.negativo.opacity(0.35), lineWidth: 1)
@@ -110,6 +123,7 @@ public struct LiquidGlassButton: View {
         LiquidGlassButton("Empezar", variant: .primary, minWidth: 168) {}
         LiquidGlassButton("Ver detalle", variant: .glass) {}
         LiquidGlassButton("Crear ejercicio", variant: .solida) {}
+        LiquidGlassButton("Imprimir recibo", variant: .solida, expands: true, systemImage: "printer") {}
         LiquidGlassButton("Editar semana", variant: .quiet) {}
         LiquidGlassButton("Turn off automatic backup", variant: .destructive, expands: true) {}
     }

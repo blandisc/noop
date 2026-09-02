@@ -145,8 +145,9 @@ struct SessionKeypad: View {
                 )
             }
             .frame(height: CenitMetrics.touchTarget)
-            .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: EntrenarMetrics.rirHairline))
+            // 2A: track `.pastillaSolida` (gesto de posición y 5 elementos VoiceOver intactos).
             .clipShape(Capsule())
+            .liquidGlass(.pastillaSolida)
         }
         .padding(.horizontal, CenitMetrics.cardPadding).padding(.vertical, CenitMetrics.space2)
     }
@@ -207,17 +208,13 @@ struct SessionKeypad: View {
         }
     }
 
-    /// Alto de dibujo 34 + pad H 11 — ninguna `OutlineCapsule.Size` calza 1:1; chrome a mano.
+    /// 2A: `OutlineCapsule.lg` (dibujo 36, toque 44 vía expandTouch). La fila de iconos vecinos
+    /// sigue en 34; el HStack centra sin forzar más padding vertical en la barra.
     private func pill(_ text: String, enabled: Bool = true, action: @escaping () -> Void) -> some View {
-        Button(action: { if enabled { action() } }) {
+        OutlineCapsule(theme: theme, size: .lg, estilo: .outline, action: { if enabled { action() } }) {
             Text(text).font(StrandFont.caption)
                 .foregroundStyle(enabled ? theme.ink : theme.inkMuted)
-                .padding(.horizontal, 11).frame(height: 34)
-                .background(Capsule().fill(Color.clear))
-                .overlay(Capsule().strokeBorder(enabled ? theme.hairlineStrong : theme.hairline, lineWidth: 1))
-                .contentShape(Rectangle().inset(by: -5))
         }
-        .buttonStyle(.plain)
         .disabled(!enabled)
     }
 

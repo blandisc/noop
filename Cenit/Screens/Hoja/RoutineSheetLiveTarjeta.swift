@@ -341,8 +341,7 @@ struct HojaTarjetaEjercicioSesion: View {
         let zone = max(1, min(5, Int((pct * 5).rounded(.up))))
         return Text("ZONE \(zone) · \(bpm)")
             .font(StrandFont.caption.weight(.bold)).foregroundStyle(vivo.sheet.theme.inkSecondary)
-            .padding(.horizontal, CenitMetrics.space2).padding(.vertical, LiquidSpace.s075)
-            .overlay(Capsule().strokeBorder(vivo.sheet.theme.hairlineStrong, lineWidth: 1))
+            .outlineCapsule(.outline, size: .sm, theme: vivo.sheet.theme)
     }
 
     /// B11 (FER-169): el copy del mapa — «RÉCORD peso máx · antes 100.0» — bajo la fila que acaba de
@@ -412,15 +411,13 @@ struct HojaTarjetaEjercicioSesion: View {
         let allDone = !workSets.isEmpty && workSets.allSatisfy(\.done)
         HStack {
             if !allDone {
-                Button { withAnimation(vivo.reduceMotion ? nil : .snappy) { vivo.session.addSet(exercise: ei) } } label: {
+                OutlineCapsule(theme: vivo.sheet.theme, size: .sm, estilo: .vidrio, action: {
+                    withAnimation(vivo.reduceMotion ? nil : .snappy) { vivo.session.addSet(exercise: ei) }
+                }) {
                     Text(verbatim: "＋ \(String(localized: "SET"))")
                         .font(InstrumentoType.grotesk(9.5, weight: .bold, relativeTo: .caption2)).tracking(1)
                         .foregroundStyle(LiquidColor.tinta900)
-                        .padding(.horizontal, CenitMetrics.gap).padding(.vertical, LiquidSpace.s150)
-                        .background(Capsule().fill(HojaLiveMetrics.capsulaFondo))
-                        .overlay(Capsule().strokeBorder(HojaLiveMetrics.capsulaBorde, lineWidth: 1))
                 }
-                .buttonStyle(.liquidPress)
                 .accessibilityLabel(Text("Add set"))
             } else if let next = vivo.session.activeExercises.first(where: { $0.index > ei }) {
                 Text("Done · Next: \(next.run.name)")

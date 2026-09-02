@@ -1434,7 +1434,7 @@ struct LiveStrengthSheet: View {
 
             // copy.md «Acta»: «Imprimir recibo» — el handoff manda, sustituye a «Compartir…». El
             // destino no cambia: el recibo térmico ya existente (`ReceiptPrinterScreen`).
-            LiquidGlassButton("Print receipt", variant: .solida, expands: true) {
+            LiquidGlassButton("Print receipt", variant: .solida, expands: true, systemImage: "printer") {
                 shareReceipt = ShareRef(sessionId: session.id)
             }
             .padding(.top, LiquidSpace.s150)
@@ -1473,10 +1473,10 @@ struct LiveStrengthSheet: View {
     /// workout to Health — shown instead of the iPhone's energy-origin dot.
     private var receiptWatchOrigin: some View {
         HStack(spacing: 5) {
-            Image(systemName: "applewatch").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
+            Image(systemName: "applewatch").font(StrandFont.glyph(.chevron)).foregroundStyle(LiquidColor.tinta500)
                 .accessibilityHidden(true)
             Text("Heart rate and calories from Apple Watch, saved to Health")
-                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                .font(StrandFont.footnote).foregroundStyle(LiquidColor.tinta500)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .accessibilityElement(children: .combine)
@@ -1496,7 +1496,7 @@ struct LiveStrengthSheet: View {
             Circle().fill(src == .bandCalculated ? LiquidColor.verdeCarga : LiquidColor.tinta500)
                 .frame(width: 6, height: 6)
             Text(src == .bandCalculated ? "Watch + calculated" : "Estimated")
-                .font(.system(size: 10)).foregroundStyle(theme.inkTertiary) // token-exempt: microtexto <11pt
+                .font(StrandFont.footnote).foregroundStyle(LiquidColor.tinta500)
         }
         .accessibilityElement(children: .combine)
     }
@@ -1506,7 +1506,7 @@ struct LiveStrengthSheet: View {
         (Text("\(s.routineName), done.") + Text(verbatim: "\n") + Text(verbatim: achievementLine(s)))
             .font(LiquidType.displayL)
             .tracking(LiquidType.displayLTracking)
-            .foregroundStyle(theme.ink)
+            .foregroundStyle(LiquidColor.tinta900)
             .fixedSize(horizontal: false, vertical: true)
     }
 
@@ -1551,12 +1551,12 @@ struct LiveStrengthSheet: View {
                     Text("Effort").liquidLabel().foregroundStyle(LiquidColor.tinta500)
                     if reflow, let suffix = format.scaleSuffix {
                         numeral
-                        Text(suffix).font(StrandFont.unit).foregroundStyle(LiquidColor.ambar)
+                        Text(suffix).font(LiquidType.boton).foregroundStyle(LiquidColor.ambar)
                     } else {
                         HStack(alignment: .firstTextBaseline, spacing: 3) {
                             numeral
                             if let suffix = format.scaleSuffix {
-                                Text(suffix).font(StrandFont.unit).foregroundStyle(LiquidColor.ambar)
+                                Text(suffix).font(LiquidType.boton).foregroundStyle(LiquidColor.ambar)
                             }
                         }
                     }

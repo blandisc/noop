@@ -127,15 +127,15 @@ public struct RestBand<Next: View>: View {
                 // simetría centrada que pide el prototipo y estira un `Spacer` sin ancla en una fila a
                 // todo lo ancho de la pantalla.
                 if large {
-                    Text(kicker).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text(kicker).liquidRegla().foregroundStyle(LiquidColor.tinta500)
                 } else {
                     HStack(alignment: .firstTextBaseline) {
-                        Text(kicker).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                        Text(kicker).liquidRegla().foregroundStyle(LiquidColor.tinta500)
                         Spacer(minLength: LiquidSpace.s200)
                         if let trailing {
                             Text(verbatim: trailing)
                                 .font(InstrumentoType.groteskNumber(13, weight: .bold, relativeTo: .caption))
-                                .foregroundStyle(theme.inkSecondary)
+                                .foregroundStyle(LiquidColor.tinta700)
                                 .numeroVivo(value: trailing)
                         }
                     }
@@ -161,16 +161,13 @@ public struct RestBand<Next: View>: View {
                 Button(action: onSkip) {
                     // R13: el tope honesto ofrece SEGUIR (no «Saltar» — no hay nada que saltar,
                     // el motor ya soltó el descanso solo).
-                    // !large → OutlineCapsule.lg (minHeight 36); large (46) sin Size que calce.
+                    // !large → OutlineCapsule.lg (36); large → .xl (focusRestSkip 46).
                     Group {
                         if large {
                             Text(isCeilingRelease ? "Continue" : "Skip rest")
                                 .font(StrandFont.caption.weight(.semibold))
                                 .foregroundStyle(theme.inkSecondary)
-                                .padding(.horizontal, LiquidSpace.s300)
-                                .frame(height: EntrenarMetrics.focusRestSkip)
-                                .background(theme.paper, in: Capsule())
-                                .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                                .outlineCapsule(.papel, size: .xl, theme: theme)
                         } else {
                             Text(isCeilingRelease ? "Continue" : "Skip rest")
                                 .font(StrandFont.caption.weight(.semibold))
@@ -224,24 +221,21 @@ public struct RestBand<Next: View>: View {
             } else if isReady {
                 Text("Ready")
                     .font(InstrumentoType.grotesk(headlineSize, weight: .bold, relativeTo: .largeTitle))
-                    .foregroundStyle(theme.positiveText)
+                    .foregroundStyle(LiquidColor.positivo)
             } else if let current {
                 // FER-167: la meta + el pulso vivo (mock P4). «te faltan N bpm» muere en iPhone.
                 VStack(alignment: large ? .center : .leading, spacing: LiquidSpace.s100) {
                     HStack(spacing: LiquidSpace.s200) {
                         Text("rest · down to \(target)")
-                            .instrumentoOverline()
-                            .foregroundStyle(theme.inkTertiary)
+                            .liquidRegla()
+                            .foregroundStyle(LiquidColor.tinta500)
                         if showsAlmostCapsule(remaining: remaining) {
-                            // Cápsula «CASI»: reusa `isAlmost` del caller y/o remaining ≤ almostBandBPM.
+                            // 2A: «CASI» decorativa — cromo `.papel` (la cápsula ya pone el fondo).
                             Text("Almost")
                                 .font(StrandFont.caption.weight(.semibold))
                                 .textCase(.uppercase)
                                 .foregroundStyle(theme.inkSecondary)
-                                .padding(.horizontal, LiquidSpace.s200)
-                                .padding(.vertical, LiquidSpace.s100)
-                                .background(theme.paper, in: Capsule())
-                                .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                                .outlineCapsule(.papel, size: .sm, theme: theme)
                         }
                     }
                     (Text(verbatim: "\(current)")
@@ -250,7 +244,7 @@ public struct RestBand<Next: View>: View {
                      + Text(verbatim: " ")
                      + Text("♥ now · dropping")
                         .font(StrandFont.subhead)
-                        .foregroundStyle(theme.inkSecondary))
+                        .foregroundStyle(LiquidColor.tinta700))
                         .multilineTextAlignment(large ? .center : .leading)
                         .fixedSize(horizontal: false, vertical: true)
                         // El BPM que más cambia de todo Entrenar (FER-222) — el dato vivo por

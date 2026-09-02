@@ -26,40 +26,44 @@ public struct OutlineCapsule<Label: View>: View {
         /// Terminar / Saltar descanso. El dibujo queda en 36; el toque llega a 44 vía
         /// `contentShape` con inset negativo (`EntrenarMetrics.row`).
         case lg
+        /// Pad H `LiquidSpace.s400` · minHeight `EntrenarMetrics.focusRestSkip` (46) —
+        /// «Saltar descanso» en Foco a pantalla completa. Ya ≥ 44; sin expandTouch.
+        case xl
 
         /// Pad horizontal fijado a la receta citada (no inventar).
         public var horizontalPad: CGFloat {
             switch self {
             case .sm: return LiquidSpace.s250
             case .md: return LiquidSpace.s300
-            case .lg: return LiquidSpace.s400
+            case .lg, .xl: return LiquidSpace.s400
             }
         }
 
         /// Pad vertical — `md` usa 6 (chip handoff, `ExerciseLibraryScreen:206`);
-        /// `lg` usa 0 (la altura la fija `minHeight`).
+        /// `lg`/`xl` usan 0 (la altura la fija `minHeight`).
         public var verticalPad: CGFloat {
             switch self {
             case .sm: return LiquidSpace.s150
             case .md: return 6
-            case .lg: return 0
+            case .lg, .xl: return 0
             }
         }
 
-        /// Alto mínimo del dibujo. `lg` = `EntrenarMetrics.secondaryButton` (36);
+        /// Alto mínimo del dibujo. `lg` = 36; `xl` = 46 (`focusRestSkip`);
         /// `sm`/`md` dejan que el padding vertical defina la altura.
         public var minHeight: CGFloat? {
             switch self {
             case .sm, .md: return nil
             case .lg: return EntrenarMetrics.secondaryButton
+            case .xl: return EntrenarMetrics.focusRestSkip
             }
         }
 
         /// Inset negativo del `contentShape` para llegar al toque HIG (44) sin agrandar el
-        /// dibujo. Solo `lg` (36 → 44 ⇒ 4 pt por lado).
+        /// dibujo. Solo `lg` (36 → 44 ⇒ 4 pt por lado). `xl` ya mide 46.
         public var touchInset: CGFloat {
             switch self {
-            case .sm, .md: return 0
+            case .sm, .md, .xl: return 0
             case .lg:
                 return (EntrenarMetrics.row - EntrenarMetrics.secondaryButton) / 2
             }
@@ -208,13 +212,15 @@ private struct OutlineCapsuleChrome<CapsuleLabel: View>: ViewModifier {
                     .background(LiquidColor.papelTarjeta, in: shape)
                     .overlay(shape.strokeBorder(theme.hairlineStrong, lineWidth: 1))
             case .vidrio:
+                // Misma receta que `EntrenarHubHeroe.otraFormaPill`: papelTarjeta / vidrioEspecular
+                // (no `Color.white` crudo) para que el héroe se vea idéntico vía este estilo.
                 view
                     .background(
-                        Color.white.opacity(EntrenarHubMetrics.otraFormaFondoAlfa),
+                        LiquidColor.papelTarjeta.opacity(EntrenarHubMetrics.otraFormaFondoAlfa),
                         in: shape)
                     .overlay(
                         shape.strokeBorder(
-                            Color.white.opacity(EntrenarHubMetrics.otraFormaHighlightAlfa),
+                            LiquidColor.vidrioEspecular.opacity(EntrenarHubMetrics.otraFormaHighlightAlfa),
                             lineWidth: 1))
                     .overlay(
                         shape.strokeBorder(
@@ -225,18 +231,21 @@ private struct OutlineCapsuleChrome<CapsuleLabel: View>: ViewModifier {
                         radius: EntrenarHubMetrics.otraFormaShadowRadius,
                         y: EntrenarHubMetrics.otraFormaShadowY)
             case .tenida(let tono):
+                // Misma receta que `EntrenarHubHeroe.subPill`: highlight `papelTarjeta`, aro
+                // `vidrioEspecular` inset 1 pt (no `Color.white`).
                 view
                     .background(
                         tono.base.opacity(EntrenarHubMetrics.subPillFondoAlfa),
                         in: shape)
                     .overlay(
                         shape.strokeBorder(
-                            Color.white.opacity(EntrenarHubMetrics.subPillHighlightAlfa),
+                            LiquidColor.papelTarjeta.opacity(EntrenarHubMetrics.subPillHighlightAlfa),
                             lineWidth: 1))
                     .overlay(
                         shape.strokeBorder(
-                            Color.white.opacity(EntrenarHubMetrics.subPillAroAlfa),
-                            lineWidth: 1))
+                            LiquidColor.vidrioEspecular.opacity(EntrenarHubMetrics.subPillAroAlfa),
+                            lineWidth: 1)
+                        .padding(1))
                     .overlay(
                         shape.strokeBorder(
                             tono.base.opacity(EntrenarHubMetrics.subPillCantoAlfa),
@@ -293,7 +302,7 @@ private struct OutlineCapsuleChrome<CapsuleLabel: View>: ViewModifier {
         ("teñida", .tenida(.verde)),
     ]
     let tallas: [(String, OutlineCapsule<Text>.Size)] = [
-        ("sm", .sm), ("md", .md), ("lg", .lg),
+        ("sm", .sm), ("md", .md), ("lg", .lg), ("xl", .xl),
     ]
     ScrollView {
         VStack(alignment: .leading, spacing: 20) {

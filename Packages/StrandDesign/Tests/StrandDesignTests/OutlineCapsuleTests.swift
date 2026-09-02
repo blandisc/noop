@@ -31,6 +31,19 @@ final class OutlineCapsuleTests: XCTestCase {
                        "lg toque 44 vía inset negativo sin agrandar el dibujo 36")
     }
 
+    func test_xl_padding_matchesFocusRestSkip() {
+        XCTAssertEqual(OutlineCapsule<Text>.Size.xl.horizontalPad, LiquidSpace.s400,
+                       "xl H = LiquidSpace.s400 (misma familia que lg)")
+        XCTAssertEqual(OutlineCapsule<Text>.Size.xl.verticalPad, 0,
+                       "xl V = 0 (altura vía minHeight)")
+        XCTAssertEqual(OutlineCapsule<Text>.Size.xl.minHeight, EntrenarMetrics.focusRestSkip,
+                       "xl minHeight = EntrenarMetrics.focusRestSkip (46)")
+        XCTAssertEqual(OutlineCapsule<Text>.Size.xl.touchInset, 0,
+                       "xl ya mide 46 ≥ 44; sin expandTouch")
+        XCTAssertNotEqual(OutlineCapsule<Text>.Size.lg.minHeight,
+                          OutlineCapsule<Text>.Size.xl.minHeight)
+    }
+
     func test_sizes_differ() {
         XCTAssertNotEqual(OutlineCapsule<Text>.Size.sm.horizontalPad,
                           OutlineCapsule<Text>.Size.md.horizontalPad)

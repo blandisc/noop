@@ -232,17 +232,14 @@ struct HojaFoco: View {
                 }
             }
             if let bpm = vivo.sheet.model.watchBpm { zonaBadge(bpm).padding(.top, FocoMetrics.capcionTop) }
-            Button {
+            OutlineCapsule(theme: vivo.sheet.theme, size: .lg, estilo: .outline, action: {
                 withAnimation(vivo.reduceMotion ? nil : LiquidMotion.suave) {
                     if running { vivo.registerFromFoco() } else { vivo.session.startSetTimer() }
                 }
-            } label: {
+            }) {
                 Text(running ? String(localized: "Stop and save") : String(localized: "Start"))
                     .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(LiquidColor.tinta900)
-                    .padding(.horizontal, CenitMetrics.cardPadding).padding(.vertical, CenitMetrics.space2)
-                    .overlay(Capsule().strokeBorder(LiquidColor.tinta10, lineWidth: 1))
             }
-            .buttonStyle(.plain)
             .padding(.top, FocoMetrics.capcionTop)
         case .distance:
             let dist = vivo.session.currentSet?.distanceM ?? 0
@@ -276,17 +273,14 @@ struct HojaFoco: View {
             // Grok G5). `registerCurrentSet` ya detiene el cronómetro internamente al registrar
             // (`if timerStart != nil { stopSetTimer(...) }`), así que `registerFromFoco()` sola
             // captura lo corrido y cierra la serie, sin un `stopSetTimer()` aparte.
-            Button {
+            OutlineCapsule(theme: vivo.sheet.theme, size: .lg, estilo: .outline, action: {
                 withAnimation(vivo.reduceMotion ? nil : LiquidMotion.suave) {
                     if running { vivo.registerFromFoco() } else { vivo.session.startSetTimer() }
                 }
-            } label: {
+            }) {
                 Text(running ? String(localized: "Stop and save") : String(localized: "Start"))
                     .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(LiquidColor.tinta900)
-                    .padding(.horizontal, CenitMetrics.cardPadding).padding(.vertical, CenitMetrics.space2)
-                    .overlay(Capsule().strokeBorder(LiquidColor.tinta10, lineWidth: 1))
             }
-            .buttonStyle(.plain)
             .padding(.top, FocoMetrics.capcionTop)
         }
     }
@@ -497,8 +491,7 @@ struct HojaFoco: View {
         let zone = max(1, min(5, Int((pct * 5).rounded(.up))))
         return Text("ZONE \(zone) · \(bpm)")
             .font(StrandFont.caption.weight(.bold)).foregroundStyle(LiquidColor.tinta500)
-            .padding(.horizontal, CenitMetrics.space2).padding(.vertical, LiquidSpace.s075)
-            .overlay(Capsule().strokeBorder(LiquidColor.tinta10, lineWidth: 1))
+            .outlineCapsule(.outline, size: .sm, theme: vivo.sheet.theme)
     }
 
     // MARK: - Formato

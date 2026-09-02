@@ -389,7 +389,7 @@ struct TrainingBodyScreen: View {
     /// «Mark all recovered» — sets the recovery-reset point so the map reads all-fresh, without deleting
     /// any workout history. (FER-525)
     private var markRecoveredButton: some View {
-        OutlineCapsule(theme: theme, size: .md, estilo: .outline, action: { showResetConfirm = true }) {
+        OutlineCapsule(theme: theme, size: .lg, estilo: .outline, action: { showResetConfirm = true }) {
             HStack(spacing: 6) {
                 Image(systemName: "arrow.counterclockwise").font(StrandFont.glyph(.chevron, weight: .semibold))
                 Text("Mark all recovered").font(StrandFont.caption)
