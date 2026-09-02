@@ -120,75 +120,18 @@ public struct MetricRow: View {
     }
 }
 
-// MARK: - Metric row button style
-
-/// Wraps a `MetricRow` inside a `Button` so the *whole* row is the tap target and a subtle background
-/// tint appears while pressed — the touch feedback the flat `.plain` style lacks. Pass the by-hour
-/// theme's faint fill (e.g. `theme.ink.opacity(0.05)`) so the press reads on warm paper. (FER-161)
-public struct MetricRowButtonStyle: ButtonStyle {
-    var pressedFill: Color
-    public init(pressedFill: Color) { self.pressedFill = pressedFill }
-    public func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .background(configuration.isPressed ? pressedFill : Color.clear)
-            .contentShape(Rectangle())
-            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
-    }
-}
-
-// MARK: - Press feedback styles (shared)
-//
-// The «Instrumento» screens give every tappable surface the touch feedback the flat `.plain` style
-// lacks. Three shapes, by what's being pressed:
-//   • `MetricRowButtonStyle` (above) — a transparent row: fill a faint tint BEHIND the label.
-//   • `SurfacePressStyle`            — a card that paints its OWN surface: overlay the tint ON TOP,
-//                                      clipped to the rounded shape (a behind-fill would be hidden).
-//   • `ControlPressStyle`            — a filled / text button: a quiet scale + dim (a tint wouldn't read).
-// Pass the by-hour theme's faint fill (e.g. `theme.ink.opacity(0.05)`) so the press reads on warm paper.
-
-/// Press feedback for a card that paints its own background: overlay a faint tint, clipped to the
-/// card's rounded shape, while pressed. Same 5%-ink + easeOut(0.12) feel as `MetricRowButtonStyle`.
-public struct SurfacePressStyle: ButtonStyle {
-    var tint: Color
-    var radius: CGFloat
-    public init(tint: Color, radius: CGFloat = CenitMetrics.cardRadius) {
-        self.tint = tint; self.radius = radius
-    }
-    public func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .overlay {
-                RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .fill(tint)
-                    .opacity(configuration.isPressed ? 1 : 0)
-            }
-            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
-    }
-}
-
-/// Press feedback for a filled or text button: a quiet scale + dim while pressed (the `interactive`
-/// spring), since a tint overlay wouldn't read on a saturated fill.
-public struct ControlPressStyle: ButtonStyle {
-    public init() {}
-    public func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .opacity(configuration.isPressed ? 0.82 : 1)
-            .scaleEffect(configuration.isPressed ? 0.98 : 1)
-            .animation(StrandMotion.interactive, value: configuration.isPressed)
-    }
-}
-
-// MARK: - Inline flag chip
+// MARK: - Inline flag chip (file-private — only MetricRow consumes it)
 
 /// A tiny outlined chip for inline caveats next to a label (e.g. "Low conf" on HRV after a short
-/// night). Smaller and quieter than a `StatePill` — it annotates, it doesn't announce.
-public struct InlineFlagChip: View {
+/// night). Annotates; doesn't announce.
+private struct InlineFlagChip: View {
     let text: LocalizedStringKey
     var color: Color
-    public init(_ text: LocalizedStringKey, color: Color = StrandPalette.statusWarning) {
+    init(_ text: LocalizedStringKey, color: Color = StrandPalette.statusWarning) {
         self.text = text
         self.color = color
     }
-    public var body: some View {
+    var body: some View {
         Text(text)
             .textCase(.uppercase)
             .font(.system(size: 8.5, weight: .semibold))
@@ -215,20 +158,6 @@ public struct InlineFlagChip: View {
     }
     .padding(.horizontal, 18)
     .frame(width: 340, height: 220)
-    .background(InstrumentoTheme.base.paper)
-    .preferredColorScheme(.light)
-}
-
-#Preview("MetricRow · pressed") {
-    // The pressed background tint the row shows mid-tap (rendered statically here).
-    Button {} label: {
-        MetricRow(label: "Esfuerzo del día", value: "8.5",
-                  sparkline: [6, 9, 7, 11, 8, 10, 8.5], sparkColor: StrandPalette.strain066,
-                  showsChevron: true)
-    }
-    .buttonStyle(MetricRowButtonStyle(pressedFill: InstrumentoTheme.base.ink.opacity(0.06)))
-    .padding(.horizontal, 18)
-    .frame(width: 340, height: 80)
     .background(InstrumentoTheme.base.paper)
     .preferredColorScheme(.light)
 }

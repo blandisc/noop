@@ -244,8 +244,8 @@ final class LiquidGlassTests: XCTestCase {
         XCTAssertEqual(
             LiquidMetricTile.a11yLabel(label: "SUEÑO", value: "7:20", unit: "", delta: "En tu base"),
             "SUEÑO, 7:20, En tu base")
-        XCTAssertEqual(LiquidCargaBar.a11yLabel(label: "CARGA", status: "EN EQUILIBRIO · 1.03"),
-                       "CARGA: EN EQUILIBRIO · 1.03")
+        XCTAssertEqual(LiquidCargaEscala.a11yLabel(eje: "CARGA", rotulo: "EN EQUILIBRIO", razon: 1.03),
+                       "CARGA: EN EQUILIBRIO, 1.03")
     }
 
     /// El contrato de VoiceOver del Ecosistema (FER-10): veredicto + valores + guardián,

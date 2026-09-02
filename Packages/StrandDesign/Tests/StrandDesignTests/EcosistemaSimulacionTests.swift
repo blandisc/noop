@@ -118,35 +118,6 @@ final class EcosistemaSimulacionTests: XCTestCase {
         }
     }
 
-    // MARK: Tributo (las lunas alimentan el orbe)
-
-    func test_tributo_deterministaYAbsorbido() {
-        let luna = CGPoint(x: 88, y: 122)
-        let a = Sim.tributo(2, t: 7.25, luna: luna, radioLuna: 13)
-        let b = Sim.tributo(2, t: 7.25, luna: luna, radioLuna: 13)
-        XCTAssertEqual(a, b, "mismo instante → misma mota (sin estado)")
-        // Alfa acotada y con fade (nace y muere apagándose).
-        for k in 0..<M.tributoParticulas {
-            for paso in 0...20 {
-                let m = Sim.tributo(k, t: Double(paso) * 0.17, luna: luna, radioLuna: 13)
-                XCTAssertGreaterThanOrEqual(m.alfa, 0)
-                XCTAssertLessThanOrEqual(m.alfa, 0.71)
-                XCTAssertGreaterThan(m.tamano, 0)
-            }
-        }
-        // El viaje ACERCA la mota al orbe: comparar dos fracciones del mismo ciclo.
-        // fr = frac(t/periodo): t1 → fr≈0.15, t2 → fr≈0.75 (misma mota k=0).
-        let t1 = M.tributoPeriodo * 0.15, t2 = M.tributoPeriodo * 0.75
-        let temprano = Sim.tributo(0, t: t1, luna: luna, radioLuna: 13)
-        let tarde = Sim.tributo(0, t: t2, luna: luna, radioLuna: 13)
-        func dist(_ p: CGPoint) -> Double {
-            let dx = Double(p.x - Sim.Geometria.centro.x)
-            let dy = Double(p.y - Sim.Geometria.centro.y)
-            return (dx * dx + dy * dy).squareRoot()
-        }
-        XCTAssertLessThan(dist(tarde.pos), dist(temprano.pos),
-                          "la mota viaja de la luna HACIA el orbe")
-    }
 
     func test_bump_viveEnElContacto() {
         XCTAssertGreaterThan(Sim.bumpEn(0.8), 0.95)

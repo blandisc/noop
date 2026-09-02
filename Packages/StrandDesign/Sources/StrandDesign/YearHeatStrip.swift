@@ -90,19 +90,6 @@ public struct YearHeatStrip: View {
         self.valueWord = valueWord
     }
 
-    /// The number of week columns the grid will draw for `days` (Monday-first weeks). Exposed so a
-    /// caller that wants the grid to fill a known width can size `cellSize` to it without duplicating
-    /// the bucketing. Returns 0 for an empty set. (FER-225)
-    public static func weekColumns(for days: [RecoveryDay]) -> Int {
-        let sorted = days.sorted { $0.date < $1.date }
-        guard let first = sorted.first?.date else { return 0 }
-        var c = Calendar(identifier: .gregorian)
-        c.firstWeekday = 2
-        let wd = c.component(.weekday, from: first)
-        let firstRow = (wd + 5) % 7                       // Monday-first 0…6
-        return Int(ceil(Double(firstRow + sorted.count) / 7.0))
-    }
-
     /// Number of week-columns a rolling 90-day window can ever span. A 90-day window is 12.86 weeks, so it
     /// needs 13 columns when it starts on a Mon/Tue and 14 otherwise — the exact weekday depends on today.
     public static let rollingWindowColumns = 14

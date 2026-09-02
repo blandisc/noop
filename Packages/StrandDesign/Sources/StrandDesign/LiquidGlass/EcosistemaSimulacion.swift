@@ -466,30 +466,6 @@ public enum EcosistemaSimulacion {
 
     static func lerpCG(_ a: CGFloat, _ b: CGFloat, _ u: CGFloat) -> CGFloat { a + (b - a) * u }
 
-    // MARK: Tributo (las lunas decisoras ALIMENTAN el orbe — revisión de usuario)
-
-    /// La mota `k` (0..<`tributoParticulas`) del chorro que fluye de la luna al orbe en
-    /// el instante `t`. Nace en la superficie de la luna, muere ya adentro del borde del
-    /// orbe (absorbida: encoge y se apaga en ambos extremos). La deriva lateral rompe la
-    /// línea recta — es un fluido, no un láser. Determinista; se calcula desde la
-    /// posición ACTUAL de la luna, así el chorro se curva solo con la órbita.
-    /// El guardián NO tributa (vigila, no vota) y una luna hueca no tiene qué dar.
-    public static func tributo(_ k: Int, t: TimeInterval,
-                               luna: CGPoint, radioLuna: CGFloat) -> Mota {
-        let fr = (t / LiquidEcosistemaMotion.tributoPeriodo + Double(k) * 0.618)
-            .truncatingRemainder(dividingBy: 1)
-        let dx = Double(Geometria.centro.x - luna.x)
-        let dy = Double(Geometria.centro.y - luna.y)
-        let d = max(1, (dx * dx + dy * dy).squareRoot())
-        let ux = dx / d, uy = dy / d
-        let s = lerp(Double(radioLuna) + 2, d - Double(Geometria.radioOrbe) * 0.82, suave(fr))
-        let lat = sin(fr * 2 * .pi + Double(k) * 2.1) * 2.2 * sin(.pi * fr)
-        return Mota(pos: CGPoint(x: Double(luna.x) + ux * s - uy * lat,
-                                 y: Double(luna.y) + uy * s + ux * lat),
-                    alfa: sin(.pi * fr) * 0.7,
-                    tamano: CGFloat(2.6 - 1.2 * fr))
-    }
-
     // MARK: Acreción (calibrando: espirales que caen al embrión)
 
     public struct Mota: Equatable, Sendable {
