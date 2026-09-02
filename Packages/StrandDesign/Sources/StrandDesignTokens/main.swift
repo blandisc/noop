@@ -460,10 +460,7 @@ public let catalogEntries: [CatalogEntry] = [
                  archivo: "LiquidGlass/LiquidSheetFoot.swift",
                  cuandoUsarlo: "Pastilla caps de procedencia en historial/detalle de entrenamiento (Apple/Manual/Medido). `tono: nil` = neutro.",
                  cuandoNo: "No en pie de hoja con glifo (usa `LiquidOrigenChip`); no como pastilla de estado (`LiquidStatePill`)."),
-    CatalogEntry(rol: "Badge de procedencia (Instrumento)", simbolo: "SourceBadge",
-                 archivo: "Components.swift",
-                 cuandoUsarlo: "Legado — solo mientras quede un consumidor Instrumento; preferir `LiquidOrigenBadge`.",
-                 cuandoNo: "No en pantallas Liquid nuevas (usa `LiquidOrigenBadge`); no en pie de hoja (usa `LiquidOrigenChip`)."),
+    // SourceBadge (Instrumento) retirado en FER-294 B.2 — consumidores migrados a LiquidOrigenBadge.
     // —— Botones / confirmación / toast ——
     CatalogEntry(rol: "Botón pill Liquid", simbolo: "LiquidGlassButton",
                  archivo: "LiquidGlass/LiquidGlassButton.swift",

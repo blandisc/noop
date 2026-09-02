@@ -7,13 +7,11 @@ import CenitStore
 import Foundation
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 
-// MARK: - WorkoutDetailScreen — el detalle de UNA sesión, en «Instrumento» (FER-261)
+// MARK: - WorkoutDetailScreen — detalle de UNA sesión (FER-261 → Liquid Glass · FER-294 B.2)
 //
-// Hermana de `StrainDetailScreen`/`SleepDetailScreen`: REUSA su lenguaje (hero + bloques separados por
-// hairline + `theme: InstrumentoTheme` explícito + papel cálido), con su propio contenido. Se PUSHEA
-// dentro del único `NavigationStack` que vive en la sheet de Entrenamientos (`WorkoutsView`) — NO crea un
-// `NavigationStack` anidado (un stack anidado cruzando el path de la tab crasheaba SwiftUI, FER-171); el
-// back nativo vuelve a la lista.
+// Hermana de `StrainDetailScreen`/`SleepDetailScreen`: héroe + bloques separados por `LiquidCapilar`
+// + aire (`seccionAire`). Se PUSHEA dentro del único `NavigationStack` de la sheet de Entrenamientos
+// (`WorkoutsView`) — NO crea un `NavigationStack` anidado (FER-171).
 //
 // El héroe DEGRADA con honestidad: esfuerzo (strain, strap-only) → FC media → duración. Nunca pinta un 0
 // ni un «—» como protagonista falso. Las zonas de FC solo aparecen si la sesión las trae (`zonesJSON`);
@@ -22,8 +20,7 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 // fuente, y reusa el `Repository` tal cual — no toca la lógica de merge/persistencia.
 
 struct WorkoutDetailScreen: View {
-    /// The live «Instrumento» theme, passed explicitly (sheets/pushes from a sheet don't reliably carry
-    /// it; the sibling detail screens do the same). (FER-162)
+    /// Theme still passed for `BackButton` / `ManualWorkoutSheet` / `hrZoneRamp` (FER-162).
     var theme: InstrumentoTheme = .base
     /// The session to show. A value type — after a mutation we reload the list and pop, rather than try
     /// to keep a stale copy live.
@@ -66,9 +63,10 @@ struct WorkoutDetailScreen: View {
     @ObserveInjection private var inject
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
+            VStack(alignment: .leading, spacing: 0) {
                 hero
                 contextLine
+                    .padding(.top, LiquidSpace.s300)
                 if let zones = WorkoutZones.percents(row.zonesJSON) {
                     blockDivider
                     zonesBlock(zones)
@@ -92,14 +90,16 @@ struct WorkoutDetailScreen: View {
                 blockDivider
                 originBlock
                 methodNote
+                    .padding(.top, LiquidSpace.s300)
             }
-            .padding(CenitMetrics.screenPadding)
+            .padding(LiquidSpace.s600)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .task(id: row.startTs) {
             if experimentalMetrics { await loadHRR() }
             await loadVolume()
         }
+        .entrenarHojaFondo(tono: .neutro)
         .pantallaFondo()
         .navigationTitle(Text(routineTitle ?? WorkoutSource.displaySport(row.sport)))
         .navigationBarTitleDisplayMode(.inline)
@@ -114,7 +114,7 @@ struct WorkoutDetailScreen: View {
             }
             ToolbarItem(placement: .primaryAction) { actionMenu }
         }
-        .toolbarBackground(theme.paper, for: .navigationBar)
+        .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .sheet(item: $editTarget) { target in
             ManualWorkoutSheet(editing: target.row, theme: theme) { saved, replacing in
@@ -133,7 +133,10 @@ struct WorkoutDetailScreen: View {
         .enableInjection()   // Inject: recarga en caliente (no-op en Release)
     }
 
-    private var blockDivider: some View { Rectangle().fill(theme.hairline).frame(height: 1) }
+    private var blockDivider: some View {
+        LiquidCapilar(eje: .horizontal)
+            .padding(.vertical, LiquidSpace.seccionAire)
+    }
 
     // MARK: - Hero (esfuerzo → FC media → duración, degradación honesta)
 
@@ -154,13 +157,13 @@ struct WorkoutDetailScreen: View {
 
     private var hero: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(heroOverline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text(heroOverline).liquidLabel().foregroundStyle(LiquidColor.tinta500)
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text(heroValue)
-                    .instrumentoHero(46)
+                    .font(LiquidType.numeralHoja)
                     .foregroundStyle(heroColor)
                 if let unit = heroUnit {
-                    Text(unit).font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
+                    Text(unit).font(LiquidType.numeralHojaUnidad).foregroundStyle(LiquidColor.tinta500)
                 }
             }
         }
@@ -188,20 +191,20 @@ struct WorkoutDetailScreen: View {
         case .duration:  return nil
         }
     }
-    /// Color only on the measured datum: strain ember, HR rose; duration stays ink (it's not a saturated
-    /// physiological figure, so coloring it would overclaim).
+    /// Color only on the measured datum: strain amber, HR rose; duration stays tinta900 (it's not a
+    /// saturated physiological figure, so coloring it would overclaim).
     private var heroColor: Color {
         switch heroKind {
-        case .strain:    return theme.dataStrain
-        case .heartRate: return theme.dataHeart
-        case .duration:  return theme.ink
+        case .strain:    return LiquidColor.ambar
+        case .heartRate: return LiquidColor.rosa
+        case .duration:  return LiquidColor.tinta900
         }
     }
 
     private var contextLine: some View {
         Text(contextText)
-            .font(StrandFont.subhead)
-            .foregroundStyle(theme.inkSecondary)
+            .font(Font.system(size: LiquidType.lecturaHojaBase))
+            .foregroundStyle(LiquidColor.tinta700)
             .fixedSize(horizontal: false, vertical: true)
     }
     private var contextText: String {
@@ -217,7 +220,7 @@ struct WorkoutDetailScreen: View {
         // sleep-stage bar / the old aggregate zones bar, but with the warm `hrZoneRamp`.
         let total = max(percents.reduce(0, +), 0.001)
         return VStack(alignment: .leading, spacing: 12) {
-            Text("Heart-rate zones").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("Heart-rate zones").liquidLabel().foregroundStyle(LiquidColor.tinta500)
             GeometryReader { geo in
                 HStack(spacing: 2) {
                     ForEach(0..<5, id: \.self) { i in
@@ -228,15 +231,15 @@ struct WorkoutDetailScreen: View {
                 }
             }
             .frame(height: 34)
-            .clipShape(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(zonesA11y(percents))
             HStack(spacing: 0) {
                 ForEach(0..<5, id: \.self) { i in
                     VStack(spacing: 3) {
-                        Text("Z\(i + 1)" as String).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                        Text("Z\(i + 1)" as String).font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                         Text("\(Int(percents[i].rounded()))%")
-                            .font(StrandFont.captionNumber).foregroundStyle(theme.ink)
+                            .font(LiquidType.valorS).foregroundStyle(LiquidColor.tinta900)
                     }
                     .frame(maxWidth: .infinity)
                 }
@@ -252,42 +255,42 @@ struct WorkoutDetailScreen: View {
     // MARK: - FC media / máx
 
     private var heartBlock: some View {
-        HStack(spacing: 48) {
-            if let avg = row.avgHr { stat("Avg HR", "\(avg)", unit: String(localized: "bpm"), color: theme.dataHeart) }
-            if let mx = row.maxHr { stat("Max HR", "\(mx)", unit: String(localized: "bpm"), color: theme.dataHeart) }
+        HStack(spacing: LiquidSpace.handoff44) {
+            if let avg = row.avgHr { stat("Avg HR", "\(avg)", unit: String(localized: "bpm"), color: LiquidTono.rosa.rotulo) }
+            if let mx = row.maxHr { stat("Max HR", "\(mx)", unit: String(localized: "bpm"), color: LiquidTono.rosa.rotulo) }
         }
     }
 
-    // MARK: - Distancia / energía / volumen (apoyos en ink, con disclaimer si no es WHOOP)
+    // MARK: - Distancia / energía / volumen (apoyos en tinta900, con disclaimer si no es WHOOP)
 
     private var supportsBlock: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 48) {
+            HStack(spacing: LiquidSpace.handoff44) {
                 if let m = row.distanceM, m > 0 {
-                    stat("Distance", UnitFormatter.distanceFromMeters(m, system: unitSystem), unit: nil, color: theme.ink)
+                    stat("Distance", UnitFormatter.distanceFromMeters(m, system: unitSystem), unit: nil, color: LiquidColor.tinta900)
                 }
                 if let k = row.energyKcal, k > 0 {
-                    stat("Energy", grouped(k), unit: String(localized: "kcal"), color: theme.ink)
+                    stat("Energy", grouped(k), unit: String(localized: "kcal"), color: LiquidColor.tinta900)
                 }
                 // Strength-tracker volume when a logged session overlaps this workout (time join only).
                 if volumeKg > 0 {
-                    stat("Volume", StrengthHistoryFormat.volume(volumeKg, system: unitSystem), unit: nil, color: theme.ink)
+                    stat("Volume", StrengthHistoryFormat.volume(volumeKg, system: unitSystem), unit: nil, color: LiquidColor.tinta900)
                 }
             }
             if WorkoutSource.classify(row.source) != .whoop {
                 Text("Estimated by the source.")
-                    .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
             }
         }
     }
 
-    /// One label-over-value support (ink overline + value). Color only when the caller passes a data hue.
+    /// One label-over-value support (liquidLabel + value). Color only when the caller passes a data hue.
     private func stat(_ label: LocalizedStringKey, _ value: String, unit: String?, color: Color) -> some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text(label).liquidLabel().foregroundStyle(LiquidColor.tinta500)
             HStack(alignment: .firstTextBaseline, spacing: 3) {
-                Text(value).font(StrandFont.number(17)).foregroundStyle(color)
-                if let unit { Text(unit).font(StrandFont.unit).foregroundStyle(theme.inkTertiary) }
+                Text(value).font(LiquidType.valorM).foregroundStyle(color)
+                if let unit { Text(unit).font(LiquidType.unidad).foregroundStyle(LiquidColor.tinta500) }
             }
         }
     }
@@ -296,8 +299,10 @@ struct WorkoutDetailScreen: View {
 
     private func notesBlock(_ notes: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Notes").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text(notes).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+            Text("Notes").liquidLabel().foregroundStyle(LiquidColor.tinta500)
+            Text(notes)
+                .font(Font.system(size: LiquidType.lecturaHojaBase))
+                .foregroundStyle(LiquidColor.tinta900)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -306,8 +311,8 @@ struct WorkoutDetailScreen: View {
 
     private var originBlock: some View {
         HStack(spacing: 8) {
-            Text("Source").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            workoutSourceBadge(for: row.source, theme: theme)
+            Text("Source").liquidLabel().foregroundStyle(LiquidColor.tinta500)
+            workoutOrigenBadge(for: row.source)
         }
     }
 
@@ -316,7 +321,7 @@ struct WorkoutDetailScreen: View {
     /// fact, not a gap.
     private var methodNote: some View {
         Text(strainMethodNote)
-            .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
             .fixedSize(horizontal: false, vertical: true)
     }
     private var strainMethodNote: LocalizedStringKey {
@@ -332,7 +337,9 @@ struct WorkoutDetailScreen: View {
 
     @ViewBuilder private var actionMenu: some View {
         Button { showActionMenu = true } label: {
-            Image(systemName: "ellipsis").foregroundStyle(theme.ink)
+            Image(systemName: "ellipsis")
+                .font(LiquidType.iconSF(size: 15))
+                .foregroundStyle(LiquidColor.tinta900)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Session actions")
@@ -421,46 +428,54 @@ struct WorkoutDetailScreen: View {
 
     /// The HRR block, or nil when there's nothing to show (loading / no stored HR). Placed after the
     /// heart block because it's a post-effort cardiac read. Color lives only on the bpm datum
-    /// (`dataHeart`), hierarchy by space — the «Instrumento» DNA.
+    /// (`LiquidColor.rosa`); hierarchy by space — sobrio Liquid Glass.
     @ViewBuilder private var hrrBlock: some View {
         switch hrr {
         case .loading, .noData:
             EmptyView()
         case .noCoverage:
             VStack(alignment: .leading, spacing: 6) {
-                Text("Cardiac recovery · 60 s").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("Cardiac recovery · 60 s").liquidLabel().foregroundStyle(LiquidColor.tinta500)
                 Text("No clean recovery reading for this session.")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                    .font(Font.system(size: LiquidType.lecturaHojaBase))
+                    .foregroundStyle(LiquidColor.tinta500)
                     .fixedSize(horizontal: false, vertical: true)
             }
         case let .reading(bpm, trend):
             // Pink anchor bar (chrome, static) + a staggered column: the overline is fixed; the number,
             // verdict, baseline and disclaimer rise+fade 70 ms apart. Color lives only on the bpm datum.
             HStack(alignment: .top, spacing: 11) {
-                RoundedRectangle(cornerRadius: 2).fill(theme.dataHeart) // token-exempt: geometría de dato (barra ancla HRR)
+                RoundedRectangle(cornerRadius: 2).fill(LiquidColor.rosa) // token-exempt: geometría de dato (barra ancla HRR)
                     .frame(width: 3).padding(.vertical, 3)
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Cardiac recovery · 60 s").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text("Cardiac recovery · 60 s").liquidLabel().foregroundStyle(LiquidColor.tinta500)
                     hrrRise(0) {
                         HStack(alignment: .firstTextBaseline, spacing: 4) {
-                            Text("\(bpm)").instrumentoHero(40).foregroundStyle(theme.dataHeart)
-                            Text("bpm in 60 s").font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
+                            Text("\(bpm)")
+                                .font(LiquidType.valorTileL)
+                                .foregroundStyle(LiquidColor.rosa)
+                            Text("bpm in 60 s")
+                                .font(LiquidType.unidad)
+                                .foregroundStyle(LiquidColor.tinta500)
                         }
                     }
                     hrrRise(1) {
                         Text(hrrNote(trend))
-                            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                            .font(Font.system(size: LiquidType.lecturaHojaBase))
+                            .foregroundStyle(LiquidColor.tinta700)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     if let base = trend.baselineBpm, trend.nPrior >= 2 {
                         hrrRise(2) {
                             Text("vs your normal · ~\(Int(base.rounded())) bpm · \(trend.nPrior) sessions")
-                                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                                .font(LiquidType.captionLectura)
+                                .foregroundStyle(LiquidColor.tinta500)
                         }
                     }
                     hrrRise(3) {
                         Text("Personal trend, not a clinical threshold. Experimental reading.")
-                            .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                            .font(LiquidType.captionLectura)
+                            .foregroundStyle(LiquidColor.tinta500)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
@@ -550,21 +565,25 @@ struct WorkoutDetailScreen: View {
     }
 }
 
-// MARK: - Shared source badge (list + detail)
+// MARK: - Shared source badge (detail)
 
-/// The origin badge, colored per source (the user's choice over an all-ink treatment): Whoop ember, Apple
-/// blue, Detected neutral ink (it's an honest "we guessed"), Manual amber. Built from the locked
-/// `SourceBadge`. A free function so the list's rows and the detail's "Source" line stay identical.
+/// Origin badge via `LiquidOrigenBadge`: measured → verdePrimario, Apple → azul, detected → neutro,
+/// manual → atencionTexto. Free function so callers stay identical.
 @ViewBuilder
-func workoutSourceBadge(for source: String, theme: InstrumentoTheme) -> some View {
-    let (label, tint, a11y): (LocalizedStringKey, Color, LocalizedStringKey) = {
-        switch WorkoutSource.classify(source) {
-        case .whoop:    return ("Measured on device", theme.dataStrain, "Source: measured on device")
-        case .apple:    return ("Apple", theme.dataSpO2, "Source Apple Health")
-        case .detected: return ("Detected", theme.inkSecondary, "Source on-device detected")
-        case .manual:   return ("Manual", theme.warning, "Source manual entry")
-        }
-    }()
-    SourceBadge(label, tint: tint).accessibilityLabel(Text(a11y))
+func workoutOrigenBadge(for source: String) -> some View {
+    switch WorkoutSource.classify(source) {
+    case .whoop:
+        LiquidOrigenBadge(String(localized: "Measured on device"), tono: LiquidColor.verdePrimario)
+            .accessibilityLabel(Text("Source: measured on device"))
+    case .apple:
+        LiquidOrigenBadge(String(localized: "Apple"), tono: LiquidColor.azul)
+            .accessibilityLabel(Text("Source Apple Health"))
+    case .detected:
+        LiquidOrigenBadge(String(localized: "Detected"), tono: nil)
+            .accessibilityLabel(Text("Source on-device detected"))
+    case .manual:
+        LiquidOrigenBadge(String(localized: "Manual"), tono: LiquidColor.atencionTexto)
+            .accessibilityLabel(Text("Source manual entry"))
+    }
 }
 #endif
