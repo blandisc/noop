@@ -1369,17 +1369,17 @@ struct LiveStrengthSheet: View {
             Image(systemName: "checkmark.seal")
                 .font(StrandFont.glyph(.empty)).foregroundStyle(theme.inkSecondary)
                 .accessibilityHidden(true)
-            Text("Nothing to save").font(InstrumentoType.groteskHeadline(20)).foregroundStyle(theme.ink)
+            Text("Nothing to save")
+                .font(LiquidType.displayS)
+                .tracking(LiquidType.displaySTracking)
+                .foregroundStyle(LiquidColor.tinta900)
             Text("Your history stays clean: no sets were logged this session.")
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .font(StrandFont.subhead).foregroundStyle(LiquidColor.tinta700)
                 .fixedSize(horizontal: false, vertical: true)
-            Button { model.endStrengthSession(save: false) } label: {
-                Text("Got it")
-                    .font(InstrumentoType.groteskHeadline(17)).foregroundStyle(theme.paper)
-                    .frame(maxWidth: .infinity).padding(.vertical, LiquidSpace.ctaVertical)
-                    .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+            StrandCTAButton("Got it", tint: LiquidColor.tinta900) {
+                model.endStrengthSession(save: false)
             }
-            .buttonStyle(.plain).padding(.top, CenitMetrics.space1)
+            .padding(.top, CenitMetrics.space1)
             .accessibilityLabel(Text("Got it, close the session"))
         }
         .padding(.horizontal, CenitMetrics.screenPadding)
@@ -1434,19 +1434,13 @@ struct LiveStrengthSheet: View {
 
             // copy.md «Acta»: «Imprimir recibo» — el handoff manda, sustituye a «Compartir…». El
             // destino no cambia: el recibo térmico ya existente (`ReceiptPrinterScreen`).
-            Button { shareReceipt = ShareRef(sessionId: session.id) } label: {
-                Label("Print receipt", systemImage: "printer")
-                    .font(StrandFont.subhead).fontWeight(.medium)
-                    .foregroundStyle(theme.ink)
-                    .frame(maxWidth: .infinity).padding(.vertical, CenitMetrics.rowVPad)
-                    .background(RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous)
-                        .strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            LiquidGlassButton("Print receipt", variant: .solida, expands: true) {
+                shareReceipt = ShareRef(sessionId: session.id)
             }
-            .buttonStyle(.plain).padding(.top, LiquidSpace.s150)
+            .padding(.top, LiquidSpace.s150)
 
-            // copy.md «Acta»: «Listo» va en verde (quisquilloso ronda 4) — mismo token `positiveText`
-            // que ya marca «hecho» en el resto del acta (raise, PRs, etc.), no tinta.
-            StrandCTAButton("Done", tint: theme.positiveText) { model.closeStrengthSummary() }
+            // copy.md «Acta»: «Listo» va en verde (quisquilloso ronda 4) — mismo CTA, tint Liquid.
+            StrandCTAButton("Done", tint: LiquidColor.positivo) { model.closeStrengthSummary() }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .onAppear { playReceiptCountUp() }
@@ -1468,7 +1462,7 @@ struct LiveStrengthSheet: View {
     private func receiptHeader(_ s: StrengthSummary) -> some View {
         HStack(spacing: CenitMetrics.space2) {
             Text("\(String(localized: "Session saved")) · \(receiptDate(s.endTs))")
-                .groteskOverline().foregroundStyle(theme.inkTertiary)
+                .liquidKicker().foregroundStyle(LiquidColor.tinta700)
             Spacer(minLength: CenitMetrics.space2)
             // FER-742: when the watch recorded, its origin line replaces the iPhone's energy-origin dot below.
             if let src = s.energySource, !s.watchRecorded { originRow(src) }
@@ -1499,7 +1493,7 @@ struct LiveStrengthSheet: View {
     /// no strap any more (F7 "la banda nunca existió").
     private func originRow(_ src: EnergySource) -> some View {
         HStack(spacing: 5) {
-            Circle().fill(src == .bandCalculated ? theme.originBand : theme.originComputed)
+            Circle().fill(src == .bandCalculated ? LiquidColor.verdeCarga : LiquidColor.tinta500)
                 .frame(width: 6, height: 6)
             Text(src == .bandCalculated ? "Watch + calculated" : "Estimated")
                 .font(.system(size: 10)).foregroundStyle(theme.inkTertiary) // token-exempt: microtexto <11pt
@@ -1510,8 +1504,8 @@ struct LiveStrengthSheet: View {
     /// The editorial headline: «{rutina}, hecha.» + the session's one honest achievement.
     private func receiptHeadline(_ s: StrengthSummary) -> some View {
         (Text("\(s.routineName), done.") + Text(verbatim: "\n") + Text(verbatim: achievementLine(s)))
-            .font(InstrumentoType.groteskReceiptHeadline)
-            .tracking(InstrumentoType.groteskReceiptHeadlineTracking)
+            .font(LiquidType.displayL)
+            .tracking(LiquidType.displayLTracking)
             .foregroundStyle(theme.ink)
             .fixedSize(horizontal: false, vertical: true)
     }
@@ -1551,18 +1545,18 @@ struct LiveStrengthSheet: View {
                 let zero = format.numeral(0)
                 let numeral = Text(receiptCountUp ? value : zero)
                     .instrumentoHero(76).monospacedDigit().contentTransition(.numericText())
-                    .foregroundStyle(theme.dataStrain)
+                    .foregroundStyle(LiquidColor.ambar)
                     .lineLimit(1).minimumScaleFactor(0.6)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Effort").groteskOverline(small: true).foregroundStyle(theme.inkTertiary)
+                    Text("Effort").liquidLabel().foregroundStyle(LiquidColor.tinta500)
                     if reflow, let suffix = format.scaleSuffix {
                         numeral
-                        Text(suffix).font(StrandFont.unit).foregroundStyle(theme.dataStrain)
+                        Text(suffix).font(StrandFont.unit).foregroundStyle(LiquidColor.ambar)
                     } else {
                         HStack(alignment: .firstTextBaseline, spacing: 3) {
                             numeral
                             if let suffix = format.scaleSuffix {
-                                Text(suffix).font(StrandFont.unit).foregroundStyle(theme.dataStrain)
+                                Text(suffix).font(StrandFont.unit).foregroundStyle(LiquidColor.ambar)
                             }
                         }
                     }
@@ -1572,7 +1566,7 @@ struct LiveStrengthSheet: View {
                 .accessibilityValue(Text(Self.strainAccessibilityValue(value, scaleSuffix: format.scaleSuffix)))
             case .durationWithHR, .durationOnly:
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Duration").groteskOverline(small: true).foregroundStyle(theme.inkTertiary)
+                    Text("Duration").liquidLabel().foregroundStyle(LiquidColor.tinta500)
                     Text(receiptCountUp ? Self.clock(s.durationS) : "0:00")
                         .instrumentoHero(76).monospacedDigit().contentTransition(.numericText())
                         .foregroundStyle(theme.ink)
@@ -1651,15 +1645,14 @@ struct LiveStrengthSheet: View {
     private func receiptStat(_ label: LocalizedStringKey, value: String, zero: String,
                              unit: String? = nil, color: Color? = nil) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(label).groteskOverline(small: true).foregroundStyle(theme.inkTertiary)
+            Text(label).liquidLabel().foregroundStyle(LiquidColor.tinta500)
             HStack(alignment: .firstTextBaseline, spacing: 2) {
                 Text(receiptCountUp ? value : zero)
-                    .font(InstrumentoType.groteskReceiptStat)
-                    .tracking(InstrumentoType.groteskReceiptStatTracking)
+                    .font(LiquidType.valorL)
                     .monospacedDigit().contentTransition(.numericText())
-                    .foregroundStyle(color ?? theme.ink)
+                    .foregroundStyle(color ?? LiquidColor.tinta900)
                     .lineLimit(1).minimumScaleFactor(0.7)
-                if let unit { Text(unit).font(StrandFont.caption).foregroundStyle(theme.inkTertiary) }
+                if let unit { Text(unit).font(StrandFont.caption).foregroundStyle(LiquidColor.tinta500) }
             }
         }
         .accessibilityElement(children: .combine)
@@ -1677,9 +1670,9 @@ struct LiveStrengthSheet: View {
         HStack(spacing: 6) {
             Image(systemName: "checkmark")
                 .font(StrandFont.glyph(.inline, weight: .semibold))
-                .foregroundStyle(theme.dataRecovery)
+                .foregroundStyle(LiquidColor.verdeProfundo)
                 .accessibilityHidden(true)
-            Text(Self.healthSavedText(s)).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+            Text(Self.healthSavedText(s)).font(StrandFont.caption).foregroundStyle(LiquidColor.tinta700)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .accessibilityElement(children: .combine)
@@ -1710,7 +1703,7 @@ struct LiveStrengthSheet: View {
         let durDelta = minDiff == 0 ? "=" : (minDiff > 0
             ? String(localized: "+\(minDiff) min") : String(localized: "−\(-minDiff) min"))
         return VStack(alignment: .leading, spacing: 10) {
-            Text("Against your last \(s.routineName)").groteskOverline().foregroundStyle(theme.inkTertiary)
+            Text("Against your last \(s.routineName)").liquidKicker().foregroundStyle(LiquidColor.tinta700)
             comparisonRow("Volume", current: s.volumeKg, prev: c.prevVolumeKg,
                           delta: volDelta, positive: s.volumeKg > c.prevVolumeKg)
             comparisonRow("Sets", current: Double(s.setCount), prev: Double(c.prevSetCount),
@@ -1726,22 +1719,22 @@ struct LiveStrengthSheet: View {
                                delta: String, positive: Bool, neutral: Bool = false) -> some View {
         let maxV = max(current, prev, 1)
         return HStack(spacing: 10) {
-            Text(label).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+            Text(label).font(StrandFont.caption).foregroundStyle(LiquidColor.tinta700)
                 .frame(width: 64, alignment: .leading)
             GeometryReader { geo in
                 let w = geo.size.width
                 ZStack(alignment: .leading) {
-                    Capsule().fill(theme.hairline)
-                    Capsule().fill(neutral ? theme.hairlineStrong : theme.dataRecovery)
+                    Capsule().fill(LiquidColor.tinta10)
+                    Capsule().fill(neutral ? LiquidColor.tinta10 : LiquidColor.verdeCarga)
                         .opacity(neutral || positive ? 1 : 0.75)
                         .frame(width: max(4, w * (current / maxV)))
-                    Rectangle().fill(theme.ink).frame(width: 2, height: 14)
+                    Rectangle().fill(LiquidColor.tinta900).frame(width: 2, height: 14)
                         .offset(x: min(w - 2, max(0, w * (prev / maxV) - 1)))
                 }
             }
             .frame(height: 8)
             Text(delta).font(InstrumentoType.groteskNumber(12, weight: .regular))
-                .foregroundStyle(positive ? theme.positiveText : theme.inkSecondary)
+                .foregroundStyle(positive ? LiquidColor.positivo : LiquidColor.tinta700)
                 .frame(width: 56, alignment: .trailing)
                 .lineLimit(1).minimumScaleFactor(0.8)
         }
@@ -1756,20 +1749,20 @@ struct LiveStrengthSheet: View {
         VStack(alignment: .leading, spacing: CenitMetrics.space1) {
             HStack(spacing: CenitMetrics.space2) {
                 Image(systemName: "star").font(StrandFont.glyph(.inline, weight: .semibold))
-                    .foregroundStyle(theme.dataRecovery)
+                    .foregroundStyle(LiquidColor.rosa)
                 Text(prs.count == 1 ? String(localized: "A personal record")
                      : String(localized: "\(prs.count) personal records"))
-                    .font(StrandFont.subhead).fontWeight(.semibold).foregroundStyle(theme.ink)
+                    .font(StrandFont.subhead).fontWeight(.semibold).foregroundStyle(LiquidColor.tinta900)
             }
             .padding(.bottom, CenitMetrics.space1)
             ForEach(Array(prs.enumerated()), id: \.element.id) { i, pr in
                 HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.gap) {
                     (Text(verbatim: pr.exercise) + Text(verbatim: " · ") + Text(Self.prMetricLabel(pr.metric)))
-                        .font(StrandFont.caption).foregroundStyle(theme.ink)
+                        .font(StrandFont.caption).foregroundStyle(LiquidColor.tinta900)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    (Text(verbatim: prPriorText(pr)).foregroundColor(theme.inkTertiary)
+                    (Text(verbatim: prPriorText(pr)).foregroundColor(LiquidColor.tinta700)
                         + Text(verbatim: " → ")
-                        + Text(verbatim: prValue(pr)).fontWeight(.semibold).foregroundColor(theme.ink))
+                        + Text(verbatim: prValue(pr)).fontWeight(.semibold).foregroundColor(LiquidColor.tinta900))
                         // r26: los récords del recibo son valores → Grotesk tabular.
                         .font(InstrumentoType.groteskNumber(12, weight: .regular))
                 }
@@ -1787,15 +1780,15 @@ struct LiveStrengthSheet: View {
     /// «Por ejercicio»: one quiet row per exercise — sets · top datum · trend vs «la última vez».
     private func receiptExercises(_ lines: [StrengthSummary.ExerciseLine]) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("By exercise").groteskOverline().foregroundStyle(theme.inkTertiary)
+            Text("By exercise").liquidKicker().foregroundStyle(LiquidColor.tinta700)
                 .padding(.bottom, 2)  // token-exempt: ajuste óptico
             ForEach(Array(lines.enumerated()), id: \.element.id) { i, line in
                 HStack(spacing: CenitMetrics.gap) {
-                    Text(line.name).font(StrandFont.subhead).foregroundStyle(theme.ink)
+                    Text(line.name).font(StrandFont.subhead).foregroundStyle(LiquidColor.tinta900)
                         .lineLimit(1).minimumScaleFactor(0.8)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     Text(exerciseLineDetail(line))
-                        .font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkSecondary)
+                        .font(StrandFont.caption).monospacedDigit().foregroundStyle(LiquidColor.tinta700)
                     exerciseTrendGlyph(line.trend)
                 }
                 .frame(minHeight: 40)
@@ -1822,7 +1815,7 @@ struct LiveStrengthSheet: View {
         switch trend {
         case .some(1):
             StrandIcon.up.image.font(StrandFont.glyph(.chevron, weight: .semibold))
-                .foregroundStyle(theme.positiveText)
+                .foregroundStyle(LiquidColor.positivo)
                 .accessibilityLabel(Text("Up vs last time"))
         case .some(-1):
             Image(systemName: "arrow.down").font(StrandFont.glyph(.chevron, weight: .semibold))
@@ -1848,7 +1841,7 @@ struct LiveStrengthSheet: View {
         VStack(alignment: .leading, spacing: CenitMetrics.space2) {
             // Revisión final (g5-copy): copy.md «Acta» manda `COSTO CARDIOVASCULAR` para este rótulo,
             // no «Costo de recuperación» — dos frases distintas para el mismo bloque.
-            Text("Cardiovascular cost").groteskOverline(small: true).foregroundStyle(theme.inkTertiary)
+            Text("Cardiovascular cost").liquidLabel().foregroundStyle(LiquidColor.tinta500)
             Group {
                 if reflow {
                     VStack(alignment: .leading, spacing: CenitMetrics.space1) {
@@ -1988,7 +1981,11 @@ struct LiveStrengthSheet: View {
     }
 
     private func bandColor(_ b: SessionRecoveryCost.Band) -> Color {
-        switch b { case .light: return theme.dataRecovery; case .moderate: return theme.dataStrain; case .high: return theme.dataHeart }
+        switch b {
+        case .light: return LiquidColor.positivo
+        case .moderate: return LiquidColor.ambar
+        case .high: return LiquidColor.negativo
+        }
     }
 
     // MARK: Small builders

@@ -105,18 +105,9 @@ struct RPESheet: View {
 
     private var okButton: some View {
         VStack(spacing: CenitMetrics.space2) {
-            Button {
+            LiquidGlassButton("Ok ✓", variant: .primary, expands: true) {
                 onPick(selected)
-            } label: {
-                Text("Ok ✓")
-                    .font(InstrumentoType.grotesk(17, weight: .semibold))
-                    .foregroundStyle(theme.paper)
-                    // FER-89: re-vestido con el token del héroe de hoja — EntrenarMetrics.primaryButton
-                    // (46) en vez del 52 suelto.
-                    .frame(maxWidth: .infinity, minHeight: EntrenarMetrics.primaryButton)
-                    .background(theme.verdictDeep, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
             }
-            .buttonStyle(.plain)
             Text("RPE is optional · tap the set's RPE cell")
                 .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
         }
