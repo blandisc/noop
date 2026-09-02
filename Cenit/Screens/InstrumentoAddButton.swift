@@ -12,13 +12,12 @@ import StrandDesign
 // Decisiones que lo definen:
 //
 // · **Superficie con borde, no `patternBlock`.** La anatomía ganadora es la del botón flotante, no la
-//   del hub, y el motivo es medible: `patternBlock` (#EFEAE0) sobre papel (#F4F1E8) da **1.06:1** — la
-//   forma prácticamente no existe. Con `surface` + `hairlineStrong` (1.36:1 de borde) el control se
-//   lee, y un botón que flota sobre una lista en scroll NECESITA leerse. El hub hereda la corrección
-//   de paso.
+//   del hub, y el motivo es medible: `patternBlock` sobre papel daba contraste casi nulo (la forma
+//   prácticamente no existía). Con papel de tarjeta + borde de vidrio fuerte el control se lee, y un
+//   botón que flota sobre una lista en scroll NECESITA leerse. El hub hereda la corrección de paso.
 //
 // · **`prominent` para la salida de un flujo.** En el flujo de CREACIÓN el botón no agrega a algo que
-//   ya existe: es la SALIDA («Crear rutina con 3»). Ahí se llena de `dataStrain` como cualquier CTA
+//   ya existe: es la SALIDA («Crear rutina con 3»). Ahí se llena de ámbar como cualquier CTA
 //   terminal. En el modo agregar-a-lo-que-ya-existe se queda con borde: es una acción más, no el final
 //   del camino.
 //
@@ -38,23 +37,25 @@ struct InstrumentoAddButton: View {
     }
 
     private var foreground: Color {
-        if disabled { return theme.inkTertiary }
-        return prominent ? theme.paper : theme.ink
+        if disabled { return LiquidColor.tinta500 }
+        return prominent ? LiquidColor.papelTarjeta : LiquidColor.tinta900
     }
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 8) {
+            HStack(spacing: LiquidSpace.s200) {
                 if !disabled {
-                    StrandIcon.add.image.font(StrandFont.glyph(.chevron, weight: .semibold))
+                    StrandIcon.add.image.font(LiquidType.iconSF(size: 15))
                 }
-                Text(verbatim: label).font(InstrumentoType.grotesk(15, weight: .semibold))
+                Text(verbatim: label)
+                    .font(LiquidType.boton)
+                    .tracking(LiquidType.botonTracking)
             }
             .foregroundStyle(foreground)
             .frame(maxWidth: .infinity, minHeight: 44)
-            .background(prominent && !disabled ? AnyShapeStyle(theme.dataStrain) : AnyShapeStyle(theme.surface),
+            .background(prominent && !disabled ? AnyShapeStyle(LiquidColor.ambar) : AnyShapeStyle(LiquidColor.papelTarjeta),
                         in: shape)
-            .overlay(shape.strokeBorder(prominent && !disabled ? .clear : theme.hairlineStrong, lineWidth: 1))
+            .overlay(shape.strokeBorder(prominent && !disabled ? .clear : LiquidColor.vidrioBordeFuerte, lineWidth: 1))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -64,14 +65,14 @@ struct InstrumentoAddButton: View {
 
 #if DEBUG
 #Preview("InstrumentoAddButton") {
-    VStack(spacing: 12) {
+    VStack(spacing: LiquidSpace.s300) {
         InstrumentoAddButton(theme: .base, label: "Nueva rutina") {}
         InstrumentoAddButton(theme: .base, label: "Agregar 3 ejercicios") {}
         InstrumentoAddButton(theme: .base, label: "Crear rutina con 3", prominent: true) {}
         InstrumentoAddButton(theme: .base, label: "Elige al menos un ejercicio", disabled: true) {}
     }
     .padding(LiquidSpace.s600)
-    .background(InstrumentoTheme.base.paper)
+    .background(LiquidColor.fondoAlto)
 }
 #endif
 #endif

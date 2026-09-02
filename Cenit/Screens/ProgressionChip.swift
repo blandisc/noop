@@ -14,10 +14,10 @@ struct ProgressionChip: View {
 
     var body: some View {
         // FER-89: construido sobre `EntrenarChip` (E2) — encaja 1:1 con `.progression` (icono
-        // `arrow.up.right`, tono `theme.positiveText`). Antes el icono (`StrandIcon.up`, «arrow.up»
-        // liso) y el texto vivían en `theme.dataRecovery` — el hue de DATO de Recuperación, mal
-        // aplicado a un chip de progresión (auditoría FER-89) — la migración corrige el tono de paso.
-        // `theme` queda sin uso en el cuerpo (EntrenarChip lee `@Environment(\.instrumentoTheme)`
+        // `arrow.up.right`, tono de avance positivo). Antes el icono (`StrandIcon.up`, «arrow.up»
+        // liso) y el texto vivían en el hue de dato de recuperación — mal aplicado a un chip de
+        // progresión (auditoría FER-89); la migración corrige el tono de paso.
+        // `theme` queda sin uso en el cuerpo (EntrenarChip lee el environment de tema
         // solo), pero se conserva en la firma: el call site de `RoutineEditorScreen.swift:375` (E7,
         // fuera de esta fase) sigue pasándolo tal cual.
         EntrenarChip(.progression, verbatim: Self.summary(re, system: system, derived: derivedIncrementKg),
@@ -59,6 +59,6 @@ struct ProgressionChip: View {
         action: {}
     )
     .padding()
-    .background(InstrumentoTheme.base.paper)
+    .background(LiquidColor.fondoAlto)
 }
 #endif

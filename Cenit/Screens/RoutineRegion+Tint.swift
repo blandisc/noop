@@ -14,44 +14,51 @@ extension RoutineRegion {
         }
     }
 
-    /// Color de identidad de la rutina por región. DELEGA en `EntrenarFamily.tint` (FER-88): había
-    /// tres tablas del mismo color y una ya se había ido por su lado. Una identidad, una fuente.
-    func tint(_ theme: InstrumentoTheme) -> Color { family.tint(theme) }
+    /// Color de identidad de la rutina por región. Misma tabla que `EntrenarFamily.tint`
+    /// (push ámbar · pull cian · legs/fullBody índigo) — FER-88 / FER-304 Liquid.
+    func tint(_ theme: InstrumentoTheme) -> Color {
+        _ = theme
+        switch self {
+        case .push:     return LiquidColor.ambar
+        case .pull:     return LiquidColor.cian
+        case .legs, .fullBody: return LiquidColor.indigo
+        }
+    }
 }
 
 extension Optional where Wrapped == RoutineRegion {
-    /// nil (sin ejercicios clasificables) cae a dataStrain — preserva el render actual.
+    /// nil (sin ejercicios clasificables) cae a ámbar — preserva el render actual.
     func tint(_ theme: InstrumentoTheme) -> Color {
-        self?.tint(theme) ?? theme.dataStrain
+        self?.tint(theme) ?? LiquidColor.ambar
     }
 }
 
 #if DEBUG
 #Preview("RoutineRegion tint") {
     let t = InstrumentoTheme.base
-    HStack(spacing: 16) {
-        VStack(spacing: 8) {
+    HStack(spacing: LiquidSpace.s400) {
+        VStack(spacing: LiquidSpace.s200) {
             Circle().fill(RoutineRegion.push.tint(t)).frame(width: 24, height: 24)
-            Text("push").font(StrandFont.caption).foregroundStyle(t.inkTertiary)
+            Text("push").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
         }
-        VStack(spacing: 8) {
+        VStack(spacing: LiquidSpace.s200) {
             Circle().fill(RoutineRegion.pull.tint(t)).frame(width: 24, height: 24)
-            Text("pull").font(StrandFont.caption).foregroundStyle(t.inkTertiary)
+            Text("pull").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
         }
-        VStack(spacing: 8) {
+        VStack(spacing: LiquidSpace.s200) {
             Circle().fill(RoutineRegion.legs.tint(t)).frame(width: 24, height: 24)
-            Text("legs").font(StrandFont.caption).foregroundStyle(t.inkTertiary)
+            Text("legs").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
         }
-        VStack(spacing: 8) {
+        VStack(spacing: LiquidSpace.s200) {
             Circle().fill(RoutineRegion.fullBody.tint(t)).frame(width: 24, height: 24)
-            Text("fullBody").font(StrandFont.caption).foregroundStyle(t.inkTertiary)
+            Text("fullBody").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
         }
-        VStack(spacing: 8) {
+        VStack(spacing: LiquidSpace.s200) {
             Circle().fill((nil as RoutineRegion?).tint(t)).frame(width: 24, height: 24)
-            Text("nil").font(StrandFont.caption).foregroundStyle(t.inkTertiary)
+            Text("nil").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
         }
     }
     .padding(LiquidSpace.tarjetaAmplia)
-    .background(CenitColor.pantalla)
+    .background(LiquidColor.fondoAlto)
 }
 #endif
