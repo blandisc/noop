@@ -140,10 +140,14 @@ class WidgetWatchCarveOut(unittest.TestCase):
 
     def test_legacy_and_exempt_skip_widget_and_watch_paths(self):
         with tempfile.TemporaryDirectory() as tmp:
+            # FER-314: Widgets/Watch ya hablan Liquid (DECISIONS 2026-09-03) — no-legacy-api SÍ los ve;
+            # token-exempt sigue fuera (geometría fija de la Live Activity / watch face).
             w = _swift(tmp, "CenitWidgets/RestLiveActivity.swift",
                        ["let t = InstrumentoTheme.base", ".padding(8) // token-exempt: isla fija"])
             k = _swift(tmp, "CenitWatch/WatchFace.swift", ["let t = InstrumentoTheme.base"])
-            self.assertEqual(drift.check([w, k], ["no-legacy-api", "token-exempt"]), [])
+            hits = drift.check([w, k], ["no-legacy-api", "token-exempt"])
+            self.assertEqual(sorted({r for _p, _i, r, _s in hits}), ["no-legacy-api"])
+            self.assertEqual(len(hits), 2)
 
 
 class MergeWriteRobustness(unittest.TestCase):
@@ -251,7 +255,7 @@ class Fer271CommentGaps(unittest.TestCase):
             hits = drift.check([src], ["no-deprecated-metrics"])
             self.assertEqual([(i, r) for _p, i, r, _s in hits], [(1, "no-deprecated-metrics")])
             watch = _swift(tmp, "CenitWatch/W.swift", [".padding(CenitMetrics.space2)"])
-            self.assertEqual(drift.check([watch], ["no-deprecated-metrics"]), [])
+            self.assertEqual(len(drift.check([watch], ["no-deprecated-metrics"])), 1)   # FER-314: el Watch ya se vigila
 
     def test_instrumento_theme_ve_acceso_y_strandfont_pero_no_rampas(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -266,7 +270,7 @@ class Fer271CommentGaps(unittest.TestCase):
             hits = drift.check([src], ["no-instrumento-theme"])
             self.assertEqual([i for _p, i, _r, _s in hits], [1, 2])
             widget = _swift(tmp, "CenitWidgets/W.swift", [".foregroundStyle(theme.ink)"])
-            self.assertEqual(drift.check([widget], ["no-instrumento-theme"]), [])
+            self.assertEqual(len(drift.check([widget], ["no-instrumento-theme"])), 1)   # FER-314: los Widgets ya se vigilan
 
     def test_weight_on_grotesk_solo_en_tokens_grotesk(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -279,6 +283,19 @@ class Fer271CommentGaps(unittest.TestCase):
             self.assertNotIn("filaConteo", drift._grotesk_tokens())
             hits = drift.check([src], ["no-weight-on-grotesk"])
             self.assertEqual([i for _p, i, _r, _s in hits], [1])
+
+    def test_fontweight_sobre_grotesk_misma_linea_o_siguiente(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src = _swift(tmp, "Cenit/Screens/D.swift", [
+                ".font(LiquidType.caption).fontWeight(.medium)",   # misma línea
+                ".font(LiquidType.tituloGemela)",                  # + siguiente
+                "    .fontWeight(.medium)",
+                ".font(LiquidType.filaConteo).fontWeight(.bold)",  # .system: válido
+                ".font(LiquidType.caption)",
+                "    .foregroundStyle(LiquidColor.tinta900)",
+            ])
+            hits = drift.check([src], ["no-weight-on-grotesk"])
+            self.assertEqual([i for _p, i, _r, _s in hits], [1, 2])
 
 if __name__ == "__main__":
     unittest.main()

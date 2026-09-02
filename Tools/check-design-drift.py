@@ -61,7 +61,7 @@ _ROOTS_FONT_RADIUS_OPACITY = ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System
 _ROOTS_ANTI_EVASION = ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "CenitApp"]
 _ROOTS_SPACING_MOTION = ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "CenitApp"]
 _ROOTS_DT = ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "CenitWidgets", "CenitWatch", "CenitApp"]
-_ROOTS_LEGACY = ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "CenitApp"]
+_ROOTS_LEGACY = ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "CenitApp", "CenitWidgets", "CenitWatch"]
 _ROOTS_TOKEN_EXEMPT = ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "Packages/CenitDesign/Sources", "CenitApp"]
 _ROOTS_SHEET_GLASS = ["Packages/CenitDesign/Sources", "Cenit", "CenitApp", "CenitShared", "CenitWidgets"]
 
@@ -225,6 +225,19 @@ def _weight_on_grotesk_re():
 
 RE_WEIGHT_ON_GROTESK = _weight_on_grotesk_re()
 
+
+def _font_grotesk_re():
+    """`.font(LiquidType.<grotesk>)` — para cazar el escape `.fontWeight(` en la misma línea o la siguiente
+    (FER-314: la auditoría 2 midió 7 escapes que `.weight(` no veía)."""
+    toks = _grotesk_tokens()
+    if not toks:
+        return re.compile(r"(?!x)x")
+    return re.compile(r"\.font\(\s*LiquidType\.(?:" + "|".join(sorted(toks, key=len, reverse=True)) + r")\s*\)")
+
+
+RE_FONT_GROTESK = _font_grotesk_re()
+RE_FONTWEIGHT = re.compile(r"\.fontWeight\(")
+
 RULE_PATTERNS = {
     "no-hex": RE_HEX,
     "no-adhoc-font": RE_FONT,
@@ -309,9 +322,10 @@ def check(paths, rules):
         # no-hex only applies OUTSIDE the design package (the package is where hex is allowed).
         norm = path.replace("\\", "/")
         in_design_pkg = DESIGN_PKG in norm
-        # FER-219 carve-out, enforced HERE and not only by invocation: CenitWidgets/CenitWatch keep
-        # `InstrumentoTheme` as their canonical Live-Activity/watch theme and their fixed-geometry
-        # exemptions. A default-roots run must not paint them red for the two FER-263 rules.
+        # Carve-out FER-219 (parcial desde FER-314): CenitWidgets/CenitWatch ya hablan Liquid (DECISIONS
+        # 2026-09-03), así que no-legacy-api / no-instrumento-theme / no-deprecated-metrics /
+        # no-weight-on-grotesk SÍ los vigilan. Conservan solo las exenciones de geometría fija
+        # (raw-color / edgeinsets / arithmetic / motion) por la Live Activity y el watch face.
         in_widget_watch = "CenitWidgets/" in norm or "CenitWatch/" in norm
         try:
             lines = open(path, encoding="utf-8").read().splitlines()
@@ -335,7 +349,7 @@ def check(paths, rules):
                     continue
                 if rule in ("no-hex", "no-legacy-api", "no-raw-color", "no-token-arithmetic", "no-deprecated-metrics", "no-instrumento-theme", "no-weight-on-grotesk") and in_design_pkg:
                     continue
-                if rule in ("no-legacy-api", "no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic", "no-motion-literal", "no-deprecated-metrics", "no-instrumento-theme", "no-weight-on-grotesk") and in_widget_watch:
+                if rule in ("no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic", "no-motion-literal") and in_widget_watch:
                     continue
                 if rule == "no-instrumento-theme" and RE_DATA_RAMP.search(code):
                     continue
@@ -344,6 +358,11 @@ def check(paths, rules):
                         hits.append((path, i, rule, stripped[:100]))
                     continue
                 m = RULE_PATTERNS[rule].search(code)
+                if not m and rule == "no-weight-on-grotesk" and RE_FONT_GROTESK.search(code):
+                    # `.fontWeight(` sobre un grotesk: misma línea, o la siguiente (cadena de modifiers).
+                    nxt = _strip_line_comments(lines[i]) if i < len(lines) else ""
+                    if RE_FONTWEIGHT.search(code) or RE_FONTWEIGHT.search(nxt):
+                        m = True
                 if m:
                     hits.append((path, i, rule, stripped[:100]))
     return hits

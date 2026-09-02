@@ -41,7 +41,7 @@ jobs:
       - name: Design-drift linter — no ad-hoc font/radius/opacity, ratchet (FER-276)
         run: python3 Tools/check-design-drift.py --rules no-adhoc-font,no-radius-literal,no-opacity-literal --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App CenitApp
       - name: Design-drift linter — anti-evasión del colador, ratchet (FER-276)
-        run: python3 Tools/check-design-drift.py --rules no-raw-color,no-edgeinsets-literal,no-token-arithmetic --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media CenitApp
+        run: python3 Tools/check-design-drift.py --rules no-raw-color,no-edgeinsets-literal,no-token-arithmetic --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media CenitApp CenitWidgets CenitWatch
       - name: Design-drift linter — no em-dash in copy (FER-879, app-wide)
         run: python3 Tools/check-design-drift.py --rules no-emdash-string Cenit/Screens Cenit/Onboarding
       - name: Design-drift linter — no raw shadow, use StrandElevation (migrated screens)
@@ -55,9 +55,9 @@ jobs:
       - name: Oráculo de Dynamic Type — solo el cap bendecido (FER-269/FER-118)
         run: python3 Tools/check-design-drift.py --rules no-dt-cap-adhoc Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media CenitWidgets CenitWatch CenitApp
       - name: Design-drift linter — no legacy API, ratchet (FER-263)
-        run: python3 Tools/check-design-drift.py --rules no-legacy-api --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media CenitApp
+        run: python3 Tools/check-design-drift.py --rules no-legacy-api --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media CenitApp CenitWidgets CenitWatch
       - name: Design drift · no-deprecated-metrics + no-instrumento-theme (FER-306)
-        run: python3 Tools/check-design-drift.py --rules no-deprecated-metrics,no-instrumento-theme,no-weight-on-grotesk --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media CenitApp
+        run: python3 Tools/check-design-drift.py --rules no-deprecated-metrics,no-instrumento-theme,no-weight-on-grotesk --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media CenitApp CenitWidgets CenitWatch
       - name: Design-drift linter — token-exempt es deuda, ratchet (FER-263)
         run: python3 Tools/check-design-drift.py --rules token-exempt --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media Packages/CenitDesign/Sources CenitApp
       - name: Sin vidrio dentro de una hoja (papel opaco)

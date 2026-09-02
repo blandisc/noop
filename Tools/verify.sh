@@ -67,14 +67,14 @@ run_lint() {
       python3 Tools/check-design-drift.py --rules no-adhoc-font,no-radius-literal,no-opacity-literal \
         --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App CenitApp || ok=1
       python3 Tools/check-design-drift.py --rules no-raw-color,no-edgeinsets-literal,no-token-arithmetic \
-        --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media CenitApp || ok=1
+        --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media CenitApp CenitWidgets CenitWatch || ok=1
       python3 Tools/check-design-drift.py --rules no-motion-literal \
         --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App CenitApp || ok=1
       python3 Tools/check-design-drift.py --rules no-dt-cap-adhoc Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media CenitWidgets CenitWatch CenitApp || ok=1
       python3 Tools/check-design-drift.py --rules no-legacy-api \
-        --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media CenitApp || ok=1
+        --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media CenitApp CenitWidgets CenitWatch || ok=1
       python3 Tools/check-design-drift.py --rules no-deprecated-metrics,no-instrumento-theme,no-weight-on-grotesk \
-        --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media CenitApp || ok=1
+        --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media CenitApp CenitWidgets CenitWatch || ok=1
       python3 Tools/check-design-drift.py --rules token-exempt \
         --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media Packages/CenitDesign/Sources CenitApp || ok=1
     fi
