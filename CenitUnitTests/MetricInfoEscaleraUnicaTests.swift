@@ -69,11 +69,8 @@ final class MetricInfoEscaleraUnicaTests: XCTestCase {
     /// SpO₂: «low (< 95)» JAMÁS recibe el color de veredicto/positivo, y «normal» jamás el de
     /// warning — la inversión exacta que producía la rampa posicional al encoger la escalera a 2.
     func testColorDeCarrilSpO2PorClave() {
-        let theme = InstrumentoTheme.base
-        let low = MetricDetailScreen.laneColor(metric: "spo2", bandKey: "low",
-                                               theme: theme, fallback: .pink)
-        let normal = MetricDetailScreen.laneColor(metric: "spo2", bandKey: "normal",
-                                                  theme: theme, fallback: .pink)
+        let low = MetricDetailScreen.laneColor(metric: "spo2", bandKey: "low", fallback: .pink)
+        let normal = MetricDetailScreen.laneColor(metric: "spo2", bandKey: "normal", fallback: .pink)
         XCTAssertNotEqual(low, LiquidColor.verdePrimario, "«low» no puede pintarse del verde de veredicto")
         XCTAssertNotEqual(low, LiquidColor.verdeProfundo, "«low» no puede pintarse de ningún verde positivo")
         XCTAssertNotEqual(normal, LiquidColor.atencion, "«normal» no puede pintarse de ámbar de warning")
@@ -86,11 +83,8 @@ final class MetricInfoEscaleraUnicaTests: XCTestCase {
 
     /// Respiración: «elevated (≥ 20)» jamás en verde; «normal» en veredicto.
     func testColorDeCarrilRespiracionPorClave() {
-        let theme = InstrumentoTheme.base
-        let normal = MetricDetailScreen.laneColor(metric: "resp_rate", bandKey: "normal",
-                                                  theme: theme, fallback: .pink)
-        let elevated = MetricDetailScreen.laneColor(metric: "resp_rate", bandKey: "elevated",
-                                                    theme: theme, fallback: .pink)
+        let normal = MetricDetailScreen.laneColor(metric: "resp_rate", bandKey: "normal", fallback: .pink)
+        let elevated = MetricDetailScreen.laneColor(metric: "resp_rate", bandKey: "elevated", fallback: .pink)
         XCTAssertEqual(normal, LiquidColor.verdePrimario)
         XCTAssertNotEqual(elevated, LiquidColor.verdePrimario, "«elevated» no puede pintarse de verde")
         XCTAssertNotEqual(elevated, LiquidColor.verdeProfundo)
@@ -100,9 +94,8 @@ final class MetricInfoEscaleraUnicaTests: XCTestCase {
     /// Resting HR conserva el mapeo FER-43 (athlete verde profundo · low verde · typical tinta ·
     /// higher ámbar, nunca crítico) — ahora anclado a la clave, no al índice.
     func testColorDeCarrilRestingHRPorClave() {
-        let theme = InstrumentoTheme.base
         func c(_ key: String) -> Color {
-            MetricDetailScreen.laneColor(metric: "rhr", bandKey: key, theme: theme, fallback: .pink)
+            MetricDetailScreen.laneColor(metric: "rhr", bandKey: key, fallback: .pink)
         }
         XCTAssertEqual(c("rhrAthlete"), LiquidColor.verdeProfundo)
         XCTAssertEqual(c("rhrLow"), LiquidColor.verdePrimario)
@@ -114,13 +107,9 @@ final class MetricInfoEscaleraUnicaTests: XCTestCase {
     /// Una clave desconocida (o nil, la escalera a mano sin claves de motor) cae al hue de la métrica
     /// — el fallback inyectado — sin heredar el color de ninguna posición.
     func testClaveDesconocidaCaeAlFallback() {
-        let theme = InstrumentoTheme.base
-        XCTAssertEqual(MetricDetailScreen.laneColor(metric: "spo2", bandKey: "banana",
-                                                    theme: theme, fallback: .pink), .pink)
-        XCTAssertEqual(MetricDetailScreen.laneColor(metric: "steps", bandKey: "sedentary",
-                                                    theme: theme, fallback: .pink), .pink)
-        XCTAssertEqual(MetricDetailScreen.laneColor(metric: "spo2", bandKey: nil,
-                                                    theme: theme, fallback: .pink), .pink)
+        XCTAssertEqual(MetricDetailScreen.laneColor(metric: "spo2", bandKey: "banana", fallback: .pink), .pink)
+        XCTAssertEqual(MetricDetailScreen.laneColor(metric: "steps", bandKey: "sedentary", fallback: .pink), .pink)
+        XCTAssertEqual(MetricDetailScreen.laneColor(metric: "spo2", bandKey: nil, fallback: .pink), .pink)
     }
 
     // MARK: - (d) El héroe de SpO₂ solo tiene 2 lecturas — el «Borderline fantasma» está muerto
