@@ -61,7 +61,7 @@
     "Cenit/Screens/WeeklyPlanEditorView.swift": 10,
     "Cenit/Screens/WorkoutDetailScreen.swift": 11,
     "Cenit/Screens/WorkoutEditSheet.swift": 7,
-    "Cenit/Screens/WorkoutHistoryScreen.swift": 37,
+    "Cenit/Screens/WorkoutHistoryScreen.swift": 36,
     "Cenit/Screens/WorkoutImportView.swift": 12,
     "Cenit/Screens/WorkshopTricksScreen.swift": 5,
     "Cenit/System/RoutineDragAndDrop.swift": 1
@@ -91,7 +91,7 @@
     "Cenit/Onboarding/OnboardingPiezas.swift": 3,
     "Cenit/Screens/ActivityRecoverySheet.swift": 2,
     "Cenit/Screens/AjustesView.swift": 7,
-    "Cenit/Screens/AppleHealthView.swift": 6,
+    "Cenit/Screens/AppleHealthView.swift": 3,
     "Cenit/Screens/BodyAgeSheet.swift": 3,
     "Cenit/Screens/BreathingView.swift": 2,
     "Cenit/Screens/CompareView.swift": 1,
@@ -195,9 +195,10 @@
     "Cenit/Screens/TrainingLoadStrip.swift": 2,
     "Cenit/Screens/WeeklyPlanEditorView.swift": 1,
     "Cenit/Screens/WorkoutDetailScreen.swift": 2,
-    "Cenit/Screens/WorkoutHistoryScreen.swift": 10,
+    "Cenit/Screens/WorkoutHistoryScreen.swift": 9,
     "Cenit/Screens/WorkoutImportView.swift": 6,
     "Cenit/System/WiggleEffect.swift": 2,
+    "CenitApp/App/CenitApp.swift": 1,
     "Packages/StrandDesign/Sources/StrandDesign/ConfidenceSello.swift": 2,
     "Packages/StrandDesign/Sources/StrandDesign/Entrenar/EntrenarFilaDiscos.swift": 1,
     "Packages/StrandDesign/Sources/StrandDesign/Entrenar/EntrenarStepperSegundos.swift": 1,
@@ -221,7 +222,6 @@
     "Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/LiquidModeTile.swift": 1,
     "Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/LiquidMotion.swift": 1,
     "Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/LiquidStageBar.swift": 8,
-    "Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/LiquidTiempoZonas.swift": 4,
-    "CenitApp/App/CenitApp.swift": 1
+    "Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/LiquidTiempoZonas.swift": 4
   }
 }

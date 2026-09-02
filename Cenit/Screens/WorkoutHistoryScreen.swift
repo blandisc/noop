@@ -171,7 +171,6 @@ struct WorkoutHistoryScreen: View {
         // The detail push (`WorkoutSessionRoute`) is registered once on the Entrenar NavigationStack in
         // RootTabView (alongside the other train routes), so it isn't re-declared here.
         // «Undo» toast after a delete (FER-527), now seeded by the list OR the detail via the coordinator.
-        // FER-280·2c: undoBanner NO adopta UndoToast — pad H 18 / V handoff14 ≠ receta de la pieza.
         .overlay(alignment: .bottom) { if let d = coordinator.pendingUndo { undoBanner(d) } }
         // FER-969 / FER-280·2c: undo-restore failure → `.saveErrorToast` (pad 16 ≡ cardPadding).
         .saveErrorToast(isPresented: $saveError,
@@ -1294,23 +1293,16 @@ struct WorkoutHistoryScreen: View {
     }
 
     private func undoBanner(_ d: WorkoutHistoryCoordinator.DeletedSession) -> some View {
-        HStack(spacing: CenitMetrics.gap) {
-            Text("Workout deleted").font(StrandFont.subhead).foregroundStyle(theme.surface)
-            Spacer(minLength: CenitMetrics.space2)
-            Button { undoDelete(d) } label: {
-                Text("Undo").font(InstrumentoType.grotesk(15, weight: .bold)).foregroundStyle(theme.surface)
+        // FER-285·c: receta → `UndoToast` (pad de la pieza); transition + auto-descarte en el caller.
+        UndoToast(message: String(localized: "Workout deleted"),
+                  cta: String(localized: "Undo"),
+                  theme: theme,
+                  action: { undoDelete(d) })
+            .transition(LiquidMotion.risingFadeTransition)
+            .task(id: d.id) {
+                try? await Task.sleep(nanoseconds: 4_000_000_000)
+                withAnimation { if coordinator.pendingUndo?.id == d.id { coordinator.pendingUndo = nil } }
             }
-            .buttonStyle(.plain)
-        }
-        .padding(.horizontal, 18).padding(.vertical, LiquidSpace.handoff14)  // token-exempt(falta-pieza): el 14 vertical ya es LiquidSpace.handoff14 (FER-275); el 18 horizontal queda sin token exacto, fuera de alcance de este lote
-        .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-        .padding(.horizontal, CenitMetrics.screenPadding)
-        .padding(.bottom, CenitMetrics.space2)
-        .transition(LiquidMotion.risingFadeTransition)
-        .task(id: d.id) {
-            try? await Task.sleep(nanoseconds: 4_000_000_000)
-            withAnimation { if coordinator.pendingUndo?.id == d.id { coordinator.pendingUndo = nil } }
-        }
     }
 
     private func load() async {
