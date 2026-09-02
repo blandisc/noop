@@ -65,7 +65,7 @@ private struct PullSyncHint: View {
                 // mientras HealthKit trabajaba (el sello que lo prometía nunca se montó).
                 // Una palabra basta, en la voz del sistema.
                 Text(String(localized: "hoy.sincronizando", defaultValue: "Syncing…"))
-                    .font(InstrumentoType.grotesk(12, weight: .medium))
+                    .font(LiquidType.cuerpo)
                     .foregroundStyle(LiquidColor.tinta500)
                     .transition(LiquidMotion.fadeTransition)
                     .accessibilityAddTraits(.updatesFrequently)
@@ -680,7 +680,7 @@ struct TodayView: View {
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) {
                             Button("Done") { showDataSources = false }
-                                .foregroundStyle(theme.ink)
+                                .foregroundStyle(LiquidColor.tinta900)
                         }
                     }
             }
@@ -939,9 +939,9 @@ struct TodayView: View {
         VStack(alignment: .leading, spacing: LiquidSpace.s100) {
             HStack(alignment: .center, spacing: LiquidSpace.s200) {
                 Text(shortDate)
-                    .font(InstrumentoType.grotesk(11, weight: .semibold))
-                    .tracking(2)
-                    .foregroundStyle(theme.inkSecondary)
+                    .font(LiquidType.kicker)
+                    .tracking(LiquidType.kickerTracking)
+                    .foregroundStyle(LiquidColor.tinta700)
                 Spacer(minLength: LiquidSpace.s200)
             }
         }

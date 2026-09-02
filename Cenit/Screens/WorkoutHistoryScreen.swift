@@ -126,7 +126,7 @@ struct WorkoutHistoryScreen: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s700) {
                 header
                 // FER-202: el interruptor de dialecto [Todo · Fuerza] — constante en toda la pantalla,
                 // debajo del título. `.sport(...)` cuenta como «Todo» (el chip removible vive dentro).
@@ -983,7 +983,7 @@ struct WorkoutHistoryScreen: View {
             NavigationLink(value: SavedTicketsRoute()) {
                 EntrenarModulo(tono: .neutro) {
                     HStack(spacing: LiquidSpace.s300) {
-                        RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
+                        RoundedRectangle(cornerRadius: LiquidRadius.insetTarjeta, style: .continuous)
                             .fill(LiquidColor.tinta7)
                             .frame(width: 38, height: 38)
                             .overlay(

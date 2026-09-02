@@ -56,7 +56,7 @@ struct SavedTicketsScreen: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s700) {
                 header
                 segmentControl
                 if loaded {

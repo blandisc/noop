@@ -105,8 +105,7 @@ struct SleepDetailScreen: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         // El fondo va en las DOS formas de presentación: `background` para la capa de Tendencias
-        // (`DetailChrome`, que no es una hoja) y `presentationBackground` para la hoja de Hoy —
-        // el mismo par que la pantalla de papel tenía con `theme.paper` + `.sheetPaper`.
+        // (`DetailChrome`, que no es una hoja) y `presentationBackground` para la hoja de Hoy.
         .background { LiquidSheetFondo(tone: Self.tono).ignoresSafeArea() }
         .presentationBackground { LiquidSheetFondo(tone: Self.tono) }
         .presentationDragIndicator(.visible)

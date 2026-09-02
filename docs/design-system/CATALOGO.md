@@ -86,6 +86,7 @@ lo refleja.
 | `s400` | 16pt | padding H de pastilla / interior horizontal de módulo |
 | `s550` | 22pt | margen horizontal de pantalla (legacy Liquid) |
 | `s600` | 24pt | margen horizontal de la pantalla «El Tablero» |
+| `s700` | 28pt | gap entre secciones de una hoja/lista |
 | `s800` | 32pt | — |
 | `s1400` | 56pt | safe-area top (velo de status) |
 | `ecosistemaAlto` | 320pt | alto de la zona del héroe «El Ecosistema» |
@@ -103,6 +104,7 @@ lo refleja.
 | Token | Valor | Uso |
 |---|---|---|
 | `hairline` | 0.5pt | antialiasing del trazo de 1pt (capilar divisor) |
+| `insetTarjeta` | 10pt | sub-tarjeta anidada dentro de otra tarjeta |
 | `control` | 12pt | swatches, chips de día, inputs |
 | `tarjeta` | 18pt | tiles, tarjetas, contenedores de lista |
 | `modulo` | 20pt | módulos de vidrio de «El Tablero» |

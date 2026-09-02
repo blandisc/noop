@@ -36,6 +36,8 @@ public enum LiquidSpace {
     /// 24 — margen horizontal de la pantalla «El Tablero» (FER-28): un punto más de aire
     /// lateral que el resto, para que los módulos de vidrio no rocen el bisel.
     public static let s600: CGFloat = 24
+    /// 28 — gap entre secciones de una hoja/lista (antes `CenitMetrics.sectionGap`).
+    public static let s700: CGFloat = 28
     /// 32.
     public static let s800: CGFloat = 32
     /// 56 — safe-area top (velo de status).
@@ -181,6 +183,8 @@ public enum LiquidRadius {
     /// ningún token; el dueño aprobó subirlo a 8 para que caiga en la escala en vez de
     /// quedarse suelto.
     public static let chip: CGFloat = 8
+    /// 10 — sub-tarjeta anidada dentro de otra tarjeta (antes `CenitMetrics.insetRadius`).
+    public static let insetTarjeta: CGFloat = 10
     /// 12 — swatches, chips de día, inputs.
     public static let control: CGFloat = 12
     /// 18 — tiles, tarjetas, contenedores de lista.

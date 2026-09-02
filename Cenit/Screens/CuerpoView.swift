@@ -358,7 +358,7 @@ private struct CuerpoLanding: View {
                 MetricExplorerView()
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) {
-                            Button("Done") { showExplore = false }.foregroundStyle(theme.ink)
+                            Button("Done") { showExplore = false }.foregroundStyle(LiquidColor.tinta900)
                         }
                     }
             }
@@ -1152,7 +1152,7 @@ private struct CuerpoLanding: View {
     private var vo2maxStat: some View {
         let v = latestAppleVO2max
         // Neutral ink on purpose (MetricIdentity D1, FER-108) — no family assigned yet, so it borrows
-        // no other metric's color. Fixes the paper's `theme.dataSpO2` (blue) reuse bug.
+        // no other metric's color. Fixes the old SpO2-blue reuse bug.
         return statColumn("VO₂ Max", value: v.map { String(format: "%.0f", $0) },
                           color: MetricIdentity.identity(forKey: "vo2max").hue,
                           legend: "ml/kg·min", fromApple: v != nil) {
@@ -1298,7 +1298,7 @@ private struct CuerpoLanding: View {
             .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { darkSheet = nil }.foregroundStyle(theme.ink)
+                    Button("Done") { darkSheet = nil }.foregroundStyle(LiquidColor.tinta900)
                 }
             }
         }
