@@ -132,7 +132,6 @@ lente.
 | superficie | `.liquidGlass(.superficie)` | blanco .46, borde .72, highlight .8→.35, r/tarjeta | e/0 |
 | pastilla | `.liquidGlass(.pastilla)` / `.pastillaElevada` | blanco .46, borde .8, highlight superior, r/pastilla | e/0 / e/1 |
 | lente | `.liquidGlass(.lente)` | papelDock, anillo interior 4 lados, **streak especular**, r/pastilla | e/3 |
-| esfera | `LiquidSphere(tone:)` | radial blanco→tono .22, borde .9, especular elíptico | e/2(tono) |
 | superficie·atmósfera (FER-118) | `.liquidGlass(.superficieAtmosfera)` | blanco **.30** (`vidrioAtmosfera`), **canto de tinta .08** (`vidrioCanto`, también sobre el vidrio nativo de iOS 26), highlight .8→.35, r/módulo (20) | e/módulo(0) |
 | superficie / pastilla sólidas | `.liquidGlass(.superficieSolida)` / `.pastillaSolida` | `papelTarjeta` opaco + mismo chrome (anti vidrio-sobre-vidrio en hoja) | e/0 |
 
@@ -200,8 +199,8 @@ TabBar viven en `LiquidTabBar` (viewBox 23). Tests de bounds por glifo en `Liqui
 
 ## 7. Átomos, componentes y patrones
 
-**Átomos:** `LiquidIconDrop` (gota 22/13 al 10 %; 28/15 al 12 % en ModeTile) ·
-`LiquidDeltaCaption` · `LiquidSphere`.
+**Átomos:** `LiquidIconDrop` (gota 22/13 al 10 %) ·
+`LiquidDeltaCaption`.
 
 **Componentes (contrato = props del handoff §5):**
 
@@ -212,7 +211,6 @@ TabBar viven en `LiquidTabBar` (viewBox 23). Tests de bounds por glifo en `Liqui
 | `LiquidCargaBar` | label · pos 0–100 · zone 0–3 · status · state |
 | `LiquidTabBar` | active: hoy/tendencias/entrenar/ajustes (· onSelect) |
 | `LiquidGlassButton` | label · variant: primary/glass/quiet (· expands · action) |
-| `LiquidModeTile` | label · icon · tone (· action) |
 | `LiquidListRow` + `LiquidListCard` | title · subtitle · trailing? · tone · divider |
 
 **Patrones (se componetizan al aparecer en una 3.ª pantalla):** `LiquidAmbientBackground`
