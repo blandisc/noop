@@ -171,11 +171,11 @@ struct RestChip: View {
         // recovery para FC, reloj ember para tiempo fijo) que `EntrenarChip.Kind.rest` no admite por
         // sí solo (ver `EntrenarNivel.swift`). Mismo papel + borde `hairlineStrong` + chevron «›» de
         // antes, ahora desde la pieza compartida — el texto pasa de Grotesk tabular (12, medium) al
-        // `StrandFont.caption` que `EntrenarChip` ya usa para descanso/progresión/calentamiento: es
+        // `LiquidType.caption` que `EntrenarChip` ya usa para descanso/progresión/calentamiento: es
         // el punto de la migración (converger en UN vocabulario), documentado, no un descuido.
         EntrenarChip(.rest, verbatim: RoutineSetEditing.restChipLabel(cfg),
                     icon: isHR ? "heart.fill" : "clock",
-                    tone: isHR ? theme.dataRecovery : theme.dataStrain,
+                    tone: isHR ? LiquidColor.verdePrimario : LiquidColor.ambar,
                     showsDisclosure: true, action: action)
             // 2026-07-19: la sesión activa reimplementaba este chip entero, con un comentario que ya
             // afirmaba «MISMO chip que el editor» mientras el código los tenía separados. Al
@@ -207,16 +207,16 @@ struct SetCellChrome: ViewModifier {
     func body(content: Content) -> some View {
         content
             .multilineTextAlignment(.center)
-            .font(InstrumentoType.groteskNumber(16, weight: .medium, relativeTo: .body)).monospacedDigit()
-            .foregroundStyle(theme.ink)
+            .font(LiquidType.valorM).monospacedDigit()
+            .foregroundStyle(LiquidColor.tinta900)
             // El ancho se fija (las columnas se alinean con su encabezado); el alto es MÍNIMO, porque
             // la fuente escala con Dynamic Type y una caja fija recortaría el número.
             .frame(width: width)
             .frame(minHeight: 44)
             .overlay(alignment: .bottom) {
-                Rectangle().fill(focused ? theme.ink : theme.hairlineStrong)
+                Rectangle().fill(focused ? LiquidColor.tinta900 : LiquidColor.vidrioCanto)
                     .frame(height: focused ? 2 : 1)
-                    .padding(.bottom, 6)
+                    .padding(.bottom, LiquidSpace.s150)
             }
     }
 }
@@ -230,17 +230,14 @@ extension View {
 
 // MARK: - «SUPERSERIE» — el rótulo del par
 //
-// Cada pantalla tenía la mitad de la razón (2026-07-19). El editor usaba `groteskOverline` pero en
-// `inkSecondary`; la sesión usaba `dataHrv` pero con `StrandFont.overline`, que DESIGN.md §8.7 marca
-// como legacy («ninguna pantalla nueva lo usa»). La unión correcta es la voz del editor con el color
-// de la sesión: **Grotesk en teal**. El teal no es decoración aquí — es la señal de superserie en todo
-// el flujo (el badge A1/A2, el riel, las leyendas), así que el `inkSecondary` del editor rompía esa
-// asociación justo donde más se necesita.
+// Cada pantalla tenía la mitad de la razón (2026-07-19). El editor usaba overline en tinta
+// secundaria; la sesión usaba cian HRV con overline legacy. La unión correcta es kicker Liquid
+// en cian: el cian es la señal de superserie en todo el flujo (badge A1/A2, riel, leyendas).
 struct SupersetTag: View {
     @Environment(\.instrumentoTheme) private var theme
 
     var body: some View {
-        Text("Superset").groteskOverline().foregroundStyle(theme.dataHrv)
+        Text("Superset").liquidKicker().foregroundStyle(LiquidColor.cian)
     }
 }
 
@@ -256,14 +253,14 @@ struct DeleteSetPill: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 5) {
-                Image(systemName: "trash").font(StrandFont.glyph(.chevron))
-                Text("Delete set").font(StrandFont.caption)
+            HStack(spacing: LiquidSpace.s125) {
+                Image(systemName: "trash").font(LiquidType.iconSF(size: 12))
+                Text("Delete set").font(LiquidType.caption)
             }
-            .foregroundStyle(theme.critical)
-            .padding(.horizontal, 9).padding(.vertical, 5)
+            .foregroundStyle(LiquidColor.negativo)
+            .padding(.horizontal, LiquidSpace.s225).padding(.vertical, LiquidSpace.s125)
             .liquidGlass(.pastillaSolida)
-            .overlay(Capsule().strokeBorder(theme.critical.opacity(StrandOpacity.dim), lineWidth: 1))
+            .overlay(Capsule().strokeBorder(LiquidColor.negativo.opacity(StrandOpacity.dim), lineWidth: 1))
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)

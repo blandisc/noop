@@ -3,7 +3,7 @@ import StrandDesign
 import CenitStore
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 
-// MARK: - Manual workout sheet — «Instrumento diurno» (FER-266)
+// MARK: - Manual workout sheet — Liquid Glass · El Eje (FER-266 · FER-304)
 //
 // Add a workout you tracked elsewhere, or edit one you already logged. Five inputs — sport,
 // start, duration, average HR, calories — validated by WorkoutSource.buildManualRow (the same
@@ -15,8 +15,7 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 // `editing` is non-nil when editing an existing row (its values pre-fill the form and it is passed
 // as `replacing:` so a changed natural key deletes the old row). nil = a fresh add.
 //
-// Reskinned to the light «Instrumento» language: warm paper, ink text, `surface` inputs, hairline
-// borders. The theme is passed EXPLICITLY (it doesn't propagate through `.sheet`, FER-162) by the two
+// Liquid Glass · El Eje tokens. The theme is passed EXPLICITLY (it doesn't propagate through `.sheet`, FER-162) by the two
 // callers (the workouts list's Add, the detail's Edit/Duplicate). The old fixed `frame(width: 420)`
 // (a macOS-era width) is gone — the form fills the sheet's width on iPhone.
 //
@@ -62,13 +61,13 @@ struct ManualWorkoutSheet: View {
         ScrollView {
             VStack(alignment: .leading, spacing: LiquidSpace.s300) {
                 header
-                VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: LiquidSpace.bloqueAjuste) {
                     field("Sport") {
                         TextField("e.g. Running", text: $sport)
                             .textFieldStyle(.plain)
-                            .font(StrandFont.body)
-                            .foregroundStyle(theme.ink)
-                            .padding(.horizontal, 12).padding(.vertical, 10)
+                            .font(LiquidType.tituloGemela)
+                            .foregroundStyle(LiquidColor.tinta900)
+                            .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s250)
                             .liquidGlass(.superficieSolida)
                             .accessibilityLabel("Sport")
                     }
@@ -76,19 +75,22 @@ struct ManualWorkoutSheet: View {
                         DatePicker("", selection: $start, in: ...Date(),
                                    displayedComponents: [.date, .hourAndMinute])
                             .labelsHidden()
-                            .tint(theme.ink)
+                            .tint(LiquidColor.tinta900)
                             .accessibilityLabel("Start date and time")
                     }
                     field("Duration") {
-                        Stepper(value: $durationMin, in: 1...(24 * 60), step: 5) {
-                            Text(durationLabel)
-                                .font(StrandFont.bodyNumber)
-                                .foregroundStyle(theme.ink)
-                        }
-                        .tint(theme.inkSecondary)
+                        EntrenarStepper(
+                            valor: durationLabel,
+                            tono: .neutro,
+                            talla: .fila,
+                            puedeBajar: durationMin > 1,
+                            puedeSubir: durationMin < 24 * 60,
+                            onBajar: { durationMin = max(1, durationMin - 5) },
+                            onSubir: { durationMin = min(24 * 60, durationMin + 5) }
+                        )
                         .accessibilityLabel("Duration in minutes")
                     }
-                    HStack(alignment: .top, spacing: 14) {
+                    HStack(alignment: .top, spacing: LiquidSpace.bloqueAjuste) {
                         field("Avg HR") {
                             numberInput("optional", text: $avgHrText, unit: String(localized: "bpm"))
                                 .accessibilityLabel("Average heart rate in beats per minute, optional")
@@ -136,7 +138,7 @@ struct ManualWorkoutSheet: View {
             Spacer()
             saveButton
         }
-        .padding(.top, 4)
+        .padding(.top, LiquidSpace.s100)
     }
 
     /// Prominent primary — verdict-green capsule when the inputs make an honest row, a quiet disabled
@@ -147,19 +149,17 @@ struct ManualWorkoutSheet: View {
             Group {
                 if enabled {
                     Text(editing == nil ? "Add" : "Save")
-                        .font(StrandFont.headline)
-                        .foregroundStyle(theme.paper)
-                        .padding(.horizontal, LiquidSpace.pastillaHorizontal).padding(.vertical, 9)
-                        .background(theme.verdict, in: Capsule(style: .continuous))
+                        .font(LiquidType.boton)
+                        .foregroundStyle(LiquidColor.papelTarjeta)
+                        .padding(.horizontal, LiquidSpace.pastillaHorizontal).padding(.vertical, LiquidSpace.s225)
+                        .background(LiquidColor.verdePrimario, in: Capsule(style: .continuous))
                 } else {
-                    // FER-220: la cápsula deshabilitada ya no es `theme.surface` a mano — el
-                    // mismo recorte opaco (`.liquidGlass(.pastillaSolida)`) que el resto de
-                    // chips legacy del app; el verdict verde de arriba se queda intacto (es
-                    // color semántico, no la receta de tarjeta que este issue retira).
+                    // FER-220: la cápsula deshabilitada usa `.liquidGlass(.pastillaSolida)`
+                    // (recorte opaco compartido); el verde del CTA activo es color semántico.
                     Text(editing == nil ? "Add" : "Save")
-                        .font(StrandFont.headline)
-                        .foregroundStyle(theme.inkTertiary)
-                        .padding(.horizontal, LiquidSpace.pastillaHorizontal).padding(.vertical, 9)
+                        .font(LiquidType.boton)
+                        .foregroundStyle(LiquidColor.tinta500)
+                        .padding(.horizontal, LiquidSpace.pastillaHorizontal).padding(.vertical, LiquidSpace.s225)
                         .liquidGlass(.pastillaSolida)
                 }
             }
@@ -170,30 +170,30 @@ struct ManualWorkoutSheet: View {
     }
 
     private func field<Content: View>(_ label: LocalizedStringKey, @ViewBuilder _ content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+        VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+            Text(label).liquidKicker().foregroundStyle(LiquidColor.tinta500)
             content()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func numberInput(_ placeholder: LocalizedStringKey, text: Binding<String>, unit: String) -> some View {
-        HStack(spacing: 6) {
+        HStack(spacing: LiquidSpace.s150) {
             TextField(placeholder, text: text)
                 .textFieldStyle(.plain)
                 .keyboardType(.numberPad)
-                .font(StrandFont.bodyNumber)
-                .foregroundStyle(theme.ink)
-            Text(unit).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                .font(LiquidType.valorM)
+                .foregroundStyle(LiquidColor.tinta900)
+            Text(unit).font(LiquidType.unidad).foregroundStyle(LiquidColor.tinta500)
         }
-        .padding(.horizontal, 12).padding(.vertical, 10)
+        .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s250)
         .liquidGlass(.superficieSolida)
     }
 
     private func noteRow(_ text: LocalizedStringKey) -> some View {
         Text(text)
-            .font(StrandFont.footnote)
-            .foregroundStyle(theme.warning)
+            .font(LiquidType.unidad)
+            .foregroundStyle(LiquidColor.atencionTexto)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 

@@ -174,13 +174,13 @@ struct MetricTrendChart<Empty: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s250) {
             if showsSelector {
                 SegmentedPillControl(ExploreRange.allCases, selection: $range, theme: theme) { $0.label }
                 if window.fellBack {
                     Text("Showing the last \(window.rows.count) days")
-                        .font(StrandFont.footnote)
-                        .foregroundStyle(theme.warning)
+                        .font(LiquidType.unidad)
+                        .foregroundStyle(LiquidColor.atencionTexto)
                 }
             }
             if window.values.count > 1 {
@@ -210,8 +210,8 @@ struct MetricTrendChart<Empty: View>: View {
             height: style.height,
             showsScrub: true,
             valueFormat: style.valueFormat,
-            axisLabelColor: theme.inkTertiary,
-            gridLineColor: theme.hairline,
+            axisLabelColor: LiquidColor.tinta500,
+            gridLineColor: LiquidColor.tinta10,
             bands: style.bands(lastPlotted),
             bandColor: style.bandColor(lastPlotted),
             yAxisValues: style.yAxisValues,

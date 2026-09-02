@@ -13,8 +13,7 @@ import StrandTraining
 // behind the sheet is never stale even if it's dismissed by a swipe instead of «Listo». Past days don't
 // rotate — a toast says so instead of a silent no-op.
 //
-// «Instrumento diurno»: an editor has no measured datum, so it's ink on paper — the only color is the
-// green «Listo» that closes it, the same closing CTA every other sheet in this section uses.
+// Liquid Glass · El Eje (FER-304): ink on glass; the green «Listo» closes via EntrenarHojaCabecera.
 struct WeekEditorSheet: View {
     @EnvironmentObject private var repo: Repository
     @Environment(\.dismiss) private var dismiss
@@ -39,40 +38,38 @@ struct WeekEditorSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Your week · editor").entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
+            // FER-304: cabecera de familia El Eje — «Listo» sube a la salida `.guardar`
+            // (antes kicker Instrumento + CTA abajo; misma acción `dismiss()`).
+            EntrenarHojaCabecera(
+                titulo: String(localized: "Your week · editor"),
+                tono: .neutro,
+                salida: .guardar(String(localized: "Ready")),
+                onSalir: { dismiss() }
+            )
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(orderedWeekdays, id: \.self) { wd in
                     dayRow(wd)
                     if wd != orderedWeekdays.last {
-                        Rectangle().fill(theme.hairline).frame(height: 0.5)
+                        Rectangle().fill(LiquidColor.tinta10).frame(height: 0.5)
                     }
                 }
             }
             .padding(.top, LiquidSpace.s200)
             Text("Tap a day to rotate its routine. The routines are the ones you already have; days you've already trained don't change.")
-                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                .font(LiquidType.unidad).foregroundStyle(LiquidColor.tinta500)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, LiquidSpace.s300)
-            HStack {
-                Spacer(minLength: 0)
-                StrandCTAButton("Ready", tint: theme.positiveText, fillsWidth: false) { dismiss() }
-            }
-            .padding(.top, LiquidSpace.s300)
         }
         .padding(LiquidSpace.s600)
-        // FER-200 (Anillo 2, épico FER-195): fondo de vidrio El Eje — se CONSERVA el chrome actual
-        // (kicker + filas + CTA «Listo» abajo). Esta hoja no tiene botón de salida en cabecera
-        // (cierra con «Ready» / swipe); meter `EntrenarHojaCabecera` AÑADIRÍA un control (REGLA
-        // SUPREMA) — se flagea y solo se tiñe el fondo.
         .entrenarHojaFondo(tono: .neutro)
         .saveErrorToast(isPresented: $saveError)
         .overlay(alignment: .bottom) {
             if lockedToast {
                 Text("Days already trained can't be edited")
-                    .font(StrandFont.caption).fontWeight(.medium)
-                    .foregroundStyle(theme.paper)
+                    .font(LiquidType.caption).fontWeight(.medium)
+                    .foregroundStyle(LiquidColor.papelTarjeta)
                     .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s200)
-                    .background(theme.ink, in: Capsule())
+                    .background(LiquidColor.tinta900, in: Capsule())
                     .padding(.bottom, CenitMetrics.sectionGap)
                     .transition(LiquidMotion.risingFadeTransition)
                     .task {
@@ -109,15 +106,15 @@ struct WeekEditorSheet: View {
         } label: {
             HStack(spacing: LiquidSpace.s300) {
                 Text(verbatim: dayLetter(wd))
-                    .font(StrandFont.scaled(11, weight: .semibold, relativeTo: .caption2))
-                    .foregroundStyle(theme.inkTertiary)
+                    .font(LiquidType.caption)
+                    .foregroundStyle(LiquidColor.tinta500)
                     .frame(width: 26, alignment: .leading)
                 routineLabel(name: name, isToday: isToday)
                 Spacer(minLength: LiquidSpace.s200)
                 if past {
-                    if done { Text("Already done").font(StrandFont.caption).foregroundStyle(theme.inkDim) }
+                    if done { Text("Already done").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500) }
                 } else {
-                    Text("Tap to rotate").font(StrandFont.caption).foregroundStyle(theme.inkDim)
+                    Text("Tap to rotate").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                 }
             }
             .frame(minHeight: EntrenarMetrics.row)
@@ -133,12 +130,12 @@ struct WeekEditorSheet: View {
 
     private func routineLabel(name: String?, isToday: Bool) -> Text {
         let base = nameText(name)
-            .font(StrandFont.scaled(13.5, weight: name != nil ? .semibold : .regular, relativeTo: .subheadline))
-            .foregroundStyle(name != nil ? theme.ink : theme.inkTertiary)
+            .font(name != nil ? LiquidType.tituloFila : LiquidType.cuerpoBanner)
+            .foregroundStyle(name != nil ? LiquidColor.tinta900 : LiquidColor.tinta500)
         guard isToday else { return base }
         let todaySuffix = (Text(verbatim: " · ") + Text("today"))
-            .font(StrandFont.scaled(13.5, weight: .regular, relativeTo: .subheadline))
-            .foregroundStyle(theme.inkTertiary)
+            .font(LiquidType.cuerpoBanner)
+            .foregroundStyle(LiquidColor.tinta500)
         return base + todaySuffix
     }
 

@@ -9,7 +9,7 @@ import StrandDesign
 // sobrevive al borrado en archivo propio, sin un solo cambio de comportamiento.
 
 
-/// The shareable card, faithful to «Instrumento»: warm paper, the Cénit wordmark, an editorial title,
+/// The shareable card in Liquid Glass · El Eje: paper card, the Cénit wordmark, an editorial title,
 /// the date, three metrics (plus heart rate / calories when opted in), and a records footer. This exact
 /// view is both the on-screen preview and the `ImageRenderer` source.
 struct ShareCardView: View {
@@ -22,23 +22,23 @@ struct ShareCardView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Cénit").font(InstrumentoType.grotesk(16, weight: .semibold)).tracking(0.4)
-                .foregroundStyle(theme.ink)
-            Text(title).font(InstrumentoType.grotesk(24, weight: .bold)).tracking(-0.2)
-                .foregroundStyle(theme.ink).padding(.top, 14)
-            Text(dateString).font(StrandFont.caption).foregroundStyle(theme.inkTertiary).padding(.top, 3)
+            Text("Cénit").font(LiquidType.tituloHoja)
+                .foregroundStyle(LiquidColor.tinta900)
+            Text(title).font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
+                .foregroundStyle(LiquidColor.tinta900).padding(.top, LiquidSpace.handoff14)
+            Text(dateString).font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500).padding(.top, LiquidSpace.s075)
 
-            Rectangle().fill(theme.hairline).frame(height: 1).padding(.vertical, 16)
+            Rectangle().fill(LiquidColor.tinta10).frame(height: 1).padding(.vertical, LiquidSpace.s400)
 
-            HStack(alignment: .top, spacing: 16) {
+            HStack(alignment: .top, spacing: LiquidSpace.s400) {
                 ForEach(Array(metrics.enumerated()), id: \.offset) { _, m in
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(m.label).groteskOverline(small: true).foregroundStyle(theme.inkTertiary)
-                        HStack(alignment: .firstTextBaseline, spacing: 2) {
-                            Text(m.value).font(InstrumentoType.grotesk(19, weight: .semibold)).monospacedDigit()
-                                .foregroundStyle(m.accent ?? theme.ink)
+                    VStack(alignment: .leading, spacing: LiquidSpace.s075) {
+                        Text(m.label).liquidKicker().foregroundStyle(LiquidColor.tinta500)
+                        HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s050) {
+                            Text(m.value).font(LiquidType.valorM).monospacedDigit()
+                                .foregroundStyle(m.accent ?? LiquidColor.tinta900)
                             if let u = m.unit {
-                                Text(u).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                                Text(u).font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                             }
                         }
                     }
@@ -47,13 +47,13 @@ struct ShareCardView: View {
 
             if includeRecords, let pr = summary.prs.first {
                 Text("★ \(String(localized: "Record")): \(prText(pr))")
-                    .font(StrandFont.subhead).fontWeight(.medium).foregroundStyle(theme.verdict)
-                    .padding(.top, 14)
+                    .font(LiquidType.tituloGemela).fontWeight(.medium).foregroundStyle(LiquidColor.verdePrimario)
+                    .padding(.top, LiquidSpace.handoff14)
             }
         }
         .padding(LiquidSpace.tarjetaAmplia)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
+        .background(LiquidColor.papelTarjeta, in: RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous).strokeBorder(LiquidColor.vidrioCanto, lineWidth: 1))
     }
 
     private struct Metric { let label: LocalizedStringKey; let value: String; let unit: String?; let accent: Color? }
@@ -64,12 +64,12 @@ struct ShareCardView: View {
             Metric(label: "Volume", value: grouped(summary.volumeKg), unit: "kg", accent: nil),
         ]
         if let s = summary.strain {
-            out.append(Metric(label: "Effort", value: decimal1(s), unit: nil, accent: theme.dataStrain))
+            out.append(Metric(label: "Effort", value: decimal1(s), unit: nil, accent: LiquidColor.ambar))
         } else {
             out.append(Metric(label: "Sets", value: "\(summary.setCount)", unit: nil, accent: nil))
         }
         if includeHR, let hr = summary.avgHr {
-            out.append(Metric(label: "Avg HR", value: "\(hr)", unit: nil, accent: theme.dataHeart))
+            out.append(Metric(label: "Avg HR", value: "\(hr)", unit: nil, accent: LiquidColor.rosa))
         }
         if includeKcal, let k = summary.energyKcal {
             out.append(Metric(label: "Calories", value: "\(Int(k.rounded()))", unit: nil, accent: nil))

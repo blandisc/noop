@@ -6,7 +6,7 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // StarterTemplatesSheet.swift — «Start from a template» (FER-386).
 //
-// A light «Instrumento diurno» sheet that lets the user copy a bundled starter routine into «My
+// A light Liquid Glass · El Eje sheet that lets the user copy a bundled starter routine into «My
 // routines». Two states in one sheet (no nested NavigationStack — FER-171): the grouped LIST, and a
 // single template's PREVIEW with the «Add to my routines» action. Everything is offline: the
 // templates are bundled data (`StarterTemplates`) and the exercises resolve from the seed catalog.
@@ -86,38 +86,37 @@ struct StarterTemplatesSheet: View {
     private var listContent: some View {
         VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             if !isGroupMode {
-                VStack(alignment: .leading, spacing: 4) {
-                    // FER-952: the sheet speaks the module's Grotesk voice (overline + hero title).
-                    Text("Templates").groteskSheetTitle().textCase(.uppercase).foregroundStyle(theme.inkTertiary)
+                VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+                    Text("Templates").liquidKicker().foregroundStyle(LiquidColor.tinta500)
                     Text("Start from a template")
-                        .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
-                        .foregroundStyle(theme.ink)
+                        .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
+                        .foregroundStyle(LiquidColor.tinta900)
                         .fixedSize(horizontal: false, vertical: true)
                     Text("Begin with a proven base and edit it to taste. Everything works offline.")
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta700)
                         .fixedSize(horizontal: false, vertical: true)
-                        .padding(.top, 2)
+                        .padding(.top, LiquidSpace.s050)
                 }
             } else if let grupo {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Templates").groteskSheetTitle().textCase(.uppercase).foregroundStyle(theme.inkTertiary)
+                VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+                    Text("Templates").liquidKicker().foregroundStyle(LiquidColor.tinta500)
                     Text(groupName(grupo))
-                        .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
-                        .foregroundStyle(theme.ink)
+                        .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
+                        .foregroundStyle(LiquidColor.tinta900)
                         .fixedSize(horizontal: false, vertical: true)
                     Text(routineCountText(StarterTemplates.inGroup(grupo).count))
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta700)
                         .fixedSize(horizontal: false, vertical: true)
-                        .padding(.top, 2)
+                        .padding(.top, LiquidSpace.s050)
                 }
             }
 
             ForEach(visibleGroups, id: \.self) { group in
                 let templates = StarterTemplates.inGroup(group)
                 if !templates.isEmpty {
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: LiquidSpace.s150) {
                         if !isGroupMode {
-                            Text(groupName(group)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                            Text(groupName(group)).liquidKicker().foregroundStyle(LiquidColor.tinta500)
                         }
                         EntrenarModulo(tono: .neutro, intensidad: LiquidTonoMetrics.intensidadDefault, insets: EdgeInsets()) {
                             VStack(alignment: .leading, spacing: 0) {
@@ -140,18 +139,18 @@ struct StarterTemplatesSheet: View {
 
     private func templateRow(_ t: StarterTemplate) -> some View {
         Button { withAnimation(LiquidMotion.toque) { selected = t } } label: {
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(templateName(t.id)).font(StrandFont.body).foregroundStyle(theme.ink)
+            HStack(spacing: LiquidSpace.s300) {
+                VStack(alignment: .leading, spacing: LiquidSpace.s025) {
+                    Text(templateName(t.id)).font(LiquidType.tituloGemela).foregroundStyle(LiquidColor.tinta900)
                     Text("\(exerciseCountText(t.exerciseCount)) · \(String(localized: templateBlurb(t.id)))")
-                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                Spacer(minLength: 8)
+                Spacer(minLength: LiquidSpace.s200)
                 StrandIcon.disclosure.image
-                    .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    .font(LiquidType.iconSF(size: 15)).foregroundStyle(LiquidColor.tinta500)
             }
-            .padding(.horizontal, LiquidSpace.s400).frame(minHeight: 56).contentShape(Rectangle())
+            .padding(.horizontal, LiquidSpace.s400).frame(minHeight: LiquidSpace.s1400).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityHint(Text("Preview this template"))
@@ -165,25 +164,25 @@ struct StarterTemplatesSheet: View {
             // más de una (o catálogo completo).
             if !isGroupMode || (grupo.map { StarterTemplates.inGroup($0).count } ?? 0) > 1 {
                 Button { withAnimation(LiquidMotion.toque) { selected = nil } } label: {
-                    HStack(spacing: 4) {
-                        StrandIcon.back.image.font(StrandFont.glyph(.chevron, weight: .semibold))
+                    HStack(spacing: LiquidSpace.s100) {
+                        StrandIcon.back.image.font(LiquidType.iconSF(size: 15))
                         Text(isGroupMode ? groupName(t.group) : LocalizedStringKey("Templates"))
-                            .font(StrandFont.subhead)
+                            .font(LiquidType.cuerpo)
                     }
-                    .foregroundStyle(theme.inkSecondary)
+                    .foregroundStyle(LiquidColor.tinta700)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("Back to templates"))
             }
 
-            VStack(alignment: .leading, spacing: 3) {
-                Text(groupName(t.group)).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            VStack(alignment: .leading, spacing: LiquidSpace.s075) {
+                Text(groupName(t.group)).liquidKicker().foregroundStyle(LiquidColor.tinta500)
                 Text(templateName(t.id))
-                    .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
-                    .foregroundStyle(theme.ink)
+                    .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
+                    .foregroundStyle(LiquidColor.tinta900)
                     .fixedSize(horizontal: false, vertical: true)
                 Text("\(exerciseCountText(t.exerciseCount)) · \(String(localized: templateBlurb(t.id)))")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta700)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
@@ -197,49 +196,49 @@ struct StarterTemplatesSheet: View {
             }
 
             if !isGroupMode {
-                VStack(spacing: 10) {
+                VStack(spacing: LiquidSpace.s250) {
                     StrandCTAButton("Add to my routines") { add(t) }
                         .disabled(saving)
 
                     Text("It's copied into «My routines». You can edit it like any routine.")
-                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                         .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity)
                 }
-                .padding(.top, 2)
+                .padding(.top, LiquidSpace.s050)
             }
         }
     }
 
     /// CTA de modo grupo (FER-251): aplica el programa entero + agenda, no una sola rutina.
     private var useThisPlanFooter: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: LiquidSpace.s250) {
             StrandCTAButton("Use this plan") { applyTemplateGroup() }
                 .disabled(saving)
                 .accessibilityHint(Text("Choosing a template creates its routines and your week is set; you can always edit it later, day by day."))
 
             Text("Choosing a template creates its routines and your week is set; you can always edit it later, day by day.")
-                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                 .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity)
         }
-        .padding(.top, 2)
+        .padding(.top, LiquidSpace.s050)
     }
 
     private func slotRow(_ slot: StarterTemplate.Slot) -> some View {
         let exercise = ExerciseCatalog.byID(slot.exerciseId)
         let name = exercise.map(StrengthDisplay.name) ?? String(localized: "Exercise")
-        return HStack(spacing: 10) {
-            Text(name).font(StrandFont.body).foregroundStyle(theme.ink)
+        return HStack(spacing: LiquidSpace.s250) {
+            Text(name).font(LiquidType.tituloGemela).foregroundStyle(LiquidColor.tinta900)
                 .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 8)
-            Text(schemeText(slot)).font(StrandFont.subhead).monospacedDigit().foregroundStyle(theme.inkSecondary)
+            Spacer(minLength: LiquidSpace.s200)
+            Text(schemeText(slot)).font(LiquidType.cuerpo).monospacedDigit().foregroundStyle(LiquidColor.tinta700)
             Text(restChipText(slot.restSeconds))
-                .font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary)
-                .padding(.horizontal, 7).padding(.vertical, 2)
-                .background(theme.paper, in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
+                .font(LiquidType.caption).monospacedDigit().foregroundStyle(LiquidColor.tinta500)
+                .padding(.horizontal, 7).padding(.vertical, LiquidSpace.s050)
+                .background(LiquidColor.papelTarjeta, in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous)
-                    .strokeBorder(theme.hairline, lineWidth: 1))
+                    .strokeBorder(LiquidColor.tinta10, lineWidth: 1))
         }
         .padding(.horizontal, LiquidSpace.s400).padding(.vertical, LiquidSpace.s300)
         .accessibilityElement(children: .combine)
@@ -305,7 +304,7 @@ struct StarterTemplatesSheet: View {
 
     // MARK: - Bits
 
-    private var divider: some View { Divider().overlay(theme.hairline) }
+    private var divider: some View { Divider().overlay(LiquidColor.tinta10) }
 
     private func exerciseCountText(_ n: Int) -> String { String(localized: "\(n) exercises") }
 

@@ -22,6 +22,10 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 - Las hojas hijas de sesión (RPE, Nota, Cambiar ejercicio, Discos, Crear ejercicio y el detalle de músculo) pasan al vidrio El Eje: tipografía y tinta Liquid, cabecera de hoja y controles del catálogo (FER-302).
 - La sesión en vivo y la Hoja de rutina (editor + live) pasan al vidrio El Eje: tipografía y color Liquid, cápsulas Outline/Hoja y fondos de hoja sin chrome Instrumento (FER-303).
+- **Entrenar fuera de sesión al vidrio / Out-of-session Training to glass** (FER-304).
+  **ES** — Las pantallas y hojas de Entrenar que viven fuera de la sesión activa (plantillas, editor de semana, workout manual, intervalos, trucos, recibo, respiración, franja de carga, detalle/tendencia de métrica, tarjeta de compartir y chips de serie) pasan al dialecto Liquid Glass · El Eje: mismos flujos, tipografía y color del sistema.
+  **EN** — Training screens and sheets that live outside the live session (templates, week editor, manual workout, intervals, tricks, receipt, breathing, load strip, metric detail/trend, share card and set chips) move to the Liquid Glass · El Eje dialect: same flows, system type and color.
+
 - Diseño: los 8 miembros deprecados de `CenitMetrics` (space1, space2, gap, cardPadding, screenPadding, controlRadius, chipRadius, touchTarget) salen de toda la app iOS a favor de `LiquidSpace`, `LiquidRadius` y `LiquidControl`, valor por valor (FER-300). El Watch conserva su carve-out.
 - Entrenar adopta piezas huérfanas del catálogo: cápsulas Outline/Hoja, búsqueda Liquid, avisos, confirms y papel en presenters (FER-301 · FER-298).
 

@@ -130,11 +130,11 @@ struct ReceiptPrinterScreen: View {
             ticketStage(receipt)
         } else if loadFailed {
             Text(String(localized: "recibo.error", defaultValue: "The receipt couldn't be built."))
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.inkTertiary)
+                .font(LiquidType.cuerpo)
+                .foregroundStyle(LiquidColor.tinta500)
         } else {
             ProgressView()
-                .tint(theme.inkTertiary)
+                .tint(LiquidColor.tinta500)
         }
     }
 

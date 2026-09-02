@@ -19,56 +19,56 @@ struct WorkshopTricksScreen: View {
     private struct Trick: Identifiable {
         let id: String
         let systemImage: String
-        let tint: KeyPath<InstrumentoTheme, Color>
+        let tint: Color
         let title: LocalizedStringKey
         let body: LocalizedStringKey
     }
 
     private let tricks: [Trick] = [
         .init(id: "progression", systemImage: "arrow.up.right",
-              tint: \.dataRecovery,
+              tint: LiquidColor.verdePrimario,
               title: "Progression that earns itself",
               body: "Hit the target two sessions in a row and the routine raises the weight. Turn it on per exercise, from its card."),
         .init(id: "hr-rest", systemImage: "heart.fill",
-              tint: \.dataHeart,
+              tint: LiquidColor.rosa,
               title: "Rest by heart, not by clock",
               body: "Rest by heart rate ends when your pulse has recovered enough to lift again. Fixed time is always there if you prefer it."),
         .init(id: "import", systemImage: "square.and.arrow.down",
-              tint: \.dataHrv,
+              tint: LiquidColor.cian,
               title: "Import your AI's plan",
               body: "Ask ChatGPT or Claude for a routine and bring the file in. Cénit never connects; you run the AI yourself."),
         .init(id: "warmup", systemImage: "flame",
-              tint: \.dataStrain,
+              tint: LiquidColor.ambar,
               title: "Warm-ups on a ramp",
               body: "One tap adds the 40/60/80% ladder before your first heavy set."),
         .init(id: "plates", systemImage: "scalemass",
-              tint: \.dataSleep,
+              tint: LiquidColor.indigo,
               title: "Plate calculator",
               body: "Tap the weight during a session and it tells you which plates to load per side."),
         .init(id: "tickets", systemImage: "ticket",
-              tint: \.ink,
+              tint: LiquidColor.tinta900,
               title: "Thermal tickets",
               body: "Every session prints its receipt. Save them and compare them in History."),
     ]
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("The workshop").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+                Text("The workshop").liquidKicker().foregroundStyle(LiquidColor.tinta500)
                 Text("What Cénit can do")
-                    .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
-                    .foregroundStyle(theme.ink)
+                    .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
+                    .foregroundStyle(LiquidColor.tinta900)
                 Text("Things you may not have found yet")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta700)
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(tricks) { t in
                         trickRow(t)
-                        if t.id != tricks.last?.id { Divider().overlay(theme.hairline) }
+                        if t.id != tricks.last?.id { Divider().overlay(LiquidColor.tinta10) }
                     }
                 }
                 .padding(.top, LiquidSpace.s300)
             }
-            .padding(.top, CenitMetrics.screenTop)
+            .padding(.top, LiquidSpace.handoff14)
             .padding(.horizontal, LiquidSpace.s600)
             .padding(.bottom, LiquidSpace.s600)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -83,15 +83,15 @@ struct WorkshopTricksScreen: View {
     private func trickRow(_ t: Trick) -> some View {
         HStack(alignment: .top, spacing: LiquidSpace.s300) {
             Image(systemName: t.systemImage)
-                .font(StrandFont.glyph(.inline))
-                .foregroundStyle(theme[keyPath: t.tint])
+                .font(LiquidType.iconSF(size: 15))
+                .foregroundStyle(t.tint)
                 .frame(width: 34, height: 34)
                 .liquidGlass(.superficieSolida)
                 .overlay(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous)
-                    .strokeBorder(theme[keyPath: t.tint].opacity(StrandOpacity.strokeSoft), lineWidth: 1.5))
-            VStack(alignment: .leading, spacing: 2) {
-                Text(t.title).font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
-                Text(t.body).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                    .strokeBorder(t.tint.opacity(StrandOpacity.strokeSoft), lineWidth: 1.5))
+            VStack(alignment: .leading, spacing: LiquidSpace.s050) {
+                Text(t.title).font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+                Text(t.body).font(LiquidType.caption).foregroundStyle(LiquidColor.tinta700)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)

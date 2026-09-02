@@ -78,9 +78,9 @@ struct IntervalTimerView: View {
     /// never button chrome (H-022).
     private var phaseColor: Color {
         switch phase {
-        case .work: return theme.dataStrain
-        case .rest: return theme.dataHrv
-        case .done: return theme.dataRecovery
+        case .work: return LiquidColor.ambar
+        case .rest: return LiquidColor.cian
+        case .done: return LiquidColor.verdePrimario
         }
     }
 
@@ -134,10 +134,10 @@ struct IntervalTimerView: View {
             Text("Interval Timer")
                 .font(LiquidType.displayL)
                 .tracking(LiquidType.displayLTracking)
-                .foregroundStyle(theme.ink)
+                .foregroundStyle(LiquidColor.tinta900)
             Text("Silent haptic HIIT: your phone buzzes the transitions")
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.inkSecondary)
+                .font(LiquidType.cuerpo)
+                .foregroundStyle(LiquidColor.tinta700)
         }
     }
 
@@ -146,22 +146,22 @@ struct IntervalTimerView: View {
     private var configureScreen: some View {
         VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
             VStack(alignment: .leading, spacing: LiquidSpace.s100) {
-                Text("INTERVALS").liquidRegla().foregroundStyle(theme.inkTertiary)
+                Text("INTERVALS").liquidRegla().foregroundStyle(LiquidColor.tinta500)
                 Text("Build your HIIT")
                     .font(LiquidType.displayL)
                     .tracking(LiquidType.displayLTracking)
-                    .foregroundStyle(theme.ink)
+                    .foregroundStyle(LiquidColor.tinta900)
             }
 
             VStack(alignment: .leading, spacing: LiquidSpace.s400) {
                 configStepper(title: "Work", unit: "sec", value: $workSeconds,
-                              range: 5...600, step: 5, tint: theme.dataStrain)
-                Divider().overlay(theme.hairline)
+                              range: 5...600, step: 5, tint: LiquidColor.ambar)
+                Divider().overlay(LiquidColor.tinta10)
                 configStepper(title: "Rest", unit: "sec", value: $restSeconds,
-                              range: 5...600, step: 5, tint: theme.dataHrv)
-                Divider().overlay(theme.hairline)
+                              range: 5...600, step: 5, tint: LiquidColor.cian)
+                Divider().overlay(LiquidColor.tinta10)
                 configStepper(title: "Rounds", unit: nil, value: $rounds,
-                              range: 1...30, step: 1, tint: theme.ink)
+                              range: 1...30, step: 1, tint: LiquidColor.tinta900)
             }
             .padding(LiquidSpace.s400)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -170,7 +170,7 @@ struct IntervalTimerView: View {
             HStack {
                 Text("Total \(timeString(totalPlanned))")
                     .font(LiquidType.valorM)
-                    .foregroundStyle(theme.ink)
+                    .foregroundStyle(LiquidColor.tinta900)
                 Spacer()
             }
 
@@ -186,9 +186,9 @@ struct IntervalTimerView: View {
         HStack(spacing: LiquidSpace.s250) {
             Spacer()
             if running {
-                statusPill("Running", dotColor: theme.dataStrain)
+                statusPill("Running", dotColor: LiquidColor.ambar)
             } else if isFinished {
-                statusPill("Complete", dotColor: theme.dataRecovery)
+                statusPill("Complete", dotColor: LiquidColor.verdePrimario)
             } else {
                 statusPill("Paused")
             }
@@ -202,8 +202,8 @@ struct IntervalTimerView: View {
                 Circle().fill(dotColor).frame(width: LiquidSpace.s150, height: LiquidSpace.s150)
             }
             Text(text)
-                .font(StrandFont.caption)
-                .foregroundStyle(theme.ink)
+                .font(LiquidType.caption)
+                .foregroundStyle(LiquidColor.tinta900)
         }
         .padding(.horizontal, LiquidSpace.s300)
         .padding(.vertical, LiquidSpace.s150)
@@ -222,13 +222,13 @@ struct IntervalTimerView: View {
                     .foregroundStyle(phaseColor)
                 Spacer()
                 HStack(spacing: LiquidSpace.s150) {
-                    Text("ROUND").liquidRegla().foregroundStyle(theme.inkTertiary)
+                    Text("ROUND").liquidRegla().foregroundStyle(LiquidColor.tinta500)
                     Text("\(min(currentRound, rounds))")
                         .font(LiquidType.valorL)
-                        .foregroundStyle(theme.ink)
+                        .foregroundStyle(LiquidColor.tinta900)
                     Text("/ \(rounds)")
                         .font(LiquidType.valorL)
-                        .foregroundStyle(theme.inkTertiary)
+                        .foregroundStyle(LiquidColor.tinta500)
                 }
             }
 
@@ -242,12 +242,12 @@ struct IntervalTimerView: View {
                     // Countdown = dominante sobrio: Grotesk tabular en tinta (nunca hue de fase).
                     Text(isFinished ? "✓" : "\(remaining)")
                         .instrumentoHero(96)
-                        .foregroundStyle(theme.ink)
+                        .foregroundStyle(LiquidColor.tinta900)
                         .contentTransition(reduceMotion ? .identity : .numericText())
                         .strandAnimation(.snappy, value: remaining)
                     Text(isFinished ? "SESSION DONE" : "SECONDS")
                         .liquidRegla()
-                        .foregroundStyle(theme.inkTertiary)
+                        .foregroundStyle(LiquidColor.tinta500)
                 }
             }
             .frame(height: 260)
@@ -265,7 +265,7 @@ struct IntervalTimerView: View {
     private var intervalRing: some View {
         ZStack {
             Circle()
-                .stroke(theme.hairline, lineWidth: LiquidSpace.s400)
+                .stroke(LiquidColor.tinta10, lineWidth: LiquidSpace.s400)
             Circle()
                 .trim(from: 0, to: isFinished ? 1 : intervalProgress)
                 .stroke(phaseColor, style: StrokeStyle(lineWidth: LiquidSpace.s400, lineCap: .round))
@@ -287,7 +287,7 @@ struct IntervalTimerView: View {
                     .frame(maxWidth: .infinity)
                     .overlay {
                         if index > currentRound && phase != .done {
-                            Capsule().strokeBorder(theme.hairline, lineWidth: 1)
+                            Capsule().strokeBorder(LiquidColor.tinta10, lineWidth: 1)
                         }
                     }
             }
@@ -298,12 +298,12 @@ struct IntervalTimerView: View {
 
     private func roundIndicatorFill(_ index: Int) -> Color {
         if phase == .done || index < currentRound {
-            return theme.dataStrain
+            return LiquidColor.ambar
         }
         if index == currentRound {
-            return phase == .rest ? theme.dataHrv : theme.dataStrain
+            return phase == .rest ? LiquidColor.cian : LiquidColor.ambar
         }
-        return theme.hairline
+        return LiquidColor.tinta10
     }
 
     private var controls: some View {
@@ -325,20 +325,20 @@ struct IntervalTimerView: View {
     private var overviewCard: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s300) {
             HStack(alignment: .firstTextBaseline) {
-                Text("Session").liquidRegla().foregroundStyle(theme.inkTertiary)
+                Text("Session").liquidRegla().foregroundStyle(LiquidColor.tinta500)
                 Spacer()
                 Text("\(timeString(elapsed)) / \(timeString(totalPlanned))")
                     .font(LiquidType.datoMenor)
-                    .foregroundStyle(theme.ink)
+                    .foregroundStyle(LiquidColor.tinta900)
             }
 
             // Slim total-session progress bar
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule()
-                        .fill(theme.hairline)
+                        .fill(LiquidColor.tinta10)
                     Capsule()
-                        .fill(theme.dataStrain)
+                        .fill(LiquidColor.ambar)
                         .frame(width: geo.size.width * sessionProgress)
                         .strandAnimation(.linear(duration: 0.9), value: sessionProgress)
                 }
@@ -346,10 +346,10 @@ struct IntervalTimerView: View {
             .frame(height: LiquidSpace.s200)
 
             HStack(spacing: 0) {
-                overviewStat("Work", "\(workSeconds)s", theme.dataStrain)
-                overviewStat("Rest", "\(restSeconds)s", theme.dataHrv)
-                overviewStat("Rounds", "\(rounds)", theme.ink)
-                overviewStat("Remaining", timeString(max(0, totalPlanned - elapsed)), theme.inkSecondary)
+                overviewStat("Work", "\(workSeconds)s", LiquidColor.ambar)
+                overviewStat("Rest", "\(restSeconds)s", LiquidColor.cian)
+                overviewStat("Rounds", "\(rounds)", LiquidColor.tinta900)
+                overviewStat("Remaining", timeString(max(0, totalPlanned - elapsed)), LiquidColor.tinta700)
             }
         }
         .padding(LiquidSpace.s400)
@@ -364,7 +364,7 @@ struct IntervalTimerView: View {
 
     private func overviewStat(_ label: LocalizedStringKey, _ value: String, _ color: Color) -> some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s075) {
-            Text(label).liquidRegla().foregroundStyle(theme.inkTertiary)
+            Text(label).liquidRegla().foregroundStyle(LiquidColor.tinta500)
             Text(value).font(LiquidType.valorM).foregroundStyle(color)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -380,9 +380,9 @@ struct IntervalTimerView: View {
             VStack(alignment: .leading, spacing: LiquidSpace.s050) {
                 Text(LocalizedStringKey(title))
                     .font(LiquidType.tituloGemela)
-                    .foregroundStyle(theme.ink)
+                    .foregroundStyle(LiquidColor.tinta900)
                 Text("\(range.lowerBound)–\(range.upperBound)\(unit.map { " \($0)" } ?? "") · step \(step)")
-                    .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    .font(LiquidType.unidad).foregroundStyle(LiquidColor.tinta500)
             }
             Spacer()
             HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s100) {
@@ -391,7 +391,7 @@ struct IntervalTimerView: View {
                     .foregroundStyle(tint)
                     .frame(minWidth: 44, alignment: .trailing)
                 if let unit {
-                    Text(unit).font(LiquidType.unidad).foregroundStyle(theme.inkTertiary)
+                    Text(unit).font(LiquidType.unidad).foregroundStyle(LiquidColor.tinta500)
                 }
             }
             PaperStepper(value: value, in: range, step: step,
