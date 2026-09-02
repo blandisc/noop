@@ -61,19 +61,19 @@ public enum LiquidAmbientBackground {}
 /// (dial-sello o anillo de progreso) a la derecha. `kickerA11y` = la versión para
 /// VoiceOver («miércoles, 22 de julio de 2026») — la abreviatura en caja alta se
 /// deletrea mal (revote /inject).
-public struct LiquidScreenHeader<Trailing: View>: View {
+struct LiquidScreenHeader<Trailing: View>: View {
     private let kicker: String
     private let kickerA11y: String?
     private let trailing: Trailing
 
-    public init(kicker: String, kickerA11y: String? = nil,
+    init(kicker: String, kickerA11y: String? = nil,
                 @ViewBuilder trailing: () -> Trailing) {
         self.kicker = kicker
         self.kickerA11y = kickerA11y
         self.trailing = trailing()
     }
 
-    public var body: some View {
+    var body: some View {
         HStack {
             Text(kicker).liquidKicker().foregroundStyle(LiquidColor.tinta700)
                 .accessibilityLabel(Text(verbatim: kickerA11y ?? kicker))
@@ -88,7 +88,7 @@ public struct LiquidScreenHeader<Trailing: View>: View {
 /// El sello circular de 40: vidrio de lente en miniatura con el día como dial de 24 h —
 /// arco de noche (índigo), arco de día (tinta), marcador verde en la hora actual y un
 /// punto de papel a medianoche (arriba).
-public struct LiquidDialSeal: View {
+struct LiquidDialSeal: View {
     private let night: (start: Double, end: Double)?
     private let sol: (start: Double, end: Double)?
     private let marker: Double
@@ -98,7 +98,7 @@ public struct LiquidDialSeal: View {
     /// (noche 20:00–04:00, marcador 08:00). `night == nil` = sin sesión de sueño
     /// anoche → sin arco de noche. `sol` (amanecer/atardecer) pinta el arco del día
     /// en ORO siguiendo el sol real — la herencia del DiurnalDial (sesión /inject).
-    public init(night: (start: Double, end: Double)? = (20, 4),
+    init(night: (start: Double, end: Double)? = (20, 4),
                 sol: (start: Double, end: Double)? = nil,
                 marker: Double = 8, size: CGFloat = 40) {
         self.night = night
@@ -111,7 +111,7 @@ public struct LiquidDialSeal: View {
         -90 + hour / 24 * 360
     }
 
-    public var body: some View {
+    var body: some View {
         let r = size * (10.5 / 36)
         let nightFrom = angle(night?.start ?? 0)
         var nightTo = angle(night?.end ?? 0)

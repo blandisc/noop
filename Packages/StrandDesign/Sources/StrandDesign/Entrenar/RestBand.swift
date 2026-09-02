@@ -29,14 +29,14 @@ public enum RestBandMode: Sendable, Hashable {
 ///
 /// La geometría es una función pura y aparte (`fraccion`) para que se pueda probar sin pintar nada:
 /// es la única parte que puede estar mal de una forma que el ojo no cacha.
-public struct RestPulseRail: View {
+struct RestPulseRail: View {
 
     private let bpm: Int
     private let target: Int?
 
     @Environment(\.instrumentoTheme) private var theme
 
-    public init(bpm: Int, target: Int?) { self.bpm = bpm; self.target = target }
+    init(bpm: Int, target: Int?) { self.bpm = bpm; self.target = target }
 
     /// Cuánto se ha recorrido del pico nominal (objetivo + 40) hasta el objetivo. 0 = recién
     /// terminada la serie; 1 = listo. Satura en los dos extremos: un pulso por debajo del objetivo
@@ -47,14 +47,14 @@ public struct RestPulseRail: View {
     /// «ya estás listo». Sin umbral no hay contra qué compararte, y un riel lleno sin evidencia es
     /// justo la mentira que esta app persigue. Vacío dice lo que de verdad sabemos: nada todavía.
     /// La prueba lo ancla.
-    public static func fraccion(bpm: Int, target: Int?) -> Double {
+    static func fraccion(bpm: Int, target: Int?) -> Double {
         guard let target else { return 0 }
         let hi = Double(target + 40), lo = Double(target)
         guard hi > lo else { return 1 }
         return max(0, min(1, (hi - Double(bpm)) / (hi - lo)))
     }
 
-    public var body: some View {
+    var body: some View {
         GeometryReader { geo in
             let w = geo.size.width
             ZStack(alignment: .leading) {

@@ -15,7 +15,7 @@ import SwiftUI
 /// El envoltorio de una columna: rótulo `dato` + contenido libre, hecho botón con el press y
 /// el haptic del sistema, con su etiqueta de VoiceOver. Alinea a la izquierda o a la derecha
 /// (las columnas `.der` del mockup).
-public struct LiquidColumnaShell<Content: View>: View {
+struct LiquidColumnaShell<Content: View>: View {
     private let label: String
     private let alignment: HorizontalAlignment
     private let a11yLabel: String
@@ -25,7 +25,7 @@ public struct LiquidColumnaShell<Content: View>: View {
 
     @State private var taps = 0
 
-    public init(label: String, alignment: HorizontalAlignment = .leading,
+    init(label: String, alignment: HorizontalAlignment = .leading,
                 a11yLabel: String, a11yHint: String = "Opens the detail",
                 action: @escaping () -> Void, @ViewBuilder content: () -> Content) {
         self.label = label
@@ -44,7 +44,7 @@ public struct LiquidColumnaShell<Content: View>: View {
         }
     }
 
-    public var body: some View {
+    var body: some View {
         Button {
             taps &+= 1
             action()

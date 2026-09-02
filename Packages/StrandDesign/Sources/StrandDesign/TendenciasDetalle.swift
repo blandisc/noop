@@ -21,15 +21,15 @@ import SwiftUI
 
 /// Opacidades sancionadas para texto/chrome sobre un campo saturado (el texto es `theme.paper`
 /// sobre el hue de la pantalla). Del handoff: secundarios 0.72–0.78, cápsula 0.16.
-public enum OnFieldOpacity {
+enum OnFieldOpacity {
     /// Texto secundario sobre el campo («/100», «vs tu base», el driver del veredicto).
-    public static let secondary: Double = 0.75
+    static let secondary: Double = 0.75
     /// Fondo de la cápsula secundaria («+6 vs tu base», «en curso»).
-    public static let capsule: Double = 0.16
+    static let capsule: Double = 0.16
     /// Chrome atenuado (el trazo del ⓘ).
-    public static let dimChrome: Double = 0.8
+    static let dimChrome: Double = 0.8
     /// Regla/divisor vertical entre dos datos sobre el campo invertido.
-    public static let divider: Double = 0.28
+    static let divider: Double = 0.28
 }
 
 // MARK: - BarraAncla

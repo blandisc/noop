@@ -30,72 +30,72 @@ import CoreGraphics
 //     geometría de pantalla que `LiquidOrbeEntrada` resuelve con el frame que publica el
 //     héroe. Aquí solo se produce el PROGRESO del ascenso (`Cuadro.ascenso`); la vista lo usa
 //     para aterrizar sin costura sobre el héroe, o sobre el cénit fijo si el frame no llegó.
-public enum EntradaSimulacion {
+enum EntradaSimulacion {
 
     // MARK: Geometría (lienzo de referencia 364×720 — la vista lo escala al alto disponible)
 
-    public enum Geometria {
+    enum Geometria {
         /// El ancho se DERIVA del lienzo del Ecosistema (no se copia): la esfera reusa su
         /// MISMA proyección. El alto es propio — da aire para dispersar las partículas.
-        public static let lienzo = CGSize(width: EcosistemaSimulacion.Geometria.lienzo.width,
+        static let lienzo = CGSize(width: EcosistemaSimulacion.Geometria.lienzo.width,
                                           height: 720)
         /// La esfera plena del veredicto: las mismas direcciones.
-        public static let n = EcosistemaSimulacion.Geometria.nEsfera
+        static let n = EcosistemaSimulacion.Geometria.nEsfera
         /// El radio, un 29 % sobre el del héroe (ver nota histórica: peso de héroe sobre blanco).
-        public static let radio = EcosistemaSimulacion.Geometria.radioOrbe * 1.29
+        static let radio = EcosistemaSimulacion.Geometria.radioOrbe * 1.29
         /// Dónde ASIENTA el orbe (el cénit por defecto, si no hay frame del héroe) y a qué
         /// altura se REÚNEN antes de subir. La reunión es solo una `y`: el viaje es vertical.
-        public static let cenit = CGPoint(x: 182, y: 250)
+        static let cenit = CGPoint(x: 182, y: 250)
         /// FER-73 (dueño): la reunión ocurre en el CENTRO del teléfono. El lienzo se centra
         /// verticalmente en la pantalla, así que la mitad del lienzo ES la mitad de la pantalla:
         /// las partículas se juntan donde el ojo ya está, y de ahí el orbe sube a su sitio en
         /// Hoy. Antes se reunían en y=430 (a dos tercios), abajo del centro.
-        public static let reunionY: CGFloat = lienzo.height / 2
+        static let reunionY: CGFloat = lienzo.height / 2
         /// Cuánto REBASA el orbe al cénit antes de asentar, en pt (pico del lóbulo).
-        public static let sobrepaso: CGFloat = 7
+        static let sobrepaso: CGFloat = 7
         /// Autorrotación del orbe (rad/s) — el mismo giro lento de la esfera del héroe.
-        public static let giro = LiquidEcosistemaMotion.rotacionEsfera * 0.5
+        static let giro = LiquidEcosistemaMotion.rotacionEsfera * 0.5
         /// La caja donde nacen las partículas dispersas, como fracción del lienzo (deja
         /// margen a los bordes para que ninguna nazca pegada al filo de la pantalla).
-        public static let dispersionX: ClosedRange<CGFloat> = 0.08...0.92
-        public static let dispersionY: ClosedRange<CGFloat> = 0.06...0.78
+        static let dispersionX: ClosedRange<CGFloat> = 0.08...0.92
+        static let dispersionY: ClosedRange<CGFloat> = 0.06...0.78
         /// Amplitud de la deriva de flotación (pt del lienzo).
-        public static let flotaAmplitud: CGFloat = 7
+        static let flotaAmplitud: CGFloat = 7
     }
 
     // MARK: Guion (los hitos, en FRACCIÓN de `LiquidEntradaMotion.duracionTotal`)
 
     /// El guion en cuatro tiempos: flotar → reunir → respirar → subir. El teñido y el
     /// especular se solapan con la cola del ascenso (el color llega mientras se posa).
-    public enum Guion {
+    enum Guion {
         /// Las partículas flotan dispersas, a la deriva, encendiéndose.
-        public static let flotarFin = 0.22
+        static let flotarFin = 0.22
         /// La reunión: cada partícula viaja de su punto disperso al orbe (escalonada).
-        public static let reunirFin = 0.54
+        static let reunirFin = 0.54
         /// El respiro: el orbe ya armado se sostiene abajo, quieto.
-        public static let respiroFin = 0.66
+        static let respiroFin = 0.66
         /// El ascenso al cénit / destino.
         /// FER-73 (dueño): el ascenso TERMINA antes (0.86) para que el orbe se quede QUIETO en
         /// su destino mientras ocurre el relevo. Un cruce de fundido entre dos dibujos que se
         /// mueven se lee como brinco; entre dos dibujos parados, como un solo elemento.
-        public static let ascensoFin = 0.86
+        static let ascensoFin = 0.86
         /// En qué punto del ascenso queda el REBASE (y de ahí el orbe se posa).
-        public static let cimaAscenso = 0.78
+        static let cimaAscenso = 0.78
         /// Cuánto se ESCALONA la reunión entre partículas (fracción del tramo de reunión):
         /// las primeras salen a converger de inmediato, las últimas esperan hasta este tope.
-        public static let reunirStagger = 0.34
+        static let reunirStagger = 0.34
         /// El teñido ARRANCA antes de que termine el ascenso (se solapa con su cola).
-        public static let tinteIni = 0.78
-        public static let tinteFin = 0.94
+        static let tinteIni = 0.78
+        static let tinteFin = 0.94
         /// El especular se enciende DESPUÉS del teñido (CA-2.5).
-        public static let especularIni = 0.86
-        public static let especularFin = 0.98
+        static let especularIni = 0.86
+        static let especularFin = 0.98
     }
 
     // MARK: Curvas
 
     /// Desaceleración pura (easeOutCubic): la partícula converge rápido y se posa.
-    public static func desacelera(_ u: Double) -> Double {
+    static func desacelera(_ u: Double) -> Double {
         let c = min(1, max(0, u))
         let v = 1 - c
         return 1 - v * v * v
@@ -104,7 +104,7 @@ public enum EntradaSimulacion {
     /// La altura del orbe durante el ascenso, en y del lienzo: sube del punto de reunión
     /// hasta REBASAR el cénit por `sobrepaso` pt y de ahí se posa. Dos smoothsteps
     /// encadenados (el rebase vale EXACTAMENTE el token, no el residuo de restar curvas).
-    public static func alturaAscenso(_ u: Double) -> CGFloat {
+    static func alturaAscenso(_ u: Double) -> CGFloat {
         let c = min(1, max(0, u))
         let cima = Guion.cimaAscenso
         let rebasado = Geometria.cenit.y - Geometria.sobrepaso
@@ -145,7 +145,7 @@ public enum EntradaSimulacion {
     /// La posición dispersa (flotante) de la partícula `i`, en coords del lienzo. Determinista:
     /// la misma partícula nace siempre en el mismo punto, así que el campo es estable entre
     /// cuadros y sólo la deriva lo mueve.
-    public static func dispersa(_ i: Int) -> CGPoint {
+    static func dispersa(_ i: Int) -> CGPoint {
         let fx = Geometria.dispersionX.lowerBound
             + (Geometria.dispersionX.upperBound - Geometria.dispersionX.lowerBound) * CGFloat(hash01(i, 0x1111))
         let fy = Geometria.dispersionY.lowerBound
@@ -155,7 +155,7 @@ public enum EntradaSimulacion {
 
     /// La deriva de flotación de la partícula `i` en el instante `t` (pt del lienzo): un vaivén
     /// lento con fase propia, para que el campo respire sin sincronizarse.
-    public static func deriva(_ i: Int, t: TimeInterval) -> CGSize {
+    static func deriva(_ i: Int, t: TimeInterval) -> CGSize {
         let ph = hash01(i, 0x3333) * 6.2831853
         let sp = 0.5 + hash01(i, 0x4444) * 0.7
         return CGSize(width: CGFloat(cos(ph + t * sp)) * Geometria.flotaAmplitud,
@@ -165,37 +165,37 @@ public enum EntradaSimulacion {
     /// El progreso de reunión de la partícula `i` (0 = dispersa, 1 = en el orbe), dado el
     /// progreso GLOBAL `g` (0..1 sobre el tramo de reunión). Escalonado por un retardo propio
     /// y suavizado (easeOut) para que cada una entre rápido y se pose.
-    public static func reunionParticula(_ i: Int, global g: Double) -> Double {
+    static func reunionParticula(_ i: Int, global g: Double) -> Double {
         let retardo = Guion.reunirStagger * hash01(i, 0x5555)
         return desacelera((g - retardo) / (1 - retardo))
     }
 
     // MARK: El cuadro
 
-    public struct Cuadro: Equatable, Sendable {
+    struct Cuadro: Equatable, Sendable {
         /// Centro del orbe (baja en reunión/respiro, sube en el ascenso), coords del lienzo.
-        public var centro: CGPoint
+        var centro: CGPoint
         /// Giro de la esfera (rad).
-        public var rotacion: Double
+        var rotacion: Double
         /// 0 = dispersas · 1 = reunidas. Progreso GLOBAL del gather (la vista lo escalona
         /// por-partícula con `reunionParticula`).
-        public var reunion: Double
+        var reunion: Double
         /// 0 = en la reunión (abajo) · 1 = asentado (arriba). Progreso del ascenso — la vista
         /// lo usa para aterrizar sin costura sobre el frame del héroe.
-        public var ascenso: Double
+        var ascenso: Double
         /// 0 = tinta neutra · 1 = el clima del veredicto.
-        public var tinte: Double
+        var tinte: Double
         /// Alfa del especular.
-        public var especular: Double
+        var especular: Double
         /// Alfa global de la entrada — el fundido con el que se retira.
-        public var alfa: Double
+        var alfa: Double
     }
 
     /// El cuadro de la entrada en el instante `t` (segundos desde que arrancó).
     ///
     /// `reduce` = «Reducir movimiento»: NO hay flotar, reunir ni ascenso. El orbe aparece ya
     /// asentado en el cénit y ya teñido, y solo se sostiene `duracionReduce` antes del fundido.
-    public static func cuadro(t crudo: TimeInterval, reduce: Bool = false) -> Cuadro {
+    static func cuadro(t crudo: TimeInterval, reduce: Bool = false) -> Cuadro {
         // Un `t` no finito contamina todo (NaN pasa los min/max): se ataja en la puerta.
         let t = crudo.isFinite ? crudo : 0
         let total = LiquidEntradaMotion.duracionTotal
@@ -228,14 +228,14 @@ public enum EntradaSimulacion {
     }
 
     /// Cuánto vive la entrada de punta a punta (coreografía + fundido de salida).
-    public static func duracion(reduce: Bool = false) -> TimeInterval {
+    static func duracion(reduce: Bool = false) -> TimeInterval {
         (reduce ? LiquidEntradaMotion.duracionReduce : LiquidEntradaMotion.duracionTotal)
             + LiquidEntradaMotion.salida
     }
 
     /// El instante en que el color empieza a existir. La vista lee el veredicto AQUÍ y no al
     /// montarse (a los 0 ms casi nunca está calculado). Con «Reducir movimiento» es inmediato.
-    public static func instanteDelTeñido(reduce: Bool = false) -> TimeInterval {
+    static func instanteDelTeñido(reduce: Bool = false) -> TimeInterval {
         reduce ? 0 : LiquidEntradaMotion.duracionTotal * Guion.tinteIni
     }
 }

@@ -24,9 +24,9 @@ public enum LiquidSheetDetent: Sendable, Equatable {
 /// sheet to its content" caller. The one documented exception is `ReceiptPrinterScreen`'s reveal-mask
 /// height, which needs the CURRENT value (not a running max) and keeps its own private key (FER-975).
 /// Moved here from SheetPaper.swift (FER-286); LiquidMetricSheet is the sole consumer.
-public struct SheetContentHeightKey: PreferenceKey {
-    public static let defaultValue: CGFloat = 0
-    public static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+struct SheetContentHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
         value = max(value, nextValue())
     }
 }

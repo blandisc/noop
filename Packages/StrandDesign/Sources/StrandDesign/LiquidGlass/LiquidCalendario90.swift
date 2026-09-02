@@ -588,7 +588,7 @@ public struct LiquidLeyendaNiveles: View {
     // MARK: Contratos puros (los lee la prueba)
 
     /// Lo que dicta cada parada: swatch y palabra combinados en una sola frase por peldaño.
-    public static func dictado(_ nivel: LiquidCalendario90.NivelLeyenda) -> String {
+    static func dictado(_ nivel: LiquidCalendario90.NivelLeyenda) -> String {
         nivel.etiqueta
     }
 }

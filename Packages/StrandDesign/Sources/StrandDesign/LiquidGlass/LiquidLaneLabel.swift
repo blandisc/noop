@@ -8,16 +8,16 @@ import SwiftUI
 // `MetricInfoSheet.sleepActiveLaneLabel`, FER-710); el color vive en el punto y el texto
 // del tono de la métrica, como todo dato Liquid.
 
-public struct LiquidLaneLabel: View {
+struct LiquidLaneLabel: View {
     private let texto: String
     private let tono: Color
 
-    public init(texto: String, tono: Color) {
+    init(texto: String, tono: Color) {
         self.texto = texto
         self.tono = tono
     }
 
-    public var body: some View {
+    var body: some View {
         HStack(spacing: LiquidSpace.s150) {
             Circle()
                 .fill(tono)

@@ -268,7 +268,7 @@ public struct LiquidOrbeEntrada: View {
 ///
 /// No lleva contador de noches a propósito: sin permiso no se sabe cuántas faltan, y el
 /// historial del Apple Watch puede sembrar la base de golpe. Prometer «N noches» sería falso.
-public struct LiquidOrbeDormido: View {
+struct LiquidOrbeDormido: View {
     private static let dirs = EcosistemaSimulacion.fibonacci(EcosistemaSimulacion.Geometria.nEsfera)
     private static let indices = Array(0..<EcosistemaSimulacion.Geometria.nEsfera)
     /// La partícula que chispea. Un índice fijo: la chispa siempre nace en el mismo punto de
@@ -286,11 +286,11 @@ public struct LiquidOrbeDormido: View {
     /// pasa abierto sin que nadie lo mire.
     @Environment(\.liquidAmbientPaused) private var pausado
 
-    public init() {}
+    init() {}
 
     private var quieto: Bool { reduceMotion || motionDisabled || pausado }
 
-    public var body: some View {
+    var body: some View {
         TimelineView(.animation(minimumInterval: LiquidMotion.intervaloAmbiente,
                                 paused: quieto)) { ctx in
             Canvas(rendersAsynchronously: false) { g, size in

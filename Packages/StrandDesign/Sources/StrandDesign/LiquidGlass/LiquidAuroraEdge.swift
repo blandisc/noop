@@ -16,7 +16,7 @@ import SwiftUI
 // En Metal (FER-13 Fase B, fuera de alcance) esto será interferencia de película delgada real
 // dependiente del ángulo; esta aurora SwiftUI es la versión canónica por ahora.
 
-public struct LiquidAuroraEdge: View {
+struct LiquidAuroraEdge: View {
     private let tones: [Color]
     private let period: Double
     private let reverse: Bool
@@ -31,7 +31,7 @@ public struct LiquidAuroraEdge: View {
     ///   - period: segundos por vuelta (44 / 52 / 38 / 58 en los 4 módulos de Hoy).
     ///   - reverse: gira en sentido inverso (los módulos pares).
     ///   - radius: radio del contorno; por defecto el del módulo.
-    public init(tones: [Color], period: Double, reverse: Bool = false,
+    init(tones: [Color], period: Double, reverse: Bool = false,
                 radius: CGFloat = LiquidRadius.modulo) {
         self.tones = tones
         self.period = period
@@ -72,7 +72,7 @@ public struct LiquidAuroraEdge: View {
         .init(color: .white.opacity(0), location: 1.0),
     ]
 
-    public var body: some View {
+    var body: some View {
         let still = reduceMotion || motionDisabled || ambientPaused
         let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
         return TimelineView(.animation(minimumInterval: LiquidMotion.intervaloAmbiente, paused: still)) { context in

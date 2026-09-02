@@ -7,7 +7,7 @@ import SwiftUI
 // grid, so six metrics read as one calm column instead of six boxes. Values are tabular and pinned
 // to a fixed-width column so the decimal points line up. Reuses `Sparkline`. Tokens-only.
 
-public struct MetricRow: View {
+struct MetricRow: View {
     let label: LocalizedStringKey
     var flag: LocalizedStringKey?
     var flagColor: Color
@@ -32,7 +32,7 @@ public struct MetricRow: View {
     /// the rest of the row. Ignored unless `showsChevron`.
     var chevronColor: Color
 
-    public init(label: LocalizedStringKey, value: String, unit: String? = nil,
+    init(label: LocalizedStringKey, value: String, unit: String? = nil,
                 valueColor: Color = InstrumentoTheme.base.ink,
                 labelColor: Color = InstrumentoTheme.base.inkSecondary,
                 unitColor: Color = InstrumentoTheme.base.inkTertiary,
@@ -60,7 +60,7 @@ public struct MetricRow: View {
         self.chevronColor = chevronColor
     }
 
-    public var body: some View {
+    var body: some View {
         HStack(spacing: 12) {
             // La etiqueta nunca se recorta ni se encoge: cuando cabe va en una línea junto a su chip;
             // cuando una etiqueta larga lleva chip (p. ej. "Oxígeno en sangre · APPLE SALUD") el chip

@@ -13,7 +13,7 @@ import SwiftUI
 //
 // Reutilizable a propósito: «capilar + tramo + punto» sirve igual para VFC o
 // respiración — solo cambian puntos/banda/hue.
-public struct MatrizRegla: View {
+struct MatrizRegla: View {
     private let chartID: String
     private let puntos: [Double?]
     /// Rango típico del motor (±1σ). nil → la regla muestra solo el capilar (sin
@@ -31,7 +31,7 @@ public struct MatrizRegla: View {
     @State private var rellenoVivo = false
     @State private var asentado = false
 
-    public init(chartID: String, puntos: [Double?], banda: ClosedRange<Double>?,
+    init(chartID: String, puntos: [Double?], banda: ClosedRange<Double>?,
                 dominio: ClosedRange<Double>, hue: Color,
                 alertaHoy: MedidorLunar.Alerta = .ninguna, resaltado: Int? = nil) {
         self.chartID = chartID
@@ -43,7 +43,7 @@ public struct MatrizRegla: View {
         self.resaltado = resaltado
     }
 
-    public var body: some View {
+    var body: some View {
         GeometryReader { geo in
             let size = geo.size
             if puntos.isEmpty || !puntos.contains(where: { $0 != nil }) {

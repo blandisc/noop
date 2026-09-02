@@ -359,7 +359,7 @@ public struct MatrizColumnas: View {
 // MARK: - MatrizLineaRellena (FC / VFC)
 
 /// Curva suave + relleno de gradiente + punteada horizontal = tu base. HOY marcado.
-public struct MatrizLineaRellena: View {
+struct MatrizLineaRellena: View {
     private let chartID: String
     private let puntos: [Double?]
     private let base: Double?
@@ -374,7 +374,7 @@ public struct MatrizLineaRellena: View {
     @Environment(\.liquidMotionDisabled) private var motionDisabled
     private var quieto: Bool { reduceMotion || ambientPaused || motionDisabled }
 
-    public init(chartID: String, puntos: [Double?], base: Double?, dominio: ClosedRange<Double>,
+    init(chartID: String, puntos: [Double?], base: Double?, dominio: ClosedRange<Double>,
                 hue: Color, alfa: Double = 1.0, alertaHoy: MedidorLunar.Alerta = .ninguna,
                 resaltado: Int? = nil) {
         self.chartID = chartID
@@ -387,7 +387,7 @@ public struct MatrizLineaRellena: View {
         self.resaltado = resaltado
     }
 
-    public var body: some View {
+    var body: some View {
         TimelineView(.animation(minimumInterval: LiquidMotion.intervaloAmbiente, paused: quieto)) { tl in
             let aliento = MatrizAliento.escala(tl.date, quieto: quieto)
             Canvas { ctx, size in
@@ -450,7 +450,7 @@ public struct MatrizLineaRellena: View {
 // MARK: - MatrizLineaSerena (GUARDIÁN)
 
 /// Filo central + banda ± tenue + curva serena casi plana (brincos fuera visibles).
-public struct MatrizLineaSerena: View {
+struct MatrizLineaSerena: View {
     private let chartID: String
     private let puntos: [Double?]
     private let banda: ClosedRange<Double>?
@@ -460,7 +460,7 @@ public struct MatrizLineaSerena: View {
     /// Índice leído por el scrub (Skin temp/Breathing, dueño 2026-08-15): cursor + punto pleno.
     private let resaltado: Int?
 
-    public init(chartID: String, puntos: [Double?], banda: ClosedRange<Double>?,
+    init(chartID: String, puntos: [Double?], banda: ClosedRange<Double>?,
                 dominio: ClosedRange<Double>, hue: Color,
                 alertaHoy: MedidorLunar.Alerta = .ninguna, resaltado: Int? = nil) {
         self.chartID = chartID
@@ -472,7 +472,7 @@ public struct MatrizLineaSerena: View {
         self.resaltado = resaltado
     }
 
-    public var body: some View {
+    var body: some View {
         Canvas { ctx, size in
             let count = puntos.count
             if count == 0 || !MatrizChartDraw.tieneDatos(puntos) {
@@ -586,7 +586,7 @@ public struct MatrizLineaSerena: View {
 /// estela de días previos son puntos tenues sobre la curva; HOY es punto lleno con centro de
 /// papel y guía punteada al pie; el aro §8 corona a HOY cuando la carga se dispara. Con scrub
 /// el punto camina la campana al día leído (FER-62 · /inject del dueño).
-public struct MatrizColina: View {
+struct MatrizColina: View {
     private let chartID: String
     private let p: Double?
     private let zona: ClosedRange<Double>
@@ -597,7 +597,7 @@ public struct MatrizColina: View {
     /// La serie completa es `estela + [p]` (viejo → HOY), así que resaltado ∈ 0…estela.count.
     private let resaltado: Int?
 
-    public init(chartID: String, p: Double?, zona: ClosedRange<Double>,
+    init(chartID: String, p: Double?, zona: ClosedRange<Double>,
                 estela: [Double], hue: Color, alertaHoy: MedidorLunar.Alerta = .ninguna,
                 resaltado: Int? = nil) {
         self.chartID = chartID
@@ -616,7 +616,7 @@ public struct MatrizColina: View {
     // de papel y una guía punteada hasta el pie, entre las dos etiquetas de la zona. La altura
     // de la campana NO es dato: es la forma que enseña dónde vive «tu costumbre»; el dato es
     // la x. Reduce Motion: nada respira aquí (la campana no tiene aliento).
-    public var body: some View {
+    var body: some View {
         Canvas { ctx, size in
             let w = max(size.width, 1)
             let h = size.height
@@ -750,7 +750,7 @@ public struct MatrizColina: View {
 // MARK: - MatrizBarrasMini (ESFUERZO / PASOS)
 
 /// N barras finas redondeadas; HOY saturado; SIN juicio (nunca aro).
-public struct MatrizBarrasMini: View {
+struct MatrizBarrasMini: View {
     private let chartID: String
     private let valores: [Double?]
     private let hue: Color
@@ -759,7 +759,7 @@ public struct MatrizBarrasMini: View {
     /// Índice leído por el scrub (FER-62): esa barra va a alfa pleno + cursor.
     private let resaltado: Int?
 
-    public init(chartID: String, valores: [Double?], hue: Color, promedio: Double? = nil,
+    init(chartID: String, valores: [Double?], hue: Color, promedio: Double? = nil,
                 resaltado: Int? = nil) {
         self.chartID = chartID
         self.valores = valores
@@ -768,7 +768,7 @@ public struct MatrizBarrasMini: View {
         self.resaltado = resaltado
     }
 
-    public var body: some View {
+    var body: some View {
         Canvas { ctx, size in
             let n = max(valores.count, 1)
             if !MatrizChartDraw.tieneDatos(valores) {

@@ -13,12 +13,12 @@ import Foundation
 // (numpy.percentile default; Hyndman & Fan 1996, type 7) that `StrainScorer` and
 // `SleepStager` already use in StrandAnalytics — replicated here, not imported.
 
-public enum ReferenceRange {
+enum ReferenceRange {
 
     /// Linear-interpolated percentile (numpy.percentile default; Hyndman & Fan 1996,
     /// type 7). `pct` is 0...100; `sorted` must be ascending. Returns 0 for an empty
     /// array and the lone element for a single-value array.
-    public static func percentile(_ sorted: [Double], _ pct: Double) -> Double {
+    static func percentile(_ sorted: [Double], _ pct: Double) -> Double {
         let n = sorted.count
         if n == 0 { return 0 }
         if n == 1 { return sorted[0] }
@@ -33,7 +33,7 @@ public enum ReferenceRange {
     /// non-finite values, sorts ascending, and returns `nil` when nothing usable
     /// remains. Short or constant series still yield a valid (possibly zero-width)
     /// range — it never crashes and never inverts (`lowerBound <= upperBound`).
-    public static func interquartile(_ values: [Double]) -> ClosedRange<Double>? {
+    static func interquartile(_ values: [Double]) -> ClosedRange<Double>? {
         let clean = values.filter { $0.isFinite }.sorted()
         guard !clean.isEmpty else { return nil }
         let lo = percentile(clean, 25)

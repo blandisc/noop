@@ -67,7 +67,7 @@ private struct InstrumentoInputModifier: ViewModifier {
 }
 
 /// The card itself — exposed for previews/tests; screens use `.instrumentoInput`.
-public struct InputCard: View {
+struct InputCard: View {
     @Binding var text: String
     let title: String
     let context: String
@@ -80,7 +80,7 @@ public struct InputCard: View {
     @Environment(\.instrumentoTheme) private var theme
     @FocusState private var focused: Bool
 
-    public init(text: Binding<String>, title: String, context: String,
+    init(text: Binding<String>, title: String, context: String,
                 placeholder: String, cta: String, dismissLabel: String,
                 isPresented: Binding<Bool>, onCommit: @escaping (String) -> Void) {
         self._text = text
@@ -97,7 +97,7 @@ public struct InputCard: View {
         text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    public var body: some View {
+    var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(context)
                 .font(InstrumentoType.groteskOverline)

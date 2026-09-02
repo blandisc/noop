@@ -75,7 +75,7 @@ public enum TrendBands {
     /// today's reading, supplied by the caller so the summary and detail screens agree; pass `nil` when
     /// there's no usable today (e.g. a partial step day). Pure, so the copy is identical wherever it's
     /// shown and can be unit-tested. Returns `nil` if no value lands in any band. (FER-459)
-    public static func summarize(values: [Double], bands: [TrendBand], todayIndex: Int?) -> BandTrendSummary? {
+    static func summarize(values: [Double], bands: [TrendBand], todayIndex: Int?) -> BandTrendSummary? {
         guard !bands.isEmpty else { return nil }
         var counts = Array(repeating: 0, count: bands.count)
         var n = 0
@@ -118,29 +118,29 @@ public enum TrendBands {
 
 /// A plain-language reading of how a windowed series sits across its bands. Built by `TrendBands.summarize`
 /// and turned into copy by the screens. (FER-459)
-public struct BandTrendSummary: Equatable {
+struct BandTrendSummary: Equatable {
     /// Per-band day/night counts, parallel to the `bands` passed in.
-    public let counts: [Int]
+    let counts: [Int]
     /// How many values landed in some band (the window size with data).
-    public let n: Int
+    let n: Int
     /// Band index you were in most (ties broken toward the lower band index).
-    public let dominant: Int
+    let dominant: Int
     /// Runner-up band index, or `nil` when only one band saw any value.
-    public let second: Int?
-    public let tier: Tier
+    let second: Int?
+    let tier: Tier
     /// Band of today's reading, or `nil` when there's no usable today.
-    public let todayIndex: Int?
+    let todayIndex: Int?
     /// Where today sits relative to the dominant band (by band order), or `nil` when `todayIndex` is `nil`.
-    public let todayVsDominant: Relation?
+    let todayVsDominant: Relation?
 
-    public init(counts: [Int], n: Int, dominant: Int, second: Int?, tier: Tier,
+    init(counts: [Int], n: Int, dominant: Int, second: Int?, tier: Tier,
                 todayIndex: Int?, todayVsDominant: Relation?) {
         self.counts = counts; self.n = n; self.dominant = dominant; self.second = second
         self.tier = tier; self.todayIndex = todayIndex; self.todayVsDominant = todayVsDominant
     }
 
     /// How concentrated the window is in its dominant band.
-    public enum Tier: Equatable {
+    enum Tier: Equatable {
         case always           // every reading in the dominant band
         case almostAlways     // dominant share ≥ 0.8
         case mostly           // dominant is a clear, unique majority (≥ 0.5)
@@ -149,7 +149,7 @@ public struct BandTrendSummary: Equatable {
     }
 
     /// Today's band vs the dominant band, by band order (lower index = lower numeric value).
-    public enum Relation: Equatable { case same, lower, higher }
+    enum Relation: Equatable { case same, lower, higher }
 }
 
 public struct TrendChart: View {
@@ -647,7 +647,7 @@ extension View {
     /// Position updates use a non-animating Transaction to prevent SwiftUI Charts from
     /// re-running its draw-on animation when `hoverX` changes mid-gesture (#104).
     @ViewBuilder
-    public func scrubGesture(enabled: Bool, hoverX: Binding<CGFloat?>) -> some View {
+    func scrubGesture(enabled: Bool, hoverX: Binding<CGFloat?>) -> some View {
         #if os(iOS)
         self.highPriorityGesture(
             DragGesture(minimumDistance: 0)

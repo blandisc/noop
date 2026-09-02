@@ -239,20 +239,20 @@ public struct LiquidSignalFila: Sendable, Identifiable {
 /// Las filas del eje/guardián dentro de su superficie de papel: separadores sangrados tras
 /// la marca, esquinas del DS. Hermana de `LiquidLevelsList` pero con filas NO tocables.
 /// Papel opaco (`.superficieSolida`) — las tarjetas internas de la hoja no muestrean el fondo.
-public struct LiquidSignalList<Mini: View>: View {
+struct LiquidSignalList<Mini: View>: View {
     private let filas: [LiquidSignalFila]
     private let auroraTones: [Color]?
     private let mini: (LiquidSignalFila) -> Mini
 
     /// Lista del eje autonómico (sin mini-gráfica, sin aurora).
-    public init(senales: [LiquidAutonomico.Senal]) where Mini == EmptyView {
+    init(senales: [LiquidAutonomico.Senal]) where Mini == EmptyView {
         self.filas = senales.map(LiquidSignalFila.init)
         self.auroraTones = nil
         self.mini = { _ in EmptyView() }
     }
 
     /// Lista genérica (guardián): filas + mini-gráfica opcional por fila + filo de aurora.
-    public init(filas: [LiquidSignalFila],
+    init(filas: [LiquidSignalFila],
                 auroraTones: [Color]? = nil,
                 @ViewBuilder mini: @escaping (LiquidSignalFila) -> Mini) {
         self.filas = filas
@@ -260,7 +260,7 @@ public struct LiquidSignalList<Mini: View>: View {
         self.mini = mini
     }
 
-    public var body: some View {
+    var body: some View {
         VStack(spacing: 0) {
             ForEach(Array(filas.enumerated()), id: \.element.id) { (i, f) in
                 LiquidSignalRow(fila: f, mini: { mini(f) })
@@ -301,7 +301,7 @@ private enum LiquidSignalMarcaGeo {
 /// Una fila de señal: marca + nombre · (estado/voto o valor teñido), con la señal FUERA
 /// iluminada al wash ámbar de la familia y su marca activa. Bajo la fila, nota y mini-gráfica
 /// opcionales. NO es tocable: el desglose no navega a ningún lado.
-public struct LiquidSignalRow<Mini: View>: View {
+struct LiquidSignalRow<Mini: View>: View {
     private let fila: LiquidSignalFila
     private let mini: Mini
 
@@ -323,16 +323,16 @@ public struct LiquidSignalRow<Mini: View>: View {
         return (t == LiquidColor.ambar || t == LiquidColor.atencion) ? LiquidColor.atencionTexto : t
     }
 
-    public init(fila: LiquidSignalFila, @ViewBuilder mini: () -> Mini) {
+    init(fila: LiquidSignalFila, @ViewBuilder mini: () -> Mini) {
         self.fila = fila
         self.mini = mini()
     }
 
-    public init(senal: LiquidAutonomico.Senal) where Mini == EmptyView {
+    init(senal: LiquidAutonomico.Senal) where Mini == EmptyView {
         self.init(fila: LiquidSignalFila(senal), mini: { EmptyView() })
     }
 
-    public var body: some View {
+    var body: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s150) {
             // Cabecera de la fila: UN elemento de a11y (label compuesto del caller). La
             // mini-gráfica vive FUERA para heredar su propio descriptor de gráfica.

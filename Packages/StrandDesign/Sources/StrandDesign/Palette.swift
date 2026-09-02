@@ -110,12 +110,12 @@ public enum StrandPalette {
 
     /// Sample the recovery gradient (indigo → mint) at a recovery score 0...100.
     /// Returns the exact interpolated color used everywhere recovery is tinted.
-    public static func recoveryColor(_ score: Double) -> Color {
+    static func recoveryColor(_ score: Double) -> Color {
         sample(stops: recoveryStops, at: score / 100.0)
     }
 
     /// Sample the strain gradient at a strain value on the 0...21 Whoop scale.
-    public static func strainColor(_ strain: Double) -> Color {
+    static func strainColor(_ strain: Double) -> Color {
         sample(stops: strainStops, at: strain / 21.0)
     }
 
@@ -123,7 +123,7 @@ public enum StrandPalette {
     /// DEPLETED · LOW · MODERATE · PRIMED · PEAK
     /// Localized against the host app's catalog (`Bundle.main`) — the package
     /// carries no string catalog of its own, so the keys live in the app.
-    public static func recoveryState(_ score: Double) -> String {
+    static func recoveryState(_ score: Double) -> String {
         switch score {
         case ..<25:  return String(localized: "DEPLETED", bundle: .main)
         case ..<50:  return String(localized: "LOW", bundle: .main)
@@ -134,13 +134,13 @@ public enum StrandPalette {
     }
 
     /// HR-zone color for a 0...5 zone index (clamped).
-    public static func hrZoneColor(_ zone: Int) -> Color {
+    static func hrZoneColor(_ zone: Int) -> Color {
         let z = max(1, min(5, zone))
         return hrZones[z]
     }
 
     /// Color for a sleep stage by canonical name (awake/light/deep/rem).
-    public static func sleepStageColor(_ stage: SleepStage) -> Color {
+    static func sleepStageColor(_ stage: SleepStage) -> Color {
         switch stage {
         case .awake: return sleepAwake
         case .light: return sleepLight

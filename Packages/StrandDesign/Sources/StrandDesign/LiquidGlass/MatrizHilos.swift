@@ -24,7 +24,7 @@ import SwiftUI
 //   · la noche en que el PAR votó (`parFuera`, el juicio del motor) es la única con ámbar
 //     (`atencion`, el mismo de la costura — el claro de ambiente no pasa 3:1 sobre blanco):
 //     columna, los dos puntos y un nudo punteado que los une.
-public struct MatrizHilos: View {
+struct MatrizHilos: View {
     private let chartID: String
     private let noches: [MatrizCostura.Noche]
     private let hueTemp: Color
@@ -35,7 +35,7 @@ public struct MatrizHilos: View {
     @Environment(\.liquidAmbientPaused) private var ambientPaused
     @Environment(\.liquidMotionDisabled) private var motionDisabled
 
-    public init(chartID: String, noches: [MatrizCostura.Noche],
+    init(chartID: String, noches: [MatrizCostura.Noche],
                 hueTemp: Color = LiquidColor.doradoTemp,
                 hueResp: Color = LiquidColor.azul,
                 resaltado: Int? = nil) {
@@ -51,11 +51,11 @@ public struct MatrizHilos: View {
 
     // MARK: La geometría, pura (lo que se prueba sin Canvas)
 
-    public enum Geometria {
+    enum Geometria {
         /// La `y` del punto para el valor firmado `v` alrededor de `base`: caliente/rápido
         /// (v > 0) arriba, frío/lento (v < 0) abajo y apretado. `fraccionFilo` ya devuelve la
         /// magnitud [0, 1) con el hueco del filo y el lado bajo comprimido.
-        public static func y(_ v: Double, base: CGFloat) -> CGFloat {
+        static func y(_ v: Double, base: CGFloat) -> CGFloat {
             let d = MatrizCostura.fraccionFilo(v) * MatrizTokens.hilosAmplitud
             return v < 0 ? base + d : base - d
         }
@@ -64,17 +64,17 @@ public struct MatrizHilos: View {
         /// ADENTRO del hueco del filo, no `fraccionFilo(1)` = 0.75) y abajo `y(−1)` (apretado).
         /// Así todo lo que el motor NO marcó (≤ 0.98) cae dentro y todo lo marcado (≥ 1.02) cae
         /// fuera con su centro a ≥ 2.5 pt del borde: el hueco del filo se ve.
-        public static func banda(base: CGFloat) -> ClosedRange<CGFloat> {
+        static func banda(base: CGFloat) -> ClosedRange<CGFloat> {
             (base - MatrizCostura.filoBanda * MatrizTokens.hilosAmplitud)...y(-1, base: base)
         }
 
         /// ¿Ese hilo tiene base? Sí en cuanto una noche trae valor (nil = no se leyó o no se pudo
         /// juzgar). Sin base no hay banda ni hilo central: no se inventa rango.
-        public static func hayBase(_ valores: [Double?]) -> Bool {
+        static func hayBase(_ valores: [Double?]) -> Bool {
             valores.contains { $0 != nil }
         }
 
-        public enum Estilo: Equatable {
+        enum Estilo: Equatable {
             /// |v| < 1 y no votó: tenue, chico.
             case dentro
             /// v ≥ 1: el motor lo marcó (o la temperatura cruzó su corte público): lleno, mayor.
@@ -85,13 +85,13 @@ public struct MatrizHilos: View {
             case leido
         }
 
-        public static func estilo(v: Double, parFuera: Bool, leido: Bool) -> Estilo {
+        static func estilo(v: Double, parFuera: Bool, leido: Bool) -> Estilo {
             if leido { return .leido }
             if parFuera { return .par }
             return v >= 1 ? .fuera : .dentro
         }
 
-        public static func radio(_ e: Estilo) -> CGFloat {
+        static func radio(_ e: Estilo) -> CGFloat {
             switch e {
             case .dentro: return MatrizTokens.hilosPuntoDentro
             case .fuera, .par: return MatrizTokens.hilosPuntoFuera
@@ -99,18 +99,18 @@ public struct MatrizHilos: View {
             }
         }
 
-        public static func alfa(_ e: Estilo) -> Double {
+        static func alfa(_ e: Estilo) -> Double {
             e == .dentro ? MatrizTokens.hilosPuntoDentroAlfa : 1
         }
 
         /// La fase del latido del anillo de HOY en [0, 1] (0 = anillo fijo). Misma frecuencia
         /// que el sello vivo en calma (`sin(t·1.15)`).
-        public static func fase(_ t: TimeInterval, quieto: Bool) -> Double {
+        static func fase(_ t: TimeInterval, quieto: Bool) -> Double {
             quieto ? 0 : (sin(t * MatrizTokens.hilosLatidoW) + 1) / 2
         }
     }
 
-    public var body: some View {
+    var body: some View {
         TimelineView(.animation(minimumInterval: LiquidMotion.intervaloSello, paused: quieto)) { tl in
             let t = quieto ? 0 : tl.date.timeIntervalSinceReferenceDate
             lienzo(fase: Geometria.fase(t, quieto: quieto))
