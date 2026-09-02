@@ -7,17 +7,10 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // MARK: - Entrenar (the Train tab root) — «Pulir · arranque directo» (handoff, sobre «La Semana» FER-530)
 //
-// The Train landing as a PLANNER in the light «Instrumento diurno» language (warm paper, color only on
-// the datum, hierarchy by space). Today's session is the spine now: the hero «Hoy» sits up top behind a
-// SINGLE solid «Empezar {rutina}» that starts the guided session in ONE tap (F1) — no chooser, no
-// intermediate screen. «¿otro tipo?» under it opens the secondary chooser (otra rutina / intervals /
-// breathe / live). A rest day is a STATE of this same hero (`heroSectionDescanso`, FER-132): title
-// «Descanso», no numerals, a paper «Movilidad» door and the full loaded-muscles module — no separate
-// screen. Below the hero, the three handoff levels (FER-131): TU SEMANA · MÚSCULOS CARGADOS · BITÁCORA.
-//
-// Color appears ONLY on the recovery datum (the today-dot, the Today recovery
-// line); everything else is ink on paper. Navigation is owned by the tab's `NavigationStack` in
-// RootTabView; the landing pushes via the injected closures and hosts the guided session + sheets here.
+// Landing de Entrenar en Liquid Glass · El Eje: planificador con «Hoy» arriba, un solo «Empezar
+// {rutina}» (F1), «¿otro tipo?» debajo, descanso como estado del mismo héroe (FER-132), y debajo
+// TU SEMANA · MÚSCULOS CARGADOS · BITÁCORA (FER-131). Color solo en el dato; el `NavigationStack`
+// del tab es dueño de la navegación.
 
 /// La boleta del veredicto de Hoy, compartida por la landing de Entrenar (FER-85) y la cabecera de la
 /// sesión en vivo (FER-133): el MISMO `LiquidActaVeredicto` con el MISMO contexto, para que ninguna
@@ -229,7 +222,7 @@ private struct EntrenarLanding: View {
                 if loaded {
                     if loadFailed {
                         loadErrorState       // §5 — «No pude leer tu plan» + Reintentar, niveles ocultos
-                            .padding(.top, CenitMetrics.sectionGap)
+                            .padding(.top, LiquidSpace.s700)
                     } else if model.strengthSession != nil {
                         // ⑤ Sesión viva: gana sobre CUALQUIER otro estado — incluido «sin plan todavía»
                         // (un entrenamiento rápido, sin rutina, puede arrancar sin split armado).
@@ -254,7 +247,7 @@ private struct EntrenarLanding: View {
                     }
                 }
             }
-            .padding(.top, CenitMetrics.screenTop)   // shared titled-tab top inset
+            .padding(.top, LiquidSpace.s350)   // shared titled-tab top inset
             .padding(.horizontal, LiquidSpace.s600)
             .padding(.bottom, LiquidSpace.s600)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -313,7 +306,7 @@ private struct EntrenarLanding: View {
         // «Otra forma» presents (theme passed explicitly; it doesn't cross `.sheet`).
         // FER-950: disc said «Rápido»/«Movilidad» but AppModel only re-opens the live session — make
         // that resume path explicit (ConfirmCard), never clobber.
-        .instrumentoConfirm(
+        .liquidConfirm(
             isPresented: $confirmResumeStrength,
             title: String(localized: "You have a session in progress. Resume it?"),
             context: String(localized: "SESSION · IN PROGRESS"),
@@ -420,17 +413,17 @@ private struct EntrenarLanding: View {
             onEdit: { openWeeklyPlan() }
         )
         EntrenarHubDosis(rows: dosisRows)
-            .padding(.top, dosisRows.isEmpty ? 0 : CenitMetrics.cardGap)
+            .padding(.top, dosisRows.isEmpty ? 0 : LiquidSpace.s100)
         EntrenarHubPar(raises: parRaises, restReal: nil,
                       onOpenRaises: { if let r = todayRoutine { openRoutine(r.id) } })
-            .padding(.top, parRaises.isEmpty ? 0 : CenitMetrics.cardGap)
+            .padding(.top, parRaises.isEmpty ? 0 : LiquidSpace.s100)
         if let cuerpo = cuerpoData {
             EntrenarHubCuerpo(topMuscleName: cuerpo.name, topMuscleKey: cuerpo.key, onOpenMap: openMuscleMap)
-                .padding(.top, CenitMetrics.cardGap)
+                .padding(.top, LiquidSpace.s100)
         }
         if marcasData != nil || volumenData != nil {
             EntrenarHubMarcasVolumen(marca: marcasData, volumen: volumenData)
-                .padding(.top, CenitMetrics.cardGap)
+                .padding(.top, LiquidSpace.s100)
         }
         EntrenarHubConstancia(
             semanas: constanciaSemanas,
@@ -439,10 +432,10 @@ private struct EntrenarLanding: View {
                 now: Date(), calendar: Calendar.current),
             monthLabels: constanciaMonthLabels, todaySlot: constanciaTodaySlot
         )
-        .padding(.top, CenitMetrics.cardGap)
+        .padding(.top, LiquidSpace.s100)
         EntrenarHubHistorial(filas: historialFilas, gapDays: historialGapDays, promedio: historialPromedio,
                              onOpenHistory: openHistory)
-            .padding(.top, CenitMetrics.cardGap)
+            .padding(.top, LiquidSpace.s100)
     }
 
     // MARK: - DOSIS (v18) — top 4 músculos por series en 7 días; silencio con <3 sesiones en la ventana.
@@ -979,7 +972,7 @@ private struct EntrenarLanding: View {
                 Text("Your routine for today stays put: this is separate, no guilt.")
                     .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, CenitMetrics.rowVPad)
+                    .padding(.top, LiquidSpace.s250)
             }
             .padding(.top, LiquidSpace.s200)
             .transition(LiquidMotion.fadeTransition)

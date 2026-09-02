@@ -59,9 +59,9 @@ enum HojaPlegada {
             }
             .foregroundStyle(LiquidColor.tinta700)
             .frame(maxWidth: .infinity, minHeight: HojaMetrics.hitMin)
-            .contentShape(RoundedRectangle(cornerRadius: CenitMetrics.tileRadius, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: LiquidRadius.tile, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: CenitMetrics.tileRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: LiquidRadius.tile, style: .continuous)
                     .strokeBorder(LiquidColor.ambar.opacity(CenitOpacity.strokeSoft),
                                   style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
             )

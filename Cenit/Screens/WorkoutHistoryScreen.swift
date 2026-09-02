@@ -6,11 +6,8 @@ import StrandTraining
 import CenitStore   // WorkoutRow — the journal join that carries zones / max HR (FER-952)
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 
-// WorkoutHistoryScreen.swift — «Mis entrenamientos» (FER-504): the completed strength sessions, newest
-// first, each opening a per-exercise breakdown. Read-only — it never edits or deletes a session. Pure
-// «Instrumento diurno»: warm paper, weights/sets in ink, the only color on the *physiological* datum
-// (effort/strain and heart rate, in `dataStrain`). The data already exists (strengthSession + setEntry,
-// FER-345); this is the screen that finally surfaces it. Pushed onto the Entrenar NavigationStack.
+// «Mis entrenamientos» (FER-504): sesiones de fuerza completadas en Liquid Glass · El Eje (tinta en
+// pesos/series; color solo en el dato fisiológico). Solo lectura; vive en el stack de Entrenar.
 
 /// A session pushed onto the train stack for its detail. Carries the scalar fields the detail header
 /// needs (so it doesn't refetch the row); the per-exercise sets are loaded by the detail screen. A
@@ -1483,7 +1480,7 @@ struct WorkoutSessionDetailScreen: View {
                 sourceBadge
                 if loaded {
                     // Handoff: exercise blocks breathe compact (16), not the section's 28.
-                    VStack(alignment: .leading, spacing: CenitMetrics.sectionGapCompact) {
+                    VStack(alignment: .leading, spacing: LiquidSpace.s400) {
                         ForEach(Array(groups.enumerated()), id: \.element.exerciseId) { idx, g in
                             LiquidCapilar(eje: .horizontal)
                             exerciseBlock(g, index: idx)
@@ -1524,7 +1521,7 @@ struct WorkoutSessionDetailScreen: View {
                 ])
             }
         }
-        .instrumentoConfirm(
+        .liquidConfirm(
             isPresented: $showDeleteConfirm,
             title: String(localized: "Delete this workout?"),
             context: String(localized: "HISTORY"),
@@ -1744,7 +1741,7 @@ struct WorkoutSessionDetailScreen: View {
     private var secondaries: some View {
         LazyVGrid(columns: [GridItem(.flexible(), alignment: .leading),
                             GridItem(.flexible(), alignment: .leading)],
-                  alignment: .leading, spacing: CenitMetrics.sectionGapCompact) {
+                  alignment: .leading, spacing: LiquidSpace.s400) {
             if volumeKg > 0 {
                 supportCell("Volume", StrengthHistoryFormat.volume(volumeKg, system: system))
             }

@@ -103,7 +103,7 @@ struct WorkoutEditSheet: View {
         // FER-998: una hoja no tiene gesto de borde; se lo damos. Pasa por `cancel()`, así que con
         // cambios sin guardar sale la confirmación de descartar igual que al tocar el botón.
         .edgeSwipeToExit { cancel() }
-        .instrumentoConfirm(
+        .liquidConfirm(
             isPresented: $showDiscard,
             title: String(localized: "Discard changes?"),
             context: String(localized: "WORKOUT · UNSAVED CHANGES"),

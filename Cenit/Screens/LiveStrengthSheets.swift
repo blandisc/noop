@@ -48,11 +48,11 @@ struct RPESheet: View {
             header
             // Canvas pass 2026-07-15: sin ScrollView — con el grid 2×4 todo cabe; más aire arriba
             // (sectionGap) para que el héroe no se pegue a la colilla.
-            VStack(spacing: CenitMetrics.sectionGap) {
+            VStack(spacing: LiquidSpace.s700) {
                 hero
                 scale
             }
-            .padding(.top, CenitMetrics.sectionGap)
+            .padding(.top, LiquidSpace.s700)
             Spacer(minLength: LiquidSpace.s300)
             okButton
         }
@@ -72,7 +72,7 @@ struct RPESheet: View {
         EntrenarHojaCabecera(glifo: .llama, titulo: String(localized: "RPE"),
                              subtitulo: String(localized: "Set \(target.setNumber) · \(weightLabel) × \(target.reps) reps"),
                              tono: .ambar, salida: .cerrar, onSalir: onClose)
-            .padding(.top, CenitMetrics.sectionGap)
+            .padding(.top, LiquidSpace.s700)
             .padding(.bottom, LiquidSpace.s200)
     }
 

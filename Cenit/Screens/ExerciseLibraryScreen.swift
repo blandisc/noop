@@ -460,7 +460,7 @@ struct CreateExerciseSheet: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s700) {
                 // FER-302: `EntrenarHojaCabecera(.cancelar)` reemplaza el título Grotesk a mano —
                 // el CTA grande de guardar sigue abajo (Salida única de la cabecera = Cancelar).
                 EntrenarHojaCabecera(

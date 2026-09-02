@@ -20,6 +20,8 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- Remate iOS (FER-310): `Cenit/`, `CenitApp/` salen de `CenitMetrics`, `InstrumentoType`, `.instrumentoHero`/`.instrumentoConfirm` y `.weight` sobre tokens grotesk; tipografía y espacio pasan a tokens Liquid (`tituloGemelaMedia` nuevo).
+
 - Diseño: tokens base para la corrida FER-309 (`LiquidSpace.s350`, `LiquidRadius.tile`, `LiquidControl.tileAltura`) y el set `LiquidOLED` para Watch y Dynamic Island; Watch y Widgets salen del carve-out Instrumento por decisión del dueño (DECISIONS 2026-09-03).
 
 - Gate de diseño: regla `no-weight-on-grotesk` (`.weight(...)` sobre un token grotesk de `LiquidType` no cambia la cara: el peso se pide por token) y `Tools/check-tokens-exist.sh`, que verifica en segundos que cada token Liquid del diff exista antes de compilar la app (FER-308, retro de FER-299).

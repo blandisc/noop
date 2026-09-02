@@ -33,7 +33,7 @@ struct InstrumentoAddButton: View {
     let action: () -> Void
 
     private var shape: RoundedRectangle {
-        RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
+        RoundedRectangle(cornerRadius: LiquidRadius.insetTarjeta, style: .continuous)
     }
 
     private var foreground: Color {

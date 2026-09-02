@@ -96,7 +96,7 @@ struct IntervalTimerView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s700) {
                 if configuring {
                     configureScreen
                 } else {
@@ -144,7 +144,7 @@ struct IntervalTimerView: View {
     // MARK: Configure screen (pre-session)
 
     private var configureScreen: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s700) {
             VStack(alignment: .leading, spacing: LiquidSpace.s100) {
                 Text("INTERVALS").liquidRegla().foregroundStyle(LiquidColor.tinta500)
                 Text("Build your HIIT")
@@ -241,7 +241,8 @@ struct IntervalTimerView: View {
                 VStack(spacing: LiquidSpace.s050) {
                     // Countdown = dominante sobrio: Grotesk tabular en tinta (nunca hue de fase).
                     Text(isFinished ? "✓" : "\(remaining)")
-                        .instrumentoHero(96)
+                        .font(LiquidType.displayXL).tracking(LiquidType.displayXLTracking)
+                        .monospacedDigit()
                         .foregroundStyle(LiquidColor.tinta900)
                         .contentTransition(reduceMotion ? .identity : .numericText())
                         .strandAnimation(.snappy, value: remaining)

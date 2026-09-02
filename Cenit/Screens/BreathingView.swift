@@ -106,7 +106,7 @@ struct BreathingView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s700) {
                 header
                 statusRow
                 if !running {
@@ -416,7 +416,7 @@ struct BreathingView: View {
         }
         .padding(LiquidSpace.s400)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: CenitMetrics.tileHeight)
+        .frame(height: LiquidControl.tileAltura)
         .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.modulo, style: .continuous))
         .liquidGlass(.superficieSolida)
     }
