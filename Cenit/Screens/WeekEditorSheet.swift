@@ -66,11 +66,11 @@ struct WeekEditorSheet: View {
         .overlay(alignment: .bottom) {
             if lockedToast {
                 Text("Days already trained can't be edited")
-                    .font(LiquidType.caption).fontWeight(.medium)
+                    .font(LiquidType.caption)
                     .foregroundStyle(LiquidColor.papelTarjeta)
                     .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s200)
                     .background(LiquidColor.tinta900, in: Capsule())
-                    .padding(.bottom, CenitMetrics.sectionGap)
+                    .padding(.bottom, LiquidSpace.s700)
                     .transition(LiquidMotion.risingFadeTransition)
                     .task {
                         try? await Task.sleep(for: .seconds(2))

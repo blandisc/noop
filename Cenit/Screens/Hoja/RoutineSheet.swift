@@ -173,7 +173,7 @@ struct RoutineSheet: View {
         .entrenarHojaFondo(tono: .indigo)
         .onDisappear { if dirty, !isOrphan { persist() } }
         .saveErrorToast(isPresented: $saveError)
-        .instrumentoConfirm(
+        .liquidConfirm(
             isPresented: Binding(get: { equalizeTarget != nil }, set: { if !$0 { equalizeTarget = nil } }),
             title: String(localized: "Equalize all sets?"),
             context: String(localized: "ROUTINE"),
@@ -183,18 +183,6 @@ struct RoutineSheet: View {
                 .init(String(localized: "Equalize"), role: .destructive) {
                     if let idx = equalizeTarget { equalizeAll(idx) }
                 }
-            ]
-        )
-        // R8 (QA D10, adjudicado): una superserie legada con rondas ya desiguales pide confirmar
-        // antes de que la primera edición las espeje a todas. Mismo patrón que «Igualar todas».
-        .instrumentoConfirm(
-            isPresented: Binding(get: { pendingMirror != nil }, set: { if !$0 { pendingMirror = nil } }),
-            title: String(localized: "Equalize all rounds?"),
-            context: String(localized: "ROUTINE"),
-            message: String(localized: "This superset's rounds don't all match yet · this will make every round the same."),
-            actions: [
-                .init(String(localized: "Keep as is"), role: .primary),
-                .init(String(localized: "Equalize"), role: .destructive) { confirmPendingMirror() }
             ]
         )
         .toolbar(.hidden, for: .navigationBar)
@@ -281,6 +269,7 @@ struct RoutineSheet: View {
 
     // MARK: - Editor (título + meta + tarjetas + CTA fijo)
 
+    /// Confirm de espejo de rondas cuelga del editor (nodo distinto al de «Igualar todas» — FER-174).
     private var editor: some View {
         List {
             HojaCabecera.titleBlock(sheet: self).hojaRow(top: 6, bottom: 6)
@@ -292,6 +281,18 @@ struct RoutineSheet: View {
         .environment(\.defaultMinListRowHeight, 1)
         .environment(\.editMode, .constant(reordering ? .active : .inactive))
         .safeAreaInset(edge: .bottom) { if startsSession { HojaCabecera.ctaBar(sheet: self) } }
+        // R8 (QA D10, adjudicado): una superserie legada con rondas ya desiguales pide confirmar
+        // antes de que la primera edición las espeje a todas. Mismo patrón que «Igualar todas».
+        .liquidConfirm(
+            isPresented: Binding(get: { pendingMirror != nil }, set: { if !$0 { pendingMirror = nil } }),
+            title: String(localized: "Equalize all rounds?"),
+            context: String(localized: "ROUTINE"),
+            message: String(localized: "This superset's rounds don't all match yet · this will make every round the same."),
+            actions: [
+                .init(String(localized: "Keep as is"), role: .primary),
+                .init(String(localized: "Equalize"), role: .destructive) { confirmPendingMirror() }
+            ]
+        )
     }
 
     @ViewBuilder
@@ -299,14 +300,14 @@ struct RoutineSheet: View {
         ForEach(Array(items.enumerated()), id: \.element.id) { idx, item in
             let grouped = RoutineSetEditing.inSuperset(items.map(\.re), idx)
             if grouped {
-                if firstOfGroup(idx) { supersetCard(from: idx).hojaRow(top: CenitMetrics.sectionGap, bottom: 0) }
+                if firstOfGroup(idx) { supersetCard(from: idx).hojaRow(top: LiquidSpace.s700, bottom: 0) }
             } else if openID == item.id {
-                HojaTarjetaEjercicio(sheet: self, idx: idx).hojaRow(top: idx == 0 ? 6 : CenitMetrics.sectionGap, bottom: 0)
+                HojaTarjetaEjercicio(sheet: self, idx: idx).hojaRow(top: idx == 0 ? 6 : LiquidSpace.s700, bottom: 0)
             } else {
-                HojaPlegada.row(sheet: self, idx: idx).hojaRow(top: idx == 0 ? 6 : CenitMetrics.sectionGap, bottom: 0)
+                HojaPlegada.row(sheet: self, idx: idx).hojaRow(top: idx == 0 ? 6 : LiquidSpace.s700, bottom: 0)
             }
         }
-        if !locked { HojaPlegada.addExercise(sheet: self).hojaRow(top: CenitMetrics.sectionGap, bottom: LiquidSpace.s600) }
+        if !locked { HojaPlegada.addExercise(sheet: self).hojaRow(top: LiquidSpace.s700, bottom: LiquidSpace.s600) }
     }
 
     /// El primer índice de un grupo de superserie encabeza la tarjeta única con TODOS sus miembros.
@@ -439,7 +440,7 @@ struct RoutineSheet: View {
                 }
             }
         }
-        .padding(.horizontal, LiquidSpace.s300).padding(.vertical, CenitMetrics.rowVPad)
+        .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s250)
         .liquidGlass(.superficieSolida)
     }
 

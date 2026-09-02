@@ -306,7 +306,8 @@ struct HojaSesionViva: View {
                 .padding(.top, LiquidSpace.s300).presentationDragIndicator(.visible).presentationBackground(LiquidColor.fondoAlto).preferredColorScheme(.light)
             }
         }
-        .instrumentoConfirm(
+        // Confirm de Terminar en la raíz; los otros tres cuelgan de subvistas de `liveLoop` (FER-174).
+        .liquidConfirm(
             isPresented: $confirmFinish,
             title: String(localized: "Finish workout?"),
             context: String(localized: "SESSION · IN PROGRESS"),
@@ -314,49 +315,38 @@ struct HojaSesionViva: View {
             message: finishConfirmMessage,
             actions: finishConfirmActions
         )
-        // B16b (FER-169): «¿La rutina se queda así?» — solo aparece cuando SÍ hubo cambios (mapa: una
-        // pregunta, una vez); si no hay ninguno, `requestFinish()` ya terminó sin pasar por aquí.
-        .instrumentoConfirm(
-            isPresented: Binding(get: { routineChangesToConfirm != nil }, set: { if !$0 { routineChangesToConfirm = nil } }),
-            title: String(localized: "Keep the routine this way?"),
-            context: String(localized: "SESSION · IN PROGRESS"),
-            message: routineChangesToConfirm?.phrase ?? "",
-            actions: [
-                .init(String(localized: "Save to the routine"), role: .primary) { finishAndSaveRoutineChanges() },
-                .init(String(localized: "Just for today"), role: .secondary) { finishWithoutSavingRoutineChanges() }
-            ]
-        )
-        // Nancy · ronda 1: confirma antes de tirar un ejercicio que YA tiene series hechas.
-        .instrumentoConfirm(
-            isPresented: Binding(get: { confirmRemoveRunId != nil }, set: { if !$0 { confirmRemoveRunId = nil } }),
-            title: String(localized: "Remove it with its logged sets?"),
-            context: String(localized: "SESSION · IN PROGRESS"),
-            message: removeExerciseMessage,
-            actions: [
-                .init(String(localized: "Keep it"), role: .primary),
-                .init(String(localized: "Remove anyway"), role: .destructive) { confirmRemoveExercise() }
-            ]
-        )
-        // R8: confirma antes de robarle la pareja de superserie al vecino — misma clave que F1.
-        .instrumentoConfirm(
-            isPresented: Binding(get: { confirmSupersetSteal != nil }, set: { if !$0 { confirmSupersetSteal = nil } }),
-            title: String(localized: "Break its current superset?"),
-            context: String(localized: "SESSION · IN PROGRESS"),
-            message: supersetStealMessage,
-            actions: [
-                .init(String(localized: "Pair here"), role: .primary) { confirmSupersetStealAndPair() },
-                .init(String(localized: "Keep as is"), role: .secondary)
-            ]
-        )
         .enableInjection()
     }
 
     // MARK: - El bucle (B1-B4)
 
+    /// Tres confirms en nodos distintos (cabecera / avance / bucle) — dos en el mismo nodo se rompen (FER-174).
     private var liveLoop: some View {
         VStack(spacing: 0) {
             HojaCabeceraSesion.header(vivo: self)
+                // Nancy · ronda 1: confirma antes de tirar un ejercicio que YA tiene series hechas.
+                .liquidConfirm(
+                    isPresented: Binding(get: { confirmRemoveRunId != nil }, set: { if !$0 { confirmRemoveRunId = nil } }),
+                    title: String(localized: "Remove it with its logged sets?"),
+                    context: String(localized: "SESSION · IN PROGRESS"),
+                    message: removeExerciseMessage,
+                    actions: [
+                        .init(String(localized: "Keep it"), role: .primary),
+                        .init(String(localized: "Remove anyway"), role: .destructive) { confirmRemoveExercise() }
+                    ]
+                )
             HojaCabeceraSesion.avance(vivo: self)
+                // R8: confirma antes de robarle la pareja de superserie al vecino — misma clave que F1.
+                .liquidConfirm(
+                    isPresented: Binding(get: { confirmSupersetSteal != nil }, set: { if !$0 { confirmSupersetSteal = nil } }),
+                    title: String(localized: "Break its current superset?"),
+                    context: String(localized: "SESSION · IN PROGRESS"),
+                    message: supersetStealMessage,
+                    actions: [
+                        .init(String(localized: "Pair here"), role: .primary) { confirmSupersetStealAndPair() },
+                        .init(String(localized: "Keep as is"), role: .secondary)
+                    ]
+                )
             if session.saveError { saveErrorBanner }   // B14
             // R14 (Grok 6): scroll-to cuando el foco avanza — paridad `LiveStrengthSheet` (línea 646),
             // ancla por `run.id` (regla dura), nunca por índice.
@@ -370,7 +360,7 @@ struct HojaSesionViva: View {
                         }
                     }
                     .padding(.horizontal, LiquidSpace.s600)
-                    .padding(.top, CenitMetrics.receiptPadding)
+                    .padding(.top, LiquidSpace.s350)
                     .padding(.bottom, LiquidSpace.s600)
                 }
                 .onChange(of: accordionIndex) { _, newIndex in
@@ -386,6 +376,18 @@ struct HojaSesionViva: View {
             // B16: sesión llena → el CTA sustituye a la consola (ya no hay nada que capturar).
             if session.isComplete { HojaCabeceraSesion.ctaTerminar(vivo: self) } else { keypadInset }
         }
+        // B16b (FER-169): «¿La rutina se queda así?» — solo aparece cuando SÍ hubo cambios (mapa: una
+        // pregunta, una vez); si no hay ninguno, `requestFinish()` ya terminó sin pasar por aquí.
+        .liquidConfirm(
+            isPresented: Binding(get: { routineChangesToConfirm != nil }, set: { if !$0 { routineChangesToConfirm = nil } }),
+            title: String(localized: "Keep the routine this way?"),
+            context: String(localized: "SESSION · IN PROGRESS"),
+            message: routineChangesToConfirm?.phrase ?? "",
+            actions: [
+                .init(String(localized: "Save to the routine"), role: .primary) { finishAndSaveRoutineChanges() },
+                .init(String(localized: "Just for today"), role: .secondary) { finishWithoutSavingRoutineChanges() }
+            ]
+        )
     }
 
     @ViewBuilder private func row(_ ei: Int) -> some View {
@@ -437,19 +439,19 @@ struct HojaSesionViva: View {
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: LiquidSpace.s025) {
                 Text("Couldn't save the workout. Try again.")
-                    .font(LiquidType.caption).fontWeight(.medium).foregroundStyle(LiquidColor.tinta900)
+                    .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta900)
                 Text("Your sets are safe on this phone.")
                     .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta700)
             }
             .accessibilityElement(children: .combine)
             Spacer(minLength: LiquidSpace.s200)
             Button { sheet.model.retryStrengthSave() } label: {
-                Text("Retry").font(LiquidType.caption).fontWeight(.medium).foregroundStyle(LiquidColor.tinta900)
+                Text("Retry").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta900)
             }
             .buttonStyle(.plain)
         }
         .padding(.horizontal, LiquidSpace.s600)
-        .padding(.vertical, CenitMetrics.rowVPad)
+        .padding(.vertical, LiquidSpace.s250)
         .entrenarHojaBarraFondo(tono: .indigo)
         .overlay(alignment: .bottom) { Rectangle().fill(LiquidColor.tinta10).frame(height: 1) }
     }
@@ -469,8 +471,8 @@ struct HojaSesionViva: View {
                         .outlineCapsule(
                             .outline,
                             size: .aMedida(
-                                insets: EdgeInsets(top: CenitMetrics.rowVPad, leading: LiquidSpace.s400,
-                                                   bottom: CenitMetrics.rowVPad, trailing: LiquidSpace.s400),
+                                insets: EdgeInsets(top: LiquidSpace.s250, leading: LiquidSpace.s400,
+                                                   bottom: LiquidSpace.s250, trailing: LiquidSpace.s400),
                                 minHeight: nil,
                                 touchInset: .zero),
                             theme: sheet.theme)
@@ -479,7 +481,7 @@ struct HojaSesionViva: View {
                 Button { zombieAcknowledged = true } label: {
                     (Text("Keep training") + Text(verbatim: " ›"))
                         .font(LiquidType.cuerpoBanner.weight(.bold)).foregroundStyle(LiquidColor.papelTarjeta)
-                        .padding(.horizontal, LiquidSpace.s400).padding(.vertical, CenitMetrics.rowVPad)
+                        .padding(.horizontal, LiquidSpace.s400).padding(.vertical, LiquidSpace.s250)
                         .background(LiquidColor.verdePrimario, in: Capsule())
                 }
                 .buttonStyle(.plain)

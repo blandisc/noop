@@ -82,27 +82,28 @@ struct HojaTarjetaSuperserieCompuesta: View {
         let workSi = sheet.firstWorkIndex(idx)
         let set = workSi.map { item.re.sets[$0] }
         // R11 (QA D7): `relativeTo` en las tres — cero fuentes fixedSize en texto de lectura.
+        // FER-310: nombre→tituloFila; peso/reps→valorS; unidad→captionFuerte; agarre→captionRegular.
         return HStack(alignment: .firstTextBaseline, spacing: HojaMetrics.filaGap) {
             Text(StrengthDisplay.name(item.exercise))
-                .font(InstrumentoType.grotesk(11.5, weight: .semibold, relativeTo: .caption2))
+                .font(LiquidType.tituloFila)
                 .foregroundStyle(LiquidColor.tinta900)
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)
             HStack(alignment: .firstTextBaseline, spacing: 0) {
                 Text(verbatim: sheet.showsWeight(type) ? (set?.weightKg.map { StrengthDisplay.weightNumber($0, system: sheet.system) } ?? "—") : "—")
-                    .font(InstrumentoType.groteskNumber(15, weight: .bold, relativeTo: .callout)).foregroundStyle(LiquidColor.tinta900)
+                    .font(LiquidType.valorS).foregroundStyle(LiquidColor.tinta900)
                 if sheet.showsWeight(type) {
                     Text(verbatim: StrengthDisplay.weightUnit(sheet.system).lowercased())
-                        .font(InstrumentoType.grotesk(10, weight: .semibold, relativeTo: .caption2)).foregroundStyle(LiquidColor.tinta500)
+                        .font(LiquidType.captionFuerte).foregroundStyle(LiquidColor.tinta500)
                         .padding(.leading, LiquidSpace.s050)
                 }
             }
             .frame(width: HojaMetrics.colPesoEdicion, alignment: .leading)
             Text(sheet.showsReps(type) ? (set?.repsRangeLabel ?? "—") : "—")
-                .font(InstrumentoType.groteskNumber(15, weight: .bold, relativeTo: .callout)).foregroundStyle(LiquidColor.tinta900)
+                .font(LiquidType.valorS).foregroundStyle(LiquidColor.tinta900)
                 .frame(width: HojaMetrics.colRepsEdicion, alignment: .leading)
             Text(verbatim: "≡")
-                .font(InstrumentoType.grotesk(HojaMetrics.agarreSize, weight: .regular, relativeTo: .caption))
+                .font(LiquidType.captionRegular)
                 .foregroundStyle(LiquidColor.tinta500)
                 .frame(width: HojaMetrics.colMarcaEdicion, alignment: .trailing)
         }

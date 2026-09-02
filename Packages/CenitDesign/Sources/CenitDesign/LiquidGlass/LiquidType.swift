@@ -121,8 +121,10 @@ public enum LiquidType {
     /// `título/gemela` — 15/600. El rótulo de las celdas gemelas destacadas de la Matriz
     /// (Sueño · Reposo): mismo peso callado que `tituloFila`, un punto más grande para que
     /// el par pese igual y se lea como gemelo (FER-56). Sube el tamaño, no la voz — el
-    /// número sigue mandando (jerarquía «Instrumento»).
+    /// número sigue mandando (jerarquía Liquid Glass · El Eje).
     public static let tituloGemela = InstrumentoType.grotesk(15, weight: .semibold)
+    /// `tituloGemela` en medium (15/500): el peso se pide por token (regla `no-weight-on-grotesk`, FER-310).
+    public static let tituloGemelaMedia = InstrumentoType.grotesk(15, weight: .medium)
 
     // MARK: Cuerpo (SF)
 

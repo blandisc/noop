@@ -29,14 +29,9 @@ import Foundation
 // delta recomputes against the same window. Stress draws its spark from the stored daily stress series
 // (it isn't a `DailyMetric` field); every other spark slices `displayDays` by the selected period.
 //
-// Detail bridge: every vital now opens a light «Instrumento» sheet — the scalar vitals (HRV / Resting HR /
-// Respiración / SpO₂) through the unified `MetricDetailScreen` (FER-185), and the composite/own-shaped ones
-// through their dedicated screens (Recovery / Sueño / Esfuerzo / Estrés, and Temp. de piel via
-// `SkinTempDetailScreen`, FER-256). Entrenamientos, Comparar and «Ver todas» (Explore, FER-272) now also
-// open light «Instrumento» sheets. Only Data Sources still opens the legacy dark screen as a `.sheet`
-// pinned to `.dark` (a light tab pushing a dark screen would leave the status bar's dark ink on a
-// near-black panel, so a self-contained dark sheet is the honest bridge, same pattern Today uses for
-// Live / Data Sources).
+// Puente de detalle: cada vital abre una hoja Liquid (escalares vía `MetricDetailScreen` FER-185;
+// compuestos en sus pantallas propias). Entrenamientos / Comparar / «Ver todas» también. Solo Data
+// Sources sigue en hoja oscura legada (mismo puente que Hoy).
 //
 // Values + sparklines read from `repo.displayDays` (the merged dashboard), NOT `series()`: the
 // on-device computed scores live in daily-metrics under `strap-noop`, so `series("strap")` is
@@ -288,7 +283,7 @@ private struct CuerpoLanding: View {
     var body: some View {
         ZStack {
         ScrollView {
-            VStack(alignment: .leading, spacing: CenitMetrics.cardGap) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s100) {
                 titleBlock
                 periodSelector
                 // §8.7 landing micro-legend: today's values vs last month's trends (period selector above).

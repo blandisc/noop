@@ -128,7 +128,7 @@ enum HojaCabeceraSesion {
         }
         .frame(height: EntrenarMetrics.progressBar)
         .padding(.horizontal, LiquidSpace.s600)
-        .padding(.top, CenitMetrics.rowVPad)
+        .padding(.top, LiquidSpace.s250)
         .accessibilityLabel(Text(verbatim: vivo.serieSubtitle))
     }
 

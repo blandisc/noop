@@ -31,10 +31,8 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // MARK: - The guided session sheet
 
-/// The guided strength session, in the light «Instrumento diurno» language. The theme is passed in
-/// explicitly (it doesn't cross the `.sheet` boundary — FER-190). The weight is the dominant datum in the
-/// effort hue; the table is a detented `.sheet` drawer; rest is a fixed countdown that hosts the plan
-/// navigator. The session itself lives in `AppModel`, so dismissing this sheet never ends it.
+/// Sesión guiada de fuerza en Liquid Glass · El Eje. El tema se pasa explícito (no cruza `.sheet`,
+/// FER-190); la sesión vive en `AppModel` (dismiss no la termina).
 struct LiveStrengthSheet: View {
     @Environment(AppModel.self) private var model
     /// FER-93: para no soltar el aviso del descanso cuando la app vuelve del bloqueo.
@@ -249,7 +247,7 @@ struct LiveStrengthSheet: View {
     @ViewBuilder
     private func bodySummaryScroll(_ summary: StrengthSummary) -> some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s700) {
                 summaryPhase(summary)
             }
             .padding(.horizontal, LiquidSpace.s600)
@@ -260,6 +258,7 @@ struct LiveStrengthSheet: View {
     }
 
     /// Theme, banners, library picker, rest-anchor onChange — no session sheets yet.
+    /// Confirm de robo de superserie cuelga AQUÍ (nodo distinto al de Terminar — bug FER-174).
     private var bodyChrome: some View {
         bodyPhaseContent
             // FER-198 (Ola 2, épico FER-195): fondo de vidrio El Eje (Ola 1, FER-197) para las 3
@@ -287,6 +286,25 @@ struct LiveStrengthSheet: View {
                 // al llegar. Se captura una sola vez al entrar a descanso, se limpia al salir.
                 if phase == .resting { restStartBpm = model.watchBpm } else { restStartBpm = nil }
             }
+            // r21 (auditoría UX #5a): emparejar con un vecino que YA es de otra superserie deshace
+            // aquella pareja — se confirma con su nombre en la mano, nunca en silencio.
+            .liquidConfirm(
+                isPresented: Binding(get: { confirmSupersetSteal != nil },
+                                     set: { if !$0 { confirmSupersetSteal = nil } }),
+                title: String(localized: "Break its current superset?"),
+                context: String(localized: "SESSION · IN PROGRESS"),
+                message: bodySupersetStealMessage,
+                actions: [
+                    .init(String(localized: "Pair here"), role: .primary) {
+                        if let ei = confirmSupersetSteal {
+                            withAnimation(.snappy) { session.toggleSupersetWithNext(ei) }
+                            persistSupersetGroups()   // r30: también el robo consentido queda en la rutina
+                        }
+                        confirmSupersetSteal = nil
+                    },
+                    .init(String(localized: "Keep as is"), role: .secondary)
+                ]
+            )
     }
 
     @ViewBuilder
@@ -427,13 +445,13 @@ struct LiveStrengthSheet: View {
         }
     }
 
-    /// Destructive confirms (finish / discard / superset steal) — last layer on `body`.
+    /// Confirm de Terminar — cuelga del presentador (nodo distinto al de robo en `bodyChrome`, FER-174).
     private var bodyWithConfirms: some View {
         bodyPresenters
             // S-2 (FER-830) → FER-837: one destructive-confirmation pattern across the flow, now the
-            // «Instrumento» ConfirmCard. The stay-safe verb names its action («Keep training»), never a
+            // ConfirmCard Liquid. The stay-safe verb names its action («Keep training»), never a
             // generic cancel; destructive is always the red outline.
-            .instrumentoConfirm(
+            .liquidConfirm(
                 isPresented: $confirmFinish,
                 title: String(localized: "Finish workout?"),
                 context: String(localized: "SESSION · IN PROGRESS"),
@@ -442,25 +460,6 @@ struct LiveStrengthSheet: View {
                 // doneCount > 0) — el botón hacía lo contrario de lo que decía. Sin series: quedarse es
                 // la primaria y descartar la destructiva; guardar solo existe cuando hay qué guardar.
                 actions: bodyFinishConfirmActions
-            )
-            // r21 (auditoría UX #5a): emparejar con un vecino que YA es de otra superserie deshace
-            // aquella pareja — se confirma con su nombre en la mano, nunca en silencio.
-            .instrumentoConfirm(
-                isPresented: Binding(get: { confirmSupersetSteal != nil },
-                                     set: { if !$0 { confirmSupersetSteal = nil } }),
-                title: String(localized: "Break its current superset?"),
-                context: String(localized: "SESSION · IN PROGRESS"),
-                message: bodySupersetStealMessage,
-                actions: [
-                    .init(String(localized: "Pair here"), role: .primary) {
-                        if let ei = confirmSupersetSteal {
-                            withAnimation(.snappy) { session.toggleSupersetWithNext(ei) }
-                            persistSupersetGroups()   // r30: también el robo consentido queda en la rutina
-                        }
-                        confirmSupersetSteal = nil
-                    },
-                    .init(String(localized: "Keep as is"), role: .secondary)
-                ]
             )
     }
 
@@ -836,8 +835,8 @@ struct LiveStrengthSheet: View {
         OutlineCapsule(
             theme: theme,
             size: .aMedida(
-                insets: EdgeInsets(top: .zero, leading: CenitMetrics.receiptPadding,
-                                   bottom: .zero, trailing: CenitMetrics.receiptPadding),
+                insets: EdgeInsets(top: .zero, leading: LiquidSpace.s350,
+                                   bottom: .zero, trailing: LiquidSpace.s350),
                 minHeight: EntrenarMetrics.secondaryButton,
                 touchInset: .zero),
             estilo: .papel,
@@ -964,7 +963,7 @@ struct LiveStrengthSheet: View {
             .accessibilityElement(children: .combine)
             if retry {
                 Button { model.retryWatchMirroring() } label: {
-                    Text("Retry").font(LiquidType.caption).fontWeight(.medium).foregroundStyle(LiquidColor.tinta900)
+                    Text("Retry").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta900)
                 }
                 .buttonStyle(.plain).padding(.leading, 2)  // token-exempt: ajuste óptico
             }
@@ -983,19 +982,19 @@ struct LiveStrengthSheet: View {
             // podía reintentar el guardado. Solo el bloque de texto se combina; el botón queda suelto.
             VStack(alignment: .leading, spacing: LiquidSpace.s025) {
                 Text("Couldn't save the workout. Try again.")
-                    .font(LiquidType.caption).fontWeight(.medium).foregroundStyle(LiquidColor.tinta900)
+                    .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta900)
                 Text("Your sets are safe on this phone.")
                     .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta700)
             }
             .accessibilityElement(children: .combine)
             Spacer(minLength: LiquidSpace.s200)
             Button { model.retryStrengthSave() } label: {
-                Text("Retry").font(LiquidType.caption).fontWeight(.medium).foregroundStyle(LiquidColor.tinta900)
+                Text("Retry").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta900)
             }
             .buttonStyle(.plain)
         }
         .padding(.horizontal, LiquidSpace.s600)
-        .padding(.vertical, CenitMetrics.rowVPad)
+        .padding(.vertical, LiquidSpace.s250)
         .background(LiquidColor.fondoAlto)
         .overlay(alignment: .bottom) { Rectangle().fill(LiquidColor.tinta10).frame(height: 1) }
     }
@@ -1128,9 +1127,9 @@ struct LiveStrengthSheet: View {
         return Button { Task { await addExercises([s.exercise]) } } label: {
             EntrenarModulo(tono: tono) {
                 HStack(spacing: LiquidSpace.s300) {
-                    RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
+                    RoundedRectangle(cornerRadius: LiquidRadius.insetTarjeta, style: .continuous)
                         .fill(LiquidColor.papelTarjeta).frame(width: 40, height: 40)
-                        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous).strokeBorder(LiquidColor.tinta10, lineWidth: 1))
+                        .overlay(RoundedRectangle(cornerRadius: LiquidRadius.insetTarjeta, style: .continuous).strokeBorder(LiquidColor.tinta10, lineWidth: 1))
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: LiquidSpace.s025) {
                         Text(StrengthDisplay.name(s.exercise)).font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta900)
@@ -1549,7 +1548,8 @@ struct LiveStrengthSheet: View {
                 let value = format.numeral(strain)
                 let zero = format.numeral(0)
                 let numeral = Text(receiptCountUp ? value : zero)
-                    .instrumentoHero(76).monospacedDigit().contentTransition(.numericText())
+                    .font(LiquidType.displayXL).tracking(LiquidType.displayXLTracking)
+                    .monospacedDigit().contentTransition(.numericText())
                     .foregroundStyle(LiquidColor.ambar)
                     .lineLimit(1).minimumScaleFactor(0.6)
                 VStack(alignment: .leading, spacing: LiquidSpace.s050) {
@@ -1573,7 +1573,8 @@ struct LiveStrengthSheet: View {
                 VStack(alignment: .leading, spacing: LiquidSpace.s050) {
                     Text("Duration").liquidLabel().foregroundStyle(LiquidColor.tinta500)
                     Text(receiptCountUp ? Self.clock(s.durationS) : "0:00")
-                        .instrumentoHero(76).monospacedDigit().contentTransition(.numericText())
+                        .font(LiquidType.displayXL).tracking(LiquidType.displayXLTracking)
+                        .monospacedDigit().contentTransition(.numericText())
                         .foregroundStyle(LiquidColor.tinta900)
                         .lineLimit(1).minimumScaleFactor(0.6)
                 }

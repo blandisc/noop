@@ -472,12 +472,12 @@ struct HojaFoco: View {
                         }
                     }
                     .font(LiquidType.tituloGemela).foregroundStyle(LiquidColor.tintaSobreVerde)
-                    .padding(.horizontal, CenitMetrics.sectionGap)
+                    .padding(.horizontal, LiquidSpace.s700)
                     .frame(height: EntrenarMetrics.primaryButton)
                     .background(LiquidColor.verdePrimario, in: Capsule())
                 }
                 .buttonStyle(.plain)
-                .padding(.top, CenitMetrics.sectionGap)
+                .padding(.top, LiquidSpace.s700)
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, LiquidSpace.s600)

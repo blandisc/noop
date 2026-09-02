@@ -56,7 +56,7 @@ struct StarterTemplatesSheet: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s700) {
                 if let t = selected {
                     preview(t)
                 } else {
@@ -84,7 +84,7 @@ struct StarterTemplatesSheet: View {
     // MARK: - List (grouped by program, or one group in FER-251 mode)
 
     private var listContent: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s700) {
             if !isGroupMode {
                 VStack(alignment: .leading, spacing: LiquidSpace.s100) {
                     Text("Templates").liquidKicker().foregroundStyle(LiquidColor.tinta500)
@@ -159,7 +159,7 @@ struct StarterTemplatesSheet: View {
     // MARK: - Preview (one template + add / use-plan action)
 
     private func preview(_ t: StarterTemplate) -> some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s700) {
             // En modo grupo con 1 rutina no hay lista detrás; el back solo tiene sentido si hay
             // más de una (o catálogo completo).
             if !isGroupMode || (grupo.map { StarterTemplates.inGroup($0).count } ?? 0) > 1 {

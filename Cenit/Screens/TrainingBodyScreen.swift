@@ -12,12 +12,9 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 // today. A tracker without physiology (Fitbod) can't cross in a verdict; a physiology app without set
 // logging (WHOOP) has no per-muscle load. Cénit has both.
 //
-// Light «Instrumento diurno» language (warm paper, color ONLY on the datum, hierarchy by space). The
-// math is the pure, cited `MuscleFatigueMap` (StrandAnalytics): load = Σ involvement·decay(daysAgo) with
-// a 2-day half-life (MPS time course), a 3/7/14-day window that filters which sets count, freshness
-// relative to the user's own most-loaded muscle, weekly volume vs the Schoenfeld 10–20 band. The
-// systemic gate is applied HERE, from the verdict (FER-82). THIS screen is the glue: it reads work sets from the store, expands each over its
-// exercise's `muscleInvolvement`, computes whole-day ages in the local calendar, and draws the result.
+// Liquid Glass · El Eje (color solo en el dato). La math es `MuscleFatigueMap` (StrandAnalytics):
+// load = Σ involvement·decay, half-life 2 días, frescura relativa al músculo más cargado, volumen
+// semanal vs banda Schoenfeld 10–20. El gate sistémico se aplica AQUÍ desde el veredicto (FER-82).
 //
 // Entrenar v3 · 1n (FER-719) — the handoff skin («Rediseño Hoy» voice):
 //   • A grotesk VERDICT headline leads (what's fresh, what still carries load), with the day's
@@ -302,7 +299,7 @@ struct TrainingBodyScreen: View {
             }
             .frame(maxWidth: .infinity)
         }
-        .instrumentoConfirm(
+        .liquidConfirm(
             isPresented: $showResetConfirm,
             title: String(localized: "Mark all muscles as recovered?"),
             context: String(localized: "MUSCLE MAP"),

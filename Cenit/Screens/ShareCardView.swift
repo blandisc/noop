@@ -47,7 +47,7 @@ struct ShareCardView: View {
 
             if includeRecords, let pr = summary.prs.first {
                 Text("★ \(String(localized: "Record")): \(prText(pr))")
-                    .font(LiquidType.tituloGemela).fontWeight(.medium).foregroundStyle(LiquidColor.verdePrimario)
+                    .font(LiquidType.tituloGemelaMedia).foregroundStyle(LiquidColor.verdePrimario)
                     .padding(.top, LiquidSpace.handoff14)
             }
         }

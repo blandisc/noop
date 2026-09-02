@@ -147,7 +147,7 @@ struct WorkoutImportView: View {
     /// resumen inventado, truncado a 4 líneas); PASO 2 es la zona punteada de pegar + «Abrir archivo».
     /// La lógica sigue intacta: `parse`/`copyPrompt`/`handleImport` no cambian, solo quién los llama.
     private var captureFlow: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s700) {
             // FER-200: `EntrenarHojaCabecera(.cerrar)` absorbe `importHeader` + el héroe — mismas
             // cadenas, misma salida (`dismiss` / `confirmDiscard` si hubiera trabajo a medias).
             EntrenarHojaCabecera(
@@ -259,7 +259,7 @@ struct WorkoutImportView: View {
     // MARK: - Mapping (the names that aren't in the catalog yet)
 
     private var mappingFlow: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s700) {
             stepper(current: .mapping)
             header("Import plan", "\(unmatched.count) exercises to set up")
             Text("These aren't in your library. Match each one to an exercise you have, or create it.")
@@ -335,8 +335,12 @@ struct WorkoutImportView: View {
                         // Handoff: la sugerencia como tarjeta — sparkle ember, nombre, y «Usar» como botón oscuro.
                         Button { resolve(name, with: s) } label: {
                             HStack(spacing: LiquidSpace.s200) {
-                                Image(systemName: "sparkles").font(LiquidType.caption).foregroundStyle(LiquidColor.ambar)
-                                Text(StrengthDisplay.name(s)).font(LiquidType.cuerpo.weight(.medium)).foregroundStyle(LiquidColor.tinta900)
+                                Image(systemName: "sparkles")
+                                    .font(LiquidType.caption)
+                                    .foregroundStyle(LiquidColor.ambar)
+                                Text(StrengthDisplay.name(s))
+                                    .font(LiquidType.cuerpo.weight(.medium))
+                                    .foregroundStyle(LiquidColor.tinta900)
                                 Spacer(minLength: LiquidSpace.s200)
                                 Text("Use").font(LiquidType.tituloFilaNegrita).foregroundStyle(LiquidColor.papelTarjeta)
                                     .padding(.horizontal, 11).padding(.vertical, LiquidSpace.s100)  // token-exempt(falta-pieza): chip handoff 11 sin token exacto
@@ -385,7 +389,7 @@ struct WorkoutImportView: View {
     /// vuelve a `.mapping`: es el paso donde SÍ se corrigen mapeos, aunque el prototipo lo dibuje
     /// volviendo a la captura.
     private func confirmFlow(_ program: WorkoutProgram) -> some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s700) {
             // FER-200: misma cabecera de familia que captura — título/resumen ya localizados;
             // salida `.cerrar` con el guard de `confirmDiscard` (fase confirm = midWork).
             EntrenarHojaCabecera(
@@ -512,9 +516,9 @@ struct WorkoutImportView: View {
     private var doneFlow: some View {
         VStack(spacing: 0) {
             stepper(current: .done)
-            Spacer(minLength: CenitMetrics.sectionGap)
+            Spacer(minLength: LiquidSpace.s700)
 
-            VStack(spacing: CenitMetrics.sectionGap) {
+            VStack(spacing: LiquidSpace.s700) {
                 ZStack {
                     Circle().fill(LiquidColor.verdePrimario.opacity(CenitOpacity.tintFill)).frame(width: 116, height: 116)
                     Image(systemName: "checkmark")
@@ -536,7 +540,7 @@ struct WorkoutImportView: View {
                 .opacity(celebrate ? 1 : 0)
             }
 
-            Spacer(minLength: CenitMetrics.sectionGap)
+            Spacer(minLength: LiquidSpace.s700)
             CenitCTAButton("Done") { Task { await onComplete(); dismiss() } }
         }
         .frame(maxWidth: .infinity)
