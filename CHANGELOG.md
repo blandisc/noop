@@ -20,6 +20,8 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- La sesión en vivo, el hub y Tu cuerpo terminan de pasar al vidrio El Eje: teclado de vidrio, récord en rosa, barras de carga en su verde y figuras del cuerpo en módulo (FER-295).
+
 - Progresión, descanso y tickets pasan al vidrio El Eje: filas de ajuste en una tarjeta, stepper y toggle Liquid, y textos de tickets ya en español (FER-293).
 
 - El historial de entrenamientos, su detalle y la hoja de edición pasan al vidrio El Eje: bitácora sobre vidrio, procedencia como pastilla y una sola fila para fuerza (FER-294).

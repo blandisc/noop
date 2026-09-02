@@ -24,6 +24,7 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
     private let pliegue: Pliegue
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.instrumentoTheme) private var theme
     /// Ronda 2 · D2: `heroNombres`/`subPillTexto` eran `Font.system(size:)` fijo — texto de LECTURA
     /// sin escalar. `@ScaledMetric` en la vista (el `enum` de tokens no tiene entorno); la base sigue
     /// en `EntrenarHubMetrics`. `subPillTextoSize` ancla a `.subheadline`, el MISMO `relativeTo` que
@@ -92,7 +93,10 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
     // MARK: - Píldora «Hoy subes»
 
     private func subPill(_ line: Text) -> some View {
-        Button(action: onOpenRaise) {
+        // 2A: cromo vía `OutlineCapsule.Estilo.tenida(.verde)` (alfas en `EntrenarHubMetrics.subPill*`).
+        OutlineCapsule(theme: theme,
+                       size: .aMedida(insets: EntrenarHubMetrics.subPillInsets, minHeight: nil, touchInset: 0),
+                       estilo: .tenida(.verde), action: onOpenRaise) {
             HStack(spacing: CenitMetrics.space2) {
                 Circle()
                     .fill(LiquidColor.papelTarjeta)
@@ -106,26 +110,7 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
                 line.font(.system(size: subPillTextoSize)).foregroundStyle(LiquidColor.tinta700)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.leading, EntrenarHubMetrics.subPillPaddingLeading)
-            .padding(.trailing, EntrenarHubMetrics.subPillPaddingTrailing)
-            .padding(.vertical, EntrenarHubMetrics.subPillPaddingV)
-            .background {
-                Capsule().fill(LiquidColor.verdeCarga.opacity(EntrenarHubMetrics.subPillFondoAlfa))
-            }
-            .overlay {
-                Capsule().strokeBorder(LiquidColor.papelTarjeta.opacity(EntrenarHubMetrics.subPillHighlightAlfa), lineWidth: 1)
-            }
-            .overlay {
-                Capsule().strokeBorder(LiquidColor.vidrioEspecular.opacity(EntrenarHubMetrics.subPillAroAlfa), lineWidth: 1)
-                    .padding(1)
-            }
-            .overlay {
-                Capsule().stroke(LiquidColor.verdeCarga.opacity(EntrenarHubMetrics.subPillCantoAlfa), lineWidth: 0.5)
-            }
-            .liquidShadow([.init(color: LiquidColor.verdeCarga.opacity(EntrenarHubMetrics.subPillShadowAlfa),
-                                 radius: EntrenarHubMetrics.subPillShadowRadius, y: EntrenarHubMetrics.subPillShadowY)])
         }
-        .buttonStyle(.liquidPress)
     }
 
     // MARK: - Fila CTA
@@ -145,9 +130,12 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
     }
 
     private var otraFormaPill: some View {
-        Button {
+        // 2A: cromo vía `OutlineCapsule.Estilo.vidrio` + talla `.lg` (alfas en `EntrenarHubMetrics.otraForma*`).
+        OutlineCapsule(theme: theme,
+                       size: .aMedida(insets: EntrenarHubMetrics.otraFormaInsets, minHeight: EntrenarMetrics.row, touchInset: 0),
+                       estilo: .vidrio, action: {
             withAnimation(reduceMotion ? LiquidMotion.fundido : LiquidMotion.suave) { onToggleOtraForma() }
-        } label: {
+        }) {
             HStack(spacing: CenitMetrics.space1) {
                 Text("Other ways")
                     .font(EntrenarHubMetrics.heroOtraFormaTexto)
@@ -158,21 +146,7 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
                     .rotationEffect(.degrees(otraFormaAbierta ? 180 : 0))
                     .accessibilityHidden(true)
             }
-            .padding(.horizontal, EntrenarHubMetrics.otraFormaPaddingH)
-            .frame(minHeight: EntrenarMetrics.row)
-            .background {
-                Capsule().fill(LiquidColor.papelTarjeta.opacity(EntrenarHubMetrics.otraFormaFondoAlfa))
-            }
-            .overlay {
-                Capsule().strokeBorder(LiquidColor.vidrioEspecular.opacity(EntrenarHubMetrics.otraFormaHighlightAlfa), lineWidth: 1)
-            }
-            .overlay {
-                Capsule().stroke(LiquidColor.tinta900.opacity(EntrenarHubMetrics.otraFormaCantoAlfa), lineWidth: 0.5)
-            }
-            .liquidShadow([.init(color: LiquidColor.tinta900.opacity(EntrenarHubMetrics.otraFormaShadowAlfa),
-                                 radius: EntrenarHubMetrics.otraFormaShadowRadius, y: EntrenarHubMetrics.otraFormaShadowY)])
         }
-        .buttonStyle(.liquidPress)
         .accessibilityValue(Text(otraFormaAbierta ? "expanded" : "collapsed"))
     }
 }

@@ -53,7 +53,7 @@ struct HojaFoco: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background {
-            vivo.sheet.theme.paper
+            LiquidColor.fondoGradient
                 .matchedGeometryEffect(id: Self.namespaceId, in: vivo.focoNS)
                 .ignoresSafeArea()
         }
@@ -232,17 +232,14 @@ struct HojaFoco: View {
                 }
             }
             if let bpm = vivo.sheet.model.watchBpm { zonaBadge(bpm).padding(.top, FocoMetrics.capcionTop) }
-            Button {
+            OutlineCapsule(theme: vivo.sheet.theme, size: .lg, estilo: .outline, action: {
                 withAnimation(vivo.reduceMotion ? nil : LiquidMotion.suave) {
                     if running { vivo.registerFromFoco() } else { vivo.session.startSetTimer() }
                 }
-            } label: {
+            }) {
                 Text(running ? String(localized: "Stop and save") : String(localized: "Start"))
                     .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(LiquidColor.tinta900)
-                    .padding(.horizontal, CenitMetrics.cardPadding).padding(.vertical, CenitMetrics.space2)
-                    .overlay(Capsule().strokeBorder(LiquidColor.tinta10, lineWidth: 1))
             }
-            .buttonStyle(.plain)
             .padding(.top, FocoMetrics.capcionTop)
         case .distance:
             let dist = vivo.session.currentSet?.distanceM ?? 0
@@ -276,17 +273,14 @@ struct HojaFoco: View {
             // Grok G5). `registerCurrentSet` ya detiene el cronómetro internamente al registrar
             // (`if timerStart != nil { stopSetTimer(...) }`), así que `registerFromFoco()` sola
             // captura lo corrido y cierra la serie, sin un `stopSetTimer()` aparte.
-            Button {
+            OutlineCapsule(theme: vivo.sheet.theme, size: .lg, estilo: .outline, action: {
                 withAnimation(vivo.reduceMotion ? nil : LiquidMotion.suave) {
                     if running { vivo.registerFromFoco() } else { vivo.session.startSetTimer() }
                 }
-            } label: {
+            }) {
                 Text(running ? String(localized: "Stop and save") : String(localized: "Start"))
                     .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(LiquidColor.tinta900)
-                    .padding(.horizontal, CenitMetrics.cardPadding).padding(.vertical, CenitMetrics.space2)
-                    .overlay(Capsule().strokeBorder(LiquidColor.tinta10, lineWidth: 1))
             }
-            .buttonStyle(.plain)
             .padding(.top, FocoMetrics.capcionTop)
         }
     }
@@ -393,15 +387,15 @@ struct HojaFoco: View {
             combustibleSegmento(String(localized: "HR"), activo: !forzarVistaTiempo) { forzarVistaTiempo = false }
         }
         .padding(LiquidSpace.s075)
-        .background(vivo.sheet.theme.surface, in: Capsule())
+        .liquidGlass(.pastillaSolida)
     }
 
     private func combustibleSegmento(_ label: String, activo: Bool, action: @escaping () -> Void) -> some View {
         Text(verbatim: label)
             .font(InstrumentoType.grotesk(10, weight: .semibold)).tracking(0.6).textCase(.uppercase)
-            .foregroundStyle(activo ? vivo.sheet.theme.paper : vivo.sheet.theme.inkTertiary)
+            .foregroundStyle(activo ? LiquidColor.papelTarjeta : LiquidColor.tinta500)
             .padding(.horizontal, CenitMetrics.gap).padding(.vertical, LiquidSpace.s125).frame(minHeight: EntrenarMetrics.secondaryButton)
-            .background { if activo { Capsule().fill(vivo.sheet.theme.ink) } }
+            .background { if activo { Capsule().fill(LiquidColor.tinta900) } }
             .contentShape(Capsule())
             .onTapGesture { withAnimation(vivo.reduceMotion ? nil : LiquidMotion.toque) { action() } }
             .accessibilityAddTraits(activo ? [.isSelected, .isButton] : .isButton)
@@ -497,8 +491,7 @@ struct HojaFoco: View {
         let zone = max(1, min(5, Int((pct * 5).rounded(.up))))
         return Text("ZONE \(zone) · \(bpm)")
             .font(StrandFont.caption.weight(.bold)).foregroundStyle(LiquidColor.tinta500)
-            .padding(.horizontal, CenitMetrics.space2).padding(.vertical, LiquidSpace.s075)
-            .overlay(Capsule().strokeBorder(LiquidColor.tinta10, lineWidth: 1))
+            .outlineCapsule(.outline, size: .sm, theme: vivo.sheet.theme)
     }
 
     // MARK: - Formato

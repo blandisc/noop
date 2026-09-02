@@ -23,7 +23,7 @@ enum HojaCabeceraSesion {
             } label: {
                 StrandIcon.back.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold))
-                    .foregroundStyle(vivo.sheet.theme.inkSecondary)
+                    .foregroundStyle(LiquidColor.tinta700)
                     .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)   // 44 pt de toque
                     .contentShape(Rectangle())
             }
@@ -33,10 +33,10 @@ enum HojaCabeceraSesion {
             EntrenarFamilyDot(vivo.familyTint, size: EntrenarMetrics.familyDotCompact)
 
             VStack(alignment: .leading, spacing: LiquidSpace.s025) {
-                Text(vivo.session.routineName).font(StrandFont.headline).foregroundStyle(vivo.sheet.theme.ink)
+                Text(vivo.session.routineName).font(LiquidType.tituloHoja).foregroundStyle(LiquidColor.tinta900)
                     .lineLimit(1).minimumScaleFactor(0.8)
                 Text(vivo.session.paused ? String(localized: "Paused") : vivo.serieSubtitle)
-                    .instrumentoOverline().foregroundStyle(vivo.sheet.theme.inkTertiary)
+                    .liquidKicker().foregroundStyle(LiquidColor.tinta700)
                     .lineLimit(1).minimumScaleFactor(0.8)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -47,8 +47,8 @@ enum HojaCabeceraSesion {
                 let elapsed = vivo.session.elapsedSeconds(now: ctx.date)
                 let texto = SessionClock.format(elapsed)
                 Text(texto)
-                    .font(InstrumentoType.groteskNumber(15))
-                    .foregroundStyle(vivo.sheet.theme.inkSecondary)
+                    .font(LiquidType.datoMenor)
+                    .foregroundStyle(LiquidColor.tinta700)
                     .numeroVivo(value: texto)
                     // Misma clave que LiveStrengthSheet (reloj vivo): «Elapsed %@» / «Paused at %@».
                     .accessibilityLabel(Text(vivo.session.paused ? "Paused at \(texto)" : "Elapsed \(texto)"))
@@ -67,7 +67,7 @@ enum HojaCabeceraSesion {
                 Button { vivo.enterFoco() } label: {
                     Image(systemName: "arrow.up.left.and.arrow.down.right")
                         .font(StrandFont.glyph(.inline, weight: .semibold))
-                        .foregroundStyle(vivo.sheet.theme.inkSecondary)
+                        .foregroundStyle(LiquidColor.tinta700)
                         .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)   // 44 pt de toque
                         .contentShape(Rectangle())
                 }
@@ -79,7 +79,7 @@ enum HojaCabeceraSesion {
                 Button(action: alternar) {
                     Image(systemName: vivo.session.paused ? "play.fill" : "pause.fill")
                         .font(StrandFont.glyph(.inline, weight: .semibold))
-                        .foregroundStyle(vivo.sheet.theme.inkSecondary)
+                        .foregroundStyle(LiquidColor.tinta700)
                         .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)   // 44 pt de toque
                         .contentShape(Rectangle())
                 }
@@ -94,20 +94,12 @@ enum HojaCabeceraSesion {
     /// FER-250: píldora discreta «Terminar» en cabecera — mismo lenguaje que
     /// `LiveStrengthSheet.sessionHeaderPill` (papel + canto), no el CTA verde de sesión completa.
     private static func terminarSecundario(vivo: HojaSesionViva) -> some View {
-        Button {
-            vivo.confirmFinish = true
-        } label: {
+        OutlineCapsule(theme: vivo.sheet.theme, size: .lg, estilo: .papel,
+                       action: { vivo.confirmFinish = true }) {
             Text("Finish")
                 .entrenarSessionEndLabel()
-                .foregroundStyle(vivo.sheet.theme.ink)
-                .padding(.horizontal, CenitMetrics.receiptPadding)
-                .frame(height: EntrenarMetrics.secondaryButton)
-                .background(Capsule().fill(vivo.sheet.theme.paper))
-                .overlay(Capsule().strokeBorder(vivo.sheet.theme.hairlineStrong, lineWidth: 1))
+                .foregroundStyle(LiquidColor.tinta900)
         }
-        .buttonStyle(EntrenarPressStyle())
-        .frame(minHeight: CenitMetrics.touchTarget)
-        .contentShape(Capsule())
         .accessibilityLabel(Text("Finish"))
     }
 
@@ -115,12 +107,11 @@ enum HojaCabeceraSesion {
     /// animado a propósito: el numeral ya es la señal de vida.
     @ViewBuilder private static func heartRate(vivo: HojaSesionViva) -> some View {
         if let bpm = vivo.sheet.model.watchBpm {
-            let tone = vivo.sheet.theme.onPaper(vivo.sheet.theme.dataHeart)
             HStack(spacing: CenitMetrics.space1) {
                 StrandIcon.heart.image.font(StrandFont.glyph(.chevron))
                 Text("\(bpm)").font(StrandFont.subhead.weight(.semibold))
             }
-            .foregroundStyle(tone)
+            .foregroundStyle(LiquidTono.rosa.rotulo)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text("Heart rate \(bpm) beats per minute"))
         }
@@ -130,7 +121,7 @@ enum HojaCabeceraSesion {
     static func avance(vivo: HojaSesionViva) -> some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                Capsule().fill(vivo.sheet.theme.hairline)
+                Capsule().fill(LiquidColor.tinta10)
                 Capsule().fill(vivo.familyTint)
                     .frame(width: geo.size.width * vivo.fraccionAvance)
             }

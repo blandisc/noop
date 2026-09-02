@@ -58,7 +58,7 @@ struct RestPulseRail: View {
         GeometryReader { geo in
             let w = geo.size.width
             ZStack(alignment: .leading) {
-                Capsule().fill(theme.hairline)
+                Capsule().fill(LiquidColor.tinta10)
                 Capsule()
                     .fill(LinearGradient(colors: [theme.dataHeart, theme.dataRecovery],
                                          startPoint: .leading, endPoint: .trailing))
@@ -127,15 +127,15 @@ public struct RestBand<Next: View>: View {
                 // simetría centrada que pide el prototipo y estira un `Spacer` sin ancla en una fila a
                 // todo lo ancho de la pantalla.
                 if large {
-                    Text(kicker).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text(kicker).liquidRegla().foregroundStyle(LiquidColor.tinta500)
                 } else {
                     HStack(alignment: .firstTextBaseline) {
-                        Text(kicker).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                        Text(kicker).liquidRegla().foregroundStyle(LiquidColor.tinta500)
                         Spacer(minLength: LiquidSpace.s200)
                         if let trailing {
                             Text(verbatim: trailing)
                                 .font(InstrumentoType.groteskNumber(13, weight: .bold, relativeTo: .caption))
-                                .foregroundStyle(theme.inkSecondary)
+                                .foregroundStyle(LiquidColor.tinta700)
                                 .numeroVivo(value: trailing)
                         }
                     }
@@ -161,16 +161,23 @@ public struct RestBand<Next: View>: View {
                 Button(action: onSkip) {
                     // R13: el tope honesto ofrece SEGUIR (no «Saltar» — no hay nada que saltar,
                     // el motor ya soltó el descanso solo).
-                    Text(isCeilingRelease ? "Continue" : "Skip rest")
-                        .font(StrandFont.caption.weight(.semibold))
-                        .foregroundStyle(theme.inkSecondary)
-                        .padding(.horizontal, LiquidSpace.s300)
-                        .frame(height: large ? EntrenarMetrics.focusRestSkip : EntrenarMetrics.secondaryButton)
-                        .background(theme.paper, in: Capsule())
-                        .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
-                        // dibujo 36 (46 en Foco), toque 44 (HIG)
-                        .frame(minHeight: EntrenarMetrics.row)
-                        .contentShape(Rectangle())
+                    // !large → OutlineCapsule.lg (36); large → .xl (focusRestSkip 46).
+                    Group {
+                        if large {
+                            Text(isCeilingRelease ? "Continue" : "Skip rest")
+                                .font(StrandFont.caption.weight(.semibold))
+                                .foregroundStyle(theme.inkSecondary)
+                                .outlineCapsule(.papel, size: .xl, theme: theme)
+                        } else {
+                            Text(isCeilingRelease ? "Continue" : "Skip rest")
+                                .font(StrandFont.caption.weight(.semibold))
+                                .foregroundStyle(theme.inkSecondary)
+                                .outlineCapsule(.papel, size: .lg, theme: theme)
+                        }
+                    }
+                    // dibujo 36 (46 en Foco), toque 44 (HIG)
+                    .frame(minHeight: EntrenarMetrics.row)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(EntrenarPressStyle())
             }
@@ -181,8 +188,8 @@ public struct RestBand<Next: View>: View {
         // esta banda de la fila vecina cuando vive en línea. La variante GRANDE de Foco no tiene
         // ninguna fila alrededor (es pantalla completa, sobre papel en blanco); ahí el prototipo no
         // dibuja ningún borde. `!large` evita dos reglas huérfanas flotando solas en Foco.
-        .overlay(alignment: .top) { if !large { Rectangle().fill(theme.hairline).frame(height: 1) } }
-        .overlay(alignment: .bottom) { if !large { Rectangle().fill(theme.hairline).frame(height: 1) } }
+        .overlay(alignment: .top) { if !large { Rectangle().fill(LiquidColor.tinta10).frame(height: 1) } }
+        .overlay(alignment: .bottom) { if !large { Rectangle().fill(LiquidColor.tinta10).frame(height: 1) } }
     }
 
     /// El tamaño del numeral: 40 pt en la lista en línea, 52 pt (`focusRestValue`) en la variante
@@ -214,24 +221,21 @@ public struct RestBand<Next: View>: View {
             } else if isReady {
                 Text("Ready")
                     .font(InstrumentoType.grotesk(headlineSize, weight: .bold, relativeTo: .largeTitle))
-                    .foregroundStyle(theme.positiveText)
+                    .foregroundStyle(LiquidColor.positivo)
             } else if let current {
                 // FER-167: la meta + el pulso vivo (mock P4). «te faltan N bpm» muere en iPhone.
                 VStack(alignment: large ? .center : .leading, spacing: LiquidSpace.s100) {
                     HStack(spacing: LiquidSpace.s200) {
                         Text("rest · down to \(target)")
-                            .instrumentoOverline()
-                            .foregroundStyle(theme.inkTertiary)
+                            .liquidRegla()
+                            .foregroundStyle(LiquidColor.tinta500)
                         if showsAlmostCapsule(remaining: remaining) {
-                            // Cápsula «CASI»: reusa `isAlmost` del caller y/o remaining ≤ almostBandBPM.
+                            // 2A: «CASI» decorativa — cromo `.papel` (la cápsula ya pone el fondo).
                             Text("Almost")
                                 .font(StrandFont.caption.weight(.semibold))
                                 .textCase(.uppercase)
                                 .foregroundStyle(theme.inkSecondary)
-                                .padding(.horizontal, LiquidSpace.s200)
-                                .padding(.vertical, LiquidSpace.s100)
-                                .background(theme.paper, in: Capsule())
-                                .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                                .outlineCapsule(.papel, size: .sm, theme: theme)
                         }
                     }
                     (Text(verbatim: "\(current)")
@@ -240,7 +244,7 @@ public struct RestBand<Next: View>: View {
                      + Text(verbatim: " ")
                      + Text("♥ now · dropping")
                         .font(StrandFont.subhead)
-                        .foregroundStyle(theme.inkSecondary))
+                        .foregroundStyle(LiquidColor.tinta700))
                         .multilineTextAlignment(large ? .center : .leading)
                         .fixedSize(horizontal: false, vertical: true)
                         // El BPM que más cambia de todo Entrenar (FER-222) — el dato vivo por
@@ -282,7 +286,7 @@ public struct RestBand<Next: View>: View {
         GeometryReader { geo in
             let w = geo.size.width
             ZStack(alignment: .leading) {
-                Capsule().fill(theme.hairline)
+                Capsule().fill(LiquidColor.tinta10)
                 if let p = railProgress {
                     Circle()
                         .fill(isReady ? theme.positiveText : theme.dataHeart)
