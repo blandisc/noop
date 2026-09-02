@@ -5,13 +5,12 @@ import StrandTraining
 import CenitStore   // store.routineExercises(routineId:) — clasificación de familia (Alcance punto 5, FER-90)
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 
-// WorkoutEditSheet.swift — edit a SAVED strength session (FER-556). Opened from
-// `WorkoutSessionDetailScreen`'s «Editar». Corrects the user-authored data: each set's weight/reps,
-// add/remove a set, reassign an exercise, the date/time, the routine, and notes. It NEVER touches the
-// strap's captured truth (`strain`/`avgHr`/`deviceId`) — those ride through unchanged and show here as a
-// read-only «Del cuerpo» block. Persists via `repo.updateSession`, which recomputes the affected PRs
-// exactly (a corrected weight can lower a record). «Instrumento»: ink on warm paper, fields are faint
-// underlines you fill «with pen», the only color on the physiological datum. Reuses the inline weight/reps
+// WorkoutEditSheet.swift — edit a SAVED strength session (FER-556 → Liquid Glass · FER-294 B.2).
+// Opened from `WorkoutSessionDetailScreen`'s «Editar». Corrects the user-authored data: each set's
+// weight/reps, add/remove a set, reassign an exercise, the date/time, the routine, and notes. It NEVER
+// touches the strap's captured truth (`strain`/`avgHr`/`deviceId`) — those ride through unchanged and
+// show here as a read-only «Del cuerpo» block. Persists via `repo.updateSession`, which recomputes the
+// affected PRs exactly (a corrected weight can lower a record). Reuses the inline weight/reps
 // vocabulary of `LiveStrengthSheet` so there's no new pattern to learn.
 
 struct WorkoutEditSheet: View {
@@ -82,7 +81,7 @@ struct WorkoutEditSheet: View {
             listBody
             .navigationTitle("Edit workout")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(theme.paper, for: .navigationBar)
+            .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     // FER-998: el disco de papel en vez de la palabra «Cancel» — la misma salida que
@@ -131,7 +130,7 @@ struct WorkoutEditSheet: View {
                 }
                 .navigationTitle("Choose exercise")
                 .navigationBarTitleDisplayMode(.inline)
-                .toolbarBackground(theme.paper, for: .navigationBar)
+                .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
             }
             .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
@@ -160,7 +159,7 @@ struct WorkoutEditSheet: View {
     // MARK: - List
 
     private var rowInsets: EdgeInsets {
-        EdgeInsets(top: 0, leading: CenitMetrics.screenPadding, bottom: 0, trailing: CenitMetrics.screenPadding)
+        EdgeInsets(top: 0, leading: LiquidSpace.s600, bottom: 0, trailing: LiquidSpace.s600)
     }
 
     private var listBody: some View {
@@ -202,16 +201,16 @@ struct WorkoutEditSheet: View {
 
     private var whenSection: some View {
         HStack {
-            Text("When").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("When").liquidLabel().foregroundStyle(LiquidColor.tinta500)
             Spacer(minLength: 12)
             DatePicker("", selection: $startDate, displayedComponents: [.date, .hourAndMinute])
-                .labelsHidden().tint(theme.dataStrain)
+                .labelsHidden().tint(LiquidColor.tinta900)
         }
     }
 
     private var routineSection: some View {
         HStack {
-            Text("Routine").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("Routine").liquidLabel().foregroundStyle(LiquidColor.tinta500)
             Spacer(minLength: 12)
             Button { showRoutineMenu = true } label: {
                 HStack(spacing: 6) {
@@ -220,9 +219,12 @@ struct WorkoutEditSheet: View {
                     if let region = routineId.flatMap({ routineRegions[$0] }) {
                         EntrenarFamilyDot(region.tint(theme))
                     }
-                    Text(routineLabel).font(StrandFont.body).foregroundStyle(theme.ink)
+                    Text(routineLabel)
+                        .font(LiquidType.tituloGemela)
+                        .foregroundStyle(LiquidColor.tinta900)
                     Image(systemName: "chevron.up.chevron.down")
-                        .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                        .font(LiquidType.iconSF(size: 12))
+                        .foregroundStyle(LiquidColor.tinta500)
                 }
             }
             .buttonStyle(.plain)
@@ -240,7 +242,7 @@ struct WorkoutEditSheet: View {
     private var capturedSection: some View {
         if session.strain != nil || session.avgHr != nil {
             VStack(alignment: .leading, spacing: 6) {
-                Text("From your body").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("From your body").liquidLabel().foregroundStyle(LiquidColor.tinta500)
                 HStack(spacing: LiquidSpace.seccionAire) {
                     if let strain = session.strain {
                         readonlyStat(StrengthHistoryFormat.strain(strain), label: "Effort")
@@ -250,23 +252,30 @@ struct WorkoutEditSheet: View {
                     }
                 }
                 Text("Effort and heart rate were measured during the session. They can't be edited.")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .font(LiquidType.captionLectura)
+                    .foregroundStyle(LiquidColor.tinta500)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(CenitMetrics.gap)
+            .padding(LiquidSpace.handoff14)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.paperHi, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
+            .liquidGlass(.superficieSolida)
         }
     }
 
     private func readonlyStat(_ value: String, unit: String? = nil, label: LocalizedStringKey) -> some View {
         VStack(alignment: .leading, spacing: 1) {
             HStack(alignment: .firstTextBaseline, spacing: 3) {
-                Text(value).font(StrandFont.number(18, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                Text(value)
+                    .font(LiquidType.valorM)
+                    .foregroundStyle(LiquidColor.tinta500)
                     .monospacedDigit()
-                if let unit { Text(unit).font(StrandFont.caption).foregroundStyle(theme.inkTertiary) }
+                if let unit {
+                    Text(unit)
+                        .font(LiquidType.unidad)
+                        .foregroundStyle(LiquidColor.tinta500)
+                }
             }
-            Text(label).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text(label).liquidLabel().foregroundStyle(LiquidColor.tinta500)
         }
         .accessibilityElement(children: .combine)
     }
@@ -274,15 +283,19 @@ struct WorkoutEditSheet: View {
     private func exerciseHeader(_ gi: Int) -> some View {
         Button { reassignGroup = ReassignTarget(index: gi) } label: {
             HStack(spacing: 6) {
-                Text(exerciseName(groups[gi].exerciseId)).font(StrandFont.headline).foregroundStyle(theme.ink)
+                Text(exerciseName(groups[gi].exerciseId))
+                    .font(LiquidType.titulo)
+                    .foregroundStyle(LiquidColor.tinta900)
                 StrandIcon.disclosure.image
-                    .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    .font(LiquidType.iconSF(size: 12))
+                    .foregroundStyle(LiquidColor.tinta500)
                 Spacer(minLength: 0)
             }
+            .frame(minHeight: 44)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .padding(.top, 8)
+        .padding(.top, LiquidSpace.s200)
         .accessibilityLabel(Text(exerciseName(groups[gi].exerciseId)))
         .accessibilityHint(Text("Change exercise"))
     }
@@ -290,11 +303,11 @@ struct WorkoutEditSheet: View {
     private func addSetRow(_ gi: Int) -> some View {
         Button { addSet(gi) } label: {
             HStack(spacing: 6) {
-                StrandIcon.add.image.font(StrandFont.glyph(.chevron, weight: .semibold))
-                Text("Add set").font(StrandFont.subhead)
+                StrandIcon.add.image.font(LiquidType.iconSF(size: 12))
+                Text("Add set").font(LiquidType.tituloFila)
             }
-            .foregroundStyle(theme.inkSecondary)
-            .padding(.vertical, 6)
+            .foregroundStyle(LiquidColor.tinta700)
+            .frame(minHeight: 44)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -303,20 +316,28 @@ struct WorkoutEditSheet: View {
 
     private func setRow(gi: Int, si: Int, type: ExerciseType) -> some View {
         HStack(spacing: 10) {
-            Text("Set \(si + 1)").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+            Text("Set \(si + 1)")
+                .font(LiquidType.cuerpo)
+                .foregroundStyle(LiquidColor.tinta500)
                 .frame(minWidth: 48, alignment: .leading)
             Spacer(minLength: 8)
             switch type {
             case .weightReps, .bodyweight:
                 if type == .bodyweight {
-                    Text("+").font(StrandFont.body).foregroundStyle(theme.inkTertiary)
+                    Text("+")
+                        .font(Font.system(size: LiquidType.lecturaHojaBase))
+                        .foregroundStyle(LiquidColor.tinta500)
                 }
                 numberField(.init(g: gi, s: si, field: .weight), isInt: false)
-                Text("×").font(StrandFont.body).foregroundStyle(theme.inkTertiary)
+                Text("×")
+                    .font(Font.system(size: LiquidType.lecturaHojaBase))
+                    .foregroundStyle(LiquidColor.tinta500)
                 numberField(.init(g: gi, s: si, field: .reps), isInt: true)
             case .time, .distance:
                 Text(StrengthHistoryFormat.setLine(setEntrySnapshot(gi, si, type: type), system: system))
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary).monospacedDigit()
+                    .font(LiquidType.valorS)
+                    .foregroundStyle(LiquidColor.tinta700)
+                    .monospacedDigit()
             }
         }
         .padding(.vertical, 5)
@@ -349,19 +370,26 @@ struct WorkoutEditSheet: View {
 
     private var notesSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Notes").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            TextField("Add a note (optional)", text: $notes, axis: .vertical)
-                .font(StrandFont.body).foregroundStyle(theme.ink)
-                .lineLimit(1...5)
+            Text("Notes").liquidLabel().foregroundStyle(LiquidColor.tinta500)
+            TextField(
+                "",
+                text: $notes,
+                prompt: Text("Add a note (optional)").foregroundStyle(LiquidColor.tinta500),
+                axis: .vertical
+            )
+            .font(Font.system(size: LiquidType.lecturaHojaBase))
+            .foregroundStyle(LiquidColor.tinta900)
+            .lineLimit(1...5)
         }
     }
 
     private func validationNote(_ key: LocalizedStringKey) -> some View {
         HStack(spacing: 6) {
-            Image(systemName: "exclamationmark.triangle").font(StrandFont.glyph(.chevron))
-            Text(key).font(StrandFont.caption)
+            Image(systemName: "exclamationmark.triangle")
+                .font(LiquidType.iconSF(size: 12))
+            Text(key).font(LiquidType.captionLectura)
         }
-        .foregroundStyle(theme.dataStrain)
+        .foregroundStyle(LiquidColor.atencionTexto)
     }
 
     // MARK: - Derived
@@ -569,8 +597,7 @@ private struct ReassignTarget: Identifiable {
 }
 
 private extension View {
-    /// A list row that disappears into the paper: clear background, no separator, screen-margin insets —
-    /// so the `List` reproduces the «Instrumento» look.
+    /// A list row that disappears into the hoja: clear background, no separator, screen-margin insets.
     func plainRow(_ insets: EdgeInsets) -> some View {
         self.listRowBackground(Color.clear)
             .listRowSeparator(.hidden)

@@ -69,6 +69,46 @@ public struct LiquidMetodo<Content: View>: View {
     }
 }
 
+/// FER-294 · Pastilla de procedencia en listas/detalle de entrenamiento (gemelo Liquid de
+/// `SourceBadge`). Label YA localizado; `tono: nil` = neutro (`tinta7` + `tinta10` + `tinta700`).
+/// Distinto de `LiquidOrigenChip` (pie de hoja con glifo): aquí es solo texto caps en cápsula.
+public struct LiquidOrigenBadge: View {
+    private let label: String
+    private let tono: Color?
+
+    public init(_ label: String, tono: Color?) {
+        self.label = label
+        self.tono = tono
+    }
+
+    public var body: some View {
+        Text(verbatim: label)
+            .textCase(.uppercase)
+            .font(LiquidType.microEstado)
+            .foregroundStyle(texto)
+            .padding(.horizontal, LiquidSpace.chipHorizontal)
+            .padding(.vertical, LiquidSpace.s075)
+            .background(relleno, in: Capsule())
+            .overlay(Capsule().strokeBorder(canto, lineWidth: 0.5))
+            .accessibilityElement(children: .combine)
+    }
+
+    private var relleno: Color {
+        if let tono { return tono.opacity(LiquidTono.intensidadDefault) }
+        return LiquidColor.tinta7
+    }
+
+    private var canto: Color {
+        if let tono { return tono.opacity(LiquidTonoMetrics.cantoAlfaTeñido) }
+        return LiquidColor.tinta10
+    }
+
+    private var texto: Color {
+        if let tono { return LiquidColor.tonoCampo(tono) }
+        return LiquidColor.tinta700
+    }
+}
+
 /// FER-29 · El chip de procedencia que vive DENTRO del bloque «Cómo se calcula» (mock
 /// canónico `sheet-generica-final` / `sheet-sueno-final`): una pastilla de papel con una
 /// gota-badge (el glifo de la fuente en blanco sobre un cuadro del tono) + la etiqueta de
@@ -218,6 +258,11 @@ public struct LiquidVerMas: View {
                          etiqueta: "En tu dispositivo")
         LiquidNotaLine("Conecta Apple Salud para ver tu VFC aquí.")
         LiquidNotaLine("Se muestran los últimos 47 días.", tono: LiquidColor.atencionTexto)
+        HStack(spacing: LiquidSpace.s200) {
+            LiquidOrigenBadge("Apple", tono: LiquidColor.azul)
+            LiquidOrigenBadge("Manual", tono: nil)
+            LiquidOrigenBadge("Medido en el dispositivo", tono: LiquidColor.verdePrimario)
+        }
         LiquidVerMas(title: "Ver más en Tendencias", hint: "Abre el detalle completo",
                      tone: LiquidColor.cian, anchoCompleto: true, action: {})
         LiquidVerMas(title: "Ver más", hint: "Abre el detalle completo",

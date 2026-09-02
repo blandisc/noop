@@ -26,14 +26,12 @@ enum UndoToastMetrics {
     static let padH: CGFloat = LiquidSpace.s600
     /// Pad vertical interno — `LiquidSpace.s400` (WeeklyPlanEditor:757).
     static let padV: CGFloat = LiquidSpace.s400
-    /// Radio del fondo de tinta — `CenitMetrics.cardRadius` (WeeklyPlanEditor:758).
-    static let radius: CGFloat = CenitMetrics.cardRadius
+    /// Radio del fondo de tinta — `LiquidRadius.tarjeta` 18 (FER-294 re-piel; era `cardRadius` 16).
+    static let radius: CGFloat = LiquidRadius.tarjeta
     /// Inset horizontal exterior — `LiquidSpace.s600` (WeeklyPlanEditor:759).
     static let outerPadH: CGFloat = LiquidSpace.s600
     /// Inset inferior exterior — literal `8` (WeeklyPlanEditor:760).
     static let outerPadBottom: CGFloat = 8
-    /// Tipografía del CTA — grotesk 15 bold (WeeklyPlanEditor:753).
-    static let ctaFontSize: CGFloat = 15
 }
 
 public struct UndoToast: View {
@@ -58,21 +56,23 @@ public struct UndoToast: View {
     }
 
     public var body: some View {
+        // `theme` se conserva en la API pública; la piel es Liquid (FER-294).
+        let _ = theme
         HStack(spacing: UndoToastMetrics.hStackSpacing) {
             Text(verbatim: message)
-                .font(StrandFont.subhead)
-                .foregroundStyle(theme.surface)
+                .font(LiquidType.cuerpoBanner)
+                .foregroundStyle(LiquidColor.papelTarjeta)
             Spacer(minLength: UndoToastMetrics.spacerMin)
             Button(action: action) {
                 Text(verbatim: cta)
-                    .font(InstrumentoType.grotesk(UndoToastMetrics.ctaFontSize, weight: .bold))
-                    .foregroundStyle(theme.surface)
+                    .font(LiquidType.titulo)
+                    .foregroundStyle(LiquidColor.papelTarjeta)
             }
             .buttonStyle(.plain)
         }
         .padding(.horizontal, UndoToastMetrics.padH)
         .padding(.vertical, UndoToastMetrics.padV)
-        .background(theme.ink,
+        .background(LiquidColor.tinta900,
                     in: RoundedRectangle(cornerRadius: UndoToastMetrics.radius, style: .continuous))
         .padding(.horizontal, UndoToastMetrics.outerPadH)
         .padding(.bottom, UndoToastMetrics.outerPadBottom)

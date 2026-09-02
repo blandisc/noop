@@ -251,20 +251,6 @@ public struct SegmentedPillControl<T: Hashable>: View {
 
 }
 
-// MARK: - Badges
-
-public struct SourceBadge: View {
-    let text: LocalizedStringKey; var tint: Color = StrandPalette.accent
-    public init(_ text: LocalizedStringKey, tint: Color = StrandPalette.accent) { self.text = text; self.tint = tint }
-    public var body: some View {
-        Text(text).textCase(.uppercase).font(StrandFont.scaled(10, weight: .semibold)).tracking(0.5)
-            .padding(.horizontal, 8).padding(.vertical, 3)
-            .background(tint.opacity(0.14), in: Capsule())
-            .foregroundStyle(tint)
-            .overlay(Capsule().strokeBorder(tint.opacity(0.30), lineWidth: 1))
-    }
-}
-
 // MARK: - TroquelChip (sesión de fuerza · propuesta B 2026-07)
 
 public extension View {

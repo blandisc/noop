@@ -29,7 +29,7 @@ public struct EntrenarHistorialLista: View {
         EntrenarModulo(tono: .neutro) {
             if let vacio {
                 Text(verbatim: vacio)
-                    .font(StrandFont.subhead)
+                    .font(LiquidType.cuerpoBanner)
                     .foregroundStyle(LiquidColor.tinta500)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity)
@@ -60,12 +60,6 @@ private enum Metrics {
 }
 
 #if DEBUG
-private enum EntrenarHistorialListaPreviewData {
-    static let rosaLectura = OKLab.darkened(InstrumentoTheme.base.dataHeart,
-                                            toContrast: 4.5,
-                                            against: InstrumentoTheme.base.paper)
-}
-
 #Preview("EntrenarHistorialLista · mixta") {
     EntrenarHistorialLista(filas: [
         EntrenarFilaFuerza(family: .push, nombre: "Empuje A",
@@ -75,7 +69,7 @@ private enum EntrenarHistorialListaPreviewData {
             sfSymbol: "figure.run", deporte: "Correr", origen: .apple,
             meta: "mié 8 jul · 30 min · 5,2 km",
             dato: .init(valor: "148", unidad: "bpm",
-                        tono: EntrenarHistorialListaPreviewData.rosaLectura),
+                        tono: LiquidTono.rosa.rotulo),
             onTap: {}),
         EntrenarFilaFuerza(family: .pull, nombre: "Jalón B",
                            meta: "mar 7 jul · 41 min · 3.640 kg",
@@ -84,7 +78,7 @@ private enum EntrenarHistorialListaPreviewData {
             sfSymbol: "figure.outdoor.cycle", deporte: "Ciclismo", origen: .manual,
             meta: "lun 6 jul · 45 min",
             dato: .init(valor: "45", unidad: "min",
-                        tono: InstrumentoTheme.base.inkSecondary),
+                        tono: LiquidColor.tinta700),
             onTap: {}),
     ])
     .padding(LiquidSpace.s550)

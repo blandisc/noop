@@ -1,15 +1,15 @@
 import SwiftUI
 
-// MARK: - EntrenarFilaCardio — fila de actividad Apple Health / manual (FER-202)
+// MARK: - EntrenarFilaCardio — fila de actividad Apple Health / manual (FER-202 · re-piel FER-294)
 //
 // Hermana simétrica de `EntrenarFilaFuerza` (mismo esqueleto: glifo 38 · título+meta · dato
-// derecho) con asimetría deliberada: SF Symbol NEUTRO del deporte (`inkSecondary` — Cénit no
-// tiñe lo que no mide) + chip de origen (`SourceBadge` Apple/Manual) + dato = FC media o
+// derecho) con asimetría deliberada: SF Symbol NEUTRO del deporte (`tinta700` — Cénit no
+// tiñe lo que no mide) + chip de origen (`LiquidOrigenBadge` Apple/Manual) + dato = FC media o
 // duración (NUNCA esfuerzo/21: la escala de cardio puede no ser la misma). No reusa
 // `TarjetaSesion` (queda huérfana al retirar WorkoutsView).
 
 public struct EntrenarFilaCardio: View {
-    /// Origen de la actividad — tiñe el `SourceBadge`.
+    /// Origen de la actividad — tiñe el `LiquidOrigenBadge`.
     public enum Origen: Sendable, Hashable {
         case apple
         case manual
@@ -35,13 +35,12 @@ public struct EntrenarFilaCardio: View {
     private let dato: Dato
     private let onTap: () -> Void
 
-    @Environment(\.instrumentoTheme) private var theme
     @Environment(\.dynamicTypeSize) private var typeSize
 
     /// - Parameters:
     ///   - sfSymbol: nombre SF Symbol del deporte (`figure.run`, `dumbbell.fill`, …).
     ///   - deporte: ya localizado («Correr», «Ciclismo»).
-    ///   - origen: `.apple` → badge «Apple» en tinte origen; `.manual` → «Manual» en tinta.
+    ///   - origen: `.apple` → badge «Apple» en azul; `.manual` → «Manual» neutro.
     ///   - meta: ya formateada («mié 8 jul · 30 min · 5,2 km»).
     ///   - dato: valor + unidad + tono (rosa AA para FC, tinta para duración).
     ///   - onTap: navegación al detalle Apple/manual.
@@ -111,41 +110,41 @@ public struct EntrenarFilaCardio: View {
     private var glifo: some View {
         Image(systemName: sfSymbol)
             .font(.system(size: Metrics.symbolSize, weight: .regular))
-            .foregroundStyle(theme.inkSecondary)
+            .foregroundStyle(LiquidColor.tinta700)
             .frame(width: Metrics.chip, height: Metrics.chip)
-            .background(theme.patternBlock,
+            .background(LiquidColor.tinta7,
                         in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
             .accessibilityHidden(true)
     }
 
     private var deporteText: some View {
         Text(verbatim: deporte)
-            .font(StrandFont.subhead).fontWeight(.semibold)
-            .foregroundStyle(theme.ink)
+            .font(LiquidType.tituloGemela)
+            .foregroundStyle(LiquidColor.tinta900)
     }
 
     private var metaText: some View {
         Text(verbatim: meta)
-            .font(StrandFont.caption)
-            .foregroundStyle(theme.inkTertiary)
+            .font(LiquidType.filaConteo)
+            .foregroundStyle(LiquidColor.tinta500)
     }
 
     private var origenBadge: some View {
         switch origen {
         case .apple:
-            SourceBadge("Apple", tint: theme.originApple)
+            LiquidOrigenBadge(String(localized: "Apple"), tono: LiquidColor.azul)
         case .manual:
-            SourceBadge("Manual", tint: theme.inkTertiary)
+            LiquidOrigenBadge(String(localized: "Manual"), tono: nil)
         }
     }
 
     private var datoDerecho: some View {
         (Text(verbatim: dato.valor)
-            .font(InstrumentoType.grotesk(13, weight: .bold))
+            .font(LiquidType.valorS)
             .foregroundStyle(dato.tono)
-         + Text(verbatim: " \(dato.unidad)")
-            .font(StrandFont.caption)
-            .foregroundStyle(theme.inkTertiary))
+         + Text(verbatim: dato.unidad.isEmpty ? "" : "\(dato.unidad)")
+            .font(LiquidType.captionLectura)
+            .foregroundStyle(LiquidColor.tinta500))
     }
 
     private var a11yLabel: Text {
@@ -162,17 +161,11 @@ private enum Metrics {
 }
 
 #if DEBUG
-private enum EntrenarFilaCardioPreviewData {
-    static let rosaLectura = OKLab.darkened(InstrumentoTheme.base.dataHeart,
-                                            toContrast: 4.5,
-                                            against: InstrumentoTheme.base.paper)
-}
-
 #Preview("EntrenarFilaCardio · Apple + FC") {
     EntrenarFilaCardio(
         sfSymbol: "figure.run", deporte: "Correr", origen: .apple,
         meta: "mié 8 jul · 30 min · 5,2 km",
-        dato: .init(valor: "148", unidad: "bpm", tono: EntrenarFilaCardioPreviewData.rosaLectura),
+        dato: .init(valor: "148", unidad: "bpm", tono: LiquidTono.rosa.rotulo),
         onTap: {})
         .padding(.horizontal, LiquidSpace.s400)
         .background(LiquidColor.fondoGradient)
@@ -183,7 +176,7 @@ private enum EntrenarFilaCardioPreviewData {
     EntrenarFilaCardio(
         sfSymbol: "figure.outdoor.cycle", deporte: "Ciclismo", origen: .manual,
         meta: "mar 7 jul · 45 min",
-        dato: .init(valor: "45", unidad: "min", tono: InstrumentoTheme.base.inkSecondary),
+        dato: .init(valor: "45", unidad: "min", tono: LiquidColor.tinta700),
         onTap: {})
         .padding(.horizontal, LiquidSpace.s400)
         .background(LiquidColor.fondoGradient)
@@ -194,7 +187,7 @@ private enum EntrenarFilaCardioPreviewData {
     EntrenarFilaCardio(
         sfSymbol: "dumbbell.fill", deporte: "Fuerza", origen: .apple,
         meta: "jue 9 jul · 38 min",
-        dato: .init(valor: "132", unidad: "bpm", tono: EntrenarFilaCardioPreviewData.rosaLectura),
+        dato: .init(valor: "132", unidad: "bpm", tono: LiquidTono.rosa.rotulo),
         onTap: {})
         .padding(.horizontal, LiquidSpace.s400)
         .background(LiquidColor.fondoGradient)
@@ -205,7 +198,7 @@ private enum EntrenarFilaCardioPreviewData {
     EntrenarFilaCardio(
         sfSymbol: "figure.run", deporte: "Correr", origen: .apple,
         meta: "mié 8 jul · 30 min · 5,2 km",
-        dato: .init(valor: "148", unidad: "bpm", tono: EntrenarFilaCardioPreviewData.rosaLectura),
+        dato: .init(valor: "148", unidad: "bpm", tono: LiquidTono.rosa.rotulo),
         onTap: {})
         .padding(.horizontal, LiquidSpace.s400)
         .background(LiquidColor.fondoGradient)

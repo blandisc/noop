@@ -1,11 +1,11 @@
 import SwiftUI
 
-// MARK: - EntrenarFilaFuerza — fila rica de sesión de fuerza (FER-202)
+// MARK: - EntrenarFilaFuerza — fila rica de sesión de fuerza (FER-202 · re-piel FER-294)
 //
 // Consolida el esqueleto triplicado (`WorkoutHistoryScreen.sessionRow` +
 // `EntrenarHubHistorial.filaRow` + `EntrenarView.bitacoraRow`): glifo de familia 38 teñido en
-// chip `patternBlock` · nombre + `EntrenarMarcaChip` opcional · meta ya formateada · dato
-// derecho = esfuerzo/21 en el ámbar oscurecido AA. Props resueltas (sin repo); el caller cablea
+// chip `tinta7` · nombre + `EntrenarMarcaChip` opcional · meta ya formateada · dato
+// derecho = esfuerzo/21 en `atencionTexto`. Props resueltas (sin repo); el caller cablea
 // el tap. Asimetría deliberada frente a `EntrenarFilaCardio` (glifo de familia + marca, no SF
 // Symbol neutro ni origen).
 
@@ -94,41 +94,36 @@ public struct EntrenarFilaFuerza: View {
         RoutineRegionGlyph(family.glyph, tint: family.tint(theme))
             .frame(width: Metrics.glyph, height: Metrics.glyph)
             .frame(width: Metrics.chip, height: Metrics.chip)
-            .background(theme.patternBlock,
+            .background(LiquidColor.tinta7,
                         in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
             .accessibilityHidden(true)
     }
 
     private var nombreText: some View {
         Text(verbatim: nombre)
-            .font(StrandFont.subhead).fontWeight(.semibold)
-            .foregroundStyle(theme.ink)
+            .font(LiquidType.tituloGemela)
+            .foregroundStyle(LiquidColor.tinta900)
     }
 
     private var metaText: some View {
         Text(verbatim: meta)
-            .font(StrandFont.caption)
-            .foregroundStyle(theme.inkTertiary)
+            .font(LiquidType.filaConteo)
+            .foregroundStyle(LiquidColor.tinta500)
     }
 
     @ViewBuilder private var datoDerecho: some View {
         if let esfuerzo {
             (Text(verbatim: esfuerzo)
-                .font(InstrumentoType.grotesk(13, weight: .bold))
-                .foregroundStyle(lecturaEsfuerzo)
-             + Text(verbatim: " /21")
-                .font(StrandFont.caption)
-                .foregroundStyle(theme.inkTertiary))
+                .font(LiquidType.valorS)
+                .foregroundStyle(LiquidColor.atencionTexto)
+             + Text(verbatim: "/21")
+                .font(LiquidType.captionLectura)
+                .foregroundStyle(LiquidColor.tinta500))
         } else {
             Text(verbatim: "—")
-                .font(InstrumentoType.grotesk(13, weight: .bold))
-                .foregroundStyle(theme.inkTertiary)
+                .font(LiquidType.valorS)
+                .foregroundStyle(LiquidColor.tinta500)
         }
-    }
-
-    /// Ámbar de esfuerzo oscurecido a AA sobre el papel (mismo remedio que `sessionRow`).
-    private var lecturaEsfuerzo: Color {
-        OKLab.darkened(theme.dataStrain, toContrast: 4.5, against: theme.paper)
     }
 
     private var a11yLabel: Text {

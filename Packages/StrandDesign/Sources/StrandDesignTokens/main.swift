@@ -455,11 +455,12 @@ public let catalogEntries: [CatalogEntry] = [
     CatalogEntry(rol: "Chip de procedencia", simbolo: "LiquidOrigenChip",
                  archivo: "LiquidGlass/LiquidSheetFoot.swift",
                  cuandoUsarlo: "Marcar de dónde vino un dato (banda/Apple Salud/computado) al pie de una hoja Liquid.",
-                 cuandoNo: "No como pastilla de estado genérica; en Instrumento de workout usa `SourceBadge`."),
-    CatalogEntry(rol: "Badge de procedencia (Instrumento)", simbolo: "SourceBadge",
-                 archivo: "Components.swift",
-                 cuandoUsarlo: "Marcar procedencia junto a un dato en pantallas aún Instrumento (p. ej. detalle de workout).",
-                 cuandoNo: "No en pie de hoja Liquid (usa `LiquidOrigenChip`); no como pastilla de estado genérica."),
+                 cuandoNo: "No como pastilla de estado genérica; en listas/detalle de entreno usa `LiquidOrigenBadge`."),
+    CatalogEntry(rol: "Badge de procedencia (Liquid)", simbolo: "LiquidOrigenBadge",
+                 archivo: "LiquidGlass/LiquidSheetFoot.swift",
+                 cuandoUsarlo: "Pastilla caps de procedencia en historial/detalle de entrenamiento (Apple/Manual/Medido). `tono: nil` = neutro.",
+                 cuandoNo: "No en pie de hoja con glifo (usa `LiquidOrigenChip`); no como pastilla de estado (`LiquidStatePill`)."),
+    // SourceBadge (Instrumento) retirado en FER-294 B.2 — consumidores migrados a LiquidOrigenBadge.
     // —— Botones / confirmación / toast ——
     CatalogEntry(rol: "Botón pill Liquid", simbolo: "LiquidGlassButton",
                  archivo: "LiquidGlass/LiquidGlassButton.swift",
@@ -566,7 +567,7 @@ public let catalogEntries: [CatalogEntry] = [
     CatalogEntry(rol: "Pastilla de estado Liquid", simbolo: "LiquidStatePill",
                  archivo: "LiquidGlass/LiquidStatePill.swift",
                  cuandoUsarlo: "Estado vivo/listo sobre cristal (`.pastillaSolida`) o chip de valencia Δ% — sustituye `statusPill` a mano y chips de signo.",
-                 cuandoNo: "No pastilla Instrumento de chrome (`StatePill`); no procedencia (`LiquidOrigenChip`/`SourceBadge`); no filtro removible (`LiquidChipSeleccion`)."),
+                 cuandoNo: "No pastilla Instrumento de chrome (`StatePill`); no procedencia (`LiquidOrigenChip`/`LiquidOrigenBadge`); no filtro removible (`LiquidChipSeleccion`)."),
     // —— FER-280 · piezas que matan clases (ola 2q · avisos) ——
     CatalogEntry(rol: "Toast de deshacer", simbolo: "UndoToast",
                  archivo: "LiquidGlass/UndoToast.swift",

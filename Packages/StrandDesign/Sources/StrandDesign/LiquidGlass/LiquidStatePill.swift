@@ -15,7 +15,7 @@ import SwiftUI
 //
 // Cuándo SÍ: anunciar estado vivo/listo/pausado sobre cristal de hoja; chip de Δ% con
 // color de valencia. Cuándo NO: pastilla Instrumento de chrome (`StatePill`); chip de
-// procedencia (`LiquidOrigenChip`/`SourceBadge`); filtro removible (`LiquidChipSeleccion`).
+// procedencia (`LiquidOrigenChip`/`LiquidOrigenBadge`); filtro removible (`LiquidChipSeleccion`).
 
 /// Constantes de la receta — fuera de la View para que los tests no toquen MainActor.
 public enum LiquidStatePillMetrics {

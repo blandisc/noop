@@ -33,4 +33,21 @@ final class EntrenarStepperTests: XCTestCase {
         // Sin líneas → EmptyView (no crashea al construir).
         _ = LiquidPatternBlock(overline: "Huérfano", lineas: [], tono: LiquidColor.cian)
     }
+
+    func testLiquidOrigenBadgeAPI() {
+        _ = LiquidOrigenBadge("Apple", tono: LiquidColor.azul)
+        _ = LiquidOrigenBadge("Manual", tono: nil)
+        _ = LiquidOrigenBadge("Medido en el dispositivo", tono: LiquidColor.verdePrimario)
+    }
+
+    func testUndoToastRadiusEsTarjeta() {
+        XCTAssertEqual(UndoToastMetrics.radius, LiquidRadius.tarjeta)
+    }
+
+    func testEntrenarCalendarEmptyEsTinta7() {
+        let t = InstrumentoTheme.base
+        XCTAssertEqual(EntrenarCalendarState.empty.fill(t), LiquidColor.tinta7)
+        XCTAssertEqual(EntrenarCalendarState.today.stroke(t), LiquidColor.tinta900)
+        XCTAssertEqual(EntrenarCalendarState.future.stroke(t), LiquidColor.tinta10)
+    }
 }
