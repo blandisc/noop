@@ -467,7 +467,7 @@ public enum LiquidOLED {
     /// Tinta secundaria.
     public static let tintaSecundaria = Color(hex: "#A6A298")
     /// Tinta terciaria / apagada.
-    public static let tintaTerciaria = Color(hex: "#75726A")
+    public static let tintaTerciaria = Color(hex: "#8B8370")   // 5.6:1 sobre negro (QA FER-312: #75726A daba 4.4)
     /// Canto fino sobre negro.
     public static let borde = Color(hex: "#ECE9E0").opacity(0.14)
     /// Canto fuerte sobre negro.
@@ -476,4 +476,8 @@ public enum LiquidOLED {
     public static let verde = Color(hex: "#2EB27D")
     /// Ámbar de atención sobre negro.
     public static let ambar = Color(hex: "#E29A50")
+    /// Rojo de error legible sobre negro (4.65:1; `LiquidColor.negativo` da 3.7 sobre OLED).
+    public static let negativo = Color(hex: "#CD4A42")
+    /// Rosa de FC sobre negro (4.65:1; `LiquidColor.rosa` da 4.4 en texto chico).
+    public static let rosa = Color(hex: "#BD546C")
 }
