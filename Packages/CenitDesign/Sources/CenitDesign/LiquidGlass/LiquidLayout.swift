@@ -29,6 +29,8 @@ public enum LiquidSpace {
     public static let s250: CGFloat = 10
     /// 12 — padding H de tile, separación entre bloques chicos.
     public static let s300: CGFloat = 12
+    /// 14 — el padding del recibo térmico y el respiro superior de pantalla (`CenitMetrics.receiptPadding` / `screenTop`, FER-309).
+    public static let s350: CGFloat = 14
     /// 16 — padding H de pastilla / interior horizontal de módulo.
     public static let s400: CGFloat = 16
     /// 22 — margen horizontal de pantalla (legacy Liquid).
@@ -189,6 +191,8 @@ public enum LiquidRadius {
     public static let control: CGFloat = 12
     /// 18 — tiles, tarjetas, contenedores de lista.
     public static let tarjeta: CGFloat = 18
+    /// 17 — esquina del tile de métrica de «Hoy» (`CenitMetrics.tileRadius`, FER-309).
+    public static let tile: CGFloat = 17
     /// 20 — módulos de vidrio de «El Tablero» (FER-28): un punto más que el tile para que la
     /// aurora fina del filo tenga curva donde correr.
     public static let modulo: CGFloat = 20
@@ -206,6 +210,8 @@ public enum LiquidRadius {
 public enum LiquidControl {
     /// Objetivo táctil mínimo (HIG): 44 pt. El piso de toda columna/fila/botón tocable.
     public static let hitTarget: CGFloat = 44
+    /// 104 — altura única del tile de métrica (`CenitMetrics.tileHeight`, FER-309).
+    public static let tileAltura: CGFloat = 104
     /// `sm` — chips, filas densas.
     public static let sm: CGFloat = 32
     /// `md` — el control por defecto (== hit target).
