@@ -947,7 +947,7 @@ private struct EntrenarLanding: View {
                 otraFormaAbierta.toggle()
             }
         } label: {
-            HStack(spacing: CenitMetrics.space1) {
+            HStack(spacing: LiquidSpace.s100) {
                 Text("Other ways")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 StrandIcon.down.image
@@ -957,7 +957,7 @@ private struct EntrenarLanding: View {
                     .accessibilityHidden(true)
                 if fillsWidth { Spacer(minLength: 0) }
             }
-            .padding(.horizontal, fillsWidth ? 0 : CenitMetrics.space1 + 2)   // handoff «padding 0 6px»
+            .padding(.horizontal, fillsWidth ? 0 : LiquidSpace.s100 + 2)   // handoff «padding 0 6px»
             .frame(maxWidth: fillsWidth ? .infinity : nil, minHeight: EntrenarMetrics.row, alignment: .leading)
             .contentShape(Rectangle())
         }
@@ -1047,13 +1047,13 @@ private struct EntrenarLanding: View {
                 Text(label)
                     .font(StrandFont.subhead)
                     .foregroundStyle(theme.inkSecondary)
-                Spacer(minLength: CenitMetrics.space2)
+                Spacer(minLength: LiquidSpace.s200)
                 StrandIcon.disclosure.image.font(StrandFont.glyph(.inline, weight: .semibold))
                     .foregroundStyle(theme.inkDim)
                     .accessibilityHidden(true)
             }
-            .padding(.vertical, CenitMetrics.gap)
-            .frame(maxWidth: .infinity, minHeight: CenitMetrics.touchTarget, alignment: .leading)   // HIG tap target (FER-944)
+            .padding(.vertical, LiquidSpace.s300)
+            .frame(maxWidth: .infinity, minHeight: LiquidControl.hitTarget, alignment: .leading)   // HIG tap target (FER-944)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -1162,7 +1162,7 @@ private struct EntrenarLanding: View {
                     primerUsoChips.padding(.top, LiquidSpace.s300)
                     // Secundarias: «Desde cero» (biblioteca) + «Importar» — sin «Crear mi plan».
                     Button { showLibrary = true } label: {
-                        HStack(spacing: CenitMetrics.space1) {
+                        HStack(spacing: LiquidSpace.s100) {
                             Text("From scratch").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                             StrandIcon.disclosure.image
                                 .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
@@ -1174,7 +1174,7 @@ private struct EntrenarLanding: View {
                     .buttonStyle(EntrenarPressStyle())
                     .accessibilityElement(children: .combine)
                     Button { showHubImport = true } label: {
-                        HStack(spacing: CenitMetrics.space1) {
+                        HStack(spacing: LiquidSpace.s100) {
                             Text("Import your AI's plan").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                             StrandIcon.disclosure.image
                                 .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
@@ -1228,7 +1228,7 @@ private struct EntrenarLanding: View {
             showTemplates = true
         } label: {
             // 1 pt es el hairline entre nombre y conteo dentro del chip, más chico
-            // que `CenitMetrics.space1` (4). El archivo ya tiene otros gaps sin token.
+            // que `LiquidSpace.s100` (4). El archivo ya tiene otros gaps sin token.
             VStack(alignment: .leading, spacing: 1) {
                 Text(LocalizedStringKey(name)).font(StrandFont.body).fontWeight(.semibold).foregroundStyle(theme.ink)
                 Text(countText).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)

@@ -70,7 +70,7 @@ private struct PullSyncHint: View {
                     .transition(LiquidMotion.fadeTransition)
                     .accessibilityAddTraits(.updatesFrequently)
             } else if shows {
-                VStack(spacing: CenitMetrics.space1) {
+                VStack(spacing: LiquidSpace.s100) {
                     // Vestida de Liquid (/inject 2026-07-22): el chevron del sistema nuevo en
                     // tinta/500 — el único chrome no-Liquid que quedaba en Hoy. El microcopy
                     // «Pull to refresh» y el rebote de aprendizaje se retiraron (FER-293/GRK-13):
@@ -757,7 +757,7 @@ struct TodayView: View {
                 // (héroe de sueño en «—» + tarjeta de conectar), que era la última reminiscencia
                 // del ADN retirado y afirmaba un dato que en ese estado nunca existe.
                 if noSources && !liquidDemo {
-                    VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+                    VStack(alignment: .leading, spacing: LiquidSpace.s200) {
                         headerBlock
                         HealthAlertBanner()
                         // La franja de carga se conserva SOLO con carga REAL: alguien puede
@@ -777,9 +777,9 @@ struct TodayView: View {
                             cta: String(localized: "Connect Apple Health"),
                             privacidad: String(localized: "Everything stays on your iPhone. No account, no cloud."),
                             onConectar: { showDataSources = true })
-                        .padding(.top, CenitMetrics.space2)
+                        .padding(.top, LiquidSpace.s200)
                     }
-                    .padding(.horizontal, CenitMetrics.screenPadding)
+                    .padding(.horizontal, LiquidSpace.s600)
                 } else {
                     liquidSurface
                 }
@@ -798,10 +798,10 @@ struct TodayView: View {
             // El padding horizontal vive en cada rama (FER-1045): la superficie Liquid trae su
             // margen de pantalla (LiquidSpace.s550) y la clásica conserva screenPadding.
             // Margen inferior compacto: la retícula de señales respira sobre el dock sin flotar.
-            .padding(.bottom, CenitMetrics.space1)
+            .padding(.bottom, LiquidSpace.s100)
             // /inject 2026-07-22: la superficie Liquid pega su cabecera (fecha + dial) más
             // arriba — el aire superior solo queda en la superficie clásica.
-            .padding(.top, noSources ? CenitMetrics.space2 : 0)
+            .padding(.top, noSources ? LiquidSpace.s200 : 0)
             // Llena al menos el alto visible y ancla el contenido ARRIBA (FER-1039): sin el pager ya no hay
             // un `Spacer` que reparta el sobrante, así que la alineación vertical `.top` mantiene el header
             // pegado al tope en vez de centrar la superficie; si el contenido excede el alto, crece y scrollea.
@@ -936,13 +936,13 @@ struct TodayView: View {
     /// banda se retiró (FER-65) — el sello del dial es la señal visual del pull-to-refresh. FER-222: la
     /// acción accesible «Sincronizar» reinstala para VoiceOver el gesto de jalar.
     private var headerBlock: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.space1) {
-            HStack(alignment: .center, spacing: CenitMetrics.space2) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+            HStack(alignment: .center, spacing: LiquidSpace.s200) {
                 Text(shortDate)
                     .font(InstrumentoType.grotesk(11, weight: .semibold))
                     .tracking(2)
                     .foregroundStyle(theme.inkSecondary)
-                Spacer(minLength: CenitMetrics.space2)
+                Spacer(minLength: LiquidSpace.s200)
             }
         }
         .accessibilityElement(children: .combine)
@@ -1065,7 +1065,7 @@ struct TodayView: View {
         let output = liquidOutput
         // FER-51: el host Cosmos·Matriz vive debajo del Ecosistema (héroe).
         let mInputs = liquidMatrizInputs()
-        VStack(alignment: .leading, spacing: CenitMetrics.space1) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s100) {
             Group {
                 HealthAlertBanner()
             }

@@ -252,9 +252,9 @@ struct LiveStrengthSheet: View {
             VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
                 summaryPhase(summary)
             }
-            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.horizontal, LiquidSpace.s600)
             .padding(.top, EntrenarMetrics.ctaRowTop)
-            .padding(.bottom, CenitMetrics.screenPadding)
+            .padding(.bottom, LiquidSpace.s600)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
@@ -364,7 +364,7 @@ struct LiveStrengthSheet: View {
                     progressionEdit = nil
                 }
             )
-            .padding(.top, CenitMetrics.gap)
+            .padding(.top, LiquidSpace.s300)
             .presentationDragIndicator(.visible)
             .presentationBackground(theme.paper)
             .preferredColorScheme(.light)
@@ -693,7 +693,7 @@ struct LiveStrengthSheet: View {
             // de FER-929: el handoff la simplifica a «% ejercicios hechos», y el desglose ya se lee en
             // el riel de la lista de abajo (doble contabilidad). No hay plan en ad-hoc.
             if !isEmptyAdHoc {
-                sessionProgressStrip.padding(.top, CenitMetrics.gap)
+                sessionProgressStrip.padding(.top, LiquidSpace.s300)
             }
             // El hilo compacto del veredicto (FER-133): SOLO con lighter/recover, silencio en lo demás.
             hiloCompacto
@@ -712,14 +712,14 @@ struct LiveStrengthSheet: View {
     /// M · en curso» / «pausada» a la izquierda; ♥ (solo con FC viva) · reloj · pausa · «Terminar» a
     /// la derecha — todo en una sola fila de 36 pt de alto (handoff «Sesión en vivo» v4).
     private var sessionHeaderRow: some View {
-        HStack(spacing: CenitMetrics.space2) {
+        HStack(spacing: LiquidSpace.s200) {
             // FER-998: el mismo gesto de siempre. El rol es minimizar (chevron) pero NO vuelve:
             // la sesión sigue viva y la píldora la reabre. Por eso el label de VoiceOver es suyo.
             sessionHeaderDisc("chevron.left", label: Text("Minimize session")) {
                 model.strengthSheetPresented = false
             }
-            VStack(alignment: .leading, spacing: CenitMetrics.space1) {
-                HStack(spacing: CenitMetrics.space2) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+                HStack(spacing: LiquidSpace.s200) {
                     // Sin rutina (sesión rápida) no hay familia que señalar: el punto se calla,
                     // igual que el subtítulo de abajo.
                     if !isEmptyAdHoc {
@@ -737,7 +737,7 @@ struct LiveStrengthSheet: View {
                         .lineLimit(1).minimumScaleFactor(0.8)   // mismo criterio que el título
                 }
             }
-            Spacer(minLength: CenitMetrics.space2)
+            Spacer(minLength: LiquidSpace.s200)
             sessionHeaderHeartRate
             sessionHeaderClock
             if let alternarPausa {
@@ -765,7 +765,7 @@ struct LiveStrengthSheet: View {
             // El numeral es 13 pt, por debajo del piso de 24 en que el ADN permite el hue saturado en
             // texto — el mismo tono de lectura que `SessionStatsBar` ya usa para este mismo hue.
             let tone = theme.onPaper(theme.dataHeart)
-            HStack(spacing: CenitMetrics.space1) {
+            HStack(spacing: LiquidSpace.s100) {
                 Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron))
                 Text("\(bpm)").font(StrandFont.subhead.weight(.semibold))
             }
@@ -841,7 +841,7 @@ struct LiveStrengthSheet: View {
                 .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
         }
         .buttonStyle(EntrenarPressStyle())
-        .frame(minHeight: CenitMetrics.touchTarget)   // 44 pt de toque sobre el dibujo de 36
+        .frame(minHeight: LiquidControl.hitTarget)   // 44 pt de toque sobre el dibujo de 36
         .contentShape(Capsule())
         .accessibilityLabel(accessibilityLabel)
     }
@@ -903,10 +903,10 @@ struct LiveStrengthSheet: View {
                          hint: "Opens today's ballot") {
                 showVeredictoActa = true
             }
-            // `CenitMetrics.gap` (12), no `space2` (8) como en `EntrenarView.hiloDelVeredicto`: ahí el
+            // `LiquidSpace.s300` (12), no `space2` (8) como en `EntrenarView.hiloDelVeredicto`: ahí el
             // hilo abre la landing y separa del héroe de la sesión; aquí separa de la barra de
             // progreso de 3 pt — un elemento más delgado pide más aire para no leerse pegado.
-            .padding(.top, CenitMetrics.gap)
+            .padding(.top, LiquidSpace.s300)
         }
     }
 
@@ -969,7 +969,7 @@ struct LiveStrengthSheet: View {
     /// FER-969 (X-01): the final save failed — the workout is still on this phone (FER-798 snapshot);
     /// say so and offer retry instead of pretending the receipt is coming.
     private var saveErrorBanner: some View {
-        HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space2) {
+        HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s200) {
             Image(systemName: "exclamationmark.triangle")
                 .font(StrandFont.glyph(.chevron)).foregroundStyle(theme.critical)
                 .accessibilityHidden(true)
@@ -983,13 +983,13 @@ struct LiveStrengthSheet: View {
                     .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
             }
             .accessibilityElement(children: .combine)
-            Spacer(minLength: CenitMetrics.space2)
+            Spacer(minLength: LiquidSpace.s200)
             Button { model.retryStrengthSave() } label: {
                 Text("Retry").font(StrandFont.caption).fontWeight(.medium).foregroundStyle(theme.ink)
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, CenitMetrics.screenPadding)
+        .padding(.horizontal, LiquidSpace.s600)
         .padding(.vertical, CenitMetrics.rowVPad)
         .background(theme.paper)
         .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
@@ -1046,7 +1046,7 @@ struct LiveStrengthSheet: View {
 
     private var emptyAdHocSession: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s300) {
                 Text("No routine: add exercises as you go. Rest defaults to 2 min, change it set by set.")
                     .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -1070,7 +1070,7 @@ struct LiveStrengthSheet: View {
                 if let suggestions = freshSuggestions, !suggestions.isEmpty {
                     Text("Fresh today").instrumentoOverline().foregroundStyle(theme.inkTertiary)
                         .padding(.top, LiquidSpace.seccionCanto)
-                    VStack(spacing: CenitMetrics.space2) {
+                    VStack(spacing: LiquidSpace.s200) {
                         ForEach(suggestions) { s in freshSuggestionChip(s) }
                     }
 
@@ -1078,7 +1078,7 @@ struct LiveStrengthSheet: View {
                         (Text(MuscleAtlas.name(muscle)) + Text(verbatim: " ") + Text("still carries load · suggestions avoid it."))
                             .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                             .fixedSize(horizontal: false, vertical: true)
-                            .padding(.horizontal, CenitMetrics.cardPadding).padding(.vertical, CenitMetrics.gap)
+                            .padding(.horizontal, LiquidSpace.s400).padding(.vertical, LiquidSpace.s300)
                             .liquidGlass(.superficieSolida)
                             .padding(.top, 3)  // token-exempt: ajuste óptico
                     }
@@ -1091,9 +1091,9 @@ struct LiveStrengthSheet: View {
                     .multilineTextAlignment(.center)
                     .padding(.top, LiquidSpace.seccionCanto)
             }
-            .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.top, CenitMetrics.cardPadding)
-            .padding(.bottom, CenitMetrics.screenPadding)
+            .padding(.horizontal, LiquidSpace.s600)
+            .padding(.top, LiquidSpace.s400)
+            .padding(.bottom, LiquidSpace.s600)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         // FER-198 (Ola 2): SIN fondo propio — lo aporta el `.entrenarHojaFondo` compartido de
@@ -1122,7 +1122,7 @@ struct LiveStrengthSheet: View {
         let tono = chipTono(for: s.muscle)
         return Button { Task { await addExercises([s.exercise]) } } label: {
             EntrenarModulo(tono: tono) {
-                HStack(spacing: CenitMetrics.gap) {
+                HStack(spacing: LiquidSpace.s300) {
                     RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
                         .fill(theme.surface).frame(width: 40, height: 40)
                         .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
@@ -1133,7 +1133,7 @@ struct LiveStrengthSheet: View {
                             + (lastTimeText(s).map { Text(verbatim: " · ") + Text("last time \($0)") } ?? Text(verbatim: "")))
                             .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
                     }
-                    Spacer(minLength: CenitMetrics.space2)
+                    Spacer(minLength: LiquidSpace.s200)
                     StrandIcon.add.image.font(StrandFont.glyph(.inline, weight: .semibold))
                         .foregroundStyle(tono.rotulo)
                         .accessibilityHidden(true)
@@ -1379,10 +1379,10 @@ struct LiveStrengthSheet: View {
             StrandCTAButton("Got it", tint: LiquidColor.tinta900) {
                 model.endStrengthSession(save: false)
             }
-            .padding(.top, CenitMetrics.space1)
+            .padding(.top, LiquidSpace.s100)
             .accessibilityLabel(Text("Got it, close the session"))
         }
-        .padding(.horizontal, CenitMetrics.screenPadding)
+        .padding(.horizontal, LiquidSpace.s600)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
     }
 
@@ -1460,10 +1460,10 @@ struct LiveStrengthSheet: View {
 
     /// «Sesión guardada · jue 2 jul» + the data-origin dot for the energy figure (strap Keytel vs MET).
     private func receiptHeader(_ s: StrengthSummary) -> some View {
-        HStack(spacing: CenitMetrics.space2) {
+        HStack(spacing: LiquidSpace.s200) {
             Text("\(String(localized: "Session saved")) · \(receiptDate(s.endTs))")
                 .liquidKicker().foregroundStyle(LiquidColor.tinta700)
-            Spacer(minLength: CenitMetrics.space2)
+            Spacer(minLength: LiquidSpace.s200)
             // FER-742: when the watch recorded, its origin line replaces the iPhone's energy-origin dot below.
             if let src = s.energySource, !s.watchRecorded { originRow(src) }
         }
@@ -1633,12 +1633,12 @@ struct LiveStrengthSheet: View {
         }
         return Group {
             if reflow {
-                VStack(alignment: .leading, spacing: CenitMetrics.gap) { cells }
+                VStack(alignment: .leading, spacing: LiquidSpace.s300) { cells }
             } else {
                 HStack(alignment: .top, spacing: LiquidSpace.seccionAire) { cells; Spacer(minLength: 0) }
             }
         }
-        .padding(.bottom, CenitMetrics.gap)
+        .padding(.bottom, LiquidSpace.s300)
         .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
     }
 
@@ -1746,17 +1746,17 @@ struct LiveStrengthSheet: View {
     /// The records card — the one `surface` card of the receipt. Each row frames the beaten record:
     /// «100 → 102,5 kg».
     private func receiptRecords(_ prs: [StrengthSummary.PR]) -> some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.space1) {
-            HStack(spacing: CenitMetrics.space2) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+            HStack(spacing: LiquidSpace.s200) {
                 Image(systemName: "star").font(StrandFont.glyph(.inline, weight: .semibold))
                     .foregroundStyle(LiquidColor.rosa)
                 Text(prs.count == 1 ? String(localized: "A personal record")
                      : String(localized: "\(prs.count) personal records"))
                     .font(StrandFont.subhead).fontWeight(.semibold).foregroundStyle(LiquidColor.tinta900)
             }
-            .padding(.bottom, CenitMetrics.space1)
+            .padding(.bottom, LiquidSpace.s100)
             ForEach(Array(prs.enumerated()), id: \.element.id) { i, pr in
-                HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.gap) {
+                HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s300) {
                     (Text(verbatim: pr.exercise) + Text(verbatim: " · ") + Text(Self.prMetricLabel(pr.metric)))
                         .font(StrandFont.caption).foregroundStyle(LiquidColor.tinta900)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -1773,7 +1773,7 @@ struct LiveStrengthSheet: View {
                 .accessibilityElement(children: .combine)
             }
         }
-        .padding(.horizontal, CenitMetrics.cardPadding).padding(.vertical, CenitMetrics.cardPadding)
+        .padding(.horizontal, LiquidSpace.s400).padding(.vertical, LiquidSpace.s400)
         .liquidGlass(.superficieSolida)
     }
 
@@ -1783,7 +1783,7 @@ struct LiveStrengthSheet: View {
             Text("By exercise").liquidKicker().foregroundStyle(LiquidColor.tinta700)
                 .padding(.bottom, 2)  // token-exempt: ajuste óptico
             ForEach(Array(lines.enumerated()), id: \.element.id) { i, line in
-                HStack(spacing: CenitMetrics.gap) {
+                HStack(spacing: LiquidSpace.s300) {
                     Text(line.name).font(StrandFont.subhead).foregroundStyle(LiquidColor.tinta900)
                         .lineLimit(1).minimumScaleFactor(0.8)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -1838,13 +1838,13 @@ struct LiveStrengthSheet: View {
     /// frase de mañana hasta que exista F4 — `tomorrowPct` ya no se pinta aquí (el dato sigue vivo
     /// en `StrengthSummary.costTomorrowPct` para cuando F4 exista).
     private func receiptCost(_ band: SessionRecoveryCost.Band) -> some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s200) {
             // Revisión final (g5-copy): copy.md «Acta» manda `COSTO CARDIOVASCULAR` para este rótulo,
             // no «Costo de recuperación» — dos frases distintas para el mismo bloque.
             Text("Cardiovascular cost").liquidLabel().foregroundStyle(LiquidColor.tinta500)
             Group {
                 if reflow {
-                    VStack(alignment: .leading, spacing: CenitMetrics.space1) {
+                    VStack(alignment: .leading, spacing: LiquidSpace.s100) {
                         bandNameText(.light, active: band)
                         bandNameText(.moderate, active: band)
                         bandNameText(.high, active: band)
@@ -1900,12 +1900,12 @@ struct LiveStrengthSheet: View {
     /// retired with it — it described a per-muscle tap that no longer exists.
     private func summaryMuscles(_ muscles: [StrengthSummary.WorkedMuscle]) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space2) {
+            HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s200) {
                 Text("Today's muscles").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                Spacer(minLength: CenitMetrics.space2)
+                Spacer(minLength: LiquidSpace.s200)
                 Button { openFatigueMap() } label: {
                     Text("See map").font(StrandFont.subhead).foregroundStyle(theme.ink)
-                        .frame(minHeight: CenitMetrics.touchTarget)   // toque 44 (HIG §8.7-4)
+                        .frame(minHeight: LiquidControl.hitTarget)   // toque 44 (HIG §8.7-4)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -2020,8 +2020,8 @@ private extension View {
         // thread butts segment-to-segment with no overshoot and no double-alpha overlap.
         self
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(EdgeInsets(top: top, leading: CenitMetrics.screenPadding,
-                                bottom: bottom, trailing: CenitMetrics.screenPadding))
+            .padding(EdgeInsets(top: top, leading: LiquidSpace.s600,
+                                bottom: bottom, trailing: LiquidSpace.s600))
     }
 
 }

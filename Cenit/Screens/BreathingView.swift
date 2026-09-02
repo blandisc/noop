@@ -116,9 +116,9 @@ struct BreathingView: View {
                 controlRow
                 readoutRow
             }
-            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.horizontal, LiquidSpace.s600)
             .padding(.top, LiquidSpace.s550)
-            .padding(.bottom, CenitMetrics.screenPadding)
+            .padding(.bottom, LiquidSpace.s600)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         // FER-201 / FER-242: fondo El Eje — chrome de título a mano (sin control de salida
@@ -181,7 +181,7 @@ struct BreathingView: View {
     // MARK: - Pace selector
 
     private var paceSelector: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.gap) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
             VStack(alignment: .leading, spacing: LiquidSpace.s050) {
                 Text(String(localized: "breath.kicker", defaultValue: "Breathe"))
                     .font(LiquidType.regla).tracking(LiquidType.reglaTracking)
@@ -192,7 +192,7 @@ struct BreathingView: View {
                     .foregroundStyle(LiquidColor.tinta900)
             }
 
-            VStack(spacing: CenitMetrics.gap) {
+            VStack(spacing: LiquidSpace.s300) {
                 ForEach(Pace.allCases, id: \.self) { option in
                     paceRow(option)
                 }
@@ -206,7 +206,7 @@ struct BreathingView: View {
         return Button {
             pace = option
         } label: {
-            HStack(alignment: .center, spacing: CenitMetrics.gap) {
+            HStack(alignment: .center, spacing: LiquidSpace.s300) {
                 VStack(alignment: .leading, spacing: LiquidSpace.s050) {
                     Text(verbatim: option.label)
                         .font(LiquidType.tituloGemela)
@@ -354,7 +354,7 @@ struct BreathingView: View {
     // MARK: - Controls
 
     private var controlRow: some View {
-        HStack(spacing: CenitMetrics.gap) {
+        HStack(spacing: LiquidSpace.s300) {
             if running {
                 LiquidGlassButton(
                     String(localized: "breath.stop", defaultValue: "End session"),

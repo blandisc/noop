@@ -38,7 +38,7 @@ struct EntrenarHubConstancia: View {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .firstTextBaseline) {
                     Text("Consistency · 13 weeks").liquidRegla().foregroundStyle(LiquidColor.tinta500)
-                    Spacer(minLength: CenitMetrics.space2)
+                    Spacer(minLength: LiquidSpace.s200)
                     // `Text.textCase(_:)` devuelve `some View`, no `Text` — rompe la concatenación `+`.
                     // Mayúsculas sobre el STRING ya resuelto (mismo patrón que `EntrenarHubSemana`).
                     (Text(verbatim: "\(sessionsThisMonth)")
@@ -58,7 +58,7 @@ struct EntrenarHubConstancia: View {
                         }
                     }
                 }
-                .padding(.top, CenitMetrics.space2)
+                .padding(.top, LiquidSpace.s200)
                 // Repartidos a lo ancho, no clavados bajo su columna real (mock `.ghlabs{display:flex;
                 // justify-content:space-between}` — la misma distribución que `WorkoutHistoryScreen`
                 // ya usa para sus rótulos de mes).
@@ -69,7 +69,7 @@ struct EntrenarHubConstancia: View {
                         if i < sortedLabels.count - 1 { Spacer(minLength: 0) }
                     }
                 }
-                .padding(.top, CenitMetrics.space1 + 2)
+                .padding(.top, LiquidSpace.s100 + 2)
             }
         }
         .liquidEntrada(index: 6)

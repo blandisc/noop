@@ -104,9 +104,9 @@ struct HojaFoco: View {
                     prevNextBar(ei: ei)
                         .padding(.top, FocoMetrics.prevNextTop)
                 }
-                .padding(.horizontal, CenitMetrics.screenPadding)
+                .padding(.horizontal, LiquidSpace.s600)
                 .padding(.top, FocoMetrics.contentTop)
-                .padding(.bottom, CenitMetrics.screenPadding)
+                .padding(.bottom, LiquidSpace.s600)
             }
         } else {
             // Respaldo genérico (paridad `LiveStrengthSheet.focusCapturePhase`'s `else`): no debería
@@ -116,7 +116,7 @@ struct HojaFoco: View {
             FocoCabecera(titulo: String(localized: "Focus"), onCerrar: salir,
                         onArrastrarCerrar: salir,
                         etiquetaCerrar: String(localized: "Close focus mode"))
-            VStack(spacing: CenitMetrics.gap) {
+            VStack(spacing: LiquidSpace.s300) {
                 Spacer(minLength: 0)
                 Text("All done").font(InstrumentoType.grotesk(24, weight: .semibold)).foregroundStyle(LiquidColor.tinta900)
                 Spacer(minLength: 0)
@@ -289,7 +289,7 @@ struct HojaFoco: View {
     /// Q↔RPE vive en la hoja 6-10 que esta puerta abre). SIN puerta de descanso manual — la banda
     /// cae sola al palomear (D2).
     private func capsulas(run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
-        HStack(spacing: CenitMetrics.space2) {
+        HStack(spacing: LiquidSpace.s200) {
             EntrenarCapsulaPuerta(String(localized: "RPE"), mostrarFlecha: false) {
                 vivo.openRPE(ei: ei, si: run.currentSet)
             }
@@ -322,7 +322,7 @@ struct HojaFoco: View {
                     }
                     .buttonStyle(.plain)
                 }
-                Spacer(minLength: CenitMetrics.gap)
+                Spacer(minLength: LiquidSpace.s300)
                 if let next {
                     Button { focoJump(to: next.id) } label: {
                         Text(verbatim: "\(next.name) ›").font(StrandFont.subhead.weight(.semibold)).foregroundStyle(LiquidColor.tinta900).lineLimit(1)
@@ -371,7 +371,7 @@ struct HojaFoco: View {
                     }
                     vivo.restBand(esRonda: esRonda, large: true, forzarTiempo: forzarVistaTiempo)
                 }
-                .padding(.horizontal, CenitMetrics.screenPadding)
+                .padding(.horizontal, LiquidSpace.s600)
                 .padding(.top, FocoMetrics.contentTop)
             }
         }
@@ -394,7 +394,7 @@ struct HojaFoco: View {
         Text(verbatim: label)
             .font(InstrumentoType.grotesk(10, weight: .semibold)).tracking(0.6).textCase(.uppercase)
             .foregroundStyle(activo ? LiquidColor.papelTarjeta : LiquidColor.tinta500)
-            .padding(.horizontal, CenitMetrics.gap).padding(.vertical, LiquidSpace.s125).frame(minHeight: EntrenarMetrics.secondaryButton)
+            .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s125).frame(minHeight: EntrenarMetrics.secondaryButton)
             .background { if activo { Capsule().fill(LiquidColor.tinta900) } }
             .contentShape(Capsule())
             .onTapGesture { withAnimation(vivo.reduceMotion ? nil : LiquidMotion.toque) { action() } }
@@ -430,7 +430,7 @@ struct HojaFoco: View {
             VStack(spacing: 0) {
                 Spacer(minLength: 0)
                 Circle().fill(LiquidColor.verdePrimario)
-                    .frame(width: CenitMetrics.touchTarget, height: CenitMetrics.touchTarget)
+                    .frame(width: LiquidControl.hitTarget, height: LiquidControl.hitTarget)
                     .overlay { Image(systemName: "checkmark").font(StrandFont.glyph(.lead, weight: .bold)).foregroundStyle(LiquidColor.tintaSobreVerde) }
                     .accessibilityHidden(true)
                 // «Hecho · {nombre}» — NO «{nombre}, hecha» (el mapa lo dibuja así, pero esa
@@ -477,7 +477,7 @@ struct HojaFoco: View {
                 .padding(.top, CenitMetrics.sectionGap)
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, CenitMetrics.screenPadding)
+            .padding(.horizontal, LiquidSpace.s600)
         }
     }
 

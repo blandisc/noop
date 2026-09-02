@@ -306,7 +306,7 @@ struct RoutineSheet: View {
                 HojaPlegada.row(sheet: self, idx: idx).hojaRow(top: idx == 0 ? 6 : CenitMetrics.sectionGap, bottom: 0)
             }
         }
-        if !locked { HojaPlegada.addExercise(sheet: self).hojaRow(top: CenitMetrics.sectionGap, bottom: CenitMetrics.screenPadding) }
+        if !locked { HojaPlegada.addExercise(sheet: self).hojaRow(top: CenitMetrics.sectionGap, bottom: LiquidSpace.s600) }
     }
 
     /// El primer índice de un grupo de superserie encabeza la tarjeta única con TODOS sus miembros.
@@ -399,7 +399,7 @@ struct RoutineSheet: View {
     private var reorderList: some View {
         ForEach(reorderBlocks) { block in
             compactBlock(block)
-                .padding(.horizontal, CenitMetrics.screenPadding)
+                .padding(.horizontal, LiquidSpace.s600)
                 .padding(.vertical, LiquidSpace.s125)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(theme.paper)
@@ -410,14 +410,14 @@ struct RoutineSheet: View {
         .onMove(perform: moveBlocks)
         Button { withAnimation(.snappy) { reordering = false } } label: {
             Text("Done reordering").font(StrandFont.subhead).foregroundStyle(theme.ink)
-                .frame(maxWidth: .infinity, alignment: .center).frame(minHeight: CenitMetrics.touchTarget).contentShape(Rectangle())
+                .frame(maxWidth: .infinity, alignment: .center).frame(minHeight: LiquidControl.hitTarget).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .hojaRow(top: CenitMetrics.gap, bottom: 2)
+        .hojaRow(top: LiquidSpace.s300, bottom: 2)
         Text("Drop to place. The sets come back when you let go.")
             .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
             .frame(maxWidth: .infinity, alignment: .center)
-            .hojaRow(top: 0, bottom: CenitMetrics.screenPadding)
+            .hojaRow(top: 0, bottom: LiquidSpace.s600)
     }
 
     private func compactBlock(_ block: ReorderBlock) -> some View {
@@ -425,21 +425,21 @@ struct RoutineSheet: View {
             if block.isSuperset {
                 Capsule().fill(theme.dataHrv).frame(width: 2.5)
             }
-            VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s200) {
                 if block.isSuperset { SupersetTag() }
                 ForEach(block.items) { item in
                     HStack(spacing: LiquidSpace.s250) {
                         ExerciseThumbView(exercise: item.exercise, side: 28)
                         Text(StrengthDisplay.name(item.exercise))
                             .font(StrandFont.subhead).foregroundStyle(theme.ink).lineLimit(1)
-                        Spacer(minLength: CenitMetrics.space2)
+                        Spacer(minLength: LiquidSpace.s200)
                         Text(compactSummary(item.re))
                             .font(InstrumentoType.groteskNumber(12, weight: .regular)).foregroundStyle(theme.inkTertiary)
                     }
                 }
             }
         }
-        .padding(.horizontal, CenitMetrics.gap).padding(.vertical, CenitMetrics.rowVPad)
+        .padding(.horizontal, LiquidSpace.s300).padding(.vertical, CenitMetrics.rowVPad)
         .background(theme.paper, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous).strokeBorder(theme.hairlineStrong))
     }
@@ -530,8 +530,8 @@ extension View {
         self
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
-            .listRowInsets(EdgeInsets(top: top, leading: CenitMetrics.screenPadding,
-                                      bottom: bottom, trailing: CenitMetrics.screenPadding))
+            .listRowInsets(EdgeInsets(top: top, leading: LiquidSpace.s600,
+                                      bottom: bottom, trailing: LiquidSpace.s600))
     }
 }
 #endif

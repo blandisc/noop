@@ -20,7 +20,7 @@ struct PlanAppliedToast: ViewModifier {
                     Text("Template applied · your week is set, edit it whenever")
                         .font(StrandFont.caption).fontWeight(.medium)
                         .foregroundStyle(theme.paper)
-                        .padding(.horizontal, CenitMetrics.gap).padding(.vertical, CenitMetrics.space2)
+                        .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s200)
                         .background(theme.ink, in: Capsule())
                         .padding(.bottom, CenitMetrics.sectionGap)
                         .transition(LiquidMotion.risingFadeTransition)

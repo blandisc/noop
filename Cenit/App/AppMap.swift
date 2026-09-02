@@ -240,7 +240,7 @@ private struct RoutineEditorMapCell: View {
             // El pill flotante REAL (FER-716): aparece al minimizar la sesión («‹») y la re-abre.
             if model.strengthSession != nil && !model.strengthSheetPresented {
                 MapSessionPillHost(model: model)
-                    .padding(.bottom, CenitMetrics.space2)
+                    .padding(.bottom, LiquidSpace.s200)
                     .transition(LiquidMotion.risingFadeTransition)
             }
         }
@@ -352,7 +352,7 @@ private struct NewRoutineFlowMapCell: View {
             // El pill flotante REAL (FER-716): aparece al minimizar la sesión («‹») y la re-abre.
             if model.strengthSession != nil && !model.strengthSheetPresented {
                 MapSessionPillHost(model: model)
-                    .padding(.bottom, CenitMetrics.space2)
+                    .padding(.bottom, LiquidSpace.s200)
                     .transition(LiquidMotion.risingFadeTransition)
             }
         }
@@ -439,7 +439,7 @@ private struct EntrenarFlowsMapCell: View {
         .overlay(alignment: .bottom) {
             if model.strengthSession != nil && !model.strengthSheetPresented {
                 MapSessionPillHost(model: model)
-                    .padding(.bottom, CenitMetrics.space2)
+                    .padding(.bottom, LiquidSpace.s200)
                     .transition(LiquidMotion.risingFadeTransition)
             }
         }

@@ -303,7 +303,7 @@ struct HojaSesionViva: View {
                     onBack: { progressionEdit = nil },
                     onSave: { _, _, _, _, _, _ in progressionEdit = nil }   // La escritura a la rutina sigue F4 (intervención) — F2 solo abre/cierra la hoja intacta.
                 )
-                .padding(.top, CenitMetrics.gap).presentationDragIndicator(.visible).presentationBackground(LiquidColor.fondoAlto).preferredColorScheme(.light)
+                .padding(.top, LiquidSpace.s300).presentationDragIndicator(.visible).presentationBackground(LiquidColor.fondoAlto).preferredColorScheme(.light)
             }
         }
         .instrumentoConfirm(
@@ -362,16 +362,16 @@ struct HojaSesionViva: View {
             // ancla por `run.id` (regla dura), nunca por índice.
             ScrollViewReader { proxy in
                 ScrollView {
-                    LazyVStack(spacing: CenitMetrics.gap) {
+                    LazyVStack(spacing: LiquidSpace.s300) {
                         // REGLA DURA: `ForEach` por `run.id` — `session.runs.enumerated()` da `ei` fresco
                         // en cada construcción (nunca un ancla que sobreviva un reorden).
                         ForEach(Array(session.runs.enumerated()), id: \.element.id) { ei, run in
                             if !run.skipped { row(ei).id("hoja-viva-ejercicio-\(run.id)") }
                         }
                     }
-                    .padding(.horizontal, CenitMetrics.screenPadding)
+                    .padding(.horizontal, LiquidSpace.s600)
                     .padding(.top, CenitMetrics.receiptPadding)
-                    .padding(.bottom, CenitMetrics.screenPadding)
+                    .padding(.bottom, LiquidSpace.s600)
                 }
                 .onChange(of: accordionIndex) { _, newIndex in
                     guard session.runs.indices.contains(newIndex) else { return }
@@ -431,7 +431,7 @@ struct HojaSesionViva: View {
     // MARK: - B14 — fallo de guardado
 
     private var saveErrorBanner: some View {
-        HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space2) {
+        HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s200) {
             Image(systemName: "exclamationmark.triangle")
                 .font(StrandFont.glyph(.chevron)).foregroundStyle(sheet.theme.critical)
                 .accessibilityHidden(true)
@@ -442,13 +442,13 @@ struct HojaSesionViva: View {
                     .font(StrandFont.caption).foregroundStyle(sheet.theme.inkSecondary)
             }
             .accessibilityElement(children: .combine)
-            Spacer(minLength: CenitMetrics.space2)
+            Spacer(minLength: LiquidSpace.s200)
             Button { sheet.model.retryStrengthSave() } label: {
                 Text("Retry").font(StrandFont.caption).fontWeight(.medium).foregroundStyle(sheet.theme.ink)
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, CenitMetrics.screenPadding)
+        .padding(.horizontal, LiquidSpace.s600)
         .padding(.vertical, CenitMetrics.rowVPad)
         .entrenarHojaBarraFondo(tono: .indigo)
         .overlay(alignment: .bottom) { Rectangle().fill(sheet.theme.hairline).frame(height: 1) }
@@ -457,23 +457,23 @@ struct HojaSesionViva: View {
     // MARK: - B15b — sesión zombie («quedó abierta ayer»; ver `isZombie` en el archivo de lógica)
 
     private var zombieGate: some View {
-        VStack(spacing: CenitMetrics.gap) {
+        VStack(spacing: LiquidSpace.s300) {
             Spacer()
             (Text(verbatim: "✓ ").foregroundStyle(LiquidColor.verdeProfundo)
              + Text("You left a session open yesterday · \(session.routineName), \(serieSubtitle)"))
                 .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(sheet.theme.ink)
-                .multilineTextAlignment(.center).padding(.horizontal, CenitMetrics.screenPadding)
+                .multilineTextAlignment(.center).padding(.horizontal, LiquidSpace.s600)
             HStack(spacing: LiquidSpace.s250) {
                 Button { archivarZombie() } label: {
                     Text("Archive").font(StrandFont.subhead.weight(.semibold)).foregroundStyle(sheet.theme.ink)
-                        .padding(.horizontal, CenitMetrics.cardPadding).padding(.vertical, CenitMetrics.rowVPad)
+                        .padding(.horizontal, LiquidSpace.s400).padding(.vertical, CenitMetrics.rowVPad)
                         .overlay(Capsule().strokeBorder(sheet.theme.hairlineStrong, lineWidth: 1))
                 }
                 .buttonStyle(.plain)
                 Button { zombieAcknowledged = true } label: {
                     (Text("Keep training") + Text(verbatim: " ›"))
                         .font(StrandFont.subhead.weight(.bold)).foregroundStyle(sheet.theme.paper)
-                        .padding(.horizontal, CenitMetrics.cardPadding).padding(.vertical, CenitMetrics.rowVPad)
+                        .padding(.horizontal, LiquidSpace.s400).padding(.vertical, CenitMetrics.rowVPad)
                         .background(LiquidColor.verdePrimario, in: Capsule())
                 }
                 .buttonStyle(.plain)

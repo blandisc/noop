@@ -20,6 +20,8 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- Diseño: los 8 miembros deprecados de `CenitMetrics` (space1, space2, gap, cardPadding, screenPadding, controlRadius, chipRadius, touchTarget) salen de toda la app iOS a favor de `LiquidSpace`, `LiquidRadius` y `LiquidControl`, valor por valor (FER-300). El Watch conserva su carve-out.
+
 - La sesión en vivo, el hub y Tu cuerpo terminan de pasar al vidrio El Eje: teclado de vidrio, récord en rosa, barras de carga en su verde y figuras del cuerpo en módulo (FER-295).
 
 - Progresión, descanso y tickets pasan al vidrio El Eje: filas de ajuste en una tarjeta, stepper y toggle Liquid, y textos de tickets ya en español (FER-293).

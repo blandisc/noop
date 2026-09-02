@@ -60,7 +60,7 @@ struct ManualWorkoutSheet: View {
     @ObserveInjection private var inject
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s300) {
                 header
                 VStack(alignment: .leading, spacing: 14) {
                     field("Sport") {
@@ -102,7 +102,7 @@ struct ManualWorkoutSheet: View {
                 if let validationNote { noteRow(validationNote) }
                 footer
             }
-            .padding(CenitMetrics.screenPadding)
+            .padding(LiquidSpace.s600)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         // FER-202: cristal El Eje. Se retira `.sheetPaper` (papel opaco de presentación) — taparía

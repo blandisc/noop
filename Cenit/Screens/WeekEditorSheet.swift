@@ -48,18 +48,18 @@ struct WeekEditorSheet: View {
                     }
                 }
             }
-            .padding(.top, CenitMetrics.space2)
+            .padding(.top, LiquidSpace.s200)
             Text("Tap a day to rotate its routine. The routines are the ones you already have; days you've already trained don't change.")
                 .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, CenitMetrics.gap)
+                .padding(.top, LiquidSpace.s300)
             HStack {
                 Spacer(minLength: 0)
                 StrandCTAButton("Ready", tint: theme.positiveText, fillsWidth: false) { dismiss() }
             }
-            .padding(.top, CenitMetrics.gap)
+            .padding(.top, LiquidSpace.s300)
         }
-        .padding(CenitMetrics.screenPadding)
+        .padding(LiquidSpace.s600)
         // FER-200 (Anillo 2, épico FER-195): fondo de vidrio El Eje — se CONSERVA el chrome actual
         // (kicker + filas + CTA «Listo» abajo). Esta hoja no tiene botón de salida en cabecera
         // (cierra con «Ready» / swipe); meter `EntrenarHojaCabecera` AÑADIRÍA un control (REGLA
@@ -71,7 +71,7 @@ struct WeekEditorSheet: View {
                 Text("Days already trained can't be edited")
                     .font(StrandFont.caption).fontWeight(.medium)
                     .foregroundStyle(theme.paper)
-                    .padding(.horizontal, CenitMetrics.gap).padding(.vertical, CenitMetrics.space2)
+                    .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s200)
                     .background(theme.ink, in: Capsule())
                     .padding(.bottom, CenitMetrics.sectionGap)
                     .transition(LiquidMotion.risingFadeTransition)
@@ -107,13 +107,13 @@ struct WeekEditorSheet: View {
         Button {
             if past { showLockedToast() } else { rotate(wd) }
         } label: {
-            HStack(spacing: CenitMetrics.gap) {
+            HStack(spacing: LiquidSpace.s300) {
                 Text(verbatim: dayLetter(wd))
                     .font(StrandFont.scaled(11, weight: .semibold, relativeTo: .caption2))
                     .foregroundStyle(theme.inkTertiary)
                     .frame(width: 26, alignment: .leading)
                 routineLabel(name: name, isToday: isToday)
-                Spacer(minLength: CenitMetrics.space2)
+                Spacer(minLength: LiquidSpace.s200)
                 if past {
                     if done { Text("Already done").font(StrandFont.caption).foregroundStyle(theme.inkDim) }
                 } else {

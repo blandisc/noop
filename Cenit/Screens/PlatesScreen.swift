@@ -49,9 +49,9 @@ struct PlatesScreen: View {
                     warmupSection
                         .id("warmup")
                 }
-                .padding(.horizontal, CenitMetrics.screenPadding)
+                .padding(.horizontal, LiquidSpace.s600)
                 .padding(.top, 18)
-                .padding(.bottom, CenitMetrics.screenPadding)
+                .padding(.bottom, LiquidSpace.s600)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .onAppear { if startAtWarmup { proxy.scrollTo("warmup", anchor: .top) } }

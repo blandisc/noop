@@ -48,7 +48,7 @@ struct SetActionPills: View {
     }
 
     var body: some View {
-        HStack(spacing: CenitMetrics.space2) {
+        HStack(spacing: LiquidSpace.s200) {
             Button(action: addSet) {
                 HStack(spacing: 6) {
                     StrandIcon.add.image.font(StrandFont.glyph(.chevron, weight: .semibold))

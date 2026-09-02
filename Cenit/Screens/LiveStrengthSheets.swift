@@ -53,11 +53,11 @@ struct RPESheet: View {
                 scale
             }
             .padding(.top, CenitMetrics.sectionGap)
-            Spacer(minLength: CenitMetrics.gap)
+            Spacer(minLength: LiquidSpace.s300)
             okButton
         }
-        .padding(.horizontal, CenitMetrics.screenPadding)
-        .padding(.bottom, CenitMetrics.screenPadding)
+        .padding(.horizontal, LiquidSpace.s600)
+        .padding(.bottom, LiquidSpace.s600)
         // FER-198 (Ola 2, épico FER-195): el fondo de vidrio El Eje (Ola 1, FER-197) reemplaza el
         // papel plano — misma hoja, mismo gesto de cierre; solo el vestido cambia.
         .entrenarHojaFondo(tono: .ambar)
@@ -73,7 +73,7 @@ struct RPESheet: View {
                              subtitulo: String(localized: "Set \(target.setNumber) · \(weightLabel) × \(target.reps) reps"),
                              tono: .ambar, salida: .cerrar, onSalir: onClose)
             .padding(.top, CenitMetrics.sectionGap)
-            .padding(.bottom, CenitMetrics.space2)
+            .padding(.bottom, LiquidSpace.s200)
     }
 
     private var hero: some View {
@@ -104,14 +104,14 @@ struct RPESheet: View {
     }
 
     private var okButton: some View {
-        VStack(spacing: CenitMetrics.space2) {
+        VStack(spacing: LiquidSpace.s200) {
             LiquidGlassButton("Ok ✓", variant: .primary, expands: true) {
                 onPick(selected)
             }
             Text("RPE is optional · tap the set's RPE cell")
                 .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
         }
-        .padding(.top, CenitMetrics.gap)
+        .padding(.top, LiquidSpace.s300)
     }
 
     /// Descriptors (FER-930 spec §3, es-MX in the xcstrings catalog), no prescriptive coaching.
@@ -189,9 +189,9 @@ struct NoteSheet: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, CenitMetrics.screenPadding)
+        .padding(.horizontal, LiquidSpace.s600)
         .padding(.top, 32)  // token-exempt: aire del grabber (decisión dueño r12)
-        .padding(.bottom, CenitMetrics.screenPadding)
+        .padding(.bottom, LiquidSpace.s600)
         // FER-198 (Ola 2): fondo de vidrio El Eje — el `TextEditor` sigue SIN envolver (regla dura
         // del épico), solo cambia el marco que lo rodea.
         .entrenarHojaFondo(tono: .ambar)
@@ -329,28 +329,28 @@ struct ChangeExerciseSheet: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: CenitMetrics.gap) {
+                VStack(alignment: .leading, spacing: LiquidSpace.s300) {
                     searchField
                     if !filtered.isEmpty {
                         if query.isEmpty, let m = primaryMuscle {
                             (Text("Suggested · ") + Text(MuscleAtlas.name(m)))
-                                .instrumentoOverline().foregroundStyle(theme.inkTertiary).padding(.top, CenitMetrics.space1)
+                                .instrumentoOverline().foregroundStyle(theme.inkTertiary).padding(.top, LiquidSpace.s100)
                         }
                         ForEach(filtered) { row($0) }
                     } else if loaded {
                         Text(query.isEmpty ? "No alternatives for this muscle: search the library."
                                            : "No matches.")
                             .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
-                            .fixedSize(horizontal: false, vertical: true).padding(.top, CenitMetrics.space2)
+                            .fixedSize(horizontal: false, vertical: true).padding(.top, LiquidSpace.s200)
                     }
                     // FER-89: la puerta nueva — hoy 0 apariciones de `ExerciseLibraryScreen` en este
                     // archivo. Reusa `EntrenarNivel` (ya garantiza el toque de 44 pt + el chevron
                     // «›» + `accessibilityElement(children: .combine)`) en vez de un botón a mano.
                     EntrenarNivel("See full library") { showLibrary = true }
-                        .padding(.top, CenitMetrics.space2)
+                        .padding(.top, LiquidSpace.s200)
                 }
-                .padding(.horizontal, CenitMetrics.screenPadding)
-                .padding(.vertical, CenitMetrics.cardPadding)
+                .padding(.horizontal, LiquidSpace.s600)
+                .padding(.vertical, LiquidSpace.s400)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .navigationTitle(Text("Change \(run.name)"))
@@ -410,8 +410,8 @@ struct ChangeExerciseSheet: View {
                 .autocorrectionDisabled()
         }
         .padding(.horizontal, 13).padding(.vertical, CenitMetrics.rowVPad)  // token-exempt: sin token exacto (horizontal/chip handoff)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
+        .background(theme.surface, in: RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
             .strokeBorder(theme.hairline, lineWidth: 1))
     }
 
@@ -434,20 +434,20 @@ struct ChangeExerciseSheet: View {
     /// antes tocar el nombre/miniatura no hacía nada — dejarlo inerte conserva ESE comportamiento en
     /// vez de convertir la fila entera en un gesto de «cambiar de ejercicio» que hoy no existe.
     private func row(_ ex: Exercise) -> some View {
-        HStack(spacing: CenitMetrics.gap) {
+        HStack(spacing: LiquidSpace.s300) {
             ExerciseCard(family: nil, name: StrengthDisplay.name(ex), metaText: metaText(for: ex)) {
                 SessionRunThumb(exerciseId: ex.id)
             }
             useButton(ex)
         }
-        .padding(.vertical, CenitMetrics.space2)
+        .padding(.vertical, LiquidSpace.s200)
         .overlay(alignment: .bottom) { Divider().overlay(theme.hairline) }
     }
 
     private func useButton(_ ex: Exercise) -> some View {
         Button { onUse(ex) } label: {
             Text("Use").font(StrandFont.caption).foregroundStyle(theme.ink)
-                .padding(.horizontal, CenitMetrics.gap).padding(.vertical, LiquidSpace.s125)
+                .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s125)
                 .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
                 .frame(minHeight: 44)   // toque 44: la cápsula queda visualmente igual
                 .contentShape(Rectangle())

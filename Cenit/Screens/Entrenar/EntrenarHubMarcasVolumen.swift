@@ -43,7 +43,7 @@ struct EntrenarHubMarcasVolumen: View {
 
     var body: some View {
         if hasMarca || hasVolumen {
-            HStack(alignment: .top, spacing: CenitMetrics.gap) {
+            HStack(alignment: .top, spacing: LiquidSpace.s300) {
                 if let marca { marcaTile(marca) }
                 if let volumen { volumenTile(volumen) }
             }
@@ -64,7 +64,7 @@ struct EntrenarHubMarcasVolumen: View {
                     if let unitText = m.unitText {
                         Text(verbatim: unitText).font(LiquidType.unidad).foregroundStyle(LiquidColor.tinta500)
                     }
-                    Spacer(minLength: CenitMetrics.space1)
+                    Spacer(minLength: LiquidSpace.s100)
                     EntrenarMiniBarras(alturas: [0.625, 1.0], tono: .rosa)
                 }
                 .padding(.top, EntrenarHubMetrics.numRowTop)
@@ -100,7 +100,7 @@ struct EntrenarHubMarcasVolumen: View {
                         .foregroundStyle(LiquidColor.ambar)
                     Text(verbatim: "t").font(LiquidType.unidad).foregroundStyle(LiquidColor.tinta500)
                     if let deltaPercent = v.deltaPercent, deltaPercent != 0 {
-                        Spacer(minLength: CenitMetrics.space1)
+                        Spacer(minLength: LiquidSpace.s100)
                         deltaText(deltaPercent)
                     }
                 }

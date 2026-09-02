@@ -97,7 +97,7 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
         OutlineCapsule(theme: theme,
                        size: .aMedida(insets: EntrenarHubMetrics.subPillInsets, minHeight: nil, touchInset: 0),
                        estilo: .tenida(.verde), action: onOpenRaise) {
-            HStack(spacing: CenitMetrics.space2) {
+            HStack(spacing: LiquidSpace.s200) {
                 Circle()
                     .fill(LiquidColor.papelTarjeta)
                     .frame(width: EntrenarHubMetrics.subPillBadge, height: EntrenarHubMetrics.subPillBadge)
@@ -118,7 +118,7 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
     private var ctaRow: some View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: EntrenarHubMetrics.heroCtaGap) { empezarPill; otraFormaPill }
-            VStack(alignment: .leading, spacing: CenitMetrics.space2) { empezarPill; otraFormaPill }
+            VStack(alignment: .leading, spacing: LiquidSpace.s200) { empezarPill; otraFormaPill }
         }
     }
 
@@ -136,7 +136,7 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
                        estilo: .vidrio, action: {
             withAnimation(reduceMotion ? LiquidMotion.fundido : LiquidMotion.suave) { onToggleOtraForma() }
         }) {
-            HStack(spacing: CenitMetrics.space1) {
+            HStack(spacing: LiquidSpace.s100) {
                 Text("Other ways")
                     .font(EntrenarHubMetrics.heroOtraFormaTexto)
                     .foregroundStyle(LiquidColor.tinta700)

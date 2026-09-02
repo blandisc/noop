@@ -77,7 +77,7 @@ struct WorkoutImportView: View {
                 case .done:    doneFlow
                 }
             }
-            .padding(CenitMetrics.screenPadding)
+            .padding(LiquidSpace.s600)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         // FER-200 (Anillo 2, épico FER-195): fondo de vidrio El Eje — sin `NavigationStack` propio
@@ -96,7 +96,7 @@ struct WorkoutImportView: View {
             // en `.entrenarHojaFondo` arriba).
             if phase == .mapping || phase == .done {
                 BackButton(role: .close, theme: theme, action: dismissImport)
-                    .padding(.trailing, CenitMetrics.space2).padding(.top, CenitMetrics.space2)
+                    .padding(.trailing, LiquidSpace.s200).padding(.top, LiquidSpace.s200)
             }
         }
         .interactiveDismissDisabled(midWork)
@@ -158,10 +158,10 @@ struct WorkoutImportView: View {
                 .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-                HStack(alignment: .center, spacing: CenitMetrics.space2) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                HStack(alignment: .center, spacing: LiquidSpace.s200) {
                     Text("STEP 1 · THE PROMPT").entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
-                    Spacer(minLength: CenitMetrics.space2)
+                    Spacer(minLength: LiquidSpace.s200)
                     QuietButton(copied ? "✓ Copied" : "Copy") { copyPrompt() }
                 }
                 .frame(minHeight: EntrenarMetrics.row)
@@ -171,18 +171,18 @@ struct WorkoutImportView: View {
                 Text(verbatim: WorkoutPrompt.forCurrentLocale())
                     .font(StrandFont.mono).foregroundStyle(theme.inkSecondary)
                     .lineLimit(4)
-                    .padding(CenitMetrics.cardPadding)
+                    .padding(LiquidSpace.s400)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .liquidGlass(.superficieSolida)
             }
 
-            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s300) {
                 Text("STEP 2 · BRING THE RESULT").entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
                     .frame(minHeight: EntrenarMetrics.row, alignment: .leading)
                 dashedPasteField
-                HStack(spacing: CenitMetrics.gap) {
+                HStack(spacing: LiquidSpace.s300) {
                     openFileLink
-                    Spacer(minLength: CenitMetrics.space2)
+                    Spacer(minLength: LiquidSpace.s200)
                     // Deviation from the prototype's tap-to-paste demo: parsing needs an explicit
                     // trigger (a real paste can be partial/edited before it's valid JSON), so a
                     // «Continue» stays, only once there's something to parse.
@@ -213,13 +213,13 @@ struct WorkoutImportView: View {
             .foregroundStyle(theme.ink)
             .scrollContentBackground(.hidden)
             .frame(minHeight: 96)
-            .padding(CenitMetrics.cardPadding)
+            .padding(LiquidSpace.s400)
             .background(theme.paper, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
                 .strokeBorder(theme.hairlineStrong, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
             .overlay(alignment: .center) {
                 if pasteText.isEmpty {
-                    VStack(spacing: CenitMetrics.space1) {
+                    VStack(spacing: LiquidSpace.s100) {
                         Text("Paste the JSON").font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
                         Text("or open the downloaded .json file").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
                     }
@@ -238,14 +238,14 @@ struct WorkoutImportView: View {
                     .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                     .accessibilityHidden(true)
             }
-            .frame(minHeight: CenitMetrics.touchTarget, alignment: .leading)
+            .frame(minHeight: LiquidControl.hitTarget, alignment: .leading)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
 
     private func errorNote(_ error: WorkoutProgramParseError) -> some View {
-        HStack(alignment: .top, spacing: CenitMetrics.gap) {
+        HStack(alignment: .top, spacing: LiquidSpace.s300) {
             Image(systemName: "exclamationmark.triangle")
                 .font(StrandFont.glyph(.lead)).foregroundStyle(theme.critical)
                 .accessibilityHidden(true)
@@ -288,22 +288,22 @@ struct WorkoutImportView: View {
         let key = norm(name)
         let resolved = resolution[key]
         let isOmitted = omitted.contains(key)
-        return VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+        return VStack(alignment: .leading, spacing: LiquidSpace.s200) {
             Text(verbatim: name).font(StrandFont.body)
                 .foregroundStyle(isOmitted ? theme.inkTertiary : theme.ink)
             if isOmitted {
-                HStack(spacing: CenitMetrics.space2) {
+                HStack(spacing: LiquidSpace.s200) {
                     // Ronda 2 revisión final, hallazgo grave (g4-a11y): `.combine` vivía en el HStack
                     // completo, fundiendo «Undo» (un Button hermano) en un elemento estático — VoiceOver
                     // no podía deshacer un «Omitir». Solo el texto se combina; el botón queda suelto.
                     Text("Omitted").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
                         .accessibilityElement(children: .combine)
-                    Spacer(minLength: CenitMetrics.space2)
+                    Spacer(minLength: LiquidSpace.s200)
                     undoLink { omitted.remove(key) }
                 }
             } else if let resolved {
                 let isAuto = autoMatched.contains(key)   // FER-794: pre-resolved, marked as automatic
-                HStack(spacing: CenitMetrics.space2) {
+                HStack(spacing: LiquidSpace.s200) {
                     // Handoff: el match como pill verde lavada — el veredicto se lee de un vistazo.
                     HStack(spacing: 5) {
                         Image(systemName: isAuto ? "sparkles" : "checkmark.circle.fill")
@@ -318,9 +318,9 @@ struct WorkoutImportView: View {
                     }
                     .foregroundStyle(theme.verdict)
                     .padding(.horizontal, 9).padding(.vertical, 3)  // token-exempt: sin token exacto (horizontal/chip handoff)
-                    .background(theme.verdict.opacity(StrandOpacity.tintFill), in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+                    .background(theme.verdict.opacity(StrandOpacity.tintFill), in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
                     .accessibilityElement(children: .combine)
-                    Spacer(minLength: CenitMetrics.space2)
+                    Spacer(minLength: LiquidSpace.s200)
                     undoLink { resolution[key] = nil; autoMatched.remove(key) }
                 }
                 Button { mappingTarget = MappingName(name: name) } label: {
@@ -334,15 +334,15 @@ struct WorkoutImportView: View {
                     ForEach(suggestions, id: \.id) { s in
                         // Handoff: la sugerencia como tarjeta — sparkle ember, nombre, y «Usar» como botón oscuro.
                         Button { resolve(name, with: s) } label: {
-                            HStack(spacing: CenitMetrics.space2) {
+                            HStack(spacing: LiquidSpace.s200) {
                                 Image(systemName: "sparkles").font(StrandFont.caption).foregroundStyle(theme.dataStrain)
                                 Text(StrengthDisplay.name(s)).font(StrandFont.subhead.weight(.medium)).foregroundStyle(theme.ink)
-                                Spacer(minLength: CenitMetrics.space2)
+                                Spacer(minLength: LiquidSpace.s200)
                                 Text("Use").font(InstrumentoType.grotesk(12, weight: .bold)).foregroundStyle(theme.paperHi)
-                                    .padding(.horizontal, 11).padding(.vertical, CenitMetrics.space1)  // token-exempt: sin token exacto (horizontal/chip handoff)
-                                    .background(theme.ink, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+                                    .padding(.horizontal, 11).padding(.vertical, LiquidSpace.s100)  // token-exempt: sin token exacto (horizontal/chip handoff)
+                                    .background(theme.ink, in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
                             }
-                            .padding(.horizontal, 10).padding(.vertical, CenitMetrics.space2)  // token-exempt: sin token exacto (edge ≠ rowVPad)
+                            .padding(.horizontal, 10).padding(.vertical, LiquidSpace.s200)  // token-exempt: sin token exacto (edge ≠ rowVPad)
                             .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
                             .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
                                 .strokeBorder(theme.hairline, lineWidth: 1))
@@ -352,14 +352,14 @@ struct WorkoutImportView: View {
                         .accessibilityHint(Text("Use \(StrengthDisplay.name(s)) for \(name)"))
                     }
                 }
-                HStack(spacing: CenitMetrics.space2) {
+                HStack(spacing: LiquidSpace.s200) {
                     chip("Match") { mappingTarget = MappingName(name: name) }
                     chip("Create new") { creationTarget = MappingName(name: name) }
                     chip("Omit") { omitted.insert(key) }
                 }
             }
         }
-        .padding(.vertical, CenitMetrics.gap)
+        .padding(.vertical, LiquidSpace.s300)
     }
 
     /// A small underlined «Undo» link — reverts a suggestion/omit so the row goes back to unmatched.
@@ -413,7 +413,7 @@ struct WorkoutImportView: View {
                 }
             }
 
-            HStack(spacing: CenitMetrics.gap) {
+            HStack(spacing: LiquidSpace.s300) {
                 Spacer(minLength: 0)
                 fixLink
                 StrandCTAButton(createRoutinesTitle(program.routines.count), tint: theme.positiveText, fillsWidth: false) {
@@ -431,7 +431,7 @@ struct WorkoutImportView: View {
                     .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
                     .accessibilityHidden(true)
             }
-            .frame(minHeight: CenitMetrics.touchTarget)
+            .frame(minHeight: LiquidControl.hitTarget)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -466,8 +466,8 @@ struct WorkoutImportView: View {
         let region = RoutineClassifier.classify(primaryMusclesPerExercise: muscles)
         let accent = region.tint(theme)
         let mapped = mappedCount(routine)
-        return HStack(alignment: .top, spacing: CenitMetrics.gap) {
-            VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+        return HStack(alignment: .top, spacing: LiquidSpace.s300) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s200) {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     nameText(routine.name, fallback: "Routine")
                         .font(StrandFont.body.weight(.semibold)).foregroundStyle(accent)
@@ -483,17 +483,17 @@ struct WorkoutImportView: View {
                     }
                 }
             }
-            Spacer(minLength: CenitMetrics.space2)
+            Spacer(minLength: LiquidSpace.s200)
             if mapped > 0 {
                 Text(mapped == 1 ? "1 mapped" : "\(mapped) mapped")
                     .font(StrandFont.caption.weight(.semibold)).foregroundStyle(theme.verdict)
                     .padding(.horizontal, 9).padding(.vertical, 3)  // token-exempt: sin token exacto (horizontal/chip handoff)
                     .background(theme.verdict.opacity(StrandOpacity.tintFill),
-                                in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+                                in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
             }
         }
         .frame(minHeight: 52, alignment: .top)
-        .padding(.vertical, CenitMetrics.gap)
+        .padding(.vertical, LiquidSpace.s300)
     }
 
     /// How many of this routine's exercises needed a mapping decision (were in `unmatched`) and are
@@ -526,7 +526,7 @@ struct WorkoutImportView: View {
                 .opacity(celebrate ? 1 : 0)
                 .accessibilityHidden(true)
 
-                VStack(spacing: CenitMetrics.space2) {
+                VStack(spacing: LiquidSpace.s200) {
                     Text(createdRoutinesTitle(createdCount))
                         .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking).foregroundStyle(theme.ink)
                         .multilineTextAlignment(.center)
@@ -558,8 +558,8 @@ struct WorkoutImportView: View {
         let labels: [LocalizedStringKey] = ["Capture", "Map", "Confirm", "Done"]
         let currentIndex = phaseIndex(current)
         // El ✕ flota arriba-derecha (44pt): la tira le cede su carril para no chocar (bug Fer 2026-07-16).
-        return VStack(alignment: .leading, spacing: CenitMetrics.space2) {
-            HStack(spacing: CenitMetrics.space2) {
+        return VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+            HStack(spacing: LiquidSpace.s200) {
                 ForEach(0..<labels.count, id: \.self) { i in
                     Capsule()
                         .fill(i <= currentIndex ? theme.dataStrain : theme.hairline)
@@ -568,7 +568,7 @@ struct WorkoutImportView: View {
                 }
             }
             .padding(.trailing, LiquidSpace.handoff44)
-            HStack(spacing: CenitMetrics.space2) {
+            HStack(spacing: LiquidSpace.s200) {
                 ForEach(0..<labels.count, id: \.self) { i in
                     Text(labels[i])
                         .font(InstrumentoType.grotesk(12, weight: .medium))
@@ -597,7 +597,7 @@ struct WorkoutImportView: View {
     }
 
     private func header(_ overline: LocalizedStringKey, _ title: LocalizedStringKey) -> some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.space1) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s100) {
             Text(overline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
             Text(title).font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking).foregroundStyle(theme.ink)
         }
