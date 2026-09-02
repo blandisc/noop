@@ -74,7 +74,7 @@ struct InstrumentTabBar<Tag: Hashable>: View {
         .background(alignment: .top) {
             ZStack(alignment: .top) {
                 surface
-                Rectangle().fill(rule).frame(height: LiquidSpace.hairline)
+                Rectangle().fill(rule).frame(height: LiquidRadius.hairline)
             }
             .ignoresSafeArea(edges: .bottom)
         }
