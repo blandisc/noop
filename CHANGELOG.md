@@ -20,6 +20,8 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- Progresión, descanso y tickets pasan al vidrio El Eje: filas de ajuste en una tarjeta, stepper y toggle Liquid, y textos de tickets ya en español (FER-293).
+
 - El editor de plan semanal pasa al vidrio El Eje: semana en una sola tarjeta, chips de rutina en cápsula, carpetas sin banda de papel y diálogo de texto en cristal (FER-292).
 - El detalle de ejercicio termina su paso al vidrio El Eje: tipografía y espacios Liquid, secciones con cabecera, récords como libro mayor (FER-291).
 
