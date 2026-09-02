@@ -280,6 +280,19 @@ class Fer271CommentGaps(unittest.TestCase):
             hits = drift.check([src], ["no-weight-on-grotesk"])
             self.assertEqual([i for _p, i, _r, _s in hits], [1])
 
+    def test_fontweight_sobre_grotesk_misma_linea_o_siguiente(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src = _swift(tmp, "Cenit/Screens/D.swift", [
+                ".font(LiquidType.caption).fontWeight(.medium)",   # misma línea
+                ".font(LiquidType.tituloGemela)",                  # + siguiente
+                "    .fontWeight(.medium)",
+                ".font(LiquidType.filaConteo).fontWeight(.bold)",  # .system: válido
+                ".font(LiquidType.caption)",
+                "    .foregroundStyle(LiquidColor.tinta900)",
+            ])
+            hits = drift.check([src], ["no-weight-on-grotesk"])
+            self.assertEqual([i for _p, i, _r, _s in hits], [1, 2])
+
 if __name__ == "__main__":
     unittest.main()
 

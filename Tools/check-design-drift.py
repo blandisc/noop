@@ -225,6 +225,19 @@ def _weight_on_grotesk_re():
 
 RE_WEIGHT_ON_GROTESK = _weight_on_grotesk_re()
 
+
+def _font_grotesk_re():
+    """`.font(LiquidType.<grotesk>)` — para cazar el escape `.fontWeight(` en la misma línea o la siguiente
+    (FER-314: la auditoría 2 midió 7 escapes que `.weight(` no veía)."""
+    toks = _grotesk_tokens()
+    if not toks:
+        return re.compile(r"(?!x)x")
+    return re.compile(r"\.font\(\s*LiquidType\.(?:" + "|".join(sorted(toks, key=len, reverse=True)) + r")\s*\)")
+
+
+RE_FONT_GROTESK = _font_grotesk_re()
+RE_FONTWEIGHT = re.compile(r"\.fontWeight\(")
+
 RULE_PATTERNS = {
     "no-hex": RE_HEX,
     "no-adhoc-font": RE_FONT,
@@ -344,6 +357,11 @@ def check(paths, rules):
                         hits.append((path, i, rule, stripped[:100]))
                     continue
                 m = RULE_PATTERNS[rule].search(code)
+                if not m and rule == "no-weight-on-grotesk" and RE_FONT_GROTESK.search(code):
+                    # `.fontWeight(` sobre un grotesk: misma línea, o la siguiente (cadena de modifiers).
+                    nxt = _strip_line_comments(lines[i]) if i < len(lines) else ""
+                    if RE_FONTWEIGHT.search(code) or RE_FONTWEIGHT.search(nxt):
+                        m = True
                 if m:
                     hits.append((path, i, rule, stripped[:100]))
     return hits
