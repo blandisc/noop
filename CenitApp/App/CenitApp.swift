@@ -34,7 +34,7 @@ struct CenitApp: App {
         // Grotesk token during TodayView's first render pays the one-time CoreText registration on the
         // launch path. `ensureFontsRegistered()` is idempotent + thread-safe (a `static let`), so this
         // detached warm just moves the cost off the critical first-frame path.
-        Task.detached { StrandFont.ensureFontsRegistered() }
+        Task.detached { LiquidType.ensureFontsRegistered() }
         let model = AppModel()
         _model = State(wrappedValue: model)
         let healthBridge = HealthKitBridge(

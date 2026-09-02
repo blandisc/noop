@@ -25,6 +25,9 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 - **Entrenar fuera de sesión al vidrio / Out-of-session Training to glass** (FER-304).
   **ES** — Las pantallas y hojas de Entrenar que viven fuera de la sesión activa (plantillas, editor de semana, workout manual, intervalos, trucos, recibo, respiración, franja de carga, detalle/tendencia de métrica, tarjeta de compartir y chips de serie) pasan al dialecto Liquid Glass · El Eje: mismos flujos, tipografía y color del sistema.
   **EN** — Training screens and sheets that live outside the live session (templates, week editor, manual workout, intervals, tricks, receipt, breathing, load strip, metric detail/trend, share card and set chips) move to the Liquid Glass · El Eje dialect: same flows, system type and color.
+- **Hoy / Entrenar / chrome L6 pasan a Liquid Glass · El Eje / Hoy · Train · chrome L6 move to Liquid Glass · El Eje** (FER-305).
+  **ES** — Tres lotes cierran residuos Instrumento: hub Entrenar; historial / Hoy residual / Cuerpo / sueño; y el chrome (tab bar, toasts, ContentView, AppMap, CenitApp). Misma lógica; solo tokens Liquid.
+  **EN** — Three batches clear leftover Instrumento skin: Train hub; history / Today residual / Body / sleep; and chrome (tab bar, toasts, ContentView, AppMap, CenitApp). Same logic; Liquid tokens only.
 
 - Diseño: los 8 miembros deprecados de `CenitMetrics` (space1, space2, gap, cardPadding, screenPadding, controlRadius, chipRadius, touchTarget) salen de toda la app iOS a favor de `LiquidSpace`, `LiquidRadius` y `LiquidControl`, valor por valor (FER-300). El Watch conserva su carve-out.
 - Entrenar adopta piezas huérfanas del catálogo: cápsulas Outline/Hoja, búsqueda Liquid, avisos, confirms y papel en presenters (FER-301 · FER-298).

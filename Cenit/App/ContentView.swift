@@ -128,13 +128,13 @@ struct ContentView: View {
         // fresh install / reinstall, where `onboarded` flips false→true after this view appears).
         .task { await maybeOfferRestore() }
         .onChange(of: onboarded) { _, done in if done { Task { await maybeOfferRestore() } } }
-        // Velo de papel BAJO el alert de restore (dueño 2026-08-15): el alert nativo es
+        // Velo BAJO el alert de restore (dueño 2026-08-15): el alert nativo es
         // translúcido y el CTA verde «Connect Apple Health» del estado vacío quedaba justo
         // detrás — sangraba a través del material como una mancha verde sobre el mensaje
         // (parecía un subrayado roto). El velo opaca el fondo solo mientras el alert vive.
         .overlay {
             if showRestoreOffer {
-                InstrumentoTheme.base.paper.opacity(0.85).ignoresSafeArea()
+                LiquidColor.fondoAlto.ignoresSafeArea()
             }
         }
         // FER-116: el copy nombra lo que el respaldo ES: un archivo que el usuario exportó y guardó
@@ -146,22 +146,21 @@ struct ContentView: View {
             Text("There's no data on this iPhone yet. Cénit has no cloud of its own: the only thing I can restore is a backup file that you exported from Cénit and saved yourself, in iCloud Drive or wherever you keep your files. If you don't have one, there's nothing to bring back.")
         }
         // FER-837: the restore RESULT is an inline banner (the offer above stays a native alert — the
-        // honest exception: it fires before the app visually exists).
+        // honest exception: it fires before the app visually exists). FER-305: piel → LiquidAviso.
         .overlay(alignment: .top) {
             if showRestoreResult {
-                let theme = InstrumentoTheme.base
-                Text(restoreMessage)
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(theme.ink)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .patternBlock(theme, bar: restoreSucceeded ? theme.verdict : theme.critical)
-                    .padding(.horizontal, 16)
-                    .onTapGesture { showRestoreResult = false }
-                    .transition(LiquidMotion.fallingFadeTransition)
-                    .task {
-                        try? await Task.sleep(for: .seconds(8))
-                        showRestoreResult = false
-                    }
+                LiquidAviso(
+                    titulo: "",
+                    cuerpo: restoreMessage,
+                    tono: restoreSucceeded ? LiquidColor.verdePrimario : LiquidColor.negativo
+                )
+                .padding(.horizontal, LiquidSpace.s400)
+                .onTapGesture { showRestoreResult = false }
+                .transition(LiquidMotion.fallingFadeTransition)
+                .task {
+                    try? await Task.sleep(for: .seconds(8))
+                    showRestoreResult = false
+                }
             }
         }
         .animation(LiquidMotion.fundido, value: showRestoreResult)

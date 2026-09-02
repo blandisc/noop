@@ -9,11 +9,10 @@ import StrandDesign
 // mismo token exento, mismo temporizador de 4 s. Ahora es un modificador y las tres lo llaman.
 // (2026-07-19)
 //
-// Se queda en la capa de app y no en StrandDesign a propósito: el «bar: critical» sobre `patternBlock`
-// ya es un componente del sistema (`patternBlock`), y lo único que agrega esto es la política de
-// auto-descarte — que es comportamiento de producto, no vocabulario visual.
+// FER-305: la piel pasa a `LiquidAviso` (misma API pública del toast). Se queda en la capa de app a
+// propósito: lo único que agrega esto es la política de auto-descarte — comportamiento de producto,
+// no vocabulario visual.
 struct SaveErrorToast: ViewModifier {
-    @Environment(\.instrumentoTheme) private var theme
     @Binding var isPresented: Bool
     /// Texto del banner. `nil` (el default, para los 10+ call sites que no lo pasan) muestra el
     /// genérico «Couldn't save. Try again.» — pásalo ya resuelto (`String(localized:)`) cuando la
@@ -29,29 +28,22 @@ struct SaveErrorToast: ViewModifier {
         content
             .overlay(alignment: .top) {
                 if isPresented {
-                    banner
-                        .font(LiquidType.cuerpoBanner)
-                        .foregroundStyle(theme.ink)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .patternBlock(theme, bar: theme.critical)
-                        .padding(.horizontal, 16)
-                        .transition(LiquidMotion.fallingFadeTransition)
-                        .task {
-                            try? await Task.sleep(for: .seconds(seconds))
-                            isPresented = false
-                        }
+                    // titulo vacío: una sola línea de cuerpo (paridad con el banner plano previo);
+                    // `lineas: []` dejaría EmptyView dentro de LiquidPatternBlock.
+                    LiquidAviso(
+                        titulo: "",
+                        cuerpo: message ?? String(localized: "Couldn't save. Try again."),
+                        tono: LiquidColor.negativo
+                    )
+                    .padding(.horizontal, LiquidSpace.s400)
+                    .transition(LiquidMotion.fallingFadeTransition)
+                    .task {
+                        try? await Task.sleep(for: .seconds(seconds))
+                        isPresented = false
+                    }
                 }
             }
             .animation(LiquidMotion.fundido, value: isPresented)
-    }
-
-    @ViewBuilder
-    private var banner: some View {
-        if let message {
-            Text(message)
-        } else {
-            Text("Couldn't save. Try again.")
-        }
     }
 }
 
