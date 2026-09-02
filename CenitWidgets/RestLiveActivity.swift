@@ -499,7 +499,7 @@ private struct GlyphButton<I: AppIntent>: View {
 
 // MARK: - Shared pieces
 
-/// Tint intentionally below the AA text floor for no-data / stale chrome on the lock-screen card.
+/// Tinta del chrome sin dato / obsoleto en la tarjeta de pantalla bloqueada: `tinta500` (5.5:1, cumple AA).
 private var lockInkDim: Color { LiquidColor.tinta500 }   // tinta terciaria: el chrome sin dato usa el mismo token que en la app (OKLab.mix es interno al paquete)
 
 /// An uppercase tracking overline — «Descanso · 8/18 series», «Al volver», «Tope».
