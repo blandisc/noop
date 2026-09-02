@@ -17,6 +17,7 @@ Rules (each activated in the PR that finishes its migration — pass `--rules` t
     no-legacy-api      call-site of a retired-generation symbol (Instrumento*/Paper*/…) (FER-263; ratchet)
     no-deprecated-metrics  a retired `CenitMetrics` member (space1/space2/gap/…) — pure prohibition (FER-306)
     no-instrumento-theme   `theme.ink/paper/…` / `StrandFont.*` access outside the Watch/Widget carve-out (FER-306; ratchet)
+    no-weight-on-grotesk   `.weight(...)` on a grotesk `LiquidType` token — a silent no-op on `.custom` fonts (FER-308; pure)
     token-exempt       pseudo-rule: counts the escape hatches themselves        (FER-263; ratchet — an exemption
                        is frozen debt too, so a NEW `token-exempt` fails unless its budget allows it)
 
@@ -51,7 +52,7 @@ DEFAULT_ROOTS = [
 DESIGN_PKG = "Packages/CenitDesign"
 EXEMPT = re.compile(r"//\s*token-exempt\b")
 
-ALL_RULES = ["no-hex", "no-adhoc-font", "no-radius-literal", "no-opacity-literal", "no-emdash-string", "no-raw-shadow", "no-sheet-glass", "no-spacing-literal", "no-legacy-api", "token-exempt", "no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic", "no-motion-literal", "no-dt-cap-adhoc", "no-deprecated-metrics", "no-instrumento-theme"]
+ALL_RULES = ["no-hex", "no-adhoc-font", "no-radius-literal", "no-opacity-literal", "no-emdash-string", "no-raw-shadow", "no-sheet-glass", "no-spacing-literal", "no-legacy-api", "token-exempt", "no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic", "no-motion-literal", "no-dt-cap-adhoc", "no-deprecated-metrics", "no-instrumento-theme", "no-weight-on-grotesk"]
 
 # Per-rule default roots — mirrors `.github/workflows/design-lint.yml` exactly (FER-282).
 # A bare `python3 Tools/check-design-drift.py --baseline …` (no roots) must not paint red on
@@ -82,6 +83,7 @@ DEFAULT_ROOTS_BY_RULE = {
     "no-sheet-glass": list(_ROOTS_SHEET_GLASS),
     "no-deprecated-metrics": list(_ROOTS_LEGACY),
     "no-instrumento-theme": list(_ROOTS_LEGACY),
+    "no-weight-on-grotesk": list(_ROOTS_LEGACY),
 }
 # no-emdash-string: an em-dash (—, U+2014) inside a user-facing Swift string literal. ADN copy rule
 # (FER-878): on-screen copy uses «:», «·» or a comma, never an em-dash. Scoped to STRING LITERALS so the
@@ -198,6 +200,31 @@ RE_INSTRUMENTO_THEME = re.compile(
 )
 RE_DATA_RAMP = re.compile(r"hrZoneRamp|muscleLoadRamp|muscleLoadColor|movementFamilyTint|ensureFontsRegistered")
 
+# no-weight-on-grotesk (FER-308, retro de la corrida FER-299): `Font.weight(_:)` NO cambia la cara de una
+# fuente `.custom` nombrada por PostScript (SpaceGrotesk-Medium se queda Medium), así que
+# `LiquidType.caption.weight(.bold)` es un no-op silencioso. La lista de tokens grotesk se LEE de
+# LiquidType.swift (los `static let X = InstrumentoType.grotesk(...)`) para que no se pudra a mano;
+# los tokens `.system(` quedan fuera: ahí el peso sí funciona. Prohibición pura (deuda 0 al estreno).
+_LIQUID_TYPE_SWIFT = os.path.join(DESIGN_PKG, "Sources", "CenitDesign", "LiquidGlass", "LiquidType.swift")
+
+
+def _grotesk_tokens():
+    try:
+        src = open(_LIQUID_TYPE_SWIFT, encoding="utf-8").read()
+    except FileNotFoundError:
+        return []
+    return re.findall(r"static let ([A-Za-z0-9_]+)\s*=\s*InstrumentoType\.grotesk", src)
+
+
+def _weight_on_grotesk_re():
+    toks = _grotesk_tokens()
+    if not toks:
+        return re.compile(r"(?!x)x")  # never matches: sin catálogo no hay regla
+    return re.compile(r"\bLiquidType\.(?:" + "|".join(sorted(toks, key=len, reverse=True)) + r")\s*\.weight\(")
+
+
+RE_WEIGHT_ON_GROTESK = _weight_on_grotesk_re()
+
 RULE_PATTERNS = {
     "no-hex": RE_HEX,
     "no-adhoc-font": RE_FONT,
@@ -214,6 +241,7 @@ RULE_PATTERNS = {
     "no-dt-cap-adhoc": RE_DT_CAP,
     "no-deprecated-metrics": RE_DEPRECATED_METRICS,
     "no-instrumento-theme": RE_INSTRUMENTO_THEME,
+    "no-weight-on-grotesk": RE_WEIGHT_ON_GROTESK,
 }
 
 
@@ -305,9 +333,9 @@ def check(paths, rules):
             for rule in rules:
                 if rule == "token-exempt":
                     continue
-                if rule in ("no-hex", "no-legacy-api", "no-raw-color", "no-token-arithmetic", "no-deprecated-metrics", "no-instrumento-theme") and in_design_pkg:
+                if rule in ("no-hex", "no-legacy-api", "no-raw-color", "no-token-arithmetic", "no-deprecated-metrics", "no-instrumento-theme", "no-weight-on-grotesk") and in_design_pkg:
                     continue
-                if rule in ("no-legacy-api", "no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic", "no-motion-literal", "no-deprecated-metrics", "no-instrumento-theme") and in_widget_watch:
+                if rule in ("no-legacy-api", "no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic", "no-motion-literal", "no-deprecated-metrics", "no-instrumento-theme", "no-weight-on-grotesk") and in_widget_watch:
                     continue
                 if rule == "no-instrumento-theme" and RE_DATA_RAMP.search(code):
                     continue
