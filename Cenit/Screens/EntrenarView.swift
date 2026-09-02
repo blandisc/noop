@@ -672,14 +672,14 @@ private struct EntrenarLanding: View {
                 // FER-132 ronda 2: kicker FIJO «Hoy» — copy literal del prototipo (`descansoLeve.hk: "Hoy"`,
                 // sin el día). `hoyOverline` interpola el día para los héroes con rutina; reusarlo aquí
                 // colaba «Hoy · Martes» en cualquier descanso que no fuera `.recover`.
-                Text("Today").entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
+                Text("Today").entrenarCabeceraKicker().foregroundStyle(LiquidColor.tinta500)
                 Text("Rest")
-                    .font(InstrumentoType.grotesk(EntrenarMetrics.restHeroTitle, weight: .bold)).tracking(-1)
-                    .foregroundStyle(theme.ink)
+                    .font(LiquidType.displayM).tracking(LiquidType.displayMTracking)
+                    .foregroundStyle(LiquidColor.tinta900)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, EntrenarMetrics.heroTitleTop)
                 Text(descansoSubtitulo)
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, EntrenarMetrics.heroSubTop)
                 ViewThatFits(in: .horizontal) {
@@ -713,20 +713,20 @@ private struct EntrenarLanding: View {
 
     /// The handoff's per-routine tint (mock 1a). The family is derived from the routine's exercises'
     /// `primaryMuscles` via the shared `RoutineClassifier` (FER-775) — never guessed from the name or a
-    /// per-process hash, so a routine keeps the same color across launches. The flow colors coincide with
-    /// existing Instrumento data tokens, so we reuse them: push → `dataStrain` (ember), pull → `dataHrv`
-    /// (teal), leg / full body → `dataSleep` (indigo). A routine with no classifiable exercises (cardio,
-    /// «Rápido» without a routine) falls back to `dataStrain`, the screen's default hue. Used for the SOLID
-    /// marks (text, borders); full body reads as indigo here and only becomes a gradient in `routineFill`.
+    /// per-process hash, so a routine keeps the same color across launches. Via `EntrenarFamily.tono`:
+    /// push → ámbar, pull → cian, leg / full body → índigo. A routine with no classifiable exercises
+    /// (cardio, «Rápido» without a routine) falls back to ámbar, the screen's default hue. Used for the
+    /// SOLID marks (text, borders); full body reads as indigo here and only becomes a gradient in
+    /// `routineFill`.
     private func routineTint(_ region: RoutineRegion?) -> Color {
-        return region.tint(theme)
+        region?.family.tono.base ?? LiquidColor.ambar
     }
 
     /// The FILL for a routine's dot/square. Same as `routineTint` except full body reads as the mock's
     /// 135° ember→indigo gradient (its whole point is that it spans the split).
     private func routineFill(_ region: RoutineRegion?) -> AnyShapeStyle {
         if region == .fullBody {
-            return AnyShapeStyle(LinearGradient(colors: [theme.dataStrain, theme.dataSleep],
+            return AnyShapeStyle(LinearGradient(colors: [LiquidColor.ambar, LiquidColor.indigo],
                                                 startPoint: .topLeading, endPoint: .bottomTrailing))
         }
         return AnyShapeStyle(routineTint(region))
@@ -819,8 +819,8 @@ private struct EntrenarLanding: View {
     }
 
     // MARK: - ③ «LA SESIÓN DE HOY» (handoff v4b: the day's detail in its own band section)
-    // (The sunken section band itself is `InstrumentoSectionBand` in StrandDesign — promoted in
-    // FER-940 when «Tu Plan» adopted the same header.)
+    // (The sunken section band itself is `LiquidFranjaSeccion` / `LiquidSectionHeader` in StrandDesign
+    // — promoted in FER-940 when «Tu Plan» adopted the same header.)
     //
     // Big Grotesk numerals for the session's shape (min · exercises · sets), the earned raise as the
     // green line (FER-G — it lives where you start), and the recovery hint on a thin green filete.
@@ -835,10 +835,10 @@ private struct EntrenarLanding: View {
         // la vez y con Dynamic Type una crecía y la otra se quedaba clavada en 13 pt.
         let strong = parts.map {
             Text(verbatim: $0)
-                .font(InstrumentoType.groteskNumber(13, weight: .bold, relativeTo: .subheadline))
-                // `dataRecovery` a 13 pt da 3.63:1 sobre el papel: reprueba el piso de texto normal.
-                // `positiveText` es el MISMO verde, oscurecido lo justo para llegar a 4.5:1.
-                .foregroundStyle(theme.positiveText)
+                .font(LiquidType.tituloFila.weight(.bold))
+                .monospacedDigit()
+                // Verde profundo (AA ≥ 4.5:1) — mismo rol que el verde de lectura de subidas.
+                .foregroundStyle(LiquidColor.verdeProfundo)
         }
         // Ronda 2 · O1: dos puntos — mock «Hoy subes: sentadilla · 82.5 kg» (línea 254).
         var t = Text("Today you raise") + Text(verbatim: ": ")
@@ -949,10 +949,10 @@ private struct EntrenarLanding: View {
         } label: {
             HStack(spacing: LiquidSpace.s100) {
                 Text("Other ways")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
                 StrandIcon.down.image
-                    .font(StrandFont.glyph(.chevron, weight: .semibold))
-                    .foregroundStyle(theme.inkTertiary)
+                    .font(LiquidType.iconSF(size: 12).weight(.semibold))
+                    .foregroundStyle(LiquidColor.tinta500)
                     .rotationEffect(.degrees(otraFormaAbierta ? 180 : 0))
                     .accessibilityHidden(true)
                 if fillsWidth { Spacer(minLength: 0) }
@@ -977,7 +977,7 @@ private struct EntrenarLanding: View {
                 }
                 filoDelPliegue
                 Text("Your routine for today stays put: this is separate, no guilt.")
-                    .font(StrandFont.caption).foregroundStyle(LiquidColor.tinta500)
+                    .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, CenitMetrics.rowVPad)
             }
@@ -1007,9 +1007,8 @@ private struct EntrenarLanding: View {
     /// Una fila del pliegue: glifo, título y subtítulo. Sin «›» al final — dos de las cuatro no
     /// navegan, arrancan, y «›» ya significa «navega» en esta pantalla.
     ///
-    /// El glifo va en `StrandFont.body`, no en `StrandFont.glyph(.lead)`: el doc de `glyph` lo
-    /// reserva para chrome pareado a texto QUE NO ESCALA, y aquí el texto sí escala. Y `minWidth`,
-    /// nunca `width`, para que a AX5 no le corte la cabeza al símbolo.
+    /// El glifo va en `LiquidType.infoGlifo` (escala con el texto), no en `iconSF` fijo: aquí el
+    /// texto sí escala. Y `minWidth`, nunca `width`, para que a AX5 no le corte la cabeza al símbolo.
     private func puertaRow(_ puerta: Puerta) -> some View {
         Button {
             otraFormaAbierta = false   // cierra SIEMPRE, en las cuatro: una regla, no cuatro casos
@@ -1017,13 +1016,13 @@ private struct EntrenarLanding: View {
         } label: {
             HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s225) {
                 Image(systemName: puerta.icon)
-                    .font(StrandFont.body).foregroundStyle(LiquidColor.tinta700)
+                    .font(LiquidType.infoGlifo).foregroundStyle(LiquidColor.tinta700)
                     .frame(minWidth: HojaMetrics.marcaDiametro, alignment: .leading)
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: LiquidSpace.s050) {
-                    Text(puerta.label).font(StrandFont.body).foregroundStyle(LiquidColor.tinta900)
+                    Text(puerta.label).font(LiquidType.tituloGemela).foregroundStyle(LiquidColor.tinta900)
                     Text(puerta.subtitle)
-                        .font(StrandFont.caption).foregroundStyle(LiquidColor.tinta500)
+                        .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: LiquidSpace.s200)
@@ -1042,14 +1041,14 @@ private struct EntrenarLanding: View {
         Button(action: action) {
             HStack(spacing: LiquidSpace.s225) {
                 Image(systemName: icon)
-                    .font(StrandFont.glyph(.lead))
-                    .foregroundStyle(theme.inkSecondary)
+                    .font(LiquidType.iconSF(size: 18))
+                    .foregroundStyle(LiquidColor.tinta700)
                 Text(label)
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(theme.inkSecondary)
+                    .font(LiquidType.cuerpoBanner)
+                    .foregroundStyle(LiquidColor.tinta700)
                 Spacer(minLength: LiquidSpace.s200)
-                StrandIcon.disclosure.image.font(StrandFont.glyph(.inline, weight: .semibold))
-                    .foregroundStyle(theme.inkDim)
+                StrandIcon.disclosure.image.font(LiquidType.iconSF(size: 15).weight(.semibold))
+                    .foregroundStyle(LiquidColor.tinta500)
                     .accessibilityHidden(true)
             }
             .padding(.vertical, LiquidSpace.s300)
@@ -1112,7 +1111,7 @@ private struct EntrenarLanding: View {
         VStack(alignment: .leading, spacing: 0) {
             filoDelPliegue
             Text("Loaded muscles and History appear after your first session. Until then, silence.")
-                .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta700)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, EntrenarMetrics.levelPadTop)
         }
@@ -1149,23 +1148,23 @@ private struct EntrenarLanding: View {
                            insets: EntrenarHubMetrics.heroInsets) {
                 VStack(alignment: .leading, spacing: 0) {
                     Text("Let's start")
-                        .entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
+                        .entrenarCabeceraKicker().foregroundStyle(LiquidColor.tinta500)
                     Text("Build your week")
-                        .font(InstrumentoType.grotesk(32, weight: .bold)).tracking(-1)
-                        .foregroundStyle(theme.ink)
+                        .font(LiquidType.displayL).tracking(LiquidType.displayLTracking)
+                        .foregroundStyle(LiquidColor.tinta900)
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.top, EntrenarMetrics.heroTitleTop)
                     Text("Choose a template or build your own routine · Entrenar serves it to you every day after that")
-                        .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        .font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.top, EntrenarMetrics.heroSubTop)
                     primerUsoChips.padding(.top, LiquidSpace.s300)
                     // Secundarias: «Desde cero» (biblioteca) + «Importar» — sin «Crear mi plan».
                     Button { showLibrary = true } label: {
                         HStack(spacing: LiquidSpace.s100) {
-                            Text("From scratch").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                            Text("From scratch").font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
                             StrandIcon.disclosure.image
-                                .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                                .font(LiquidType.iconSF(size: 12).weight(.semibold)).foregroundStyle(LiquidColor.tinta500)
                                 .accessibilityHidden(true)
                         }
                         .frame(minHeight: EntrenarMetrics.row, alignment: .leading)
@@ -1175,9 +1174,9 @@ private struct EntrenarLanding: View {
                     .accessibilityElement(children: .combine)
                     Button { showHubImport = true } label: {
                         HStack(spacing: LiquidSpace.s100) {
-                            Text("Import your AI's plan").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                            Text("Import your AI's plan").font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
                             StrandIcon.disclosure.image
-                                .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                                .font(LiquidType.iconSF(size: 12).weight(.semibold)).foregroundStyle(LiquidColor.tinta500)
                                 .accessibilityHidden(true)
                         }
                         .frame(minHeight: EntrenarMetrics.row, alignment: .leading)
@@ -1230,8 +1229,8 @@ private struct EntrenarLanding: View {
             // 1 pt es el hairline entre nombre y conteo dentro del chip, más chico
             // que `LiquidSpace.s100` (4). El archivo ya tiene otros gaps sin token.
             VStack(alignment: .leading, spacing: 1) {
-                Text(LocalizedStringKey(name)).font(StrandFont.body).fontWeight(.semibold).foregroundStyle(theme.ink)
-                Text(countText).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                Text(LocalizedStringKey(name)).font(LiquidType.tituloGemela).foregroundStyle(LiquidColor.tinta900)
+                Text(countText).font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
             }
             .padding(.horizontal, LiquidSpace.s200)
             // EntrenarMetrics.row (44 pt) = mínimo HIG — no bajar.
@@ -1359,7 +1358,7 @@ private struct EntrenarLanding: View {
             Spacer(minLength: LiquidSpace.s200)
             Button { showTricks = true } label: {
                 Image(systemName: "questionmark.circle")
-                    .font(StrandFont.glyph(.lead))
+                    .font(LiquidType.iconSF(size: 18))
                     .foregroundStyle(LiquidColor.tinta500)
                     .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)
                     .contentShape(Rectangle())
