@@ -29,6 +29,9 @@ public struct OutlineCapsule<Label: View>: View {
         /// Pad H `LiquidSpace.s400` · minHeight `EntrenarMetrics.focusRestSkip` (46) —
         /// «Saltar descanso» en Foco a pantalla completa. Ya ≥ 44; sin expandTouch.
         case xl
+        /// Geometría dictada por el caller (FER-295 ronda 3): conserva recetas previas pixel a pixel
+        /// (píldoras del héroe, pill del teclado) sin inventar tallas nuevas. `touchInset` > 0 expande el toque.
+        case aMedida(insets: EdgeInsets, minHeight: CGFloat?, touchInset: CGFloat)
 
         /// Pad horizontal fijado a la receta citada (no inventar).
         public var horizontalPad: CGFloat {
@@ -36,6 +39,7 @@ public struct OutlineCapsule<Label: View>: View {
             case .sm: return LiquidSpace.s250
             case .md: return LiquidSpace.s300
             case .lg, .xl: return LiquidSpace.s400
+            case .aMedida(let i, _, _): return i.leading
             }
         }
 
@@ -46,6 +50,15 @@ public struct OutlineCapsule<Label: View>: View {
             case .sm: return LiquidSpace.s150
             case .md: return 6
             case .lg, .xl: return 0
+            case .aMedida(let i, _, _): return i.top
+            }
+        }
+
+        /// Insets completos (asimétricos cuando la receta lo pide).
+        public var insets: EdgeInsets {
+            switch self {
+            case .aMedida(let i, _, _): return i
+            default: return EdgeInsets(top: verticalPad, leading: horizontalPad, bottom: verticalPad, trailing: horizontalPad)
             }
         }
 
@@ -56,6 +69,7 @@ public struct OutlineCapsule<Label: View>: View {
             case .sm, .md: return nil
             case .lg: return EntrenarMetrics.secondaryButton
             case .xl: return EntrenarMetrics.focusRestSkip
+            case .aMedida(_, let h, _): return h
             }
         }
 
@@ -66,6 +80,7 @@ public struct OutlineCapsule<Label: View>: View {
             case .sm, .md, .xl: return 0
             case .lg:
                 return (EntrenarMetrics.row - EntrenarMetrics.secondaryButton) / 2
+            case .aMedida(_, _, let t): return t
             }
         }
     }
@@ -184,8 +199,7 @@ private struct OutlineCapsuleChrome<CapsuleLabel: View>: ViewModifier {
 
     func body(content: Content) -> some View {
         let padded = content
-            .padding(.horizontal, size.horizontalPad)
-            .padding(.vertical, size.verticalPad)
+            .padding(size.insets)
         return Group {
             if let h = size.minHeight {
                 applyChrome(padded.frame(minHeight: h))

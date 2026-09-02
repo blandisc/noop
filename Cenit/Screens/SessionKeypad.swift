@@ -208,10 +208,12 @@ struct SessionKeypad: View {
         }
     }
 
-    /// 2A: `OutlineCapsule.lg` (dibujo 36, toque 44 vía expandTouch). La fila de iconos vecinos
-    /// sigue en 34; el HStack centra sin forzar más padding vertical en la barra.
+    /// 2A (ronda 3): geometría a medida — dibujo 34 como los iconos vecinos, toque 44 vía inset;
+    /// la barra de accesorios no crece.
     private func pill(_ text: String, enabled: Bool = true, action: @escaping () -> Void) -> some View {
-        OutlineCapsule(theme: theme, size: .lg, estilo: .outline, action: { if enabled { action() } }) {
+        OutlineCapsule(theme: theme,
+                       size: .aMedida(insets: EntrenarMetrics.keypadPillInsets, minHeight: EntrenarMetrics.keypadPill, touchInset: EntrenarMetrics.keypadPillTouchInset),
+                       estilo: .outline, action: { if enabled { action() } }) {
             Text(text).font(StrandFont.caption)
                 .foregroundStyle(enabled ? theme.ink : theme.inkMuted)
         }

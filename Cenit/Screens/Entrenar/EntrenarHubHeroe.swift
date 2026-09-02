@@ -94,7 +94,9 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
 
     private func subPill(_ line: Text) -> some View {
         // 2A: cromo vía `OutlineCapsule.Estilo.tenida(.verde)` (alfas en `EntrenarHubMetrics.subPill*`).
-        OutlineCapsule(theme: theme, estilo: .tenida(.verde), action: onOpenRaise) {
+        OutlineCapsule(theme: theme,
+                       size: .aMedida(insets: EntrenarHubMetrics.subPillInsets, minHeight: nil, touchInset: 0),
+                       estilo: .tenida(.verde), action: onOpenRaise) {
             HStack(spacing: CenitMetrics.space2) {
                 Circle()
                     .fill(LiquidColor.papelTarjeta)
@@ -129,7 +131,9 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
 
     private var otraFormaPill: some View {
         // 2A: cromo vía `OutlineCapsule.Estilo.vidrio` + talla `.lg` (alfas en `EntrenarHubMetrics.otraForma*`).
-        OutlineCapsule(theme: theme, size: .lg, estilo: .vidrio, action: {
+        OutlineCapsule(theme: theme,
+                       size: .aMedida(insets: EntrenarHubMetrics.otraFormaInsets, minHeight: EntrenarMetrics.row, touchInset: 0),
+                       estilo: .vidrio, action: {
             withAnimation(reduceMotion ? LiquidMotion.fundido : LiquidMotion.suave) { onToggleOtraForma() }
         }) {
             HStack(spacing: CenitMetrics.space1) {

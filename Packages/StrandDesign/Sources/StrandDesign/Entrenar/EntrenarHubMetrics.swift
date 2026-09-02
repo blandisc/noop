@@ -95,6 +95,8 @@ public enum EntrenarHubMetrics {
 
     public static let heroCTAMinWidth: CGFloat = 168
     public static let otraFormaPaddingH: CGFloat = 18
+    /// Insets completos de «Otra forma» (V 0: la altura la fija `EntrenarMetrics.row`).
+    public static var otraFormaInsets: EdgeInsets { EdgeInsets(top: 0, leading: otraFormaPaddingH, bottom: 0, trailing: otraFormaPaddingH) }
     public static let otraFormaFondoAlfa: Double = 0.62
     public static let otraFormaHighlightAlfa: Double = 0.85
     public static let otraFormaCantoAlfa: Double = 0.10
@@ -107,6 +109,8 @@ public enum EntrenarHubMetrics {
     public static let subPillPaddingLeading: CGFloat = 9
     public static let subPillPaddingTrailing: CGFloat = 15
     public static let subPillPaddingV: CGFloat = 8
+    /// Insets completos de «Hoy subes» (asimétricos: badge a la izquierda).
+    public static var subPillInsets: EdgeInsets { EdgeInsets(top: subPillPaddingV, leading: subPillPaddingLeading, bottom: subPillPaddingV, trailing: subPillPaddingTrailing) }
     public static let subPillFondoAlfa: Double = 0.10
     public static let subPillHighlightAlfa: Double = 0.80
     public static let subPillAroAlfa: Double = 0.40

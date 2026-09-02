@@ -76,6 +76,12 @@ public enum EntrenarMetrics {
     /// Botón primario del héroe.
     public static let primaryButton: CGFloat = 46
     /// Botón secundario / píldora de papel («Saltar», «+ Serie»).
+    /// Pill de la barra de accesorios del teclado (copiar anterior/arriba): dibujo 34, toque 44 vía inset (FER-295 ronda 3).
+    public static let keypadPill: CGFloat = 34
+    /// Inset del toque para llegar a 44 sin agrandar el dibujo de 34.
+    public static var keypadPillTouchInset: CGFloat { (row - keypadPill) / 2 }
+    /// Insets del pill del teclado: H `LiquidChip.compactoHorizontal`, V 0 (la altura la fija `keypadPill`).
+    public static var keypadPillInsets: EdgeInsets { EdgeInsets(top: 0, leading: LiquidChip.compactoHorizontal, bottom: 0, trailing: LiquidChip.compactoHorizontal) }
     public static let secondaryButton: CGFloat = 36
     /// Aire dentro de una banda (descanso, franjas de sección).
     public static let bandGap: CGFloat = 12
