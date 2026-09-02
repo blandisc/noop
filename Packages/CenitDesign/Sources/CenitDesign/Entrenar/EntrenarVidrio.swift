@@ -198,7 +198,7 @@ struct LiquidTonoReceta: ViewModifier {
     @Environment(\.liquidMotionDisabled) private var motionDisabled
 
     private var shape: RoundedRectangle {
-        RoundedRectangle(cornerRadius: CenitMetrics.tileRadius, style: .continuous)
+        RoundedRectangle(cornerRadius: LiquidRadius.tile, style: .continuous)
     }
 
     func body(content: Content) -> some View {

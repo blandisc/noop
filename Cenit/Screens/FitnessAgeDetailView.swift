@@ -24,8 +24,7 @@ import StrandAnalytics
 //
 // Se presenta como CAPA desde Cuerpo (`detailOverlayContent`): sus `.presentation*` propios están
 // inertes en producción (solo actúan en su #Preview). El fondo va por `background` (la capa) Y
-// `presentationBackground` (la hoja del #Preview). El param `theme` se conserva como compat muerto
-// — la hoja Liquid ya no lo referencia, pero los call sites de `CuerpoView` lo pasan (FER-100).
+// `presentationBackground` (la hoja del #Preview).
 
 struct FitnessAgeDetailView: View {
     let snapshot: FitnessAgeSnapshot
@@ -44,9 +43,6 @@ struct FitnessAgeDetailView: View {
     var vo2Trend: VO2maxTrend.Result? = nil
     /// The raw measured VO₂max series (values only, oldest→newest) behind the trend. Dead compat.
     var vo2Series: [Double] = []
-    /// El tema vivo «Instrumento», retenido por compatibilidad con los call sites — la hoja Liquid ya
-    /// no lo referencia (mismo trato que las hermanas ya migradas).
-    var theme: InstrumentoTheme = .base
 
     /// El ⓘ del campo abre la tarjeta «Qué medimos» bajo él — paridad con las gemelas
     /// (`StrainDetailScreen`/`SkinTempDetailScreen`). (FER-105 · M1)

@@ -21,17 +21,11 @@ import Foundation
 // siendo DESCRIPTIVO, sin semáforo: el tono es SIEMPRE `LiquidColor.ambar` (identidad de esfuerzo,
 // no juicio — ver el swatch «ámbar · esfuerzo/piel» en `LiquidColor.swift`).
 //
-// Se presenta vía `.sheet(item:)` con el tema vivo pasado EXPLÍCITO (no propaga por `.sheet`,
-// FER-162; el tema ya NO se referencia dentro — se conserva solo por compatibilidad de firma con
-// los call sites, mismo trato que `SleepDetailScreen`/`TrainingLoadSheet`) y SIN `NavigationStack`
-// anidado (FER-171).
+// Se presenta vía `.sheet(item:)`, SIN `NavigationStack` anidado (FER-171).
 
 /// Detalle de Esfuerzo en vidrio Liquid. Se arma UNA vez desde un `StrainDetailModel` (el caller
 /// inyecta el modelo para que la pantalla siga sin tocar la base de datos).
 struct StrainDetailScreen: View {
-    /// El tema vivo «Instrumento», retenido por compatibilidad con los call sites — la hoja Liquid
-    /// ya no lo referencia. (FER-101, mismo trato que `SleepDetailScreen`/`TrainingLoadSheet`)
-    var theme: InstrumentoTheme = .base
     /// Todo lo que la pantalla dibuja, derivado UNA vez por el caller desde `repo`. Contrato
     /// congelado para esta migración: NO se toca.
     let model: StrainDetailModel
@@ -406,7 +400,7 @@ struct StrainDetailScreen: View {
     // MARK: - Los carriles fijos — UNA sola escalera, compartida por niveles/historial/calendario
     //
     // FER-101: antes esta pantalla tenía DOS ladders distintas para la misma métrica —
-    // `MetricInfo.strain(_:).bands` (5 carriles) para la tabla estática, y una `strainBands(theme:)`
+    // `MetricInfo.strain(_:).bands` (5 carriles) para la tabla estática, y una `strainBands`
     // propia que colapsaba «rest»+«light» en una sola etiqueta «Rest / Light» de 4 carriles para la
     // gráfica (con un desfase de índice real: el carril «hard» clampeaba a la palabra/color de
     // «extreme» — ver el `.enumerated().reversed()` + `Swift.min(i, words.count - 1)` del original).

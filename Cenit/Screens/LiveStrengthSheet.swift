@@ -44,17 +44,14 @@ struct LiveStrengthSheet: View {
     /// mirror is even on (off by default) — the same gate `saveStrengthWorkoutIfEnabled` itself reads
     /// (`HealthKitBridge.swift`), so the row never claims a save the engine wouldn't have attempted.
     @AppStorage(HealthKitBridge.saveStrengthWorkoutsKey) private var saveStrengthWorkouts = false
-    var theme: InstrumentoTheme = .base
-
     /// FER-170 (F5, épico FER-165): el modo Foco vigente que vivía en este tipo (la instancia
     /// efímera `startInFocus`/`onExitFocus` que F2 montaba desde `HojaSesionViva`) se RETIRÓ — el
     /// enfoque ahora es una expansión de la tarjeta activa dentro de la Hoja viva misma
     /// (`RoutineSheetLiveFoco.swift`). Este tipo se queda vivo solo para el acta/summary
     /// (`bodySummaryScroll`) y el estado «Rápida vacía» ad-hoc (B13, `emptyAdHocSession`) — los dos
     /// que `HojaSesionViva.body` sigue montando construyendo una instancia fresca de ESTE tipo.
-    init(session: StrengthSessionModel, theme: InstrumentoTheme = .base) {
+    init(session: StrengthSessionModel) {
         self.session = session
-        self.theme = theme
     }
 
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -257,7 +254,7 @@ struct LiveStrengthSheet: View {
         }
     }
 
-    /// Theme, banners, library picker, rest-anchor onChange — no session sheets yet.
+    /// Banners, library picker, rest-anchor onChange — no session sheets yet.
     /// Confirm de robo de superserie cuelga AQUÍ (nodo distinto al de Terminar — bug FER-174).
     private var bodyChrome: some View {
         bodyPhaseContent
@@ -266,7 +263,7 @@ struct LiveStrengthSheet: View {
             // un solo `fullScreenCover`, un solo fondo compartido; ninguna cambia su header (no
             // traen uno propio) ni su lógica de cierre.
             .entrenarHojaFondo(tono: .neutro)
-            .instrumentoTheme(theme)
+            
             .safeAreaInset(edge: .top) { if session.saveError { saveErrorBanner } }
             // FER-969: mid-session routine write failure (insert / superset / progression) — toast only;
             // the FINAL session save failure is the persistent `saveErrorBanner` above (X-01), not this.
@@ -315,7 +312,7 @@ struct LiveStrengthSheet: View {
             showLibraryPicker = false
             Task { await addExercises(picks) }
         }
-        .instrumentoTheme(theme).environmentObject(model.repo).preferredColorScheme(.light)
+        .environmentObject(model.repo).preferredColorScheme(.light)
     }
 
     /// Progression / detail / change / rest·plates·RPE·note + the share fullScreen cover.
@@ -361,7 +358,6 @@ struct LiveStrengthSheet: View {
         if session.runs.indices.contains(target.id) {
             let run = session.runs[target.id]
             ProgressionSetupScreen(
-                theme: theme,
                 exercise: routineREs[run.id] ?? syntheticRE(from: run, position: target.id),
                 exerciseName: run.name,
                 currentWeightKg: run.sets.first?.weightKg,
@@ -399,13 +395,13 @@ struct LiveStrengthSheet: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
         }
-        .instrumentoTheme(theme).environmentObject(model.repo).preferredColorScheme(.light)
+        .environmentObject(model.repo).preferredColorScheme(.light)
     }
 
     @ViewBuilder
     private func bodyChangeSheet(_ target: ChangeTarget) -> some View {
         ChangeExerciseSheet(
-            theme: theme, run: target.run, repo: model.repo,
+            run: target.run, repo: model.repo,
             onUse: { ex in
                 changeExercise = nil
                 Task {
@@ -420,7 +416,7 @@ struct LiveStrengthSheet: View {
             },
             onClose: { changeExercise = nil }
         )
-        .instrumentoTheme(theme).preferredColorScheme(.light)
+        .preferredColorScheme(.light)
         .presentationBackground(LiquidColor.fondoAlto)
     }
 
@@ -436,7 +432,6 @@ struct LiveStrengthSheet: View {
     private func bodyShareCover(_ ref: ShareRef) -> some View {
         if let summary = session.summary {
             ReceiptPrinterScreen(
-                theme: theme,
                 summary: summary,
                 sessionId: ref.sessionId,
                 onClose: { shareReceipt = nil }
@@ -590,7 +585,6 @@ struct LiveStrengthSheet: View {
     /// cover — a sheet can only present from the frontmost layer).
     private func platesSheet(_ target: PlatesTarget) -> some View {
         PlatesScreen(
-            theme: theme,
             targetKg: target.weightKg,
             exerciseName: session.runs.indices.contains(target.ei) ? session.runs[target.ei].name : "",
             store: model.plates,
@@ -615,7 +609,7 @@ struct LiveStrengthSheet: View {
 
     /// The RPE sheet content, shared by the two presenters (main body + inside the focus cover).
     private func rpeSheet(_ target: RPETarget) -> some View {
-        RPESheet(theme: theme, target: target,
+        RPESheet(target: target,
                  weightLabel: "\(plateNumber(displayWeight(target.weightKg))) \(UnitFormatter.massUnit(units))",
                  onPick: { rpe in
                      session.setRPE(exercise: target.runId, set: target.id, rpe: rpe)
@@ -632,7 +626,7 @@ struct LiveStrengthSheet: View {
     @ViewBuilder private func noteSheet(_ target: NoteTarget) -> some View {
         if let run = session.runs.first(where: { $0.id == target.id }) {
             NoteSheet(
-                theme: theme, target: target,
+                target: target,
                 initialScope: .exercise,
                 exerciseText: run.note ?? "",
                 setText: run.sets.first(where: { $0.id == target.setId })?.note ?? "",
@@ -662,7 +656,7 @@ struct LiveStrengthSheet: View {
             let si = edit.setIndex
             let current: RestConfig = (si.flatMap { run.sets.indices.contains($0) ? run.sets[$0].rest : nil }) ?? run.restConfig
             RestEditorScreen(
-                theme: theme, exerciseName: run.name,
+                exerciseName: run.name,
                 setNumber: si.map { $0 + 1 },
                 current: current,
                 persistsToRoutine: session.routineId != nil,
@@ -833,7 +827,6 @@ struct LiveStrengthSheet: View {
     /// `sessionHeaderDisc`, en cápsula en vez de círculo.
     private func sessionHeaderPill(_ label: Text, accessibilityLabel: Text, action: @escaping () -> Void) -> some View {
         OutlineCapsule(
-            theme: theme,
             size: .aMedida(
                 insets: EdgeInsets(top: .zero, leading: LiquidSpace.s350,
                                    bottom: .zero, trailing: LiquidSpace.s350),
@@ -1405,7 +1398,7 @@ struct LiveStrengthSheet: View {
 
     @ViewBuilder
     private func summaryPhase(_ s: StrengthSummary) -> some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s450) {
             receiptHeader(s)
             if s.watchRecorded { receiptWatchOrigin }
             receiptHeadline(s)

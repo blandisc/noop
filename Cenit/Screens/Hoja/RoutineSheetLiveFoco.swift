@@ -233,7 +233,7 @@ struct HojaFoco: View {
                 }
             }
             if let bpm = vivo.sheet.model.watchBpm { zonaBadge(bpm).padding(.top, FocoMetrics.capcionTop) }
-            OutlineCapsule(theme: vivo.sheet.theme, size: .lg, estilo: .outline, action: {
+            OutlineCapsule(size: .lg, estilo: .outline, action: {
                 withAnimation(vivo.reduceMotion ? nil : LiquidMotion.suave) {
                     if running { vivo.registerFromFoco() } else { vivo.session.startSetTimer() }
                 }
@@ -275,7 +275,7 @@ struct HojaFoco: View {
             // Grok G5). `registerCurrentSet` ya detiene el cronómetro internamente al registrar
             // (`if timerStart != nil { stopSetTimer(...) }`), así que `registerFromFoco()` sola
             // captura lo corrido y cierra la serie, sin un `stopSetTimer()` aparte.
-            OutlineCapsule(theme: vivo.sheet.theme, size: .lg, estilo: .outline, action: {
+            OutlineCapsule(size: .lg, estilo: .outline, action: {
                 withAnimation(vivo.reduceMotion ? nil : LiquidMotion.suave) {
                     if running { vivo.registerFromFoco() } else { vivo.session.startSetTimer() }
                 }
@@ -381,8 +381,7 @@ struct HojaFoco: View {
 
     /// El toggle TIEMPO/FC — mismo lenguaje de pastilla de dos segmentos que `CompactTrendToggle`
     /// (CenitDesign), sin generalizar ese componente (está acoplado a `TrendMode`, un concepto
-    /// ajeno): misma receta (padding 3, cápsula, segmento activo en tinta), en `InstrumentoTheme`
-    /// (el ambiente de esta pantalla, igual que `RestBand`).
+    /// ajeno): misma receta (padding 3, cápsula, segmento activo en tinta), igual que `RestBand`.
     private var combustibleToggle: some View {
         HStack(spacing: LiquidSpace.s075) {
             combustibleSegmento(String(localized: "Time"), activo: forzarVistaTiempo) { forzarVistaTiempo = true }
@@ -399,6 +398,7 @@ struct HojaFoco: View {
             .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s125).frame(minHeight: EntrenarMetrics.secondaryButton)
             .background {
                 if activo {
+                    // Segmento activo del combustible: fill tinta, no OutlineCapsule (inactivo sin cromo).
                     Capsule()
                         .fill(LiquidColor.tinta900)
                 }
@@ -462,13 +462,22 @@ struct HojaFoco: View {
                         .font(LiquidType.caption).foregroundStyle(LiquidColor.verdeProfundo)
                         .padding(.top, FocoMetrics.capcionTop)
                 }
-                Button {
-                    withAnimation(vivo.reduceMotion ? nil : LiquidMotion.suave) { vivo.focusDoneRunId = nil }
-                    if isLast {
-                        withAnimation(vivo.reduceMotion ? nil : .snappy) { vivo.focusMode = false }
-                        vivo.requestFinish()
+                OutlineCapsule(
+                    size: .aMedida(
+                        insets: EdgeInsets(top: .zero, leading: LiquidSpace.s700,
+                                           bottom: .zero, trailing: LiquidSpace.s700),
+                        minHeight: EntrenarMetrics.primaryButton,
+                        touchInset: .zero),
+                    filled: true,
+                    fill: LiquidColor.verdePrimario,
+                    action: {
+                        withAnimation(vivo.reduceMotion ? nil : LiquidMotion.suave) { vivo.focusDoneRunId = nil }
+                        if isLast {
+                            withAnimation(vivo.reduceMotion ? nil : .snappy) { vivo.focusMode = false }
+                            vivo.requestFinish()
+                        }
                     }
-                } label: {
+                ) {
                     Group {
                         if let next = nextRun {
                             Text("Next") + Text(verbatim: ": \(next.name) ›")
@@ -476,12 +485,9 @@ struct HojaFoco: View {
                             Text("Finish") + Text(verbatim: " ›")
                         }
                     }
-                    .font(LiquidType.tituloGemela).foregroundStyle(LiquidColor.tintaSobreVerde)
-                    .padding(.horizontal, LiquidSpace.s700)
-                    .frame(height: EntrenarMetrics.primaryButton)
-                    .background(LiquidColor.verdePrimario, in: Capsule())
+                    .font(LiquidType.tituloGemela)
+                    .foregroundStyle(LiquidColor.tintaSobreVerde)
                 }
-                .buttonStyle(.plain)
                 .padding(.top, LiquidSpace.s700)
                 Spacer(minLength: 0)
             }
@@ -499,7 +505,7 @@ struct HojaFoco: View {
         let zone = max(1, min(5, Int((pct * 5).rounded(.up))))
         return Text("ZONE \(zone) · \(bpm)")
             .font(LiquidType.captionNegrita).foregroundStyle(LiquidColor.tinta500)
-            .outlineCapsule(.outline, size: .sm, theme: vivo.sheet.theme)
+            .outlineCapsule(.outline, size: .sm)
     }
 
     // MARK: - Formato

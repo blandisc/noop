@@ -94,7 +94,7 @@ public struct EntrenarFilaFuerza: View {
             .frame(width: Metrics.glyph, height: Metrics.glyph)
             .frame(width: Metrics.chip, height: Metrics.chip)
             .background(LiquidColor.tinta7,
-                        in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
+                        in: RoundedRectangle(cornerRadius: LiquidRadius.insetTarjeta, style: .continuous))
             .accessibilityHidden(true)
     }
 

@@ -160,7 +160,6 @@ enum RoutineSetEditing {
 // for HR, clock ember for time); the value reads in ink. Tapping pushes the shared `RestEditorScreen` (1e).
 
 struct RestChip: View {
-    @Environment(\.instrumentoTheme) private var theme
     let cfg: RestConfig
     let action: () -> Void
 
@@ -200,7 +199,6 @@ struct RestChip: View {
 // `SessionKeypad`, porque en pleno esfuerzo hacen falta ± por discos y no perder media pantalla bajo el
 // teclado. Compartir el aspecto no obliga a compartir la entrada. (2026-07-19)
 struct SetCellChrome: ViewModifier {
-    @Environment(\.instrumentoTheme) private var theme
     let width: CGFloat
     let focused: Bool
 
@@ -234,7 +232,6 @@ extension View {
 // secundaria; la sesión usaba cian HRV con overline legacy. La unión correcta es kicker Liquid
 // en cian: el cian es la señal de superserie en todo el flujo (badge A1/A2, riel, leyendas).
 struct SupersetTag: View {
-    @Environment(\.instrumentoTheme) private var theme
 
     var body: some View {
         Text("Superset").liquidKicker().foregroundStyle(LiquidColor.cian)
@@ -248,7 +245,6 @@ struct SupersetTag: View {
 // prescripción, la sesión borra de la captura y además apaga el calentamiento persistente si esa era la
 // última «C». Se comparte la vista; el acto lo pone cada pantalla. (2026-07-19)
 struct DeleteSetPill: View {
-    @Environment(\.instrumentoTheme) private var theme
     let action: () -> Void
 
     var body: some View {
@@ -260,6 +256,7 @@ struct DeleteSetPill: View {
             .foregroundStyle(LiquidColor.negativo)
             .padding(.horizontal, LiquidSpace.s225).padding(.vertical, LiquidSpace.s125)
             .liquidGlass(.pastillaSolida)
+            // Destructive: canto negativo; OutlineCapsule no tiene estilo de peligro.
             .overlay(Capsule()
                 .strokeBorder(LiquidColor.negativo.opacity(CenitOpacity.dim), lineWidth: 1))
             .contentShape(Capsule())

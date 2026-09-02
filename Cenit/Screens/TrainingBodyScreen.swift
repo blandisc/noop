@@ -44,9 +44,8 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 // WHOLE fused screen behind the map's narrower window alone would have hidden that data, which is
 // exactly the loss this épico exists to catch.
 //
-// Presented as a light `.sheet` from Cuerpo (theme passed explicitly — it doesn't cross the `.sheet`
-// boundary, FER-162); the per-muscle detail rides a nested `.sheet(item:)`, NO nested NavigationStack
-// (FER-171).
+// Presented as a light `.sheet` from Cuerpo (FER-162); the per-muscle detail rides a nested
+// `.sheet(item:)`, NO nested NavigationStack (FER-171).
 
 /// Ruta de «Volumen por músculo», empujada desde el stack de Entrenar y desde «Mis entrenamientos»
 /// (`WorkoutHistoryScreen.swift`). Antes de FER-91 llevaba solo al mapa (con su enlace propio a las
@@ -55,7 +54,6 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 struct MuscleVolumeRoute: Hashable {}
 
 struct TrainingBodyScreen: View {
-    let theme: InstrumentoTheme
     @EnvironmentObject var repo: Repository
     /// El MISMO puente de Salud que la landing (`EntrenarView.healthConnected`): sin él el hilo no
     /// puede distinguir «sin lectura» de «sin conectar Salud» (FER-136 · V7).
@@ -193,7 +191,6 @@ struct TrainingBodyScreen: View {
         }
         .sheet(item: $selected) { sel in
             MuscleDetailView(
-                theme: theme,
                 muscle: sel.muscle,
                 load: loadByMuscle[sel.muscle],
                 weeklyTrend: weeklyTrend(for: sel.muscle),
@@ -278,7 +275,7 @@ struct TrainingBodyScreen: View {
                        insets: EdgeInsets(top: LiquidSpace.s400, leading: LiquidSpace.s250, bottom: LiquidSpace.s300, trailing: LiquidSpace.s250)) {
             VStack(spacing: .zero) {
                 ZStack(alignment: .top) {
-                    BodyFiguresView(theme: theme, loadByMuscle: loadByMuscle,
+                    BodyFiguresView(loadByMuscle: loadByMuscle,
                                     maxLoad: loads.first?.load ?? 0,
                                     highlight: focused?.muscle) { tapMuscle($0) }
                         .padding(.top, LiquidSpace.seccionCanto)
@@ -286,7 +283,7 @@ struct TrainingBodyScreen: View {
                 }
                 if let p = peeked {
                     peekCard(p).padding(.top, LiquidSpace.s100)
-                    resetRow.padding(.top, 7)  // token-exempt(optico): aire entre peekCard y resetRow, entre space1 (4) y space2 (8) — afinado a ojo, sin paso exacto
+                    resetRow.padding(.top, LiquidSpace.s175)
                 } else {
                     legend.padding(.top, LiquidSpace.s150)
                     Text("Tap a muscle to see its load")
@@ -322,8 +319,8 @@ struct TrainingBodyScreen: View {
     }
 
     private func floatingLabel(_ m: MuscleFatigueMap.MuscleLoad) -> some View {
-        HStack(spacing: 7) {
-            Circle().fill(theme.muscleStateColor(m.relative))
+        HStack(spacing: LiquidSpace.s175) {
+            Circle().fill(muscleStateColor(m.relative))
                 .frame(width: 7, height: 7)
             Text(MuscleAtlas.name(m.muscle)).font(LiquidType.filaConteo).fontWeight(.semibold).foregroundStyle(LiquidColor.papelTarjeta)
             Text(stateSuffix(m.state)).font(LiquidType.filaConteo).foregroundStyle(LiquidColor.papelTarjeta.opacity(CenitOpacity.muted))
@@ -386,7 +383,7 @@ struct TrainingBodyScreen: View {
     /// «Mark all recovered» — sets the recovery-reset point so the map reads all-fresh, without deleting
     /// any workout history. (FER-525)
     private var markRecoveredButton: some View {
-        OutlineCapsule(theme: theme, size: .lg, estilo: .outline, action: { showResetConfirm = true }) {
+        OutlineCapsule(size: .lg, estilo: .outline, action: { showResetConfirm = true }) {
             HStack(spacing: LiquidSpace.s150) {
                 Image(systemName: "arrow.counterclockwise").font(LiquidType.infoGlifoCompacto.weight(.semibold))
                 Text("Mark all recovered").font(LiquidType.filaConteo)
@@ -412,7 +409,7 @@ struct TrainingBodyScreen: View {
 
     private var legend: some View {
         VStack(spacing: LiquidSpace.s150) {
-            LinearGradient(colors: theme.muscleLoadRamp, startPoint: .leading, endPoint: .trailing)
+            LinearGradient(colors: (0..<5).map { LiquidRampas.muscleLoad(Double($0) / 4) }, startPoint: .leading, endPoint: .trailing)
                 .frame(height: 8)
                 .clipShape(RoundedRectangle(cornerRadius: 4))  // token-exempt(dato): geometría de dato
             HStack {
@@ -675,7 +672,7 @@ struct TrainingBodyScreen: View {
     }
 
     private var volumeSpanPicker: some View {
-        SegmentedPillControl(Span.allCases, selection: $span, theme: theme) { $0.label }
+        SegmentedPillControl(Span.allCases, selection: $span) { $0.label }
     }
 
     private var volumeRows: some View {
@@ -705,7 +702,7 @@ struct TrainingBodyScreen: View {
                     // the datum — each muscle wears its movement-family hue (handoff «Mis
                     // entrenamientos»: bars tell apart at a glance); below-band keeps the warning.
                     RoundedRectangle(cornerRadius: 3)  // token-exempt(dato): geometría de dato
-                        .fill(below ? LiquidColor.atencionTexto : theme.movementFamilyTint(primaryMuscles: [v.muscle]))
+                        .fill(below ? LiquidColor.atencionTexto : LiquidRampas.movementFamilyTint([v.muscle]))
                         .frame(width: max(4, w * min(v.setsPerWeek, railTop) / railTop), height: 6)
                 }
                 .frame(height: 14, alignment: .leading)
@@ -781,7 +778,7 @@ struct TrainingBodyScreen: View {
     }
 
     private var volumeInsightLine: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 7) {
+        HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s175) {
             Circle().fill(belowBand.isEmpty ? LiquidColor.positivo : LiquidColor.atencionTexto)
                 .frame(width: 8, height: 8)
                 .alignmentGuide(.firstTextBaseline) { d in d[.bottom] - 1 }
@@ -834,7 +831,6 @@ struct MuscleHit: Hashable {
 // MARK: - Body figures (anatomical)
 
 private struct BodyFiguresView: View {
-    let theme: InstrumentoTheme
     let loadByMuscle: [String: MuscleFatigueMap.MuscleLoad]
     let maxLoad: Double
     /// The most-loaded muscle — outlined to tie the figure to the floating label.
@@ -852,7 +848,7 @@ private struct BodyFiguresView: View {
         VStack(spacing: LiquidSpace.s125) {
             ZStack {
                 // The silhouette is stroke-only (fill:none) so the body reads as paper and color
-                // lives only in the tinted muscles — the «Instrumento» rule (owner-approved, FER-781).
+                // lives only in the tinted muscles — color-in-datum rule (owner-approved, FER-781).
                 AnatomyBaseShape()
                     .stroke(LiquidColor.vidrioBorde, lineWidth: 1.2)
                 ForEach(MuscleAnatomy.paths(for: side)) { item in
@@ -876,8 +872,8 @@ private struct BodyFiguresView: View {
     }
 
     private func color(for muscle: String) -> Color {
-        guard let m = loadByMuscle[muscle], maxLoad > 0 else { return theme.muscleStateColor(0) }
-        return theme.muscleStateColor(m.relative)
+        guard let m = loadByMuscle[muscle], maxLoad > 0 else { return muscleStateColor(0) }
+        return muscleStateColor(m.relative)
     }
 
     private func stateText(_ muscle: String) -> LocalizedStringKey {
@@ -893,7 +889,6 @@ private struct BodyFiguresView: View {
 // MARK: - Muscle detail
 
 private struct MuscleDetailView: View {
-    let theme: InstrumentoTheme
     let muscle: String
     let load: MuscleFatigueMap.MuscleLoad?
     let weeklyTrend: [Double]
@@ -947,13 +942,13 @@ private struct MuscleDetailView: View {
         .presentationDragIndicator(.visible)
     }
 
-    /// The state hue. «Fresh» uses the map's sage (the head of `muscleLoadRamp`) so the fresh→loaded
+    /// The state hue. «Fresh» uses the map's sage (head of the muscle-load ramp) so the fresh→loaded
     /// color chain is a SINGLE scale across the map and the detail (FER-350 redesign · #6).
     private var stateColor: Color {
         switch state {
-        case .fresh: return theme.muscleLoadColor(0)
+        case .fresh: return LiquidRampas.muscleLoad(0)
         case .moderate: return LiquidColor.atencionTexto
-        case .loaded: return theme.muscleLoadColor(1)
+        case .loaded: return LiquidRampas.muscleLoad(1)
         }
     }
 
@@ -1046,7 +1041,7 @@ private struct MuscleDetailView: View {
                     Text(hit.primary ? "primary" : "secondary")
                         .font(LiquidType.filaConteo).foregroundStyle(LiquidColor.tinta700)
                 }
-                .padding(.vertical, 7)  // token-exempt(optico): pad vertical de la fila ejercicio-etiqueta, entre space2 (8) y rowVPad (10) — sin paso exacto
+                .padding(.vertical, LiquidSpace.s175)
                 .overlay(alignment: .bottom) {
                     if hit.exerciseId != hits.prefix(6).last?.exerciseId {
                         Rectangle().fill(LiquidColor.tinta10).frame(height: 0.5)
@@ -1102,24 +1097,22 @@ private struct TrendLine: View {
 
 // MARK: - Fatigue-state colour
 
-private extension InstrumentoTheme {
-    /// Maps a muscle's relative load (0…1) onto `muscleLoadRamp` by fatigue STATE, so a fresh muscle reads
-    /// green, a moderate one amber and a loaded one red. The raw ramp puts its green only near 0, so a muscle
-    /// classified «fresh» (relative < `freshBelow`) painted at its raw fraction came out amber — contradicting
-    /// the recommendation card. Each state band maps to its own slice of the ramp, keeping a gentle gradient
-    /// within the band so the ranking still reads. (FER-516)
-    func muscleStateColor(_ relative: Double) -> Color {
-        let fresh = MuscleFatigueMap.freshBelow
-        let loaded = MuscleFatigueMap.loadedAbove
-        let position: Double
-        if relative < fresh {
-            position = relative / fresh * 0.06
-        } else if relative < loaded {
-            position = 0.45 + (relative - fresh) / (loaded - fresh) * 0.10
-        } else {
-            position = 0.80 + (relative - loaded) / (1 - loaded) * 0.20
-        }
-        return muscleLoadColor(position)
+/// Maps a muscle's relative load (0…1) onto the muscle-load ramp by fatigue STATE, so a fresh muscle reads
+/// green, a moderate one amber and a loaded one red. The raw ramp puts its green only near 0, so a muscle
+/// classified «fresh» (relative < `freshBelow`) painted at its raw fraction came out amber — contradicting
+/// the recommendation card. Each state band maps to its own slice of the ramp, keeping a gentle gradient
+/// within the band so the ranking still reads. (FER-516 · FER-317 via `LiquidRampas`)
+private func muscleStateColor(_ relative: Double) -> Color {
+    let fresh = MuscleFatigueMap.freshBelow
+    let loaded = MuscleFatigueMap.loadedAbove
+    let position: Double
+    if relative < fresh {
+        position = relative / fresh * 0.06
+    } else if relative < loaded {
+        position = 0.45 + (relative - fresh) / (loaded - fresh) * 0.10
+    } else {
+        position = 0.80 + (relative - loaded) / (1 - loaded) * 0.20
     }
+    return LiquidRampas.muscleLoad(position)
 }
 #endif

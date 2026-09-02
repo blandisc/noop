@@ -132,7 +132,7 @@ struct RootTabView: View {
             // Tendencias), empujado — FER-91 · E10 fusionó el mapa y el volumen en una sola
             // pantalla, así que las dos rutas viejas convergen aquí.
             .navigationDestination(for: MuscleVolumeRoute.self) { _ in
-                trainChrome(TrainingBodyScreen(theme: .base))
+                trainChrome(TrainingBodyScreen())
             }
             .navigationDestination(for: SavedTicketsRoute.self) { _ in
                 trainChrome(SavedTicketsScreen())
@@ -144,7 +144,7 @@ struct RootTabView: View {
             .navigationDestination(for: WorkoutRow.self) { row in
                 // `onChange` bumpea el coordinador para que la lista unificada se recargue al volver de
                 // una edición/borrado (paridad con lo que hacía `WorkoutsView.reload`).
-                trainChrome(WorkoutDetailScreen(theme: .base, row: row,
+                trainChrome(WorkoutDetailScreen(row: row,
                                                 onChange: { workoutHistory.bumpReload() }))
             }
         }
@@ -218,11 +218,8 @@ struct RootTabView: View {
         // CONTENT level (`barReservation`), where the inset does propagate to scroll
         // views. The bar reports its height via `BarHeightKey`.
         //
-        // `.instrumentoTheme(.base)` drives `\.instrumentoTheme` so that — under Hoy —
-        // the bar reads the warm day paper exactly like TodayView; under the dark screens
-        // it ignores the theme and uses `StrandPalette`. (Color scheme itself is owned
-        // by ContentView via `isTodayActive` — FER-160; the bar uses explicit colors
-        // either way. FER-398 retired the by-the-hour tint.)
+        // Color scheme itself is owned by ContentView via `isTodayActive` (FER-160); the
+        // Liquid dock paints its own glass. FER-398 retired the by-the-hour tint.
         .overlay(alignment: .bottom) {
             // /inject 2026-07-22 (decisión del dueño): el dock global pasa al lente Liquid
             // Glass — vidrio flotante con los 4 glifos del sistema y el punto verde activo.
@@ -542,9 +539,6 @@ private struct ActiveSessionPillHost: View {
     /// Decisión Fer (2026-07-16): el ✕ del pill DESCARTA — destructivo, así que siempre confirma.
     /// El ConfirmCard vive en el RootTabView (pantalla completa); aquí solo se dispara.
     @Binding var confirmDiscard: Bool
-    /// SessionPill still takes the Instrumento theme; read it from the environment so this
-    /// file never spells `InstrumentoTheme` (no-legacy-api, FER-282).
-    @Environment(\.instrumentoTheme) private var theme
     var body: some View {
         if let session = model.strengthSession {
             TimelineView(.periodic(from: .now, by: 1)) { context in
@@ -565,7 +559,7 @@ private struct ActiveSessionPillHost: View {
                     detail: detail,
                     paused: session.paused,
                     hue: LiquidColor.indigo,
-                    theme: theme,
+                    theme: .base,
                     accessibilityLabel: pillLabel(session.routineName, elapsed, model.watchBpm),
                     accessibilityHint: Text("Returns to the session"),
                     action: { model.resumeStrengthSession() },

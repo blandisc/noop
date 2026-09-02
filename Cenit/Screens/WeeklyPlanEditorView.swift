@@ -23,7 +23,6 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 struct WeeklyPlanEditorView: View {
     @EnvironmentObject var repo: Repository
-    @Environment(\.instrumentoTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Drives the volume bars' one-shot grow-from-base entry (handoff `recGrow`).
     @State private var volumeBarsGrown = false
@@ -130,11 +129,11 @@ struct WeeklyPlanEditorView: View {
         }
         .sheet(isPresented: $showTemplates) {
             StarterTemplatesSheet { await load() }
-                .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+                .environmentObject(repo).preferredColorScheme(.light)
         }
         .sheet(isPresented: $showImport) {
             WorkoutImportView { await load() }
-                .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+                .environmentObject(repo).preferredColorScheme(.light)
         }
         .liquidInput(
             isPresented: Binding(get: { showNewFolder },
@@ -263,7 +262,7 @@ struct WeeklyPlanEditorView: View {
             HStack(spacing: LiquidSpace.s300) {
                 dayLabelColumn(wd)
                 VStack(alignment: .leading, spacing: LiquidSpace.s125) {
-                    OutlineCapsule(theme: theme, size: .sm, action: { openDay(wd) }) {
+                    OutlineCapsule(size: .sm, action: { openDay(wd) }) {
                         HStack(spacing: LiquidSpace.s150) {
                             EntrenarFamilyDot(tint)
                             Text(r.name)
@@ -362,7 +361,7 @@ struct WeeklyPlanEditorView: View {
         HStack(spacing: LiquidSpace.s075) {
             ForEach(Array(vol.enumerated()), id: \.offset) { _, e in
                 Capsule()
-                    .fill(e.key.tint(theme))
+                    .fill(e.key.tint())
                     .frame(width: max(12, CGFloat(e.value) / CGFloat(maxV) * 34), height: 4)
             }
         }
@@ -386,7 +385,7 @@ struct WeeklyPlanEditorView: View {
                     let v = vol[g] ?? 0
                     VStack(spacing: LiquidSpace.s125) {
                         RoundedRectangle(cornerRadius: 4, style: .continuous)  // token-exempt(dato): geometría de dato
-                            .fill(v == 0 ? LiquidColor.tinta7 : g.tint(theme))
+                            .fill(v == 0 ? LiquidColor.tinta7 : g.tint())
                             .frame(height: max(8, CGFloat(v) / CGFloat(max(1, maxV)) * 34))
                             .frame(maxWidth: .infinity)
                             // Handoff `recGrow`: each bar grows from its base on entry, staggered
@@ -420,7 +419,7 @@ struct WeeklyPlanEditorView: View {
     /// routine's own exercises — never the name's `hashValue` — so a routine keeps the SAME hue here, in the
     /// hub and in the editor. push → ember, pull → teal, leg/full → indigo; unclassifiable → default ember.
     private func routineTint(_ r: Routine) -> Color {
-        return routineRegion[r.id].tint(theme)
+        return routineRegion[r.id].tint()
     }
 
     private var routinesSection: some View {
@@ -752,7 +751,7 @@ struct WeeklyPlanEditorView: View {
         // FER-280·2c: receta → `UndoToast`; transition + auto-descarte quedan en el caller.
         UndoToast(message: String(localized: "Routine deleted"),
                   cta: String(localized: "Undo"),
-                  theme: theme,
+                  theme: .base,
                   action: { undoDelete(d) })
             .transition(LiquidMotion.risingFadeTransition)
             .task(id: d.id) {
@@ -868,7 +867,7 @@ struct WeeklyPlanEditorView: View {
         // FER-280·2c: gemela de undoBanner → `UndoToast`.
         UndoToast(message: String(localized: "Folder deleted"),
                   cta: String(localized: "Undo"),
-                  theme: theme,
+                  theme: .base,
                   action: { undoDeleteFolder(d) })
             .transition(LiquidMotion.risingFadeTransition)
             .task(id: d.id) {
@@ -1123,7 +1122,7 @@ enum MuscleGroup: CaseIterable {
         }
     }
 
-    func tint(_ theme: InstrumentoTheme) -> Color {
+    func tint() -> Color {
         switch self {
         case .push: return LiquidColor.ambar
         case .pull: return LiquidColor.cian

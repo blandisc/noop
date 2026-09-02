@@ -127,7 +127,7 @@ struct HojaSesionViva: View {
             Group {
                 if session.summary != nil {
                     // El acta de siempre — cero cambios (FER-167 §3: «el cierre de sesión NO cambia»).
-                    LiveStrengthSheet(session: session, theme: sheet.theme)
+                    LiveStrengthSheet(session: session)
                 } else if session.routineId == nil && session.runs.isEmpty {
                     // D-r2.1 (ronda 3, regresión bloqueante): «Sesión rápida» vacía (`startQuickStrength`)
                     // — el buscador + sugerencias de frescura siguen siendo `LiveStrengthSheet.emptyAdHocSession`
@@ -136,7 +136,7 @@ struct HojaSesionViva: View {
                     // acta: cero líneas de ese estado tocadas. Al agregar el primer ejercicio
                     // `session.runs` deja de estar vacío (mismo `session`, por referencia) y este
                     // `body` vuelve a evaluar hacia `liveLoop` solo.
-                    LiveStrengthSheet(session: session, theme: sheet.theme)
+                    LiveStrengthSheet(session: session)
                 } else if isZombie, !zombieAcknowledged {
                     zombieGate   // B15b
                 } else {
@@ -154,7 +154,7 @@ struct HojaSesionViva: View {
             if focusMode { HojaFoco(vivo: self) }
         }
         .entrenarHojaFondo(tono: .indigo)
-        .instrumentoTheme(sheet.theme)
+        
         .preferredColorScheme(.light)
         // B17: el gesto de borde minimiza — NUNCA termina la sesión (mismo modificador que
         // `LiveStrengthSheet` ya usaba en el mismo cover).
@@ -196,7 +196,7 @@ struct HojaSesionViva: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
             }
-            .instrumentoTheme(sheet.theme).environmentObject(sheet.repo).preferredColorScheme(.light)
+            .environmentObject(sheet.repo).preferredColorScheme(.light)
         }
         // B8 (FER-169): «＋ Agregar ejercicio» — mismo picker que la Hoja fría/`LiveStrengthSheet`
         // (`ExerciseLibraryScreen`), reusado tal cual; insertar+persistir es 1:1 con
@@ -207,11 +207,11 @@ struct HojaSesionViva: View {
                 addExerciseAfterRunId = nil
                 Task { await addExercisesFromLibrary(picks, afterRunId: afterRunId) }
             }
-            .instrumentoTheme(sheet.theme).environmentObject(sheet.repo).preferredColorScheme(.light)
+            .environmentObject(sheet.repo).preferredColorScheme(.light)
         }
         .sheet(item: $changeExercise) { target in
             ChangeExerciseSheet(
-                theme: sheet.theme, run: target.run, repo: sheet.model.repo,
+                run: target.run, repo: sheet.model.repo,
                 onUse: { ex in
                     changeExercise = nil
                     Task {
@@ -225,11 +225,11 @@ struct HojaSesionViva: View {
                 },
                 onClose: { changeExercise = nil }
             )
-            .instrumentoTheme(sheet.theme).preferredColorScheme(.light).presentationBackground(LiquidColor.fondoAlto)
+            .preferredColorScheme(.light).presentationBackground(LiquidColor.fondoAlto)
         }
         .sheet(item: $platesTarget) { target in
             PlatesScreen(
-                theme: sheet.theme, targetKg: target.weightKg,
+                targetKg: target.weightKg,
                 exerciseName: session.runs.indices.contains(target.ei) ? session.runs[target.ei].name : "",
                 store: sheet.model.plates,
                 onInsertWarmup: { sets in
@@ -244,7 +244,7 @@ struct HojaSesionViva: View {
             .presentationDetents([.large]).presentationDragIndicator(.hidden).presentationBackground(LiquidColor.fondoAlto)
         }
         .sheet(item: $rpeTarget) { target in
-            RPESheet(theme: sheet.theme, target: target,
+            RPESheet(target: target,
                      weightLabel: "\(plateNumber(displayWeight(target.weightKg))) \(weightUnit())",
                      onPick: { rpe in session.setRPE(exercise: target.runId, set: target.id, rpe: rpe); rpeTarget = nil },
                      onClose: { rpeTarget = nil })
@@ -254,7 +254,7 @@ struct HojaSesionViva: View {
         .sheet(item: $noteTarget) { target in
             if let run = session.runs.first(where: { $0.id == target.id }) {
                 NoteSheet(
-                    theme: sheet.theme, target: target, initialScope: .exercise,
+                    target: target, initialScope: .exercise,
                     exerciseText: run.note ?? "",
                     setText: run.sets.first(where: { $0.id == target.setId })?.note ?? "",
                     history: noteHistory,
@@ -279,7 +279,7 @@ struct HojaSesionViva: View {
                 let si = edit.setIndex
                 let current: RestConfig = (si.flatMap { run.sets.indices.contains($0) ? run.sets[$0].rest : nil }) ?? run.restConfig
                 RestEditorScreen(
-                    theme: sheet.theme, exerciseName: run.name, setNumber: si.map { $0 + 1 }, current: current,
+                    exerciseName: run.name, setNumber: si.map { $0 + 1 }, current: current,
                     persistsToRoutine: session.routineId != nil,
                     restingHR: sheet.repo.days.compactMap(\.restingHr).last.map(Double.init),
                     maxHR: Double(sheet.model.profile.hrMax), defaultApplyToAll: si == nil, closeAsDismiss: true,
@@ -297,7 +297,7 @@ struct HojaSesionViva: View {
             if session.runs.indices.contains(target.id) {
                 let run = session.runs[target.id]
                 ProgressionSetupScreen(
-                    theme: sheet.theme, exercise: routineREs[run.id] ?? syntheticRE(from: run, position: target.id),
+                    exercise: routineREs[run.id] ?? syntheticRE(from: run, position: target.id),
                     exerciseName: run.name, currentWeightKg: run.sets.first?.weightKg,
                     derivedIncrementKg: PlateMath.minimumIncrement(for: .from(equipment: ExerciseCatalog.byID(run.exerciseId)?.equipment), inventory: sheet.model.plates.inventory),
                     onBack: { progressionEdit = nil },
@@ -474,17 +474,23 @@ struct HojaSesionViva: View {
                                 insets: EdgeInsets(top: LiquidSpace.s250, leading: LiquidSpace.s400,
                                                    bottom: LiquidSpace.s250, trailing: LiquidSpace.s400),
                                 minHeight: nil,
-                                touchInset: .zero),
-                            theme: sheet.theme)
+                                touchInset: .zero))
                 }
                 .buttonStyle(.plain)
-                Button { zombieAcknowledged = true } label: {
+                OutlineCapsule(
+                    size: .aMedida(
+                        insets: EdgeInsets(top: LiquidSpace.s250, leading: LiquidSpace.s400,
+                                           bottom: LiquidSpace.s250, trailing: LiquidSpace.s400),
+                        minHeight: nil,
+                        touchInset: .zero),
+                    filled: true,
+                    fill: LiquidColor.verdePrimario,
+                    action: { zombieAcknowledged = true }
+                ) {
                     (Text("Keep training") + Text(verbatim: " ›"))
-                        .font(LiquidType.cuerpoBanner.weight(.bold)).foregroundStyle(LiquidColor.papelTarjeta)
-                        .padding(.horizontal, LiquidSpace.s400).padding(.vertical, LiquidSpace.s250)
-                        .background(LiquidColor.verdePrimario, in: Capsule())
+                        .font(LiquidType.cuerpoBanner.weight(.bold))
+                        .foregroundStyle(LiquidColor.papelTarjeta)
                 }
-                .buttonStyle(.plain)
             }
             Spacer()
         }

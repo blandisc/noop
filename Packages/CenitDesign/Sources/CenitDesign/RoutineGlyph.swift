@@ -80,7 +80,7 @@ private struct RoutineGlyphPreview: View {
         RoutineRegionGlyph(kind, tint: tint)
             .frame(width: 22, height: 22)
             .frame(width: 38, height: 38)
-            .background(theme.patternBlock, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
+            .background(theme.patternBlock, in: RoundedRectangle(cornerRadius: LiquidRadius.insetTarjeta, style: .continuous))
     }
 }
 

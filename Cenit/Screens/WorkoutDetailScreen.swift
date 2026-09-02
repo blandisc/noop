@@ -20,8 +20,6 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 // fuente, y reusa el `Repository` tal cual — no toca la lógica de merge/persistencia.
 
 struct WorkoutDetailScreen: View {
-    /// Theme still passed for `BackButton` / `ManualWorkoutSheet` / `hrZoneRamp` (FER-162).
-    var theme: InstrumentoTheme = .base
     /// The session to show. A value type — after a mutation we reload the list and pop, rather than try
     /// to keep a stale copy live.
     let row: WorkoutRow
@@ -110,14 +108,14 @@ struct WorkoutDetailScreen: View {
         .keepsSwipeBack()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                BackButton(role: .back, theme: theme) { dismiss() }
+                BackButton(role: .back, theme: .base) { dismiss() }
             }
             ToolbarItem(placement: .primaryAction) { actionMenu }
         }
         .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .sheet(item: $editTarget) { target in
-            ManualWorkoutSheet(editing: target.row, theme: theme) { saved, replacing in
+            ManualWorkoutSheet(editing: target.row) { saved, replacing in
                 Task {
                     do {
                         try await repo.saveManualWorkout(saved, replacing: replacing)
@@ -213,11 +211,11 @@ struct WorkoutDetailScreen: View {
 
     // MARK: - Zonas de FC (solo si la sesión las trae)
 
-    /// Zonas HR vía la paleta compartida `theme.hrZoneRamp`. 1 de 3 superficies de zonas HR distintas (intensidad/%-tiempo/minutos) — NO se unifican, solo comparten la paleta (FER-908).
+    /// Zonas HR vía `LiquidRampas.hrZone`. 1 de 3 superficies de zonas HR distintas (intensidad/%-tiempo/minutos) — NO se unifican, solo comparten la paleta (FER-908).
     private func zonesBlock(_ percents: [Double]) -> some View {
         // Normalize the bar to the recorded zone time so it fills the width (WHOOP omits sub-Z1 time, so
         // the raw percents can sum to < 100); the % labels below show the raw share. Same shape as the
-        // sleep-stage bar / the old aggregate zones bar, but with the warm `hrZoneRamp`.
+        // sleep-stage bar / the old aggregate zones bar, but with the shared HR-zone ramp.
         let total = max(percents.reduce(0, +), 0.001)
         return VStack(alignment: .leading, spacing: LiquidSpace.s300) {
             Text("Heart-rate zones").liquidLabel().foregroundStyle(LiquidColor.tinta500)
@@ -225,7 +223,7 @@ struct WorkoutDetailScreen: View {
                 HStack(spacing: LiquidSpace.s050) {
                     ForEach(0..<5, id: \.self) { i in
                         Rectangle()
-                            .fill(theme.hrZoneRamp[i])
+                            .fill(LiquidRampas.hrZone(i))
                             .frame(width: max(0, CGFloat(percents[i] / total) * geo.size.width))
                     }
                 }

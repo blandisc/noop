@@ -45,7 +45,6 @@ struct SetActionPills: View {
     var body: some View {
         HStack(spacing: LiquidSpace.s200) {
             OutlineCapsule(
-                theme: .base,
                 size: .lg,
                 estilo: .outline,
                 filled: true,
@@ -65,7 +64,6 @@ struct SetActionPills: View {
 
             if showWarmup {
                 OutlineCapsule(
-                    theme: .base,
                     size: .lg,
                     estilo: .vidrio,
                     action: addWarmup

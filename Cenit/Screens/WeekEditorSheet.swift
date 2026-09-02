@@ -17,8 +17,6 @@ import StrandTraining
 struct WeekEditorSheet: View {
     @EnvironmentObject private var repo: Repository
     @Environment(\.dismiss) private var dismiss
-    /// El tema vivo, pasado explícito: no cruza el límite de `.sheet` (FER-162).
-    let theme: InstrumentoTheme
 
     /// weekday → routineId (Calendar convention, 1 = Sun … 7 = Sat). Mutado EN VIVO al rotar un día, así
     /// que la landing detrás de la hoja nunca queda desfasada.
@@ -68,6 +66,7 @@ struct WeekEditorSheet: View {
                 Text("Days already trained can't be edited")
                     .font(LiquidType.caption)
                     .foregroundStyle(LiquidColor.papelTarjeta)
+                    // Toast no-botón: OutlineCapsule modifier no expone filled.
                     .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s200)
                     .background(LiquidColor.tinta900, in: Capsule())
                     .padding(.bottom, LiquidSpace.s700)
@@ -79,7 +78,6 @@ struct WeekEditorSheet: View {
             }
         }
         .animation(LiquidMotion.fundido, value: lockedToast)
-        .instrumentoTheme(theme)
         .preferredColorScheme(.light)
     }
 

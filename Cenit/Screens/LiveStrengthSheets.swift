@@ -18,7 +18,6 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 // el RPE es SIEMPRE opcional — no hay ningún estado que lo exija para marcar la serie.
 
 struct RPESheet: View {
-    let theme: InstrumentoTheme
     let target: LiveStrengthSheet.RPETarget
     /// Peso YA formateado en la unidad del usuario («82,5 kg» / «180 lb») — la hoja no conoce unidades (FER-952).
     let weightLabel: String
@@ -31,9 +30,9 @@ struct RPESheet: View {
 
     @State private var selected: Double
 
-    init(theme: InstrumentoTheme, target: LiveStrengthSheet.RPETarget, weightLabel: String,
+    init(target: LiveStrengthSheet.RPETarget, weightLabel: String,
          onPick: @escaping (Double?) -> Void, onClose: @escaping () -> Void) {
-        self.theme = theme; self.target = target; self.weightLabel = weightLabel
+        self.target = target; self.weightLabel = weightLabel
         self.onPick = onPick; self.onClose = onClose
         // r21 (auditoría UX #8b): un RPE legado fuera de la escala visible (7,5/8,5 del modelo
         // viejo) se ancla al escalón más cercano — antes la hoja abría sin píldora seleccionada.
@@ -152,7 +151,6 @@ struct NoteSheet: View {
     /// Where a note is saved: the whole exercise (default) or just the active set (FER-932 §4).
     enum Scope { case exercise, set }
 
-    let theme: InstrumentoTheme
     let target: LiveStrengthSheet.NoteTarget
     let initialScope: Scope
     let exerciseText: String
@@ -165,10 +163,10 @@ struct NoteSheet: View {
     @State private var scope: Scope
     @State private var text: String
 
-    init(theme: InstrumentoTheme, target: LiveStrengthSheet.NoteTarget, initialScope: Scope,
+    init(target: LiveStrengthSheet.NoteTarget, initialScope: Scope,
          exerciseText: String, setText: String, history: [ExerciseNote]?,
          onSave: @escaping (Scope, String) -> Void, onClose: @escaping () -> Void) {
-        self.theme = theme; self.target = target; self.initialScope = initialScope
+        self.target = target; self.initialScope = initialScope
         self.exerciseText = exerciseText; self.setText = setText; self.history = history
         self.onSave = onSave; self.onClose = onClose
         _scope = State(initialValue: initialScope)
@@ -178,7 +176,7 @@ struct NoteSheet: View {
     /// Inject: los hooks van en la vista NO privada más externa del archivo (ver `EntrenarView`).
     @ObserveInjection private var inject
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s450) {
             header
             // r9 (owner): las notas son POR EJERCICIO — el alcance por-serie se retira del UI (el
             // modelo lo conserva por si vuelve).
@@ -285,7 +283,6 @@ enum ChangeExerciseRanking {
 }
 
 struct ChangeExerciseSheet: View {
-    let theme: InstrumentoTheme
     let run: StrengthSessionModel.ExerciseRun
     let repo: Repository
     let onUse: (Exercise) -> Void
@@ -366,7 +363,6 @@ struct ChangeExerciseSheet: View {
             // esta hoja sigue siendo el único gesto que de verdad cambia el ejercicio de la sesión.
             .navigationDestination(isPresented: $showLibrary) {
                 ExerciseLibraryScreen()
-                    .instrumentoTheme(theme)
             }
         }
         // FER-198 (Ola 2): fondo de vidrio El Eje EN LA RAÍZ del `NavigationStack` propio — se
@@ -446,8 +442,7 @@ struct ChangeExerciseSheet: View {
                         insets: EdgeInsets(top: LiquidSpace.s125, leading: LiquidSpace.s300,
                                            bottom: LiquidSpace.s125, trailing: LiquidSpace.s300),
                         minHeight: nil,
-                        touchInset: .zero),
-                    theme: theme)
+                        touchInset: .zero))
                 .frame(minHeight: LiquidControl.hitTarget)   // toque 44: la cápsula queda visualmente igual
                 .contentShape(Rectangle())
         }

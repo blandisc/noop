@@ -24,17 +24,13 @@ import StrandAnalytics
 //
 // Se presenta como CAPA desde Cuerpo (`detailOverlayContent`): sus `.presentation*` propios están
 // inertes en producción (solo actúan en su #Preview). El fondo va por `background` (la capa) Y
-// `presentationBackground` (la hoja del #Preview). El param `theme` se conserva como compat muerto
-// — la hoja Liquid ya no lo referencia, pero los call sites de `CuerpoView` lo pasan (FER-100).
+// `presentationBackground` (la hoja del #Preview).
 
 struct BodyAgeSheet: View {
     /// The computed Body Age + Vitality, or nil when fewer than `minFactors` signals are present.
     let result: VitalityEngine.Result?
     /// The inputs that fed the engine — drives the "what's built from" checklist in the empty state.
     let inputs: VitalityEngine.Inputs
-    /// El tema vivo «Instrumento», retenido por compatibilidad con los call sites — la hoja Liquid ya
-    /// no lo referencia (mismo trato que las hermanas ya migradas).
-    var theme: InstrumentoTheme = .base
 
     /// El ⓘ del campo abre la tarjeta «Qué medimos» bajo él — paridad con las gemelas
     /// (`StrainDetailScreen`/`SkinTempDetailScreen`). (FER-105 · M1)
@@ -290,8 +286,8 @@ struct BodyAgeSheet: View {
 
     /// El PASO de la escalera bespoke de 4 ramas, por el SIGNO del delta. Es la ÚNICA fuente de los
     /// cortes (>0.5 rejuvenece · ≥−0.5 en tu edad · ≥−8 mayor · resto muy mayor) — la leen tanto la
-    /// fila de Cuerpo (vía `tint(forDelta:theme:)`) como la banda Liquid (vía `tintLiquid(forDelta:)`),
-    /// así los umbrales viven en UN solo lugar. `deltaYears` es cronológica − corporal: positivo = más
+    /// fila de Cuerpo como la banda (vía `tint(forDelta:)` / `tintLiquid(forDelta:)`), así los
+    /// umbrales viven en UN solo lugar. `deltaYears` es cronológica − corporal: positivo = más
     /// joven que tu edad (buena noticia).
     enum DeltaPaso { case rejuvenece, enTuEdad, mayor, muyMayor }
 
@@ -302,15 +298,9 @@ struct BodyAgeSheet: View {
         return .muyMayor
     }
 
-    /// El tinte de la fila/marcador «Instrumento», por el SIGNO del delta. FIRMA CONGELADA: la usa la
-    /// fila de Cuerpo (`CuerpoView.swift:1103`) — se conserva idéntica; solo delega los cortes a `paso`.
-    static func tint(forDelta deltaYears: Double, theme: InstrumentoTheme) -> Color {
-        switch paso(forDelta: deltaYears) {
-        case .rejuvenece: return LiquidColor.verdePrimario   // más joven → verde
-        case .enTuEdad:   return LiquidColor.tinta900             // en tu edad → tinta
-        case .mayor:      return LiquidColor.atencion         // mayor → ámbar
-        case .muyMayor:   return LiquidColor.negativo        // muy mayor → rojo
-        }
+    /// El tinte de la fila/marcador, por el SIGNO del delta. Misma escalera que `tintLiquid`.
+    static func tint(forDelta deltaYears: Double) -> Color {
+        tintLiquid(forDelta: deltaYears)
     }
 
     /// El tinte de la BANDA Liquid, la MISMA escalera de 4 ramas traducida a voces Liquid CON rojo

@@ -12,7 +12,6 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 // una-sola-vez en el hub (se descarta con ✕ y no vuelve — `hubTricksCardDismissed`).
 
 struct WorkshopTricksScreen: View {
-    @Environment(\.instrumentoTheme) private var theme
     /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
     @ObserveInjection private var inject
 
@@ -104,13 +103,11 @@ struct WorkshopTricksScreen: View {
 #if DEBUG
 #Preview("Trucos del taller") {
     NavigationStack { WorkshopTricksScreen() }
-        .instrumentoTheme(.base)
         .preferredColorScheme(.light)
 }
 
 #Preview("Trucos del taller · xxxLarge (AX5)") {
     NavigationStack { WorkshopTricksScreen() }
-        .instrumentoTheme(.base)
         .preferredColorScheme(.light)
         .dynamicTypeSize(.accessibility5)
 }

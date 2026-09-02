@@ -23,7 +23,7 @@ struct HojaTarjetaEjercicio: View {
             VStack(alignment: .leading, spacing: .zero) {
                 chead
                 if item.re.progressionEnabled {
-                    ProgressionChip(re: item.re, system: sheet.system, theme: sheet.theme,
+                    ProgressionChip(re: item.re, system: sheet.system,
                                     derivedIncrementKg: PlateMath.minimumIncrement(
                                         for: .from(equipment: item.exercise.equipment), inventory: sheet.plates.inventory),
                                     disabled: sheet.locked,
@@ -53,7 +53,7 @@ struct HojaTarjetaEjercicio: View {
             Button { sheet.detailExercise = item.exercise } label: {
                 ExerciseThumbView(exercise: item.exercise, side: 40)
                     .overlay(RoundedRectangle(cornerRadius: ExerciseThumbnail.tileCornerRadius(side: 40), style: .continuous)
-                        .strokeBorder(sheet.theme.movementFamilyTint(primaryMuscles: item.exercise.primaryMuscles), lineWidth: 2))
+                        .strokeBorder(LiquidRampas.movementFamilyTint(item.exercise.primaryMuscles), lineWidth: 2))
             }
             .buttonStyle(.plain)
             .accessibilityHint(Text("Opens the exercise"))

@@ -38,7 +38,7 @@ final class InstrumentoSnapshotTests: XCTestCase {
 private struct LanguageDemo: View {
     private let t = InstrumentoTheme.base
     var body: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s700) {
             // Header — quiet overline + one title.
             VStack(alignment: .leading, spacing: 4) {
                 Text("MARTES 16 JUN").instrumentoOverline().foregroundStyle(t.inkTertiary)

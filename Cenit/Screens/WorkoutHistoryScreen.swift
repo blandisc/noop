@@ -75,7 +75,6 @@ struct WorkoutHistoryScreen: View {
         _filtro = State(initialValue: initialFilter)
     }
 
-    @Environment(\.instrumentoTheme) private var theme
     @EnvironmentObject private var repo: Repository
     @EnvironmentObject private var health: HealthKitBridge
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
@@ -191,11 +190,11 @@ struct WorkoutHistoryScreen: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
             }
-            .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+            .environmentObject(repo).preferredColorScheme(.light)
         }
         // «Registrar entreno a mano ›» — el MISMO `ManualWorkoutSheet` que «Mis entrenamientos».
         .sheet(isPresented: $showManualEntry) {
-            ManualWorkoutSheet(theme: theme) { row, replacing in
+            ManualWorkoutSheet() { row, replacing in
                 Task {
                     do {
                         try await repo.saveManualWorkout(row, replacing: replacing)
@@ -208,7 +207,7 @@ struct WorkoutHistoryScreen: View {
                     }
                 }
             }
-            .instrumentoTheme(theme).preferredColorScheme(.light)
+            .preferredColorScheme(.light)
         }
         .enableInjection()
     }
@@ -262,7 +261,7 @@ struct WorkoutHistoryScreen: View {
     }
 
     private var filterSegment: some View {
-        SegmentedPillControl([SegTab.todo, SegTab.fuerza], selection: segSelection, theme: theme) { tab in
+        SegmentedPillControl([SegTab.todo, SegTab.fuerza], selection: segSelection) { tab in
             tab == .todo ? String(localized: "All") : String(localized: "Strength")
         }
         .accessibilityLabel(Text("Filter"))
@@ -337,7 +336,7 @@ struct WorkoutHistoryScreen: View {
     @ViewBuilder private var todoDialect: some View {
         let eff = effectiveTodoRange
         let visible = todoVisibleEntries
-        SegmentedPillControl(ExploreRange.allCases, selection: $range, theme: theme, tall: true) { $0.label }
+        SegmentedPillControl(ExploreRange.allCases, selection: $range, tall: true) { $0.label }
         todoHero(count: visible.count, eff: eff, fellBack: eff != range)
         if case .sport(let name) = filtro { sportChip(name) }
         todoTiles(entries: visible)
@@ -792,8 +791,8 @@ struct WorkoutHistoryScreen: View {
 
     /// The movement-family tint for a muscle key (push=ember · pull=teal · legs=indigo; else ink-ish).
     private func muscleTint(_ muscle: String) -> Color {
-        // r21: mapeo PROMOVIDO a CenitDesign (`movementFamilyTint`) — una sola fuente de verdad.
-        theme.movementFamilyTint(primaryMuscles: [muscle])
+        // r21: mapeo PROMOVIDO a CenitDesign (`LiquidRampas.movementFamilyTint`) — una sola fuente de verdad.
+        LiquidRampas.movementFamilyTint([muscle])
     }
 
     // MARK: - Your progression (raised / waiting / stalled signals)
@@ -1221,7 +1220,7 @@ struct WorkoutHistoryScreen: View {
         // FER-285·c: receta → `UndoToast` (pad de la pieza); transition + auto-descarte en el caller.
         UndoToast(message: String(localized: "Workout deleted"),
                   cta: String(localized: "Undo"),
-                  theme: theme,
+                  theme: .base,
                   action: { undoDelete(d) })
             .transition(LiquidMotion.risingFadeTransition)
             .task(id: d.id) {
@@ -1392,7 +1391,6 @@ struct WorkoutSessionDetailScreen: View {
     /// (FER-840). Injected by RootTabView (it owns the Entrenar stack); nil in contexts with no stack.
     var openRoutine: ((String) -> Void)? = nil
 
-    @Environment(\.instrumentoTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var repo: Repository
     @Environment(AppModel.self) private var model
@@ -1541,12 +1539,12 @@ struct WorkoutSessionDetailScreen: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
             }
-            .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+            .environmentObject(repo).preferredColorScheme(.light)
         }
         .sheet(isPresented: $showEdit) {
             if let s = fullSession {
                 WorkoutEditSheet(session: s, sets: allSets) { await onEdited() }
-                    .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+                    .environmentObject(repo).preferredColorScheme(.light)
             }
         }
         .saveErrorToast(isPresented: $duplicateError)
@@ -1683,7 +1681,7 @@ struct WorkoutSessionDetailScreen: View {
     /// identidad. El punto vive AL LADO del `LiquidFlowTitle`, no incrustado en el propio texto.
     private var heading: some View {
         HStack(alignment: .center, spacing: LiquidSpace.s200) {
-            if let region = dispRoutineRegion { EntrenarFamilyDot(region.tint(theme)) }
+            if let region = dispRoutineRegion { EntrenarFamilyDot(region.tint()) }
             // «Sesión · {fecha}» — el kicker literal de copy.md «Acta» para el acta pasada
             // (FER-136 · V7). NOTA: esta pantalla sigue siendo `WorkoutSessionDetailScreen`, no una
             // reutilización completa de `LiveStrengthSheet.summaryPhase` (esa hoja arma su
@@ -1773,7 +1771,7 @@ struct WorkoutSessionDetailScreen: View {
     @State private var journalRow: WorkoutRow? = nil
 
     /// The handoff's continuous warm ramp: one 34pt bar sliced by zone share, Z-labels + % below.
-    /// Shares `theme.hrZoneRamp` (1 of 3 distinct HR-zone surfaces — palettes shared, geometry not, FER-908).
+    /// Shares `LiquidRampas.hrZone` (1 of 3 distinct HR-zone surfaces — palettes shared, geometry not, FER-908).
     private func zonesBlock(_ percents: [Double]) -> some View {
         let total = max(percents.reduce(0, +), 0.001)
         return VStack(alignment: .leading, spacing: LiquidSpace.s300) {
@@ -1781,7 +1779,7 @@ struct WorkoutSessionDetailScreen: View {
             GeometryReader { geo in
                 HStack(spacing: LiquidSpace.s050) {
                     ForEach(percents.indices, id: \.self) { i in
-                        Rectangle().fill(theme.hrZoneRamp[i])
+                        Rectangle().fill(LiquidRampas.hrZone(i))
                             .frame(width: max(0, (geo.size.width - 8) * percents[i] / total))
                     }
                 }

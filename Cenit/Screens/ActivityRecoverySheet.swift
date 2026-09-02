@@ -24,17 +24,11 @@ import StrandAnalytics
 //
 // Se presenta como CAPA desde Cuerpo (`detailOverlayContent`), no como `.sheet`: sus
 // `.presentation*` propios están inertes en producción (solo actúan en su #Preview). El fondo va
-// por `background` (la capa) Y `presentationBackground` (la hoja del #Preview). El param `theme`
-// se conserva como compat muerto — la hoja Liquid ya no lo referencia, pero los call sites de
-// `CuerpoView` lo pasan y no se tocan (FER-100).
+// por `background` (la capa) Y `presentationBackground` (la hoja del #Preview).
 
 struct ActivityRecoverySheet: View {
     /// One `ActivityCost` per sport, already ranked by the engine (|delta| desc · .solid · name asc).
     let costs: [ActivityCost]
-
-    /// El tema vivo «Instrumento», retenido por compatibilidad con los call sites — la hoja Liquid
-    /// ya no lo referencia (mismo trato que las hermanas ya migradas).
-    var theme: InstrumentoTheme = .base
 
     /// When there are no sessions yet AND Apple Health isn't connected, the empty state offers a quiet
     /// "your workouts can come from Apple Health" line — without a button (the connect action lives in
@@ -200,6 +194,7 @@ struct ActivityRecoverySheet: View {
             .foregroundStyle(LiquidColor.tinta700)
             .padding(.horizontal, LiquidSpace.s225)
             .padding(.vertical, LiquidSpace.s075)
+            // Chip punteado: OutlineCapsule no expone dash.
             .overlay(Capsule()
                 .stroke(LiquidColor.tinta10,
                                       style: StrokeStyle(lineWidth: 1.2, dash: [3, 3])))

@@ -1,5 +1,6 @@
 #if DEBUG && os(iOS)
 import SwiftUI
+import CenitDesign
 import StrandTraining
 
 /// **Canvas de revisión de la «Serie activa»** (Acto II · épico FER-928) — monta `LiveStrengthSheet`
@@ -37,9 +38,10 @@ private struct SerieActivaPreviewCell: View {
                     .environment(\.locale, Locale(identifier: "es-MX"))
                     .preferredColorScheme(.light)
                     .frame(width: 393, height: 852)
+                    // Marco de iPhone del mapa de pantallas (42; ya en baseline no-radius-literal).
                     .clipShape(RoundedRectangle(cornerRadius: 42, style: .continuous))
                     .overlay(RoundedRectangle(cornerRadius: 42, style: .continuous)
-                        .stroke(Color.black.opacity(0.12), lineWidth: 1))
+                        .stroke(LiquidColor.tinta900.opacity(CenitOpacity.tintFill), lineWidth: 1))
             } else {
                 ProgressView().frame(width: 393, height: 852)
             }

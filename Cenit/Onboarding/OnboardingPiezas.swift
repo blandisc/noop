@@ -579,7 +579,7 @@ enum OnbCopy {
 /// `minHeight = viewport` para que los `Spacer` interiores empujen el CTA al pie mientras el
 /// desbordamiento por Dynamic Type sigue scrolleando (el objetivo del flujo es **xxxLarge**, que
 /// es donde la raíz de la app capa el tamaño). Es el mismo patrón del wizard anterior — lo único
-/// que cambia es el suelo: papel de `LiquidColor.fondoGradient`, no `InstrumentoTheme.base.paper`.
+/// que cambia es el suelo: papel de `LiquidColor.fondoGradient`.
 ///
 /// Dos cosas que el shell resuelve para los actos LARGOS:
 ///

@@ -13,8 +13,6 @@ import StrandTraining
 /// a bifurcarse. Si alguien re-escribe un `switch` de colores en `RoutineRegion+Tint.swift`, truena.
 final class RoutineRegionTinteTests: XCTestCase {
 
-    private let theme = InstrumentoTheme.base
-
     /// Comparación por componentes vía UIKit: `rgbaComponents` del paquete de diseño es interno y
     /// desde la app no se ve. Se compara el color RESUELTO, que es justamente el que se pinta.
     private func mismoColor(_ a: Color, _ b: Color) -> Bool {
@@ -33,7 +31,7 @@ final class RoutineRegionTinteTests: XCTestCase {
         ]
         for (region, familia) in pares {
             XCTAssertEqual(region.family, familia, "\(region) mapea a la familia equivocada")
-            XCTAssertTrue(mismoColor(region.tint(theme), familia.tint(theme)),
+            XCTAssertTrue(mismoColor(region.tint(), familia.tint()),
                           "\(region) pinta un color distinto al de \(familia): la tabla se re-bifurcó")
         }
     }
@@ -41,7 +39,7 @@ final class RoutineRegionTinteTests: XCTestCase {
     /// Sin ejercicios clasificables el color cae a empuje. Es el render que ya estaba en pantalla y
     /// la unificación no puede cambiarlo de contrabando.
     func testSinRegionCaeAEmpuje() {
-        XCTAssertTrue(mismoColor((nil as RoutineRegion?).tint(theme), EntrenarFamily.push.tint(theme)))
+        XCTAssertTrue(mismoColor((nil as RoutineRegion?).tint(), EntrenarFamily.push.tint()))
     }
 
     /// El tercer camino: el que clasifica por músculos primarios. Los tres tienen que coincidir para
@@ -53,7 +51,7 @@ final class RoutineRegionTinteTests: XCTestCase {
             (["chest", "triceps"], .push),
         ]
         for (musculos, region) in casos {
-            XCTAssertTrue(mismoColor(theme.movementFamilyTint(primaryMuscles: musculos), region.tint(theme)),
+            XCTAssertTrue(mismoColor(LiquidRampas.movementFamilyTint(musculos), region.tint()),
                           "\(musculos) y \(region) tendrían que dar el mismo color")
         }
     }

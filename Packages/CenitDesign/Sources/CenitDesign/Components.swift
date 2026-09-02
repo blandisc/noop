@@ -8,42 +8,11 @@ import SwiftUI
 // FER-413/FER-427) — see `docs/design-system/CATALOGO.md` for what replaced them.
 
 public enum CenitMetrics {
+    /// 16 — radio de `ChartWell` / wells Instrumento. Distinto de `LiquidRadius.tarjeta` (18);
+    /// no hay token Liquid del mismo valor (FER-319).
     public static let cardRadius: CGFloat = 16
-    @available(*, deprecated, message: "usa LiquidSpace.s400")
-    public static let cardPadding: CGFloat = LiquidSpace.s400
-    @available(*, deprecated, message: "usa LiquidSpace.s300")
-    public static let gap: CGFloat = LiquidSpace.s300          // gap between cards
-    public static let cardGap: CGFloat = 4       // distancia ÚNICA entre elementos tipo tarjeta en toda la app (dueño 2026-08-29): apúntale desde cada pantalla, no repitas literales
-    public static let sectionGap: CGFloat = 28   // gap between sections
-    @available(*, deprecated, message: "usa LiquidSpace.s600")
-    public static let screenPadding: CGFloat = LiquidSpace.s600
-    /// Top inset of a titled tab landing — the same distance from the safe area for «Patrones»,
-    /// «Tendencias», «Entrenar» and «Ajustes» so their `InstrumentoTabHeader` lines up as you swipe
-    /// between tabs. «Hoy» is exempt: it's the dial dashboard and keeps its tighter `space2` rhythm.
-    public static let screenTop: CGFloat = 14
-
-    // MARK: Fine spacing ramp (FER-206)
-    // Named steps below `gap` (plus a compact section rhythm and two control radii) so
-    // the «Instrumento» Today path stops using magic numbers — every spacing/radius
-    // there snaps to one of these instead of an inline literal.
-    @available(*, deprecated, message: "usa LiquidSpace.s100")
-    public static let space1: CGFloat = LiquidSpace.s100              // finest step (tight icon↔text, a unit hugging a numeral)
-    @available(*, deprecated, message: "usa LiquidSpace.s200")
-    public static let space2: CGFloat = LiquidSpace.s200              // tight step, below gap = 12
-    public static let sectionGapCompact: CGFloat = 16  // compact section rhythm on iPhone Today (FER-202)
-    @available(*, deprecated, message: "usa LiquidRadius.control")
-    public static let controlRadius: CGFloat = LiquidRadius.control      // buttons / CTAs
-    @available(*, deprecated, message: "usa LiquidRadius.chip")
-    public static let chipRadius: CGFloat = LiquidRadius.chip          // small inline chips / pills
-    public static let tileRadius: CGFloat = 17         // «Hoy» metric tile corner (handoff «Hoy · Estados»)
-    public static let ctaRadius: CGFloat = 14          // the ink CTA bar («Aplicar»/«Listo», FER-716 handoff)
-    public static let insetRadius: CGFloat = 10        // sub-tarjeta anidada dentro de otra tarjeta (auditoría jul-2026, H3 — absorbe 9/10/11)
-    @available(*, deprecated, message: "usa LiquidControl.hitTarget")
-    public static let touchTarget: CGFloat = LiquidControl.hitTarget        // área táctil mínima (HIG) — el glifo visible puede ser menor
-    public static let rowVPad: CGFloat = 10          // padding vertical de una fila de lista «Instrumento» (handoff Biblioteca — absorbe 9/10/11/13)
-    public static let receiptPadding: CGFloat = 14     // padding interno de la tarjeta-recibo de la sesión de fuerza (canvas 2026-07, decisión del dueño — entre gap 12 y cardPadding 16)
-
-    public static let tileHeight: CGFloat = 104  // every metric tile is this tall
+    /// 14 — radio de la barra CTA de tinta (`CenitCTAButton`). Sin `LiquidRadius` de 14 (FER-319).
+    public static let ctaRadius: CGFloat = 14
     /// Clean band reserved below the area fill (via the Y-scale's bottom padding) so the X-axis
     /// hour/date labels never sit behind the fill and get tinted. (FER-82)
     public static let chartXLabelBand: CGFloat = 24

@@ -43,12 +43,12 @@ final class DesignDriftTokenTests: XCTestCase {
         XCTAssertEqual(LiquidSpace.chipHorizontal, 9)
     }
 
-    // (3) borde-de-tarjeta / respiro-de-fila — CENSO «edge ≠ rowVPad»: misma cifra (10) que
-    // `CenitMetrics.rowVPad`, dos roles nuevos y distintos entre sí, ninguno el legacy.
+    // (3) borde-de-tarjeta / respiro-de-fila — CENSO «edge ≠ rowVPad»: misma cifra (10),
+    // dos roles nuevos y distintos entre sí (FER-319: `CenitMetrics.rowVPad` ya no existe).
     func test_seccionCantoAndFilaRespiroMatchCensusValueButNotRowVPadRole() {
         XCTAssertEqual(LiquidSpace.seccionCanto, 10)
         XCTAssertEqual(LiquidSpace.filaRespiro, 10)
-        XCTAssertEqual(LiquidSpace.seccionCanto, CenitMetrics.rowVPad,
+        XCTAssertEqual(LiquidSpace.seccionCanto, LiquidSpace.filaRespiro,
                         "misma CIFRA por diseño — el rol es lo que los distingue, no el número")
     }
 
@@ -154,19 +154,17 @@ final class DesignDriftTokenTests: XCTestCase {
         )
     }
 
-    // FER-280·3b: puente valor-neutral CenitMetrics → escala Liquid (paridad congelada).
-    // FER-287·1A: este test referencia a propósito los 8 símbolos deprecados de
-    // CenitMetrics (paridad congelada). El warning de deprecación es esperado;
-    // no silenciar — mismo patrón que test_strandMotionLiquidMotionParityFrozen.
-    func test_cenitMetricsLiquidScaleParityFrozen() {
-        XCTAssertEqual(CenitMetrics.space1, 4)
-        XCTAssertEqual(CenitMetrics.space2, 8)
-        XCTAssertEqual(CenitMetrics.gap, 12)
-        XCTAssertEqual(CenitMetrics.cardPadding, 16)
-        XCTAssertEqual(CenitMetrics.screenPadding, 24)
-        XCTAssertEqual(CenitMetrics.controlRadius, 12)
-        XCTAssertEqual(CenitMetrics.chipRadius, 8)
-        XCTAssertEqual(CenitMetrics.touchTarget, 44)
+    // FER-319: los 8 alias deprecados de CenitMetrics ya no existen; la paridad
+    // vive en los tokens Liquid que los absorvieron.
+    func test_liquidScaleParityFrozenAfterCenitMetricsFuneral() {
+        XCTAssertEqual(LiquidSpace.s100, 4)
+        XCTAssertEqual(LiquidSpace.s200, 8)
+        XCTAssertEqual(LiquidSpace.s300, 12)
+        XCTAssertEqual(LiquidSpace.s400, 16)
+        XCTAssertEqual(LiquidSpace.s600, 24)
+        XCTAssertEqual(LiquidRadius.control, 12)
+        XCTAssertEqual(LiquidRadius.chip, 8)
+        XCTAssertEqual(LiquidControl.hitTarget, 44)
     }
 
     // Transiciones nuevas: cada receta debe describir EXACTAMENTE igual que el `AnyTransition`

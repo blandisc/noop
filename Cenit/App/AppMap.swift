@@ -45,7 +45,7 @@ private struct AppMapCell: View {
                                                    noopDeviceId: "map"))
                 .preferredColorScheme(.light)
                 .frame(width: 393, height: 852)
-                // Marco de dispositivo (radio de iPhone en el canvas) — 42 es dato, no hoja(28).
+                // Marco de iPhone del mapa de pantallas (42; ya en baseline no-radius-literal).
                 .clipShape(RoundedRectangle(cornerRadius: 42, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 42, style: .continuous)
                     .stroke(LiquidColor.tinta900.opacity(CenitOpacity.tintFill), lineWidth: 1))
@@ -423,7 +423,7 @@ private struct EntrenarFlowsMapCell: View {
                             openRoutine: { path.append(RoutineEditorRoute.routine(routineId: $0)) })
                     }
                     // FER-91 · E10 fusionó el mapa muscular y el volumen en una sola pantalla.
-                    .navigationDestination(for: MuscleVolumeRoute.self) { _ in TrainingBodyScreen(theme: .base) }
+                    .navigationDestination(for: MuscleVolumeRoute.self) { _ in TrainingBodyScreen() }
                     .navigationDestination(for: SavedTicketsRoute.self) { _ in SavedTicketsScreen() }
                 }
             } else {
@@ -558,8 +558,6 @@ private struct MapSessionPillHost: View {
     }
     @ViewBuilder private var hostBody: some View {
         if let session = model.strengthSession {
-            // SessionPill aún exige InstrumentoTheme en su API de paquete.
-            let theme = InstrumentoTheme.base
             TimelineView(.periodic(from: .now, by: 1)) { context in
                 let total = session.runs.filter { !$0.skipped }.reduce(0) { $0 + $1.sets.count }
                 // FER-167 ronda 2 (R20): misma unidad que `HojaCabeceraSesion` — «Serie N de M» / «N de N · completa».
@@ -574,7 +572,7 @@ private struct MapSessionPillHost: View {
                     detail: detail,
                     paused: session.paused,
                     hue: LiquidColor.ambar,
-                    theme: theme,
+                    theme: .base,
                     accessibilityLabel: Text(verbatim: session.routineName),
                     accessibilityHint: Text("Returns to the session"),
                     action: { model.resumeStrengthSession() },

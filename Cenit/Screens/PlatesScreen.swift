@@ -13,7 +13,6 @@ import StrandAnalytics
 // Imperial lb-plate inventories are a separate concern (not in scope here).
 
 struct PlatesScreen: View {
-    let theme: InstrumentoTheme
     /// The work weight (kg) to load and warm up to — the value in the cell that opened this.
     let targetKg: Double
     let exerciseName: String
@@ -50,14 +49,13 @@ struct PlatesScreen: View {
                         .id("warmup")
                 }
                 .padding(.horizontal, LiquidSpace.s600)
-                .padding(.top, 18)
+                .padding(.top, LiquidSpace.s450)
                 .padding(.bottom, LiquidSpace.s600)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .onAppear { if startAtWarmup { proxy.scrollTo("warmup", anchor: .top) } }
         }
         .entrenarHojaFondo(tono: .ambar)
-        .instrumentoTheme(theme)
         .preferredColorScheme(.light)
         .edgeSwipeToExit(onClose)
     }
@@ -283,7 +281,6 @@ struct PlateChips: View {
         let owned: Bool
     }
     let items: [Chip]
-    @Environment(\.instrumentoTheme) private var theme
 
     var body: some View {
         // Canvas pass 2026-07-15 (owner): ONE row, never two — compact chips, Grotesk numerals
@@ -312,8 +309,7 @@ struct PlateChips: View {
                     insets: EdgeInsets(top: .zero, leading: LiquidSpace.s200,
                                        bottom: .zero, trailing: LiquidSpace.s200),
                     minHeight: chipHeight,
-                    touchInset: .zero),
-                theme: theme)
+                    touchInset: .zero))
             .accessibilityLabel(Text(chip.label))
     }
 }

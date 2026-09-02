@@ -39,7 +39,7 @@ public struct InstrumentoFlowTitle: View {
 
 #if DEBUG
 #Preview("Instrumento · flow title") {
-    VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+    VStack(alignment: .leading, spacing: LiquidSpace.s700) {
         InstrumentoFlowTitle(overline: Text(verbatim: "TODAY'S ROUTINE"), Text(verbatim: "Pierna"))
         InstrumentoFlowTitle(Text(verbatim: "My workouts"))
         // Nombre largo → dos líneas: el interlineado de 4pt las deja respirar.

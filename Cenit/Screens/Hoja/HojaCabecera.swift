@@ -16,7 +16,7 @@ enum HojaCabecera {
     /// Fila superior: ✕ (cierra) + Deshacer/Guardado.
     static func header(sheet: RoutineSheet) -> some View {
         HStack(spacing: LiquidSpace.s200) {
-            BackButton(role: .close, theme: sheet.theme) { sheet.back() }
+            BackButton(role: .close, theme: .base) { sheet.back() }
                 .padding(.leading, -2)
             Spacer()
             // N4 (ronda 3): `undo()` ya corta bajo candado (R1) — el botón tampoco se ofrece, para

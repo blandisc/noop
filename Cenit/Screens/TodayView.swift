@@ -54,7 +54,6 @@ private final class PullProgressModel {
 private struct PullSyncHint: View {
     let pullProgress: PullProgressModel
     let isSyncing: Bool
-    @Environment(\.instrumentoTheme) private var theme
 
     private var shows: Bool { pullProgress.progress == 0 && !isSyncing }
 
@@ -99,9 +98,6 @@ struct TodayView: View {
     // off a real BLE scan (`AppModel.scan()`). macOS never renders the iOS body, so it never reads this.
     @Environment(AppModel.self) var model
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    /// El tema activo de «Instrumento diurno» (FER-135). El `iosBody` lo ancla al papel de día con
-    /// `.instrumentoTheme(.base)`; cada sub-vista lo lee de aquí para colorear en TINTA del tema.
-    @Environment(\.instrumentoTheme) private var theme
     /// Live Apple Health bridge (iOS only). Today reads `health.auth` to nudge the user to connect
     /// Apple Salud when the measured Key Metrics are empty; `showDataSources` presents Data Sources
     /// so they can connect in one tap instead of hunting through the More tab. (FER-94)
@@ -367,17 +363,17 @@ struct TodayView: View {
             // (FER-1008). The gate holds the keyframes until the sheet lands; the late-swap screens
             // (Sueño/Esfuerzo) are unaffected (their number appears after the gate flips anyway).
             .sheet(item: $sleepDetail) { item in
-                SleepDetailScreen(theme: theme, model: item.model,
+                SleepDetailScreen(model: item.model,
                                   sinPermiso: health.auth != .authorized && health.auth != .unavailable)
                     .recEntranceGate()
             }
             .sheet(item: $strainDetail) { item in
-                StrainDetailScreen(theme: theme, model: item.model, estimated: item.estimated,
+                StrainDetailScreen(model: item.model, estimated: item.estimated,
                                   sinPermiso: health.auth != .authorized && health.auth != .unavailable)
                     .recEntranceGate()
             }
             .sheet(item: $skinTempDetail) { item in
-                SkinTempDetailScreen(theme: theme, model: item.model,
+                SkinTempDetailScreen(model: item.model,
                                      loadWarmingMagnitudes: { await repo.nocturnalWarmingMagnitudes() },
                                      sinPermiso: health.auth != .authorized && health.auth != .unavailable)
                     .recEntranceGate()
@@ -387,7 +383,7 @@ struct TodayView: View {
                 // wired through the shared `StressDayMapPresenter` (FER-452). The cross-day pattern line
                 // is read-only (the Coach handoff was removed, Pase v2 #7).
                 // FER-1027: el mapa intradía de estrés es de banda; en Apple-only no se muestra.
-                StressDetailScreen(theme: theme, model: item.model,
+                StressDetailScreen(model: item.model,
                                    dayMap: nil,
                                    patternsLoader: { await StressDayMapPresenter.timeOfDayPatterns(
                                        repo: repo, maxHR: model.profile.hrMax, restingHR: stressRestingHR) },
@@ -400,7 +396,6 @@ struct TodayView: View {
                 MetricDetailScreen(
                     spec: spec,
                     depth: .full,
-                    theme: theme,
                     // VIT-07: VO₂max es Apple-only — invita a conectar Salud desde su vacío
                     // cuando no hay permiso ni lectura (espejo de CuerpoView :433).
                     appleConnectHint: spec.descriptor.key == "vo2max"
@@ -599,16 +594,11 @@ struct TodayView: View {
 
     // MARK: - Today (instrumento diurno · veredicto dominante · dial 24h · métricas en tinta)
     //
-    // Escrito en el lenguaje «Instrumento diurno» (FER-135): tema claro de papel cálido
-    // (`.instrumentoTheme(.base)`), un solo número dominante (la recuperación), jerarquía por ESPACIO
-    // (sin card-in-card), y COLOR SOLO en el dato — el número de recuperación, la palabra del veredicto
-    // y la línea+punto de cada gráfica; todo lo demás (labels, valores, dial, iconos, chevrons,
-    // overlines) en TINTA del tema. Conserva toda la lógica de estados/datos previa; solo reacomoda y
-    // recolorea.
-    //
-    // El tema se aplica UNA vez envolviendo el iosBody (acotado a TodayView, NUNCA en RootTabView). El
-    // `SolarWindow` (de `SolarClock`) ya solo alimenta el `DiurnalDial`. Cada sub-vista lee
-    // `@Environment(\.instrumentoTheme)`. (FER-398 retiró el tinte por hora del día.)
+    // Escrito en el lenguaje «Instrumento diurno» (FER-135): papel cálido, un solo número dominante
+    // (la recuperación), jerarquía por ESPACIO (sin card-in-card), y COLOR SOLO en el dato — el número
+    // de recuperación, la palabra del veredicto y la línea+punto de cada gráfica; todo lo demás
+    // (labels, valores, dial, iconos, chevrons, overlines) en tinta. Conserva toda la lógica de
+    // estados/datos previa; solo reacomoda y recolorea. (FER-398 retiró el tinte por hora del día.)
 
     private var iosBody: some View {
         // Alto y anclaje (FER-217 · FER-1039): un `GeometryReader` da el alto visible (`proxy.size.height`)
@@ -658,7 +648,6 @@ struct TodayView: View {
         // recompone la pantalla por scroll: Observation rastrea por propiedad.
         .environment(\.liquidAmbientPaused,
                      scenePhase != .active || hojaPresentada || !onboarded || !atmosfera.visible)
-        .instrumentoTheme(.base)
         // El color scheme (y con él la barra de estado: Hoy = papel claro → tinta oscura) se decide
         // en ContentView según la pestaña activa, porque `preferredColorScheme` lo resuelve el
         // controlador raíz del WindowGroup y un valor puesto AQUÍ (dentro del TabView) no llega.
@@ -684,7 +673,6 @@ struct TodayView: View {
                         }
                     }
             }
-            .instrumentoTheme(theme)
             .environment(model)
             .environmentObject(repo)
             .environmentObject(health)
@@ -767,7 +755,7 @@ struct TodayView: View {
                         // punto): en el primer arranque salía «LOAD · CALIBRATING ··» sobre el
                         // orbe dormido — ruido, no un dato (pregunta del dueño 2026-08-15).
                         if let trainingLoad, trainingLoad.acwr != nil {
-                            TrainingLoadStrip(model: trainingLoad, theme: theme) {
+                            TrainingLoadStrip(model: trainingLoad) {
                                 trainingLoadItem = makeTrainingLoadItem(trainingLoad)
                             }
                         }

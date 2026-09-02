@@ -44,9 +44,9 @@ extension StressBand {
         }
     }
 
-    /// The data color for this band on the active theme (low→verdict, medium→warning, high→critical).
+    /// The data color for this band (low→verdict, medium→warning, high→critical).
     /// Single source for the stress band→color mapping (FER-326).
-    func dataColor(_ theme: InstrumentoTheme) -> Color {
+    func dataColor() -> Color {
         switch self {
         case .low:    return LiquidColor.verdePrimario
         case .medium: return LiquidColor.atencion
