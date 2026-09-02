@@ -48,7 +48,7 @@ struct RPESheet: View {
             header
             // Canvas pass 2026-07-15: sin ScrollView — con el grid 2×4 todo cabe; más aire arriba
             // (sectionGap) para que el héroe no se pegue a la colilla.
-            VStack(spacing: 28) {
+            VStack(spacing: CenitMetrics.sectionGap) {
                 hero
                 scale
             }
@@ -77,14 +77,13 @@ struct RPESheet: View {
     }
 
     private var hero: some View {
-        VStack(spacing: 6) {
-            // Canvas pass 2026-07-15 (UI·armonía #1): un solo tamaño de héroe entre hojas hermanas
-            // (RPE 84 vs. discos 52 → 64 en ambas).
+        VStack(spacing: LiquidSpace.s150) {
+            // FER-302: numeral de hoja El Eje (hermanas RestEditor / Progresión).
             Text(LiveStrengthSheet.formatDecimalComma(selected))
-                .font(InstrumentoType.groteskSheetHero).tracking(InstrumentoType.groteskSheetHeroTracking)
-                .foregroundStyle(theme.ink)
-            Text(Self.descriptor(selected)).font(StrandFont.headline).foregroundStyle(theme.ink)
-            Text(Self.subtitle(selected)).font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                .font(LiquidType.numeralHoja)
+                .foregroundStyle(LiquidColor.tinta900)
+            Text(Self.descriptor(selected)).font(LiquidType.tituloHoja).foregroundStyle(LiquidColor.tinta900)
+            Text(Self.subtitle(selected)).font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta500)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
@@ -109,7 +108,7 @@ struct RPESheet: View {
                 onPick(selected)
             }
             Text("RPE is optional · tap the set's RPE cell")
-                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                .font(LiquidType.filaConteo).foregroundStyle(LiquidColor.tinta500)
         }
         .padding(.top, LiquidSpace.s300)
     }
@@ -227,23 +226,23 @@ struct NoteSheet: View {
     }
 
     private func historySection(_ history: [ExerciseNote]) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("PREVIOUS NOTES").instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s250) {
+            Text("PREVIOUS NOTES").liquidKicker().foregroundStyle(LiquidColor.tinta500)
+            VStack(alignment: .leading, spacing: LiquidSpace.s250) {
                 ForEach(Array(history.enumerated()), id: \.element.id) { index, note in
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack(spacing: 6) {
-                            Text(Self.relativeDays(note.ts)).font(StrandFont.caption.weight(.semibold))
-                                .foregroundStyle(theme.inkTertiary)
+                    VStack(alignment: .leading, spacing: LiquidSpace.s050) {
+                        HStack(spacing: LiquidSpace.s150) {
+                            Text(Self.relativeDays(note.ts)).font(LiquidType.filaConteo.weight(.semibold))
+                                .foregroundStyle(LiquidColor.tinta500)
                             if note.setPosition != nil {
-                                Text("Set \(note.setPosition! + 1)").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                                Text("Set \(note.setPosition! + 1)").font(LiquidType.filaConteo).foregroundStyle(LiquidColor.tinta500)
                             }
                         }
-                        Text(verbatim: note.text).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        Text(verbatim: note.text).font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     if index < history.count - 1 {
-                        Rectangle().fill(theme.hairline).frame(height: 1)
+                        Rectangle().fill(LiquidColor.tinta10).frame(height: 1)
                     }
                 }
             }
@@ -334,13 +333,13 @@ struct ChangeExerciseSheet: View {
                     if !filtered.isEmpty {
                         if query.isEmpty, let m = primaryMuscle {
                             (Text("Suggested · ") + Text(MuscleAtlas.name(m)))
-                                .instrumentoOverline().foregroundStyle(theme.inkTertiary).padding(.top, LiquidSpace.s100)
+                                .liquidKicker().foregroundStyle(LiquidColor.tinta500).padding(.top, LiquidSpace.s100)
                         }
                         ForEach(filtered) { row($0) }
                     } else if loaded {
                         Text(query.isEmpty ? "No alternatives for this muscle: search the library."
                                            : "No matches.")
-                            .font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                            .font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta500)
                             .fixedSize(horizontal: false, vertical: true).padding(.top, LiquidSpace.s200)
                     }
                     // FER-89: la puerta nueva — hoy 0 apariciones de `ExerciseLibraryScreen` en este
@@ -358,7 +357,7 @@ struct ChangeExerciseSheet: View {
             .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { onClose() }.foregroundStyle(theme.ink)
+                    Button("Done") { onClose() }.foregroundStyle(LiquidColor.tinta900)
                 }
             }
             // FER-89: solo una puerta — el interior de `ExerciseLibraryScreen` no se re-viste aquí
@@ -435,12 +434,12 @@ struct ChangeExerciseSheet: View {
             useButton(ex)
         }
         .padding(.vertical, LiquidSpace.s200)
-        .overlay(alignment: .bottom) { Divider().overlay(theme.hairline) }
+        .overlay(alignment: .bottom) { Divider().overlay(LiquidColor.tinta10) }
     }
 
     private func useButton(_ ex: Exercise) -> some View {
         Button { onUse(ex) } label: {
-            Text("Use").font(StrandFont.caption).foregroundStyle(theme.ink)
+            Text("Use").font(LiquidType.filaConteo).foregroundStyle(LiquidColor.tinta900)
                 .outlineCapsule(
                     .outline,
                     size: .aMedida(

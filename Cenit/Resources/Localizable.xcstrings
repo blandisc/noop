@@ -1,6 +1,23 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Bar %@ kg" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bar %@ kg"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barra %@ kg"
+          }
+        }
+      }
+    },
     "Cardio sessions will show up here once they save a receipt." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -48,6 +65,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Si en 5 min no bajas, la sesión continúa igual."
+          }
+        }
+      }
+    },
+    "Loaded total %@ kg" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loaded total %@ kg"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Total cargado %@ kg"
           }
         }
       }
@@ -23381,6 +23415,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Toma la subida a %@ %@"
+          }
+        }
+      }
+    },
+    "plates.a11y.doneEditingInventory" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done editing inventory"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listo con el inventario"
+          }
+        }
+      }
+    },
+    "plates.a11y.editInventory" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit inventory"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editar inventario"
           }
         }
       }

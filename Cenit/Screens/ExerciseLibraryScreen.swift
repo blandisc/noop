@@ -79,7 +79,7 @@ struct ExerciseLibraryScreen: View {
                 exerciseList
                 createRow
             }
-            .padding(.top, CenitMetrics.screenTop)
+            .padding(.top, LiquidSpace.bloqueAjuste)
             .padding(.horizontal, LiquidSpace.s600)
             // The safeAreaInset already carves out the addBar's height — no magic 88.
             .padding(.bottom, LiquidSpace.s600)
@@ -107,10 +107,10 @@ struct ExerciseLibraryScreen: View {
             NavigationStack {
                 ExerciseDetailScreen(exercise: ex)
                     .toolbar { ToolbarItem(placement: .confirmationAction) {
-                        Button("Done") { detail = nil }.foregroundStyle(theme.ink)
+                        Button("Done") { detail = nil }.foregroundStyle(LiquidColor.tinta900)
                     } }
                     .navigationBarTitleDisplayMode(.inline)
-                    .toolbarBackground(LiquidColor.papelTarjeta, for: .navigationBar)
+                    .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
             }
             .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
@@ -424,7 +424,6 @@ struct CreateExerciseSheet: View {
     /// is the sheet's own behaviour and no caller can forget it.
     private let proposedMuscle: String
 
-    @Environment(\.instrumentoTheme) private var theme
     @Environment(\.dismiss) private var dismiss
 
     @State private var name: String
@@ -462,79 +461,75 @@ struct CreateExerciseSheet: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
-                VStack(alignment: .leading, spacing: 2) {
-                    // The sheet speaks the same Grotesk voice as the Library header that opens it.
-                    Text("Library").groteskSheetTitle().textCase(.uppercase).foregroundStyle(theme.inkTertiary)
-                    Text(isEditing ? "Edit exercise" : "New exercise")
-                        .font(InstrumentoType.groteskHeroNumeral(28)).tracking(InstrumentoType.groteskHeroTrackingScaled(28))
-                        .foregroundStyle(theme.ink)
-                }
+                // FER-302: `EntrenarHojaCabecera(.cancelar)` reemplaza el título Grotesk a mano —
+                // el CTA grande de guardar sigue abajo (Salida única de la cabecera = Cancelar).
+                EntrenarHojaCabecera(
+                    titulo: isEditing
+                        ? String(localized: "Edit exercise")
+                        : String(localized: "New exercise"),
+                    subtitulo: String(localized: "Library"),
+                    tono: .neutro,
+                    salida: .cancelar(String(localized: "Cancel")),
+                    onSalir: { dismiss() })
 
                 VStack(alignment: .leading, spacing: LiquidSpace.s200) {
-                    Text("Name").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text("Name").liquidKicker().foregroundStyle(LiquidColor.tinta500)
                     TextField("e.g. Svend press", text: $name)
-                        .font(StrandFont.body).foregroundStyle(theme.ink)
-                        .padding(.horizontal, LiquidSpace.s300).padding(.vertical, CenitMetrics.rowVPad)
-                        // Same skin as the Library's search field — one text-field look per flow.
-                        .background(theme.surface, in: RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
-                            .strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                        .font(LiquidType.tituloGemela).foregroundStyle(LiquidColor.tinta900)
+                        .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s250)
+                        .liquidGlass(.superficieSolida)
+                        .accessibilityLabel(Text("Name"))
                 }
 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: LiquidSpace.s050) {
                     pickerRow("Primary muscle", isPresented: $showMusclePicker, selection: $muscle, options: muscles, placeholder: String(localized: "Pick a muscle"), label: StrengthDisplay.muscle)
                     // The muscle is what makes the exercise count: say why it's being asked, and never
                     // let a proposal pass as a fact (FER-995).
                     Text(showsProposedHint
                          ? "Suggested from the name · change it if it's wrong."
                          : "Without it the exercise won't count toward your muscle map or weekly volume.")
-                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        .font(LiquidType.filaConteo).foregroundStyle(LiquidColor.tinta500)
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.bottom, LiquidSpace.s100)
-                    Divider().overlay(theme.hairline)
+                    Divider().overlay(LiquidColor.tinta10)
                     pickerRow("Equipment", isPresented: $showEquipPicker, selection: $equip, options: equipment, placeholder: String(localized: "Pick equipment"), label: StrengthDisplay.equipment)
                 }
 
                 VStack(alignment: .leading, spacing: LiquidSpace.s200) {
-                    Text("Record type").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text("Record type").liquidKicker().foregroundStyle(LiquidColor.tinta500)
                     ForEach(ExerciseType.allCases, id: \.self) { t in typeOption(t) }
                 }
 
-                Button { create() } label: {
-                    Text(isEditing ? "Save changes" : "Create exercise")
-                        .font(InstrumentoType.grotesk(15, weight: .bold))
-                        .foregroundStyle(canCreate ? theme.ink : theme.inkTertiary)
-                        .frame(maxWidth: .infinity).padding(.vertical, LiquidSpace.s300)
-                        .liquidGlass(.pastillaSolida)
-                        .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
-                }
-                .buttonStyle(EntrenarPressStyle()).disabled(!canCreate)
+                LiquidGlassButton(
+                    isEditing ? String(localized: "Save changes") : String(localized: "Create exercise"),
+                    variant: .primary, expands: true) { create() }
+                .disabled(!canCreate)
+                .accessibilityLabel(Text(isEditing
+                                         ? String(localized: "Save changes")
+                                         : String(localized: "Create exercise")))
             }
-            .padding(.top, CenitMetrics.screenTop).padding(.horizontal, LiquidSpace.s600).padding(.bottom, LiquidSpace.s600)
+            .padding(.top, LiquidSpace.bloqueAjuste).padding(.horizontal, LiquidSpace.s600).padding(.bottom, LiquidSpace.s600)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        // FER-198 (Ola 2): fondo de vidrio El Eje — se CONSERVA el chrome actual (título Grotesk a
-        // mano + el CTA grande de guardar abajo); esta hoja no tiene botón «Cancelar» hoy (solo
-        // swipe-dismiss + el CTA de guardar) y NO se le agrega uno — el menú de presentación de
-        // `EntrenarHojaFondo.swift` sugiere `EntrenarHojaCabecera(.cancelar(_:))` aquí, pero eso
-        // AÑADIRÍA un control de salida que hoy no existe (violaría la regla de cero cambio de
-        // comportamiento de la Ola 2) — se ignora deliberadamente y se flagea en el reporte.
         .entrenarHojaFondo(tono: .neutro)
     }
 
     private func pickerRow(_ title: LocalizedStringKey, isPresented: Binding<Bool>, selection: Binding<String>,
                            options: [String], placeholder: String,
                            label: @escaping (String) -> String) -> some View {
-        HStack(spacing: 12) {
-            Text(title).font(StrandFont.body).foregroundStyle(theme.ink).frame(maxWidth: .infinity, alignment: .leading)
+        HStack(spacing: LiquidSpace.s300) {
+            Text(title).font(LiquidType.tituloGemela).foregroundStyle(LiquidColor.tinta900)
+                .frame(maxWidth: .infinity, alignment: .leading)
             Button { isPresented.wrappedValue = true } label: {
                 HStack(spacing: LiquidSpace.s100) {
                     Text(selection.wrappedValue.isEmpty ? placeholder : label(selection.wrappedValue))
-                        .font(StrandFont.body).foregroundStyle(selection.wrappedValue.isEmpty ? theme.inkTertiary : theme.inkSecondary)
-                    StrandIcon.down.image.font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
+                        .font(LiquidType.tituloGemela)
+                        .foregroundStyle(selection.wrappedValue.isEmpty ? LiquidColor.tinta500 : LiquidColor.tinta700)
+                    StrandIcon.down.image.font(LiquidType.iconSF(size: 12)).foregroundStyle(LiquidColor.tinta500)
                 }
             }
             .buttonStyle(EntrenarPressStyle())
+            .accessibilityLabel(Text(title))
             .liquidMenu(isPresented: isPresented, items: options.map { opt in
                 LiquidMenuItem(label(opt), systemImage: selection.wrappedValue == opt ? "checkmark" : nil) {
                     selection.wrappedValue = opt
@@ -547,21 +542,25 @@ struct CreateExerciseSheet: View {
     private func typeOption(_ t: ExerciseType) -> some View {
         Button { type = t } label: {
             HStack(spacing: LiquidSpace.s300) {
-                Image(systemName: StrengthDisplay.typeIcon(t)).font(StrandFont.glyph(.lead))
-                    .foregroundStyle(type == t ? theme.ink : theme.inkTertiary).frame(width: 22)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(StrengthDisplay.typeLabel(t)).font(StrandFont.body).foregroundStyle(theme.ink)
-                    Text(StrengthDisplay.typeDetail(t)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                Image(systemName: StrengthDisplay.typeIcon(t)).font(LiquidType.iconSF(size: 18))
+                    .foregroundStyle(type == t ? LiquidColor.tinta900 : LiquidColor.tinta500)
+                    .frame(width: 22)
+                VStack(alignment: .leading, spacing: LiquidSpace.s025) {
+                    Text(StrengthDisplay.typeLabel(t)).font(LiquidType.tituloGemela).foregroundStyle(LiquidColor.tinta900)
+                    Text(StrengthDisplay.typeDetail(t)).font(LiquidType.filaConteo).foregroundStyle(LiquidColor.tinta500)
                 }
-                Spacer(minLength: 8)
-                if type == t { StrandIcon.confirm.image.font(StrandFont.glyph(.inline, weight: .semibold)).foregroundStyle(theme.ink) }
+                Spacer(minLength: LiquidSpace.s200)
+                if type == t {
+                    StrandIcon.confirm.image.font(LiquidType.iconSF(size: 15)).foregroundStyle(LiquidColor.tinta900)
+                }
             }
-            .padding(.horizontal, LiquidSpace.s300).padding(.vertical, CenitMetrics.rowVPad).contentShape(Rectangle())
-            .background(type == t ? theme.surface : Color.clear, in: RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous))  // token-exempt: fondo condicional
+            .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s250).contentShape(Rectangle())
+            .background(type == t ? LiquidColor.papelTarjeta : Color.clear, in: RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous))  // token-exempt: fondo condicional
             .overlay(RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
-                .strokeBorder(type == t ? theme.ink : theme.hairline, lineWidth: type == t ? 1.5 : 1))
+                .strokeBorder(type == t ? LiquidColor.tinta900 : LiquidColor.tinta10, lineWidth: type == t ? 1.5 : 1))
         }
         .buttonStyle(EntrenarPressStyle())
+        .accessibilityLabel(Text(StrengthDisplay.typeLabel(t)))
     }
 
     /// The muscle is required alongside the name (FER-995): shipping an exercise with no primary muscle
