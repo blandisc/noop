@@ -137,3 +137,12 @@ Tres decisiones del dueño para el rediseño del cierre de sesión y el descanso
 3. **Descanso de respaldo = el de la rutina.** Cuando una rutina pide «descanso por pulso» pero no hay reloj, se cae al **tiempo objetivo que ya define la rutina**; si no define ninguno, a un default sensato (90 s). No un fijo global.
 
 Contexto: la 2.ª auditoría de Entrenar (revisión Grok UX) encontró que hoy no hay salida honesta a media sesión (la única es minimizar, que descarta todo) y que el descanso sin reloj castiga al caso más común. Carril pesado: toca `StrengthSessionModel`, la Hoja, la píldora de minimizar y el Watch.
+
+## 2026-09-01 · Sistema de diseño — cuatro decisiones tras la re-auditoría (FER-287)
+
+Cuatro decisiones del dueño para cerrar la re-auditoría del sistema de diseño:
+
+1. **(1A) Las 8 escalas puenteadas de `CenitMetrics` se deprecan de golpe**, no por lotes — la presión de warnings del compilador es la palanca para que los ~566 call-sites migren, en vez de una migración incremental sin urgencia.
+2. **(2A) `OutlineCapsule` gana una variante decorativa/overlay** para absorber las 28 cápsulas hechas a mano en el código, dentro del épico de Entrenar (no como trabajo aparte).
+3. **(3A) Entrenar migra al vidrio de afuera hacia adentro**: Biblioteca → Detalle → Editor semanal → Progresión/Descanso/Tickets → Historial → Sesión en vivo.
+4. **(4A) El renombre `StrandDesign` → `CenitDesign`** (incluye `StrandIcon`/`StrandCTAButton`/`StrandOpacity`/`StrandFormat`) **va al final**, después de cerrar Entrenar. `StrandFont`/`StrandPalette`/`StrandMotion` NO se rebautizan — se retiran en su momento, no se renombran.
