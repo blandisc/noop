@@ -449,3 +449,31 @@ public enum LiquidDeltaTone: Sendable {
     .background(LiquidColor.papelGradient)
 }
 #endif
+
+// MARK: - OLED (Watch y Dynamic Island)
+
+/// La única excepción viva al lienzo blanco de «El Eje» (DESIGN.md): el Apple Watch y la Dynamic
+/// Island pintan sobre NEGRO por OLED y por HIG. Decisión del dueño 2026-09-03 (FER-309): Watch y
+/// Widgets salen del carve-out Instrumento (FER-219) y hablan Liquid, con este set de tintas para
+/// el fondo negro. Los tonos de dato (`verdePrimario`, `ambar`, `rosa`, `indigo`, `cian`) son los
+/// mismos que en el iPhone: el dato no cambia de color por pantalla.
+public enum LiquidOLED {
+    /// Fondo: negro puro (OLED apaga el píxel).
+    public static let fondo = Color.black
+    /// Superficie elevada sobre negro (tarjeta/pill).
+    public static let superficie = Color(hex: "#1F1C18")
+    /// Tinta principal sobre negro (papel cálido de «El Eje» invertido).
+    public static let tinta = Color(hex: "#ECE9E0")
+    /// Tinta secundaria.
+    public static let tintaSecundaria = Color(hex: "#A6A298")
+    /// Tinta terciaria / apagada.
+    public static let tintaTerciaria = Color(hex: "#75726A")
+    /// Canto fino sobre negro.
+    public static let borde = Color(hex: "#ECE9E0").opacity(0.14)
+    /// Canto fuerte sobre negro.
+    public static let bordeFuerte = Color(hex: "#ECE9E0").opacity(0.28)
+    /// Verde de veredicto con contraste AA sobre negro.
+    public static let verde = Color(hex: "#2EB27D")
+    /// Ámbar de atención sobre negro.
+    public static let ambar = Color(hex: "#E29A50")
+}
