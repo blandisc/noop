@@ -214,7 +214,7 @@ struct WorkoutImportView: View {
             .scrollContentBackground(.hidden)
             .frame(minHeight: 96)
             .padding(LiquidSpace.s400)
-            .liquidGlass(.tarjeta)
+            .liquidGlass(.superficieSolida)
             .overlay(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous)
                 .strokeBorder(LiquidColor.vidrioBordeFuerte, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
             .overlay(alignment: .center) {
@@ -343,7 +343,7 @@ struct WorkoutImportView: View {
                                     .background(LiquidColor.tinta900, in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
                             }
                             .padding(.horizontal, LiquidSpace.s250).padding(.vertical, LiquidSpace.s200)  // token-exempt(falta-pieza): edge handoff 10 → s250
-                            .liquidGlass(.tarjeta)
+                            .liquidGlass(.superficieSolida)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
