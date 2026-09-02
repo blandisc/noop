@@ -161,16 +161,26 @@ public struct RestBand<Next: View>: View {
                 Button(action: onSkip) {
                     // R13: el tope honesto ofrece SEGUIR (no «Saltar» — no hay nada que saltar,
                     // el motor ya soltó el descanso solo).
-                    Text(isCeilingRelease ? "Continue" : "Skip rest")
-                        .font(StrandFont.caption.weight(.semibold))
-                        .foregroundStyle(theme.inkSecondary)
-                        .padding(.horizontal, LiquidSpace.s300)
-                        .frame(height: large ? EntrenarMetrics.focusRestSkip : EntrenarMetrics.secondaryButton)
-                        .background(theme.paper, in: Capsule())
-                        .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
-                        // dibujo 36 (46 en Foco), toque 44 (HIG)
-                        .frame(minHeight: EntrenarMetrics.row)
-                        .contentShape(Rectangle())
+                    // !large → OutlineCapsule.lg (minHeight 36); large (46) sin Size que calce.
+                    Group {
+                        if large {
+                            Text(isCeilingRelease ? "Continue" : "Skip rest")
+                                .font(StrandFont.caption.weight(.semibold))
+                                .foregroundStyle(theme.inkSecondary)
+                                .padding(.horizontal, LiquidSpace.s300)
+                                .frame(height: EntrenarMetrics.focusRestSkip)
+                                .background(theme.paper, in: Capsule())
+                                .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                        } else {
+                            Text(isCeilingRelease ? "Continue" : "Skip rest")
+                                .font(StrandFont.caption.weight(.semibold))
+                                .foregroundStyle(theme.inkSecondary)
+                                .outlineCapsule(.papel, size: .lg, theme: theme)
+                        }
+                    }
+                    // dibujo 36 (46 en Foco), toque 44 (HIG)
+                    .frame(minHeight: EntrenarMetrics.row)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(EntrenarPressStyle())
             }

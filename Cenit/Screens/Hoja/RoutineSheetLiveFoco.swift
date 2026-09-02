@@ -53,7 +53,7 @@ struct HojaFoco: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background {
-            vivo.sheet.theme.paper
+            LiquidColor.fondoGradient
                 .matchedGeometryEffect(id: Self.namespaceId, in: vivo.focoNS)
                 .ignoresSafeArea()
         }
@@ -393,15 +393,15 @@ struct HojaFoco: View {
             combustibleSegmento(String(localized: "HR"), activo: !forzarVistaTiempo) { forzarVistaTiempo = false }
         }
         .padding(LiquidSpace.s075)
-        .background(vivo.sheet.theme.surface, in: Capsule())
+        .liquidGlass(.pastillaSolida)
     }
 
     private func combustibleSegmento(_ label: String, activo: Bool, action: @escaping () -> Void) -> some View {
         Text(verbatim: label)
             .font(InstrumentoType.grotesk(10, weight: .semibold)).tracking(0.6).textCase(.uppercase)
-            .foregroundStyle(activo ? vivo.sheet.theme.paper : vivo.sheet.theme.inkTertiary)
+            .foregroundStyle(activo ? LiquidColor.papelTarjeta : LiquidColor.tinta500)
             .padding(.horizontal, CenitMetrics.gap).padding(.vertical, LiquidSpace.s125).frame(minHeight: EntrenarMetrics.secondaryButton)
-            .background { if activo { Capsule().fill(vivo.sheet.theme.ink) } }
+            .background { if activo { Capsule().fill(LiquidColor.tinta900) } }
             .contentShape(Capsule())
             .onTapGesture { withAnimation(vivo.reduceMotion ? nil : LiquidMotion.toque) { action() } }
             .accessibilityAddTraits(activo ? [.isSelected, .isButton] : .isButton)

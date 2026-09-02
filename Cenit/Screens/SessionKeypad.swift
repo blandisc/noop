@@ -77,14 +77,13 @@ struct SessionKeypad: View {
         VStack(spacing: 0) {
             if let onSelectRIR {
                 rirRow(onSelectRIR)
-                Rectangle().fill(theme.hairline).frame(height: 1)
+                Rectangle().fill(LiquidColor.tinta10).frame(height: 1)
             }
             accessoryBar
-            Rectangle().fill(theme.hairline).frame(height: 1)
+            Rectangle().fill(LiquidColor.tinta10).frame(height: 1)
             keys
         }
-        .background(theme.surface)
-        .overlay(alignment: .top) { Rectangle().fill(theme.hairline).frame(height: 1) }
+        .entrenarHojaBarraFondo(tono: .neutro)
     }
 
     // MARK: QUEDABAN (RIR)
@@ -94,7 +93,7 @@ struct SessionKeypad: View {
             // Clave propia, distinta de «Remaining» (que IntervalTimerView ya usa para el tiempo
             // restante del temporizador de intervalos): compartir esa clave habría pisado su copy
             // es-MX con «quedaban» (revisión ronda 3, hallazgo grave).
-            Text("Reps left kicker").entrenarKeypadKicker().textCase(.uppercase).foregroundStyle(theme.inkTertiary)
+            Text("Reps left kicker").liquidKicker().foregroundStyle(LiquidColor.tinta700)
             // `footnote` (11pt/`.caption2`) es el token existente más cercano al 11.5 SF del handoff —
             // `.caption` (12pt) quedaba un escalón grande de más (revisión ronda 2, hallazgo menor).
             Text("at check-off").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
@@ -110,9 +109,9 @@ struct SessionKeypad: View {
                     ForEach(Array(Self.rirLabels.enumerated()), id: \.offset) { idx, label in
                         let selected = selectedRIR == idx
                         Text(label).font(StrandFont.caption.weight(.semibold))
-                            .foregroundStyle(selected ? theme.paper : theme.inkSecondary)
+                            .foregroundStyle(selected ? LiquidColor.papelTarjeta : LiquidColor.tinta700)
                             .frame(width: EntrenarMetrics.rirButton, height: EntrenarMetrics.rirButton)
-                            .background(selected ? theme.ink : Color.clear)
+                            .background(selected ? LiquidColor.tinta900 : Color.clear)
                             .frame(maxWidth: .infinity)
                             // Elemento propio para VoiceOver (revisión ronda 3): el gesto de posición
                             // que reparte el toque en tercios es para dedos que VEN el filo; VoiceOver
@@ -124,7 +123,7 @@ struct SessionKeypad: View {
                             .accessibilityAddTraits(selected ? .isSelected : [])
                             .accessibilityAction { onSelectRIR(idx) }
                         if idx < Self.rirLabels.count - 1 {
-                            Rectangle().fill(theme.hairlineStrong)
+                            Rectangle().fill(LiquidColor.tinta10)
                                 .frame(width: EntrenarMetrics.rirHairline, height: EntrenarMetrics.rirDivider)
                         }
                     }
@@ -168,7 +167,7 @@ struct SessionKeypad: View {
                     Button(action: onHide) {
                         Image(systemName: "chevron.down")
                             .font(StrandFont.glyph(.inline, weight: .semibold))
-                            .foregroundStyle(theme.inkSecondary)
+                            .foregroundStyle(LiquidColor.tinta700)
                             .frame(width: 34, height: 34)
                             // Revisión final (FER-140), hallazgo grave: el dibujo se queda en 34pt (el
                             // handoff), pero el toque se extiende al mínimo HIG de 44pt.
@@ -181,7 +180,7 @@ struct SessionKeypad: View {
                     Button(action: onPause) {
                         Image(systemName: isPaused ? "play.fill" : "pause.fill")
                             .font(StrandFont.glyph(.inline, weight: .semibold))
-                            .foregroundStyle(theme.inkSecondary)
+                            .foregroundStyle(LiquidColor.tinta700)
                             .frame(width: 34, height: 34)
                             .contentShape(Rectangle().inset(by: -5))
                     }
@@ -195,7 +194,7 @@ struct SessionKeypad: View {
                 Spacer(minLength: 4)
                 Button(action: onNext) {
                     Text("Next").font(StrandFont.subhead).fontWeight(.semibold)
-                        .foregroundStyle(theme.dataRecovery)
+                        .foregroundStyle(LiquidColor.verdeProfundo)
                         .padding(.horizontal, 12).frame(height: 34)
                         // Revisión final (FER-140), hallazgo menor: 34pt de alto queda bajo el mínimo
                         // HIG en el eje vertical; se extiende el toque sin tocar el dibujo.
@@ -208,6 +207,7 @@ struct SessionKeypad: View {
         }
     }
 
+    /// Alto de dibujo 34 + pad H 11 — ninguna `OutlineCapsule.Size` calza 1:1; chrome a mano.
     private func pill(_ text: String, enabled: Bool = true, action: @escaping () -> Void) -> some View {
         Button(action: { if enabled { action() } }) {
             Text(text).font(StrandFont.caption)
@@ -279,30 +279,30 @@ struct SessionKeypad: View {
         }
     }
 
-    /// Tecla DATO — el keycap blanco calcado de UIKit (`keyCap`), numerales o glifos de edición.
+    /// Tecla DATO — keycap `papelTarjeta`, numerales o glifos de edición.
     private func digitKey(_ glyph: String, size: CGFloat = 20, accessibilityLabel: Text? = nil,
                            action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(glyph)
-                .font(.system(size: size)).foregroundStyle(theme.ink) // token-exempt: numeral de tecla del keypad
+                .font(.system(size: size)).foregroundStyle(LiquidColor.tinta900) // token-exempt: numeral de tecla del keypad
                 .frame(maxWidth: .infinity).frame(height: EntrenarMetrics.keyCap)
-                .background(RoundedRectangle(cornerRadius: EntrenarMetrics.keyRadius, style: .continuous).fill(theme.keyCap))
-                .shadow(color: theme.ink.opacity(0.08), radius: 0, x: 0, y: 1) // token-exempt: sombra sutil <0.10
+                .background(RoundedRectangle(cornerRadius: EntrenarMetrics.keyRadius, style: .continuous).fill(LiquidColor.papelTarjeta))
+                .shadow(color: LiquidColor.tinta900.opacity(0.08), radius: 0, x: 0, y: 1) // token-exempt: sombra sutil <0.10
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(accessibilityLabel ?? Text(glyph))
     }
 
-    /// Tecla ACCIÓN — fondo tinta (`theme.ink`, NO un hue: es tinta900), texto papel, glifo/etiqueta
-    /// 13/600. Se atenúa (no desaparece) cuando `enabled` es falso para que la rejilla no salte.
+    /// Tecla ACCIÓN — fondo tinta900, texto papelTarjeta. Se atenúa (no desaparece) cuando
+    /// `enabled` es falso para que la rejilla no salte.
     private func actionKey(_ label: String, enabled: Bool = true, accessibilityLabel: Text,
                             action: @escaping () -> Void) -> some View {
         Button(action: { if enabled { action() } }) {
             Text(label)
-                .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.paper)
+                .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(LiquidColor.papelTarjeta)
                 .frame(maxWidth: .infinity).frame(height: EntrenarMetrics.keyCap)
-                .background(RoundedRectangle(cornerRadius: EntrenarMetrics.keyRadius, style: .continuous).fill(theme.ink))
+                .background(RoundedRectangle(cornerRadius: EntrenarMetrics.keyRadius, style: .continuous).fill(LiquidColor.tinta900))
                 .opacity(enabled ? 1 : StrandPalette.disabledOpacity)
                 .contentShape(Rectangle())
         }
