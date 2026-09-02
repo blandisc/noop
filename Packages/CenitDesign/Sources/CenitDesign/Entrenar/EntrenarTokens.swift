@@ -39,8 +39,8 @@ public enum EntrenarFamily: String, Sendable, CaseIterable, Hashable {
     /// tono de lectura» — para que un rótulo de familia nunca se pinte en el hue saturado.
     public func reading(_ theme: InstrumentoTheme = .base) -> Color {
         let _ = theme
-        // AA sobre el papel cálido vivo (`.base.paper`); ver nota en `EntrenarHilo.Tone.word` (FER-316).
-        return OKLab.darkened(tint(), toContrast: 4.5, against: InstrumentoTheme.base.paper)
+        // AA sobre el lienzo de referencia (FER-316); ver nota en `EntrenarHilo.Tone.word`.
+        return OKLab.darkened(tint(), toContrast: 4.5, against: EntrenarMetrics.lienzoContraste)
     }
 
     /// Nombre visible de la familia (vía catálogo). Claves `muscleGroup.*` — un «Push» suelto
@@ -68,6 +68,10 @@ public enum EntrenarFamily: String, Sendable, CaseIterable, Hashable {
 /// El ritmo de la sección: las alturas y los blancos táctiles que se repiten en más de una pantalla.
 /// Base 4, alineado al handoff. Lo que no está aquí vive en `CenitMetrics` (márgenes, radios, gaps).
 public enum EntrenarMetrics {
+    /// Piso seguro de contraste de lectura: lo que pasa AA en el papel cálido pasa en
+    /// `fondoAlto` (FER-316). Migrar a `LiquidColor.fondoAlto` cuando ninguna pantalla
+    /// hospedadora siga en papel.
+    public static let lienzoContraste = InstrumentoTheme.base.paper
     /// Fila mínima y blanco táctil (HIG). El dibujo puede ser menor; el toque nunca.
     public static let row: CGFloat = LiquidControl.hitTarget      // 44
     /// Fila de la tabla de series: más alta que una fila de lista porque es un campo de captura.

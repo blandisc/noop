@@ -90,7 +90,7 @@ public struct ExerciseCard: View {
             customThumb
                 .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)
                 .clipShape(shape)
-                .overlay(shape.strokeBorder(family?.tint() ?? LiquidColor.vidrioBordeFuerte, lineWidth: 1.5))
+                .overlay(shape.strokeBorder(family?.tint() ?? LiquidColor.tinta10, lineWidth: 1.5))
                 .accessibilityHidden(true)
         } else {
             Group {
@@ -107,7 +107,7 @@ public struct ExerciseCard: View {
             .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)
             .background(LiquidColor.papelTarjeta, in: shape)
             .clipShape(shape)
-            .overlay(shape.strokeBorder(family?.tint() ?? LiquidColor.vidrioBordeFuerte, lineWidth: 1.5))
+            .overlay(shape.strokeBorder(family?.tint() ?? LiquidColor.tinta10, lineWidth: 1.5))
             .accessibilityHidden(true)
         }
     }

@@ -25,7 +25,8 @@ public extension DataOrigin {
         switch self {
         case .band:     return LiquidColor.verdePrimario
         case .apple:    return LiquidColor.azul
-        case .computed: return LiquidColor.tinta500
+        // ex-originComputed/inkMuted (#AFAA9D): tinta500 plena oscurece el punto «calculado» (FER-316).
+        case .computed: return LiquidColor.tinta500.opacity(0.6)
         }
     }
 

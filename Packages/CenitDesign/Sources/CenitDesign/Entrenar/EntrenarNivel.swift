@@ -91,7 +91,7 @@ public struct EntrenarChip: View {
         func tone(_ theme: InstrumentoTheme = .base) -> Color {
             let _ = theme
             switch self {
-            case .rest:        return OKLab.darkened(LiquidColor.rosa, toContrast: 4.5, against: LiquidColor.fondoAlto)
+            case .rest:        return OKLab.darkened(LiquidColor.rosa, toContrast: 4.5, against: EntrenarMetrics.lienzoContraste)
             case .progression: return LiquidColor.positivo
             case .warmup:      return LiquidColor.tinta700
             }
@@ -160,7 +160,7 @@ public struct EntrenarChip: View {
         .frame(minHeight: EntrenarMetrics.badge)
         .background(LiquidColor.papelTarjeta, in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous)
-            .strokeBorder(LiquidColor.vidrioBordeFuerte, lineWidth: 1))
+            .strokeBorder(LiquidColor.tinta10, lineWidth: 1))
         // El dibujo es de 28; el toque nunca baja de 44 (HIG).
         .frame(minHeight: action != nil ? EntrenarMetrics.row : EntrenarMetrics.badge)
         .contentShape(Rectangle())

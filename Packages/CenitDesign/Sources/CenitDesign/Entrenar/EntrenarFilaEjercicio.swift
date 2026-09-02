@@ -180,7 +180,7 @@ public struct EntrenarFilaEjercicio<Miniatura: View>: View {
                         .padding(.vertical, LiquidSpace.s150)
                         .overlay(
                             Capsule(style: .continuous)
-                                .strokeBorder(LiquidColor.vidrioBordeFuerte, lineWidth: 1)
+                                .strokeBorder(LiquidColor.tinta10, lineWidth: 1)
                         )
                 }
             }

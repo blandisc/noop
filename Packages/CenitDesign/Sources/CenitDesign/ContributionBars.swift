@@ -103,7 +103,7 @@ public struct ContributionBars: View {
     private func color(for years: Double) -> Color {
         // Same sign convention as `LiquidBarrasContribucion.tono` (FER-316).
         if years < -0.05 { return LiquidColor.positivo } // rejuvenates
-        if years > 0.05 { return LiquidColor.atencion }  // ages you
+        if years > 0.05 { return LiquidColor.atencionTexto }  // ages you (ex-warning → atencionTexto, FER-316)
         return LiquidColor.tinta500                       // ~neutral
     }
 

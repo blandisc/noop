@@ -160,7 +160,7 @@ public struct SessionStatsBar: View {
             // «hue de dato / tono de lectura» que `EntrenarFamily.reading` ya obliga en la sección.
             stat(pulse, unit: "bpm",
                  tone: isPaused ? LiquidColor.tinta700
-                                : OKLab.darkened(LiquidColor.rosa, toContrast: 4.5, against: LiquidColor.fondoAlto))
+                                : OKLab.darkened(LiquidColor.rosa, toContrast: 4.5, against: EntrenarMetrics.lienzoContraste))
         }
     }
 
@@ -192,7 +192,7 @@ public struct SessionStatsBar: View {
                 .foregroundStyle(LiquidColor.tinta700)
                 .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)
                 .background(LiquidColor.papelTarjeta, in: Circle())
-                .overlay(Circle().strokeBorder(LiquidColor.vidrioBordeFuerte, lineWidth: 1))
+                .overlay(Circle().strokeBorder(LiquidColor.tinta10, lineWidth: 1))
                 .contentShape(Circle())
         }
         .buttonStyle(EntrenarPressStyle())

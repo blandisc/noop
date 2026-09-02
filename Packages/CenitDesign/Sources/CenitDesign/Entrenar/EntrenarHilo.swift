@@ -14,7 +14,8 @@ import SwiftUI
 // inventa consejo ni color — un aro punteado de 22 y texto en tinta secundaria.
 //
 // Sin pastilla, la palabra cae sobre el PAPEL: su contraste se mide contra el papel, no contra un
-// relleno que ya no existe.
+// relleno que ya no existe. En Watch (`sobreOLED: true`) el suelo es negro: la palabra no se
+// oscurece — se aclara o se deja el tono si ya pasa AA sobre `LiquidOLED.fondo` (FER-316).
 
 public struct EntrenarHilo: View {
 
@@ -43,7 +44,8 @@ public struct EntrenarHilo: View {
             _ = theme
             switch self {
             case .clear:   return LiquidColor.verdePrimario
-            case .caution: return LiquidColor.ambar
+            // ex-warning (#9C5E10) → atencionTexto (no ambar/atencion) — decisión director FER-316.
+            case .caution: return LiquidColor.atencionTexto
             case .ease:    return LiquidColor.negativo
             case .hollow:  return .clear
             }
@@ -53,15 +55,27 @@ public struct EntrenarHilo: View {
         /// Es el par obligatorio de `hue` — hue de dato, tono de lectura — y sin la pastilla el
         /// fondo real bajo la palabra es el papel, sin velo de por medio.
         ///
+        /// Sobre OLED (`sobreOLED: true`) la regla se invierte: no oscurecer contra papel; usar el
+        /// tono tal cual si su contraste sobre negro ≥ 4.5, si no el par LiquidOLED del rol.
+        ///
         /// `public` por la misma razón que `hue` arriba (FER-95).
-        /// `theme` se ignora (FER-316): lee `LiquidColor` directo.
-        public func word(_ theme: InstrumentoTheme = .base) -> Color {
+        /// `theme` se ignora (FER-316): lee `LiquidColor` / `LiquidOLED` directo.
+        public func word(_ theme: InstrumentoTheme = .base, sobreOLED: Bool = false) -> Color {
             _ = theme
-            // AA sobre el papel cálido vivo (`.base.paper` #F4F1E8). No hay token Liquid con
-            // ese hex: `fondoAlto` es demasiado claro y el tono fallaría AA sobre el papel que
-            // las pantallas aún pintan (FER-316).
+            if sobreOLED {
+                if self == .hollow { return LiquidOLED.tinta }
+                let h = hue()
+                if OKLab.contrastRatio(h, LiquidOLED.fondo) >= 4.5 { return h }
+                switch self {
+                case .clear:   return LiquidOLED.verde
+                case .caution: return LiquidOLED.ambar
+                case .ease:    return LiquidOLED.negativo
+                case .hollow:  return LiquidOLED.tinta
+                }
+            }
+            // AA sobre el lienzo de referencia (FER-316).
             return self == .hollow ? LiquidColor.tinta700
-                            : OKLab.darkened(hue(), toContrast: 4.5, against: InstrumentoTheme.base.paper)
+                            : OKLab.darkened(hue(), toContrast: 4.5, against: EntrenarMetrics.lienzoContraste)
         }
     }
 
@@ -74,18 +88,23 @@ public struct EntrenarHilo: View {
     /// «botón» a secas y nadie sabía qué iba a abrir.
     private let hint: LocalizedStringKey?
     private let action: (() -> Void)?
+    /// Watch / Dynamic Island: pinta tintas OLED sobre negro en vez de tinta700/500 sobre papel.
+    private let sobreOLED: Bool
 
     /// - Parameters:
     ///   - tone: el color del día, ya traducido por la app.
     ///   - word: la palabra del veredicto («En rango», «Recupera», «Conociéndote»…).
     ///   - advice: el consejo grueso que la acompaña. `nil` en las variantes que no aconsejan.
     ///   - radio: el radio del orbe; por omisión el de la landing.
+    ///   - sobreOLED: `true` en Watch (suelo negro); default `false` (papel).
     ///   - action: qué abre. `nil` deja el hilo informativo (sin «›» y sin toque).
     public init(tone: Tone, word: LocalizedStringKey, advice: LocalizedStringKey? = nil,
                 radio: CGFloat = EntrenarMetrics.orbeLanding,
-                hint: LocalizedStringKey? = nil, action: (() -> Void)? = nil) {
+                hint: LocalizedStringKey? = nil, sobreOLED: Bool = false,
+                action: (() -> Void)? = nil) {
         self.tone = tone; self.word = word; self.advice = advice
-        self.radio = radio; self.hint = hint; self.action = action
+        self.radio = radio; self.hint = hint; self.sobreOLED = sobreOLED
+        self.action = action
     }
 
     public var body: some View {
@@ -113,7 +132,7 @@ public struct EntrenarHilo: View {
             if action != nil {
                 CenitIcon.disclosure.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold))
-                    .foregroundStyle(LiquidColor.tinta500)
+                    .foregroundStyle(sobreOLED ? LiquidOLED.tintaTerciaria : LiquidColor.tinta500)
                     .accessibilityHidden(true)
             }
         }
@@ -124,7 +143,7 @@ public struct EntrenarHilo: View {
     private var palabra: some View {
         Text(word)
             .font(StrandFont.subhead.weight(.semibold))
-            .foregroundStyle(tone.word())
+            .foregroundStyle(tone.word(sobreOLED: sobreOLED))
             .fixedSize(horizontal: false, vertical: true)
     }
 
@@ -132,7 +151,7 @@ public struct EntrenarHilo: View {
         if let advice {
             Text(advice)
                 .font(StrandFont.subhead)
-                .foregroundStyle(LiquidColor.tinta700)
+                .foregroundStyle(sobreOLED ? LiquidOLED.tintaSecundaria : LiquidColor.tinta700)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -145,7 +164,7 @@ public struct EntrenarHilo: View {
         let lado = radio * 2.5
         if tone == .hollow {
             Circle()
-                .strokeBorder(LiquidColor.tinta500,
+                .strokeBorder(sobreOLED ? LiquidOLED.tintaTerciaria : LiquidColor.tinta500,
                               style: StrokeStyle(lineWidth: 1.5, dash: [2, 3]))
                 .frame(width: EntrenarMetrics.aroHueco, height: EntrenarMetrics.aroHueco)
                 .frame(width: lado, height: lado)
@@ -204,5 +223,20 @@ public struct EntrenarPressStyle: ButtonStyle {
     .padding(24)
     .background(LiquidColor.fondoAlto)
     .environment(\.dynamicTypeSize, .accessibility3)
+}
+
+#Preview("EntrenarHilo · OLED") {
+    VStack(alignment: .leading, spacing: 6) {
+        EntrenarHilo(tone: .clear, word: "In range", advice: "your plan for today, as it is",
+                     sobreOLED: true) {}
+        EntrenarHilo(tone: .caution, word: "Go light today", advice: "don't add weight",
+                     sobreOLED: true) {}
+        EntrenarHilo(tone: .ease, word: "Recover", advice: "easy today, or rest",
+                     sobreOLED: true) {}
+        EntrenarHilo(tone: .hollow, word: "Getting to know you", advice: "no advice yet",
+                     sobreOLED: true)
+    }
+    .padding(24)
+    .background(LiquidOLED.fondo)
 }
 #endif

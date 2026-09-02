@@ -5,10 +5,10 @@ import SwiftUI
 // The 24-hour dial reduced to its signature: a 34 pt mini dial that lives in the «Hoy» header
 // (and doubles as the pull-to-refresh spinner — the CALLER rotates it, this face is static).
 // Same clock convention as `DiurnalDial` (`DialGeometry`: noon up, midnight down, clockwise):
-// a hairline ring, the day arc in `LiquidColor.oro` (context, not a datum), the night's sleep
-// band in `indigo`, and the «now» dot in `verdePrimario`. Arcs are omitted when their window is
-// unknown — an honest blank, never a fabricated sun. Pure: the hour is injected, never read
-// from a clock. Paints with `LiquidColor` (FER-316).
+// a hairline ring, the day arc in `LiquidColor.ambarClaro` (ex-dataSun peach; oro is yellow
+// dawn — FER-316), the night's sleep band in `indigo`, and the «now» dot in `verdePrimario`.
+// Arcs are omitted when their window is unknown — an honest blank, never a fabricated sun.
+// Pure: the hour is injected, never read from a clock. Paints with `LiquidColor` (FER-316).
 
 public struct DialSeal: View {
     /// The current clock hour (0…24) — places the «now» dot.
@@ -34,7 +34,7 @@ public struct DialSeal: View {
             // Day arc (sunrise → sunset) in the sun hue.
             if let s = solar {
                 ctx.stroke(DialGeometry.arc(center: c, radius: r, fromHour: s.sunrise, toHour: s.sunset),
-                           with: .color(LiquidColor.oro),
+                           with: .color(LiquidColor.ambarClaro),
                            style: StrokeStyle(lineWidth: 2.4, lineCap: .round))
             }
             // Sleep band (bedtime → wake), drawn slightly inset so both arcs read at 34 pt.

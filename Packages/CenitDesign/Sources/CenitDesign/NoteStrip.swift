@@ -28,14 +28,14 @@ public struct NoteStrip<Content: View>: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 12).padding(.vertical, 10)
                 .background(
-                    LiquidColor.atencion.opacity(CenitOpacity.tintFill),
+                    LiquidColor.atencionTexto.opacity(CenitOpacity.tintFill),
                     in: RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
-                        .strokeBorder(LiquidColor.atencion.opacity(CenitOpacity.strokeSoft), lineWidth: 1)
+                        .strokeBorder(LiquidColor.atencionTexto.opacity(CenitOpacity.strokeSoft), lineWidth: 1)
                 )
-                .overlay(alignment: .leading) { Rectangle().fill(LiquidColor.atencion).frame(width: 2.5) }
+                .overlay(alignment: .leading) { Rectangle().fill(LiquidColor.atencionTexto).frame(width: 2.5) }
         case .info:
             content
                 .frame(maxWidth: .infinity, alignment: .leading)
