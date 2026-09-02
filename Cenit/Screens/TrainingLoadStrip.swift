@@ -60,7 +60,7 @@ struct TrainingLoadStrip: View {
             Spacer(minLength: LiquidSpace.s200)
             if let band, let acwr = model.acwr {
                 Text(band.shortLabel)
-                    .font(LiquidType.caption.weight(.bold))
+                    .font(LiquidType.captionNegrita)
                     .tracking(1.2)
                     .textCase(.uppercase)
                     .foregroundStyle(band.flag.color(theme))
@@ -74,7 +74,7 @@ struct TrainingLoadStrip: View {
                     .padding(.leading, LiquidSpace.s150)
             } else {
                 Text("Calibrating")
-                    .font(LiquidType.caption.weight(.bold))
+                    .font(LiquidType.captionNegrita)
                     .tracking(1.2)
                     .textCase(.uppercase)
                     .foregroundStyle(LiquidColor.tinta500)

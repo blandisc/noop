@@ -313,7 +313,7 @@ struct WorkoutImportView: View {
                             if isAuto { Text("Matched automatically · \(StrengthDisplay.name(resolved))") }
                             else { Text("Matched · \(StrengthDisplay.name(resolved))") }
                         }
-                        .font(LiquidType.caption.weight(.semibold))
+                        .font(LiquidType.captionFuerte)
                         .lineLimit(1).minimumScaleFactor(0.85)
                     }
                     .foregroundStyle(LiquidColor.verdePrimario)
@@ -324,7 +324,7 @@ struct WorkoutImportView: View {
                     undoLink { resolution[key] = nil; autoMatched.remove(key) }
                 }
                 Button { mappingTarget = MappingName(name: name) } label: {
-                    Text("Change mapping").font(LiquidType.tituloFila.weight(.medium)).foregroundStyle(LiquidColor.tinta500).underline()
+                    Text("Change mapping").font(LiquidType.tituloFilaMedia).foregroundStyle(LiquidColor.tinta500).underline()
                 }
                 .buttonStyle(.plain)
             } else {
@@ -338,7 +338,7 @@ struct WorkoutImportView: View {
                                 Image(systemName: "sparkles").font(LiquidType.caption).foregroundStyle(LiquidColor.ambar)
                                 Text(StrengthDisplay.name(s)).font(LiquidType.cuerpo.weight(.medium)).foregroundStyle(LiquidColor.tinta900)
                                 Spacer(minLength: LiquidSpace.s200)
-                                Text("Use").font(LiquidType.tituloFila.weight(.bold)).foregroundStyle(LiquidColor.papelTarjeta)
+                                Text("Use").font(LiquidType.tituloFilaNegrita).foregroundStyle(LiquidColor.papelTarjeta)
                                     .padding(.horizontal, 11).padding(.vertical, LiquidSpace.s100)  // token-exempt(falta-pieza): chip handoff 11 sin token exacto
                                     .background(LiquidColor.tinta900, in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
                             }
@@ -363,7 +363,7 @@ struct WorkoutImportView: View {
     /// A small underlined «Undo» link — reverts a suggestion/omit so the row goes back to unmatched.
     private func undoLink(_ action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text("Undo").font(LiquidType.tituloFila.weight(.medium)).foregroundStyle(LiquidColor.tinta500).underline()
+            Text("Undo").font(LiquidType.tituloFilaMedia).foregroundStyle(LiquidColor.tinta500).underline()
         }
         .buttonStyle(.plain)
     }
@@ -484,7 +484,7 @@ struct WorkoutImportView: View {
             Spacer(minLength: LiquidSpace.s200)
             if mapped > 0 {
                 Text(mapped == 1 ? "1 mapped" : "\(mapped) mapped")
-                    .font(LiquidType.caption.weight(.semibold)).foregroundStyle(LiquidColor.verdePrimario)
+                    .font(LiquidType.captionFuerte).foregroundStyle(LiquidColor.verdePrimario)
                     .padding(.horizontal, LiquidSpace.s225).padding(.vertical, LiquidSpace.s075)  // chip handoff 9/3 → s225/s075
                     .background(LiquidColor.verdePrimario.opacity(CenitOpacity.tintFill),
                                 in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
@@ -569,7 +569,7 @@ struct WorkoutImportView: View {
             HStack(spacing: LiquidSpace.s200) {
                 ForEach(0..<labels.count, id: \.self) { i in
                     Text(labels[i])
-                        .font(LiquidType.tituloFila.weight(.medium))
+                        .font(LiquidType.tituloFilaMedia)
                         .foregroundStyle(i == currentIndex ? LiquidColor.tinta900 : LiquidColor.tinta500)
                         .frame(maxWidth: .infinity, alignment: .center)
                         .lineLimit(1)

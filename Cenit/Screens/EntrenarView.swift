@@ -835,7 +835,7 @@ private struct EntrenarLanding: View {
         // la vez y con Dynamic Type una crecía y la otra se quedaba clavada en 13 pt.
         let strong = parts.map {
             Text(verbatim: $0)
-                .font(LiquidType.tituloFila.weight(.bold))
+                .font(LiquidType.tituloFilaNegrita)
                 .monospacedDigit()
                 // Verde profundo (AA ≥ 4.5:1) — mismo rol que el verde de lectura de subidas.
                 .foregroundStyle(LiquidColor.verdeProfundo)

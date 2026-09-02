@@ -268,6 +268,18 @@ class Fer271CommentGaps(unittest.TestCase):
             widget = _swift(tmp, "CenitWidgets/W.swift", [".foregroundStyle(theme.ink)"])
             self.assertEqual(drift.check([widget], ["no-instrumento-theme"]), [])
 
+    def test_weight_on_grotesk_solo_en_tokens_grotesk(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src = _swift(tmp, "Cenit/Screens/C.swift", [
+                ".font(LiquidType.caption.weight(.bold))",        # grotesk: no-op silencioso
+                ".font(LiquidType.filaConteo.weight(.bold))",     # .system: el peso sí funciona
+                ".font(LiquidType.captionNegrita)",
+            ])
+            self.assertIn("caption", drift._grotesk_tokens())
+            self.assertNotIn("filaConteo", drift._grotesk_tokens())
+            hits = drift.check([src], ["no-weight-on-grotesk"])
+            self.assertEqual([i for _p, i, _r, _s in hits], [1])
+
 if __name__ == "__main__":
     unittest.main()
 

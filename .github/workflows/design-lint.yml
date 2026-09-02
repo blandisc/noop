@@ -57,7 +57,7 @@ jobs:
       - name: Design-drift linter — no legacy API, ratchet (FER-263)
         run: python3 Tools/check-design-drift.py --rules no-legacy-api --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media CenitApp
       - name: Design drift · no-deprecated-metrics + no-instrumento-theme (FER-306)
-        run: python3 Tools/check-design-drift.py --rules no-deprecated-metrics,no-instrumento-theme --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media CenitApp
+        run: python3 Tools/check-design-drift.py --rules no-deprecated-metrics,no-instrumento-theme,no-weight-on-grotesk --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media CenitApp
       - name: Design-drift linter — token-exempt es deuda, ratchet (FER-263)
         run: python3 Tools/check-design-drift.py --rules token-exempt --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media Packages/CenitDesign/Sources CenitApp
       - name: Sin vidrio dentro de una hoja (papel opaco)

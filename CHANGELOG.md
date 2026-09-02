@@ -20,6 +20,8 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- Gate de diseño: regla `no-weight-on-grotesk` (`.weight(...)` sobre un token grotesk de `LiquidType` no cambia la cara: el peso se pide por token) y `Tools/check-tokens-exist.sh`, que verifica en segundos que cada token Liquid del diff exista antes de compilar la app (FER-308, retro de FER-299).
+
 - El sistema de diseño se llama `CenitDesign` (antes `StrandDesign`): paquete, módulo, carpetas, generador de tokens y tests renombrados; `StrandIcon`, `StrandCTAButton`, `StrandOpacity` y `StrandFormat` pasan a `CenitIcon`, `CenitCTAButton`, `CenitOpacity` y `CenitFormat` (FER-290, decisión 4A).
 
 - Gate de diseño: dos reglas nuevas, `no-deprecated-metrics` (los 8 miembros retirados de `CenitMetrics`) y `no-instrumento-theme` (acceso `theme.ink/paper/…` y `StrandFont.*` fuera del carve-out Watch/Widgets), ambas prohibición pura porque la deuda ya es cero; y los últimos residuos Instrumento de Tu cuerpo, Edad corporal, Estrés y el plan semanal pasan a tokens Liquid (FER-306).
