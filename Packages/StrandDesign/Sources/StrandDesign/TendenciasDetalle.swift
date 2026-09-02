@@ -83,21 +83,30 @@ public struct Metodo<Content: View>: View {
     }
 
     public var body: some View {
+        // `theme` se conserva en el init por compatibilidad de call-sites (RestEditor,
+        // preview Tendencias); la piel ya no lo lee — tokens Liquid fijos (FER-293).
+        let _ = theme
         DisclosureGroup(isExpanded: $expanded) {
-            VStack(alignment: .leading, spacing: 10) {
-                Divider().overlay(theme.hairline)
+            VStack(alignment: .leading, spacing: LiquidSpace.s250) {
+                Rectangle().fill(LiquidColor.tinta10).frame(height: 0.5)
                 content
             }
-            .padding(.top, 8)
+            .padding(.top, LiquidSpace.s200)
             .frame(maxWidth: .infinity, alignment: .leading)
         } label: {
             Text(title)
-                .font(StrandFont.scaled(13))
-                .foregroundStyle(theme.ink)
+                .font(LiquidType.tituloFila)
+                .foregroundStyle(LiquidColor.tinta900)
         }
-        .tint(theme.inkTertiary)
-        .padding(14)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .tint(LiquidColor.tinta500)
+        .padding(LiquidSpace.handoff14)
+        .background(
+            LiquidColor.papelTarjeta,
+            in: RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
+                .strokeBorder(LiquidColor.tinta900.opacity(0.08), lineWidth: 0.5))
+        .shadow(color: LiquidColor.tinta900.opacity(0.05), radius: 1, x: 0, y: 1)
     }
 }
 #endif
