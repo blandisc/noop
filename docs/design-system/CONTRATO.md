@@ -133,6 +133,7 @@ Tabla humana (resumen) — la verdad máquina-legible es el bloque JSON de abajo
 | no-raw-color / no-edgeinsets-literal / no-token-arithmetic (trinquete, FER-276) | árbol 8 raíces | árbol 8 raíces | árbol 8 raíces |
 | no-motion-literal (trinquete, FER-269) | árbol 5 raíces | árbol 5 raíces | árbol 5 raíces |
 | no-dt-cap-adhoc (prohibición pura, FER-269) | árbol 10 raíces UI | árbol 10 raíces UI | árbol 10 raíces UI |
+| no-deprecated-metrics / no-instrumento-theme (trinquete, FER-306) | árbol 8 raíces | árbol 8 raíces | árbol 8 raíces |
 | monotonía del baseline | — (hook delgado) | espejo vs origin/iOS | job `baseline-monotony` |
 
 ¹ divergencia declarada: local corre sobre los archivos tocados (más estricto en Watch); CI usa las
@@ -164,7 +165,9 @@ raíces explícitas donde vive el defecto (incluye el paquete, excluye CenitWatc
     "no-edgeinsets-literal": {"pre-commit": "tree:legacy+baseline", "verify-quick": "tree:legacy+baseline", "design-lint": "tree:legacy+baseline"},
     "no-token-arithmetic":  {"pre-commit": "tree:legacy+baseline", "verify-quick": "tree:legacy+baseline", "design-lint": "tree:legacy+baseline"},
     "no-motion-literal":    {"pre-commit": "tree:spacing+baseline", "verify-quick": "tree:spacing+baseline", "design-lint": "tree:spacing+baseline"},
-    "no-dt-cap-adhoc":      {"pre-commit": "tree:dtcap", "verify-quick": "tree:dtcap", "design-lint": "tree:dtcap"}
+    "no-dt-cap-adhoc":      {"pre-commit": "tree:dtcap", "verify-quick": "tree:dtcap", "design-lint": "tree:dtcap"},
+    "no-deprecated-metrics": {"pre-commit": "tree:legacy+baseline", "verify-quick": "tree:legacy+baseline", "design-lint": "tree:legacy+baseline"},
+    "no-instrumento-theme":  {"pre-commit": "tree:legacy+baseline", "verify-quick": "tree:legacy+baseline", "design-lint": "tree:legacy+baseline"}
   }
 }
 ```
