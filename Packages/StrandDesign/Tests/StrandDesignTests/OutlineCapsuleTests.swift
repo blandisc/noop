@@ -65,6 +65,7 @@ final class OutlineCapsuleTests: XCTestCase {
     func test_estilo_init_instantiatesEachCase() {
         let t = InstrumentoTheme.base
         let _: any View = OutlineCapsule("Outline", theme: t, estilo: .outline, action: {})
+        let _: any View = OutlineCapsule("Suave", theme: t, estilo: .outlineSuave, action: {})
         let _: any View = OutlineCapsule("Papel", theme: t, size: .lg, estilo: .papel, action: {})
         let _: any View = OutlineCapsule("Vidrio", theme: t, estilo: .vidrio, action: {})
         let _: any View = OutlineCapsule("Teñida", theme: t, estilo: .tenida(.verde), action: {})
