@@ -17,7 +17,6 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 /// (nunca hue de dato en fill). Lógica del temporizador y haptics, intacta.
 struct IntervalTimerView: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.instrumentoTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     // MARK: Config (persisted only in-view)
@@ -396,8 +395,12 @@ struct IntervalTimerView: View {
                     Text(unit).font(LiquidType.unidad).foregroundStyle(LiquidColor.tinta500)
                 }
             }
-            PaperStepper(value: value, in: range, step: step,
-                         label: accessibilityName, unit: unit)
+            EntrenarStepper(valor: "\(value.wrappedValue)",
+                            puedeBajar: value.wrappedValue - step >= range.lowerBound,
+                            puedeSubir: value.wrappedValue + step <= range.upperBound,
+                            onBajar: { value.wrappedValue = max(range.lowerBound, value.wrappedValue - step) },
+                            onSubir: { value.wrappedValue = min(range.upperBound, value.wrappedValue + step) })
+                .accessibilityLabel(Text(verbatim: unit.map { "\(accessibilityName), \($0)" } ?? accessibilityName))
         }
     }
 

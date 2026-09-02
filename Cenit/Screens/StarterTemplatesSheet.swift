@@ -21,7 +21,6 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 struct StarterTemplatesSheet: View {
     @EnvironmentObject private var repo: Repository
-    @Environment(\.instrumentoTheme) private var theme
     @Environment(\.dismiss) private var dismiss
 
     /// Called after a template is copied (or a group is applied), so the hub reloads.
