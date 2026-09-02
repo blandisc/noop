@@ -1,7 +1,7 @@
 #if os(iOS)
 import SwiftUI
 import UniformTypeIdentifiers
-import StrandDesign   // InstrumentoTheme, CenitMetrics, StrandMotion
+import StrandDesign   // LiquidColor, LiquidMotion, LiquidRadius
 
 // MARK: - Arrastrar una rutina a otra sección
 //
@@ -40,20 +40,14 @@ extension View {
     ///   - active: si hay una rutina flotando encima ahora mismo (pinta el resalte).
     ///   - onDrop: recibe el id soltado; devuelve `true` si de verdad movió algo.
     ///   - targeted: avisa cuándo entra y sale el arrastre, para que la pantalla pinte el resalte.
+    /// Resalte El Eje (FER-292): canto `tinta900` a 1 pt — sin theme, sin color de relleno.
     func routineDropTarget(active: Bool,
-                           theme: InstrumentoTheme,
                            onDrop: @escaping (String) -> Bool,
                            targeted: @escaping (Bool) -> Void) -> some View {
         self
-            // El resalte es papel elevado con el borde de la sección, no un color nuevo: el DNA reserva
-            // el hue para el dato, y «aquí lo vas a soltar» es cromo, no medición.
-            .background(
-                RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
-                    .fill(active ? theme.surface : .clear)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
-                            .strokeBorder(active ? theme.hairlineStrong : .clear, lineWidth: 1.5)
-                    )
+            .overlay(
+                RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous)
+                    .strokeBorder(active ? LiquidColor.tinta900 : .clear, lineWidth: 1)
             )
             .animation(LiquidMotion.fundido, value: active)
             .dropDestination(for: RoutineID.self) { items, _ in

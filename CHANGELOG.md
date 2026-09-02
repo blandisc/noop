@@ -20,6 +20,7 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- El editor de plan semanal pasa al vidrio El Eje: semana en una sola tarjeta, chips de rutina en cápsula, carpetas sin banda de papel y diálogo de texto en cristal (FER-292).
 - El detalle de ejercicio termina su paso al vidrio El Eje: tipografía y espacios Liquid, secciones con cabecera, récords como libro mayor (FER-291).
 
 - La biblioteca de ejercicios pasa al vidrio El Eje: papel sólido, filas con capilar, campo de búsqueda y filtros Liquid (FER-289).
