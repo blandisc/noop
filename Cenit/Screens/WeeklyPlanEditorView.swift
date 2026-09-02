@@ -1124,9 +1124,9 @@ enum MuscleGroup: CaseIterable {
 
     func tint(_ theme: InstrumentoTheme) -> Color {
         switch self {
-        case .push: return theme.dataStrain
-        case .pull: return theme.dataHrv
-        case .legs: return theme.dataSleep
+        case .push: return LiquidColor.ambar
+        case .pull: return LiquidColor.cian
+        case .legs: return LiquidColor.indigo
         case .core: return LiquidColor.tinta500
         }
     }

@@ -37,7 +37,7 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 // Three changes came with the fusion, each documented at its call site: (1) `ranking`/`peekCard`'s
 // hand-rolled rows became `MuscleLoadRow` (StrandDesign · E2), which also DROPPED the 3-way
 // fresh/moderate/loaded color word — that was a second, inconsistent color language for the same
-// «recency» concept `theme.verdict` already owns for the day's bullet (see `loadRow` below); (2) the
+// «recency» concept `LiquidColor.verdePrimario` already owns for the day's bullet (see `loadRow` below); (2) the
 // volume section's own «ⓘ How this is measured» sheet was NOT carried over — its citation (Schoenfeld
 // 2017, the 10–20 band) is already inside this screen's ONE `method` foot, and the épico explicitly
 // forbids a second note repeating the same cite; (3) the top-level empty-state gate now also waits on
@@ -293,7 +293,7 @@ struct TrainingBodyScreen: View {
                 } else {
                     legend.padding(.top, LiquidSpace.s150)
                     Text("Tap a muscle to see its load")
-                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        .font(LiquidType.filaConteo).foregroundStyle(LiquidColor.tinta500)
                         .padding(.top, 10)  // token-exempt: sin token exacto (edge ≠ rowVPad)
                     if !loads.isEmpty {
                         markRecoveredButton.padding(.top, LiquidSpace.s300)
@@ -328,8 +328,8 @@ struct TrainingBodyScreen: View {
         HStack(spacing: 7) {
             Circle().fill(theme.muscleStateColor(m.relative))
                 .frame(width: 7, height: 7)
-            Text(MuscleAtlas.name(m.muscle)).font(StrandFont.caption).fontWeight(.semibold).foregroundStyle(LiquidColor.papelTarjeta)
-            Text(stateSuffix(m.state)).font(StrandFont.caption).foregroundStyle(LiquidColor.papelTarjeta.opacity(StrandOpacity.muted))
+            Text(MuscleAtlas.name(m.muscle)).font(LiquidType.filaConteo).fontWeight(.semibold).foregroundStyle(LiquidColor.papelTarjeta)
+            Text(stateSuffix(m.state)).font(LiquidType.filaConteo).foregroundStyle(LiquidColor.papelTarjeta.opacity(StrandOpacity.muted))
         }
         .padding(.horizontal, LiquidChip.compactoHorizontal).padding(.vertical, LiquidChip.compactoVertical)
         .background(LiquidColor.tinta900, in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
@@ -341,7 +341,7 @@ struct TrainingBodyScreen: View {
     /// `peekCard` (FER-91 · E10): before the fusion each had its own bespoke HStack, and `peekCard`
     /// additionally painted a 3-way fresh/moderate/loaded color word (`stateWord`/`stateColor`,
     /// retired with it) — a second color language for the same «how loaded is it» question the
-    /// ranking already answered with ink + the ámbar rail alone. `theme.verdict` (green) now appears
+    /// ranking already answered with ink + the ámbar rail alone. `LiquidColor.verdePrimario` (green) now appears
     /// ONLY on the day's verdict bullet above, never on a muscle row (the inconsistency this fusion
     /// closes).
     private func loadRow(_ muscle: String) -> MuscleLoadRow {
@@ -372,14 +372,14 @@ struct TrainingBodyScreen: View {
 
     private var resetRow: some View {
         HStack {
-            Text("Tap again to see everything").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            Text("Tap again to see everything").font(LiquidType.filaConteo).foregroundStyle(LiquidColor.tinta500)
             Spacer()
             Button { withAnimation(LiquidMotion.toque) { peeked = nil } } label: {
                 HStack(spacing: 3) {
-                    Image(systemName: "arrow.uturn.backward").font(StrandFont.glyph(.chevron, weight: .semibold))
-                    Text("Deselect").font(StrandFont.caption)
+                    Image(systemName: "arrow.uturn.backward").font(LiquidType.infoGlifoCompacto.weight(.semibold))
+                    Text("Deselect").font(LiquidType.filaConteo)
                 }
-                .foregroundStyle(theme.inkSecondary)
+                .foregroundStyle(LiquidColor.tinta700)
             }
             .buttonStyle(.plain)
         }
@@ -391,8 +391,8 @@ struct TrainingBodyScreen: View {
     private var markRecoveredButton: some View {
         OutlineCapsule(theme: theme, size: .lg, estilo: .outline, action: { showResetConfirm = true }) {
             HStack(spacing: 6) {
-                Image(systemName: "arrow.counterclockwise").font(StrandFont.glyph(.chevron, weight: .semibold))
-                Text("Mark all recovered").font(StrandFont.caption)
+                Image(systemName: "arrow.counterclockwise").font(LiquidType.infoGlifoCompacto.weight(.semibold))
+                Text("Mark all recovered").font(LiquidType.filaConteo)
             }
             .foregroundStyle(LiquidColor.tinta700)
         }
@@ -419,11 +419,11 @@ struct TrainingBodyScreen: View {
                 .frame(height: 8)
                 .clipShape(RoundedRectangle(cornerRadius: 4))  // token-exempt: geometría de dato
             HStack {
-                Text("Fresh").font(StrandFont.caption).foregroundStyle(LiquidColor.tinta700)
+                Text("Fresh").font(LiquidType.filaConteo).foregroundStyle(LiquidColor.tinta700)
                 Spacer()
-                Text("relative to your load").font(StrandFont.caption).foregroundStyle(LiquidColor.tinta500)
+                Text("relative to your load").font(LiquidType.filaConteo).foregroundStyle(LiquidColor.tinta500)
                 Spacer()
-                Text("Loaded").font(StrandFont.caption).foregroundStyle(LiquidColor.tinta700)
+                Text("Loaded").font(LiquidType.filaConteo).foregroundStyle(LiquidColor.tinta700)
             }
         }
         .padding(.horizontal, LiquidSpace.s150)
@@ -455,9 +455,9 @@ struct TrainingBodyScreen: View {
         HStack(spacing: LiquidSpace.s300) {
             Color.clear.frame(maxWidth: .infinity)
             Text("Load").liquidLabel().frame(maxWidth: 120, alignment: .leading)
-            Text(verbatim: "yesterday").font(StrandFont.caption).fixedSize(horizontal: true, vertical: false).hidden()
+            Text(verbatim: "yesterday").font(LiquidType.filaConteo).fixedSize(horizontal: true, vertical: false).hidden()
             Text("Sets · 7 d").liquidLabel()
-            StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold)).hidden()
+            StrandIcon.disclosure.image.font(LiquidType.infoGlifoCompacto.weight(.semibold)).hidden()
         }
         .foregroundStyle(LiquidColor.tinta500)
         .accessibilityHidden(true)
@@ -540,13 +540,13 @@ struct TrainingBodyScreen: View {
     /// cuando el mapa no tiene nada cargado ni a medias que contar todavía.
     @ViewBuilder private var grossReading: some View {
         if let reading = muscleReading {
-            (Text("Rough read: ").font(StrandFont.caption).fontWeight(.semibold).foregroundColor(theme.ink)
-             + Text(verbatim: reading.gross).font(StrandFont.caption).foregroundColor(theme.inkSecondary))
+            (Text("Rough read: ").font(LiquidType.filaConteo).fontWeight(.semibold).foregroundColor(LiquidColor.tinta900)
+             + Text(verbatim: reading.gross).font(LiquidType.filaConteo).foregroundColor(LiquidColor.tinta700))
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, LiquidSpace.s300)
         }
         Text("Load = sets that touch the muscle × how much it weighs in each exercise (primary 1, secondary ½) × time: every 2 days it's worth half. Fresh and loaded are compared against your most-loaded muscle, not a table. Sets = work sets from the last 7 days; 10–20 is a guide, not a target. You decide.")
-            .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            .font(LiquidType.pie).foregroundStyle(LiquidColor.tinta500)
             .fixedSize(horizontal: false, vertical: true)
             .padding(.top, LiquidSpace.s200)
     }
@@ -562,7 +562,7 @@ struct TrainingBodyScreen: View {
         VStack(alignment: .leading, spacing: 0) {
             Button { withAnimation(LiquidMotion.toque) { showMethod.toggle() } } label: {
                 Text("See the method ›")
-                    .font(StrandFont.caption).fontWeight(.semibold).foregroundColor(LiquidColor.tinta700)
+                    .font(LiquidType.filaConteo).fontWeight(.semibold).foregroundColor(LiquidColor.tinta700)
                     .fixedSize(horizontal: false, vertical: true)
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -573,7 +573,7 @@ struct TrainingBodyScreen: View {
             .accessibilityAddTraits(showMethod ? [.isSelected] : [])
             if showMethod {
                 Text("Each set adds load to the muscles it works, decaying by half every two days: the time course of muscle protein synthesis (MacDougall 1995; Damas 2015). Color is relative to your most-loaded muscle, so it reads which of your muscles are hot right now. Weekly volume is judged against the 10–20 sets-per-week band (Schoenfeld 2017), a hypertrophy guide per muscle group; the volume shown is weighted by involvement, so secondary muscles count less. The recommendation crosses this with today's verdict, the same one Hoy shows: a day that asks you to ease off gates everything to rest.")
-                    .font(StrandFont.caption).foregroundStyle(LiquidColor.tinta700)
+                    .font(LiquidType.filaConteo).foregroundStyle(LiquidColor.tinta700)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 10)  // token-exempt: sin token exacto (edge ≠ rowVPad)
             }
@@ -595,7 +595,7 @@ struct TrainingBodyScreen: View {
                 .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
                 .foregroundStyle(LiquidColor.tinta900)
             Text("Log your sets and you'll see which muscles are loaded and which are fresh to train today.")
-                .font(StrandFont.body).foregroundStyle(LiquidColor.tinta700)
+                .font(LiquidType.cuerpoLista).foregroundStyle(LiquidColor.tinta700)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, LiquidSpace.s200)
@@ -694,7 +694,7 @@ struct TrainingBodyScreen: View {
         let below = v.band == .below
         return HStack(spacing: LiquidSpace.s300) {
             Text(MuscleAtlas.name(v.muscle))
-                .font(StrandFont.body).foregroundStyle(LiquidColor.tinta900)
+                .font(LiquidType.cuerpoLista).foregroundStyle(LiquidColor.tinta900)
                 .lineLimit(1).minimumScaleFactor(0.85)
                 .frame(width: 96, alignment: .leading)
             GeometryReader { geo in
@@ -716,7 +716,7 @@ struct TrainingBodyScreen: View {
             }
             .frame(height: 14)
             Text(setsText(v.setsPerWeek))
-                .font(StrandFont.captionNumber)
+                .font(LiquidType.filaConteoNumero)
                 .fontWeight(below ? .semibold : .regular)
                 .foregroundStyle(below ? LiquidColor.atencionTexto : LiquidColor.tinta900)
                 .frame(minWidth: 34, alignment: .trailing)
@@ -749,15 +749,15 @@ struct TrainingBodyScreen: View {
                     // Edge ticks: "0" flush leading, top mark flush trailing (inside the rail width).
                     HStack {
                         Text("\(Int(marks[0].rounded()))")
-                            .font(StrandFont.footnote).foregroundStyle(LiquidColor.tinta500)
+                            .font(LiquidType.pie).foregroundStyle(LiquidColor.tinta500)
                         Spacer(minLength: 0)
                         Text("\(Int(marks[marks.count - 1].rounded()))")
-                            .font(StrandFont.footnote).foregroundStyle(LiquidColor.tinta500)
+                            .font(LiquidType.pie).foregroundStyle(LiquidColor.tinta500)
                     }
                     // Mid ticks centered on their proportional positions along the rail.
                     ForEach(Array(marks.dropFirst().dropLast().enumerated()), id: \.offset) { _, mark in
                         Text("\(Int(mark.rounded()))")
-                            .font(StrandFont.footnote)
+                            .font(LiquidType.pie)
                             .foregroundStyle(LiquidColor.tinta500)
                             .position(x: w * CGFloat(mark / railTop), y: h / 2)
                     }
@@ -790,7 +790,7 @@ struct TrainingBodyScreen: View {
                 .frame(width: 8, height: 8)
                 .alignmentGuide(.firstTextBaseline) { d in d[.bottom] - 1 }
             volumeInsightText
-                .font(StrandFont.subhead).foregroundStyle(LiquidColor.tinta700)
+                .font(LiquidType.subtituloFila).foregroundStyle(LiquidColor.tinta700)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -803,7 +803,7 @@ struct TrainingBodyScreen: View {
                 .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
                 .foregroundStyle(LiquidColor.tinta900)
             Text("Log your workouts and you'll see each muscle's weekly volume against the band.")
-                .font(StrandFont.body).foregroundStyle(LiquidColor.tinta700)
+                .font(LiquidType.cuerpoLista).foregroundStyle(LiquidColor.tinta700)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -858,13 +858,13 @@ private struct BodyFiguresView: View {
                 // The silhouette is stroke-only (fill:none) so the body reads as paper and color
                 // lives only in the tinted muscles — the «Instrumento» rule (owner-approved, FER-781).
                 AnatomyBaseShape()
-                    .stroke(theme.hairline, lineWidth: 1.2)
+                    .stroke(LiquidColor.vidrioBorde, lineWidth: 1.2)
                 ForEach(MuscleAnatomy.paths(for: side)) { item in
                     let shape = SVGPath(segs: item.segs)
                     let isTop = highlight == item.muscle
                     shape
                         .fill(color(for: item.muscle))
-                        .overlay(shape.stroke(isTop ? theme.ink : theme.hairlineStrong.opacity(StrandOpacity.dim),
+                        .overlay(shape.stroke(isTop ? LiquidColor.tinta900 : LiquidColor.vidrioBordeFuerte.opacity(StrandOpacity.dim),
                                               lineWidth: isTop ? 2 : 0.6))
                         .contentShape(shape)
                         .onTapGesture { onSelect(item.muscle) }
@@ -874,7 +874,7 @@ private struct BodyFiguresView: View {
             }
             .aspectRatio(200.0 / 430.0, contentMode: .fit)
             Text(side == .front ? "Front" : "Back")
-                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                .font(LiquidType.filaConteo).foregroundStyle(LiquidColor.tinta500)
         }
         .frame(maxWidth: .infinity)
     }

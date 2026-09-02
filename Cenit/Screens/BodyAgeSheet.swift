@@ -306,10 +306,10 @@ struct BodyAgeSheet: View {
     /// fila de Cuerpo (`CuerpoView.swift:1103`) — se conserva idéntica; solo delega los cortes a `paso`.
     static func tint(forDelta deltaYears: Double, theme: InstrumentoTheme) -> Color {
         switch paso(forDelta: deltaYears) {
-        case .rejuvenece: return theme.dataRecovery   // más joven → verde
-        case .enTuEdad:   return theme.ink             // en tu edad → tinta
-        case .mayor:      return theme.warning         // mayor → ámbar
-        case .muyMayor:   return theme.critical        // muy mayor → rojo
+        case .rejuvenece: return LiquidColor.verdePrimario   // más joven → verde
+        case .enTuEdad:   return LiquidColor.tinta900             // en tu edad → tinta
+        case .mayor:      return LiquidColor.atencion         // mayor → ámbar
+        case .muyMayor:   return LiquidColor.negativo        // muy mayor → rojo
         }
     }
 
