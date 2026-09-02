@@ -109,10 +109,6 @@ struct AppleHealthView: View {
     /// with the real chart. Same duplication precedent as `LiquidSheetSkeleton.Alto.grafica`.
     private static let chartHeight: CGFloat = 144
 
-    /// Uniform tile height so every tile in the grid reads as one row regardless of whether it
-    /// carries a sparkline/caption — the same "uniform-height tile" contract the paper had.
-    private static let tileMinHeight: CGFloat = 100
-
     // yyyy-MM-dd → Date via the shared UTC / en_US_POSIX parser (FER-325).
     private func date(_ day: String) -> Date? { Repository.parseDayKey(day) }
 
@@ -414,17 +410,17 @@ struct AppleHealthView: View {
             alignment: .leading,
             spacing: LiquidSpace.s200
         ) {
-            liquidStatTile(key: "steps", fmt: { intString($0) })
-            liquidStatTile(key: "resting_hr", unit: String(localized: "bpm"),
-                           fmt: { "\(Int($0.rounded()))" })
-            liquidStatTile(key: "hrv", unit: String(localized: "ms"),
-                           fmt: { "\(Int($0.rounded()))" })
-            liquidStatTile(key: "vo2max", unit: String(localized: "ml/kg"),
-                           fmt: { String(format: "%.1f", $0) })
-            liquidStatTile(key: "weight", fmt: { massLabel($0) })
-            liquidStatTile(key: "body_fat", unit: "%", fmt: { String(format: "%.1f", $0) })
-            liquidStatTile(key: "lean_mass", fmt: { massLabel($0) })
-            liquidStatTile(key: "asleep_min", aggregate: .mean, fmt: { durationString($0) })
+            metricTile(key: "steps", fmt: { intString($0) })
+            metricTile(key: "resting_hr", unit: String(localized: "bpm"),
+                       fmt: { "\(Int($0.rounded()))" })
+            metricTile(key: "hrv", unit: String(localized: "ms"),
+                       fmt: { "\(Int($0.rounded()))" })
+            metricTile(key: "vo2max", unit: String(localized: "ml/kg"),
+                       fmt: { String(format: "%.1f", $0) })
+            metricTile(key: "weight", fmt: { massLabel($0) })
+            metricTile(key: "body_fat", unit: "%", fmt: { String(format: "%.1f", $0) })
+            metricTile(key: "lean_mass", fmt: { massLabel($0) })
+            metricTile(key: "asleep_min", aggregate: .mean, fmt: { durationString($0) })
             workoutsTile
         }
     }
@@ -432,14 +428,12 @@ struct AppleHealthView: View {
     /// How a tile's hero value is derived from its window.
     private enum Aggregate { case latest, mean }
 
-    /// A Liquid metric tile composed from atoms (no delta here — `LiquidMetricTile` requires one
-    /// and this screen has none, only a sparkline): a quiet label + icon drop, the value in its
-    /// identity hue (ink when empty), an optional sparkline, and a caption. Sparse-safe: the
-    /// window auto-falls-back to ALL, the hero is the LATEST point ("as of <date>") unless a mean
-    /// is requested, and the sparkline + caption track the same resolved window.
-    private func liquidStatTile(key: String, unit: String = "",
-                                aggregate: Aggregate = .latest,
-                                fmt: @escaping (Double) -> String) -> some View {
+    /// Quiet `LiquidMetricTile` (`delta: nil` + caption/sparkline) for an Apple Health series.
+    /// Sparse-safe: window auto-falls-back to ALL, hero is LATEST ("as of <date>") unless a mean
+    /// is requested, and sparkline + caption track the same resolved window.
+    private func metricTile(key: String, unit: String = "",
+                            aggregate: Aggregate = .latest,
+                            fmt: @escaping (Double) -> String) -> some View {
         let rows = resolvedWindow(key)
         let values = rows.map(\.value)
         let identity = MetricIdentity.identity(forIngestKey: key)
@@ -452,18 +446,21 @@ struct AppleHealthView: View {
             switch aggregate {
             case .latest:
                 let v = values.last ?? 0
-                value = unit.isEmpty ? fmt(v) : "\(fmt(v)) \(unit)"
+                value = fmt(v)
                 caption = rows.last.flatMap { date($0.day) }.map { String(localized: "as of \(Self.asOfFormatter.string(from: $0))") }
             case .mean:
                 let m = mean(values) ?? 0
-                value = unit.isEmpty ? fmt(m) : "\(fmt(m)) \(unit)"
+                value = fmt(m)
                 caption = String(localized: "avg · \(values.count)d")
             }
         }
-        return liquidTile(label: metricLabel(key), value: value, caption: caption,
-                          tone: values.isEmpty ? LiquidColor.tinta500 : identity.hue,
-                          glyph: identity.glyph,
-                          sparkline: values.count > 1 ? sparkValues(values) : nil)
+        // Glyph is non-optional on LiquidMetricTile; body-comp / VO₂ keys still lack a family
+        // identity — `.carga` matches the quiet preview in StrandDesign (PESO).
+        return LiquidMetricTile(label: metricLabel(key), value: value, unit: unit, delta: nil,
+                                tone: values.isEmpty ? LiquidColor.tinta500 : identity.hue,
+                                icon: identity.glyph ?? .carga,
+                                caption: caption,
+                                sparkline: values.count > 1 ? sparkValues(values) : nil)
     }
 
     /// Workouts is a count, not a series — its own tile, still on the same recipe. FER-192: used to
@@ -475,12 +472,14 @@ struct AppleHealthView: View {
     /// rather than silently mislabeling a partial count as the selected range.
     private var workoutsTile: some View {
         let n = windowedWorkoutCount
-        return liquidTile(label: String(localized: "Workouts"),
-                  value: "\(n)",
-                  caption: n > 0 ? (workoutCountIsWindowed ? String(localized: "Apple-logged") : String(localized: "All-time total")) : nil,
-                  tone: n > 0 ? LiquidColor.ambar : LiquidColor.tinta500,
-                  glyph: .carga,
-                  sparkline: nil)
+        return LiquidMetricTile(
+            label: String(localized: "Workouts"),
+            value: "\(n)",
+            delta: nil,
+            tone: n > 0 ? LiquidColor.ambar : LiquidColor.tinta500,
+            icon: .carga,
+            caption: n > 0 ? (workoutCountIsWindowed ? String(localized: "Apple-logged") : String(localized: "All-time total")) : nil
+        )
     }
 
     /// Workout count trimmed to the active range, anchored to the latest daily-row day (same anchor
@@ -498,38 +497,6 @@ struct AppleHealthView: View {
     private var workoutCountIsWindowed: Bool {
         guard range.days != nil else { return true }
         return (appleRows.last?.day).flatMap(date) != nil
-    }
-
-    /// One composed Liquid tile, uniform height: icon drop + label, value in tone, optional
-    /// sparkline, optional caption — on the solid-card recipe (`liquidTarjetaSeccion`).
-    private func liquidTile(label: String, value: String, caption: String?,
-                            tone: Color, glyph: LiquidIcon.Glyph?,
-                            sparkline: [Double]?) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HStack(spacing: LiquidSpace.s150) {
-                if let glyph {
-                    LiquidIconDrop(glyph, tone: tone)
-                }
-                Text(verbatim: label).liquidLabel().foregroundStyle(LiquidColor.tinta500)
-                    .lineLimit(2).minimumScaleFactor(0.8)
-            }
-            Spacer(minLength: 4)
-            Text(verbatim: value).font(LiquidType.valorL).foregroundStyle(tone)
-                .lineLimit(1).minimumScaleFactor(0.6)
-            if let sparkline, sparkline.count > 1 {
-                Sparkline(values: sparkline,
-                          gradient: ChartWell.fillGradient(tone),
-                          showsArea: false, showsHead: false, showsScrub: false)
-                    .frame(height: 22).padding(.top, 4)
-            }
-            if let caption {
-                Text(verbatim: caption).font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
-                    .lineLimit(1).padding(.top, 2)
-            }
-        }
-        .frame(minHeight: Self.tileMinHeight, alignment: .topLeading)
-        .liquidTarjetaSeccion(padding: LiquidSpace.s300)
-        .accessibilityElement(children: .combine)
     }
 
     // MARK: - Chart sections (Liquid chart cards, uniform per page)
