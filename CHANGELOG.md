@@ -20,6 +20,8 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- La biblioteca de ejercicios pasa al vidrio El Eje: papel sólido, filas con capilar, campo de búsqueda y filtros Liquid (FER-289).
+
 - Los menús «···» de Entrenar (rutinas, ejercicios, historial, editores) pasan al vidrio Liquid: misma estructura y acciones, ahora sobre vidrio con la tipografía del sistema El Eje (FER-281, FER-283).
 
 - **Entrenar aguanta que le piquen todo / Training survives hostile tapping** (FER-260 · loop adversarial, 13 rondas).
