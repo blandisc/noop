@@ -303,7 +303,7 @@ enum ComponentGallery {
                 f.setLocalizedDateFormatFromTemplate("dMMM")
                 return { d in f.string(from: d) }
             }()
-            var chart = LiquidTrendChart(
+            let chart = LiquidTrendChart(
                 titulo: "Últimos 14 días",
                 readout: (etiqueta: "Adecuado", tono: LiquidColor.indigo,
                           frase: "9 de las últimas 14 noches en este rango"),
@@ -320,7 +320,6 @@ enum ComponentGallery {
                 formatoFechaEje: ejeFmt,
                 estado: .datos,
                 a11yLabel: "Sueño, últimos 14 días")
-            chart.scrubFijo = 5
             return AnyView(chart.environment(\.liquidMotionDisabled, true))
         },
         Entry(name: "Sparkline", family: "Graficas") {
