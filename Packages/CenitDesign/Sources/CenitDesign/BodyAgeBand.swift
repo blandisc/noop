@@ -15,7 +15,8 @@ import SwiftUI
 // User-facing text (the "you" tick, the accessibility sentence) is caller-provided — CenitDesign has
 // no string catalog, so the app (which owns the es/de catalog) localizes it, the same way `MetricRow`
 // takes its label. The marker slides from the chronological age to the body age on appear (`drawIn`);
-// honors Reduce Motion. Tokens-only; reads `InstrumentoTheme`. The flat-ruler cousin of `ReadinessGaugeBar`.
+// honors Reduce Motion. Tokens-only; paints with `LiquidColor` (FER-316). The flat-ruler cousin of
+// `ReadinessGaugeBar`.
 
 public struct BodyAgeBand: View {
     public let bodyAge: Double
@@ -30,7 +31,6 @@ public struct BodyAgeBand: View {
     public var accessibilityValueText: String
     public var animated: Bool
 
-    @Environment(\.instrumentoTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var drawn = false
 
@@ -69,17 +69,17 @@ public struct BodyAgeBand: View {
                     .foregroundStyle(color)
                     .position(x: markerX, y: 9)
 
-                // Ruler.
-                Capsule().fill(theme.hairline)
+                // Ruler — same tinta chrome as `LiquidBandaEdad`.
+                Capsule().fill(LiquidColor.tinta7)
                     .frame(width: w - 2 * inset, height: 3)
                     .position(x: w / 2, y: 28)
                 // The ±N band — the reading (in ink, not a data hue).
-                Capsule().fill(theme.hairlineStrong)
+                Capsule().fill(LiquidColor.tinta10)
                     .frame(width: max(0, hiX - loX), height: 7)
                     .position(x: (loX + hiX) / 2, y: 28)
                 // Chronological-age reference tick (dotted, ink).
                 DottedTick()
-                    .stroke(theme.inkTertiary, style: StrokeStyle(lineWidth: 1.3, dash: [2, 2]))
+                    .stroke(LiquidColor.tinta500, style: StrokeStyle(lineWidth: 1.3, dash: [2, 2]))
                     .frame(width: 1.3, height: 18)
                     .position(x: chronoX, y: 28)
                 // Body-age marker (the one coloured mark).
@@ -89,13 +89,13 @@ public struct BodyAgeBand: View {
 
                 // Band ends + the "you" reference, all in tertiary ink.
                 Text("\(Int(bandLo.rounded()))").font(StrandFont.footnote)
-                    .foregroundStyle(theme.inkTertiary)
+                    .foregroundStyle(LiquidColor.tinta500)
                     .position(x: loX, y: 48)
                 Text("\(Int(bandHi.rounded()))").font(StrandFont.footnote)
-                    .foregroundStyle(theme.inkTertiary)
+                    .foregroundStyle(LiquidColor.tinta500)
                     .position(x: hiX, y: 48)
                 Text(verbatim: "\(youLabel) \(Int(chronoAge.rounded()))").font(StrandFont.footnote)
-                    .foregroundStyle(theme.inkTertiary)
+                    .foregroundStyle(LiquidColor.tinta500)
                     .position(x: chronoX, y: 48)
             }
         }
@@ -128,7 +128,6 @@ private struct DottedTick: Shape {
 
 #if DEBUG
 #Preview("BodyAgeBand · por signo") {
-    let t = InstrumentoTheme.base
     // FER-978: the nested helper builds a `@MainActor` View, so it must be main-actor itself —
     // otherwise the `BodyAgeBand` init is called from a nonisolated context (targeted warning).
     @MainActor func band(_ body: Double, _ color: Color) -> some View {
@@ -137,14 +136,13 @@ private struct DottedTick: Shape {
                     accessibilityValueText: "\(Int(body)) years", animated: false)
     }
     return VStack(alignment: .leading, spacing: 28) {
-        band(31, t.dataRecovery)   // rejuvenates
-        band(34, t.ink)            // neutral
-        band(38, t.warning)        // ages
-        band(44, t.critical)       // far (age falls outside the band)
+        band(31, LiquidColor.verdePrimario)   // rejuvenates
+        band(34, LiquidColor.tinta900)        // neutral
+        band(38, LiquidColor.ambar)           // ages
+        band(44, LiquidColor.negativo)        // far (age falls outside the band)
     }
     .padding(28)
     .frame(width: 360)
-    .background(t.paper)
-    .environment(\.instrumentoTheme, t)
+    .background(LiquidColor.fondoAlto)
 }
 #endif

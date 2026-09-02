@@ -517,7 +517,6 @@ public struct ReceiptSavedSeal: View {
     public var title: LocalizedStringKey
     public var subtitle: LocalizedStringKey
     public var chip: LocalizedStringKey
-    @Environment(\.instrumentoTheme) private var theme
 
     public init(title: LocalizedStringKey = "GUARDADO",
                 subtitle: LocalizedStringKey = "Tu recibo se guardó en tus tickets.",
@@ -528,7 +527,7 @@ public struct ReceiptSavedSeal: View {
     public var body: some View {
         VStack(spacing: 0) {
             Circle()
-                .fill(theme.paper)
+                .fill(LiquidColor.fondoAlto)
                 .frame(width: 56, height: 56)
                 .overlay(Circle().stroke(Color(hex: "#DAD3C2"), lineWidth: 1))
                 .overlay(ThermalDialEmboss().padding(12))
@@ -540,13 +539,13 @@ public struct ReceiptSavedSeal: View {
                 .shadow(color: .white.opacity(0.9), radius: 0, x: 0, y: 1)
                 .shadow(color: .black.opacity(0.14), radius: 1, x: 0, y: -1)
             Text(subtitle)
-                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary).padding(.top, 6)
+                .font(StrandFont.caption).foregroundStyle(LiquidColor.tinta500).padding(.top, 6)
             Text(chip)
                 .font(StrandFont.mono(8, weight: .bold)).tracking(0.8)
-                .foregroundStyle(theme.inkTertiary)
+                .foregroundStyle(LiquidColor.tinta500)
                 .padding(.horizontal, 10).padding(.vertical, 5)
-                .background(theme.paper, in: RoundedRectangle(cornerRadius: 7))
-                .overlay(RoundedRectangle(cornerRadius: 7).stroke(theme.hairline, lineWidth: 1))
+                .background(LiquidColor.fondoAlto, in: RoundedRectangle(cornerRadius: 7))
+                .overlay(RoundedRectangle(cornerRadius: 7).stroke(LiquidColor.tinta7, lineWidth: 1))
                 .padding(.top, 12)
         }
         .accessibilityElement(children: .combine)
@@ -554,7 +553,6 @@ public struct ReceiptSavedSeal: View {
 
     /// The dial glyph, engraved (deboss) into the paper — faint stroke, no fill.
     private struct ThermalDialEmboss: View {
-        @Environment(\.instrumentoTheme) private var theme
         var body: some View {
             Canvas { ctx, size in
                 let c = CGPoint(x: size.width / 2, y: size.height / 2)
@@ -644,8 +642,7 @@ public extension MiniTicket {
     }
     .padding(.top, 8)
     .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .background(InstrumentoTheme.base.paper)
-    .environment(\.instrumentoTheme, .base)
+    .background(LiquidColor.fondoAlto)
     .preferredColorScheme(.light)
 }
 

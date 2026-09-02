@@ -6,9 +6,8 @@ import CenitDesign
 /// coarse `WatchWorkoutManager.Phase` to a screen; the live face derives rest vs. pulse and the degraded
 /// overlays (no reading / no permission / no iPhone) from the finer published state.
 ///
-/// El suelo es `LiquidOLED.fondo` (negro OLED). `.instrumentoTheme(.watch)` se conserva solo para
-/// `EntrenarHilo`, que todavía leen `\.instrumentoTheme` en el paquete (deuda de CenitDesign,
-/// fuera de este issue).
+/// El suelo es `LiquidOLED.fondo` (negro OLED). `EntrenarHilo` se instancia con `sobreOLED: true`
+/// para pintar tintas OLED; el theme watch del paquete ya no se inyecta aquí (FER-316).
 struct WatchSessionRootView: View {
     @EnvironmentObject var manager: WatchWorkoutManager
 
@@ -16,7 +15,6 @@ struct WatchSessionRootView: View {
         content
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(LiquidOLED.fondo.ignoresSafeArea())
-            .instrumentoTheme(.watch)   // token-exempt(paridad): EntrenarHilo (paquete) aún lee \.instrumentoTheme; deuda del paquete, no del Watch
     }
 
     @ViewBuilder private var content: some View {
@@ -67,7 +65,7 @@ struct WatchIdleView: View {
                     if let word = manager.idleContext.word {
                         EntrenarHilo(tone: manager.idleContext.tone, word: LocalizedStringKey(word),
                                     advice: manager.idleContext.advice.map { LocalizedStringKey($0) },
-                                    radio: EntrenarMetrics.orbeSesion)
+                                    radio: EntrenarMetrics.orbeSesion, sobreOLED: true)
                             // FER-96: freezes with the screen dimmed (Always-On), same brake `OrbeVivo`
                             // already reads for Reduce Motion.
                             .environment(\.liquidAmbientPaused, isLuminanceReduced)

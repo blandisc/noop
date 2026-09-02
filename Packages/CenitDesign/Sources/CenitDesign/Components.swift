@@ -209,10 +209,6 @@ public struct SegmentedPillControl<T: Hashable>: View {
     let items: [T]
     let label: (T) -> String
     @Binding var selection: T
-    /// The «Instrumento diurno» theme. Renders an iOS-native segmented look on warm paper: a quiet
-    /// track, an active segment that's a subtle ink capsule (no bright green), and ink labels. (FER-211;
-    /// FER-902 retired the legacy dark `theme == nil` branch — every live screen passes a theme.)
-    let theme: InstrumentoTheme
     /// «Ink thumb» variant (FER-716 handoff «Entrenar»): a `patternBlock` track with an `ink` active
     /// capsule and `paper` Grotesk label — the bolder segmented look the session's editor uses. Only
     /// meaningful with a `theme`; the default (`false`) keeps the quiet surface-thumb look.
@@ -228,11 +224,13 @@ public struct SegmentedPillControl<T: Hashable>: View {
     var thumbTint: Color? = nil
     /// SF Symbol opcional por segmento (r7: «♥» como carácter era tofu en Grotesk — el ícono va real).
     var icon: (T) -> String? = { _ in nil }
-    public init(_ items: [T], selection: Binding<T>, theme: InstrumentoTheme,
+    /// - Parameter theme: ignored for painting (LiquidColor). Kept for call-site compatibility (FER-316).
+    public init(_ items: [T], selection: Binding<T>, theme: InstrumentoTheme = .base,
                 inkThumb: Bool = false, tall: Bool = false, squared: Bool = false,
                 thumbTint: Color? = nil, icon: @escaping (T) -> String? = { _ in nil },
                 label: @escaping (T) -> String) {
-        self.items = items; self._selection = selection; self.theme = theme
+        self.items = items; self._selection = selection
+        _ = theme
         self.inkThumb = inkThumb; self.tall = tall; self.squared = squared
         self.thumbTint = thumbTint; self.icon = icon; self.label = label
     }
@@ -275,14 +273,14 @@ public struct SegmentedPillControl<T: Hashable>: View {
                 .tracking(0.6)
                 .lineLimit(1).minimumScaleFactor(0.85)
         }
-        .foregroundStyle(sel ? theme.paper : theme.inkTertiary)
+        .foregroundStyle(sel ? LiquidColor.papelTarjeta : LiquidColor.tinta500)
         .padding(.horizontal, 10)
         .frame(maxWidth: .infinity)
         .frame(height: tall ? 44 : 34)
         .background {
             if sel {
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .fill(thumbTint ?? theme.ink)
+                    .fill(thumbTint ?? LiquidColor.tinta900)
             }
         }
         .contentShape(Rectangle())
@@ -293,35 +291,36 @@ public struct SegmentedPillControl<T: Hashable>: View {
 // MARK: - TroquelChip (sesión de fuerza · propuesta B 2026-07)
 
 public extension View {
-    /// Chip «troquel»: papel hundido dentro de una tarjeta `surface` — padding fijo, esquina
-    /// `chipRadius`, borde `hairlineStrong`. El único hue permitido vive en el ICONO del contenido
+    /// Chip «troquel»: papel hundido dentro de una tarjeta — padding fijo, esquina
+    /// `chipRadius`, borde tinta. El único hue permitido vive en el ICONO del contenido
     /// (excepción nombrada en DESIGN.md §8.7); el valor va en tinta.
-    func troquelChip(_ theme: InstrumentoTheme) -> some View {
-        self
+    /// - Parameter theme: ignored for painting (LiquidColor). Kept for call-site compatibility (FER-316).
+    func troquelChip(_ theme: InstrumentoTheme = .base) -> some View {
+        _ = theme
+        return self
             .padding(.horizontal, 12).padding(.vertical, 7)
-            .background(theme.paper, in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
+            .background(LiquidColor.fondoAlto, in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous)
-                .strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                .strokeBorder(LiquidColor.tinta10, lineWidth: 1))
             .contentShape(RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
     }
 }
 
 #if DEBUG
 #Preview("TroquelChip") {
-    let t = InstrumentoTheme.base
-    return HStack(spacing: 8) {
+    HStack(spacing: 8) {
         HStack(spacing: 6) {
-            Image(systemName: "clock").foregroundStyle(t.dataStrain)
-            Text("90 s").font(StrandFont.caption.weight(.medium)).foregroundStyle(t.ink)
+            Image(systemName: "clock").foregroundStyle(LiquidColor.ambar)
+            Text("90 s").font(StrandFont.caption.weight(.medium)).foregroundStyle(LiquidColor.tinta900)
         }
-        .troquelChip(t)
+        .troquelChip()
         HStack(spacing: 6) {
-            Image(systemName: "square.and.pencil").foregroundStyle(t.dataHrv)
-            Text("Nota").font(StrandFont.caption).foregroundStyle(t.inkSecondary)
+            Image(systemName: "square.and.pencil").foregroundStyle(LiquidColor.cian)
+            Text("Nota").font(StrandFont.caption).foregroundStyle(LiquidColor.tinta700)
         }
-        .troquelChip(t)
+        .troquelChip()
     }
     .padding(24)
-    .background(t.paper)
+    .background(LiquidColor.fondoAlto)
 }
 #endif

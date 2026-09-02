@@ -45,4 +45,22 @@ final class EntrenarHiloContrasteTests: XCTestCase {
                                  "\(tone): la palabra está pintada con el hue saturado")
         }
     }
+
+    /// FER-316 · Watch: con `sobreOLED: true` la palabra, el consejo y el chrome de tinta
+    /// pasan AA (≥ 4.5:1) sobre `LiquidOLED.fondo`. Sin pastilla ni theme.watch de por medio.
+    func testTextosSobreOLEDCumplenAAsobreNegro() {
+        let fondo = LiquidOLED.fondo
+        for tone in tonos {
+            let palabra = tone.word(sobreOLED: true)
+            let ratio = OKLab.contrastRatio(palabra, fondo)
+            XCTAssertGreaterThanOrEqual(ratio, 4.5,
+                                        "\(tone) palabra da \(ratio):1 sobre LiquidOLED.fondo")
+        }
+        XCTAssertGreaterThanOrEqual(OKLab.contrastRatio(LiquidOLED.tintaSecundaria, fondo), 4.5,
+                                    "consejo (tintaSecundaria) bajo AA sobre OLED")
+        XCTAssertGreaterThanOrEqual(OKLab.contrastRatio(LiquidOLED.tintaTerciaria, fondo), 4.5,
+                                    "chevron/aro (tintaTerciaria) bajo AA sobre OLED")
+        XCTAssertGreaterThanOrEqual(OKLab.contrastRatio(LiquidOLED.tinta, fondo), 4.5,
+                                    "hollow palabra (tinta) bajo AA sobre OLED")
+    }
 }

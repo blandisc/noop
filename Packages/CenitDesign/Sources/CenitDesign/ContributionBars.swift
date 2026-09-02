@@ -12,7 +12,8 @@ import SwiftUI
 // Cleveland-McGill (position on a common axis) + Tufte (one surface, no per-row rules). Color lives
 // ONLY on the bars + their values; the axis and pole labels stay in ink. User-facing text (pole labels,
 // per-row accessibility) is caller-provided — CenitDesign has no string catalog, so the app localizes
-// it. Tokens-only; reads `InstrumentoTheme`. Pass the items already ordered by |years| descending.
+// it. Tokens-only; paints with `LiquidColor` (FER-316). Pass the items already ordered by |years|
+// descending.
 
 public struct ContributionBars: View {
     /// One factor's contribution, in YEARS: negative rejuvenates (subtracts age), positive ages you.
@@ -35,7 +36,6 @@ public struct ContributionBars: View {
     public var rightPole: String
     public var animated: Bool
 
-    @Environment(\.instrumentoTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var drawn = false
 
@@ -53,16 +53,16 @@ public struct ContributionBars: View {
         return VStack(alignment: .leading, spacing: 11) {
             // Pole labels — once, in ink (orientation, not data).
             HStack(spacing: 8) {
-                Text(verbatim: leftPole).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                Text(verbatim: leftPole).font(StrandFont.footnote).foregroundStyle(LiquidColor.tinta500)
                 Spacer(minLength: 8)
-                Text(verbatim: rightPole).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                Text(verbatim: rightPole).font(StrandFont.footnote).foregroundStyle(LiquidColor.tinta500)
             }
 
             ForEach(items) { item in
                 HStack(spacing: 10) {
                     Text(verbatim: item.label)
                         .font(InstrumentoType.grotesk(11, weight: .semibold))
-                        .foregroundStyle(theme.ink)
+                        .foregroundStyle(LiquidColor.tinta900)
                         .lineLimit(1).minimumScaleFactor(0.85)
                         .frame(width: 96, alignment: .leading)
                     track(for: item, max: maxAbs)
@@ -89,7 +89,7 @@ public struct ContributionBars: View {
             let cy = geo.size.height / 2
             ZStack(alignment: .topLeading) {
                 // Central zero axis (= average for your age), in ink.
-                Rectangle().fill(theme.hairlineStrong)
+                Rectangle().fill(LiquidColor.tinta10)
                     .frame(width: 1, height: 16).position(x: halfW, y: cy)
                 // The bar, growing from the axis toward its pole.
                 Capsule().fill(color(for: item.years))
@@ -101,10 +101,10 @@ public struct ContributionBars: View {
     }
 
     private func color(for years: Double) -> Color {
-        // dataRejuvenates (#2E7D57): deeper than dataRecovery so «rejuvenece» reads as longevity.
-        if years < -0.05 { return theme.dataRejuvenates } // rejuvenates
-        if years > 0.05 { return theme.warning }          // ages you
-        return theme.inkTertiary                          // ~neutral
+        // Same sign convention as `LiquidBarrasContribucion.tono` (FER-316).
+        if years < -0.05 { return LiquidColor.positivo } // rejuvenates
+        if years > 0.05 { return LiquidColor.atencionTexto }  // ages you (ex-warning → atencionTexto, FER-316)
+        return LiquidColor.tinta500                       // ~neutral
     }
 
     private func signed(_ years: Double) -> String { String(format: "%+.1f", years) }
@@ -112,8 +112,7 @@ public struct ContributionBars: View {
 
 #if DEBUG
 #Preview("ContributionBars") {
-    let t = InstrumentoTheme.base
-    return ContributionBars(items: [
+    ContributionBars(items: [
         .init(label: "VO₂max", years: -1.8, accessibilityValue: "rejuvenates you by 1.8 years"),
         .init(label: "Resting HR", years: -1.4, accessibilityValue: "rejuvenates you by 1.4 years"),
         .init(label: "HRV", years: -0.6, accessibilityValue: "rejuvenates you by 0.6 years"),
@@ -123,7 +122,6 @@ public struct ContributionBars: View {
     ], leftPole: "← rejuvenates you", rightPole: "ages you →", animated: false)
     .padding(24)
     .frame(width: 360)
-    .background(t.paper)
-    .environment(\.instrumentoTheme, t)
+    .background(LiquidColor.fondoAlto)
 }
 #endif

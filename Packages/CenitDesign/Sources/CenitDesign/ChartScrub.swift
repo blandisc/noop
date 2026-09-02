@@ -13,10 +13,9 @@ import UIKit
 // affordance so nothing is ever a static, unexplained colour. (On macOS the same
 // crosshair/tooltip is driven by pointer hover — see `scrubGesture`.)
 //
-// Design tokens only: surfaceOverlay background, hairline border, StrandFont +
-// StrandPalette text, StrandMotion fade-in. On warm paper (`\.instrumentoFlat`)
-// the glow/bloom is dropped and the handle reads flat (FER-131 handoff · 03/10).
-// Never hardcode hex.
+// Design tokens only: LiquidColor surface/ink, StrandFont text, StrandMotion fade-in.
+// On warm paper (`\.instrumentoFlat`) the glow/bloom is dropped and the handle reads
+// flat (FER-131 handoff · 03/10). Never hardcode hex.
 
 // MARK: - Scrub haptics
 
@@ -74,11 +73,11 @@ struct ChartTooltip: View {
                 Text(value)
                     .font(StrandFont.captionNumber)
                     .fontWeight(.semibold)
-                    .foregroundStyle(InstrumentoTheme.base.ink)
+                    .foregroundStyle(LiquidColor.tinta900)
                 if let label {
                     Text(label)
                         .font(StrandFont.footnote)
-                        .foregroundStyle(InstrumentoTheme.base.inkSecondary)
+                        .foregroundStyle(LiquidColor.tinta700)
                 }
             }
         }
@@ -86,11 +85,11 @@ struct ChartTooltip: View {
         .padding(.vertical, 6)
         .background(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(InstrumentoTheme.base.surface)
+                .fill(LiquidColor.papelTarjeta)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(InstrumentoTheme.base.hairlineStrong, lineWidth: 1)
+                .stroke(LiquidColor.tinta10, lineWidth: 1)
         )
         // Heavy black drop shadow is a dark-screen effect; on paper soften it to a quiet
         // separation shadow so the dark card lifts off the warm paper without a glow (FER-131 · 03).
@@ -211,9 +210,9 @@ enum ChartScrubMath {
 struct CrosshairRule: View {
     var x: CGFloat
     var height: CGFloat
-    var color: Color = InstrumentoTheme.base.hairlineStrong
+    var color: Color = LiquidColor.tinta10
 
-    init(x: CGFloat, height: CGFloat, color: Color = InstrumentoTheme.base.hairlineStrong) {
+    init(x: CGFloat, height: CGFloat, color: Color = LiquidColor.tinta10) {
         self.x = x
         self.height = height
         self.color = color
@@ -242,7 +241,6 @@ struct HighlightDot: View {
     var diameter: CGFloat = 9
 
     @Environment(\.instrumentoFlat) private var flat
-    @Environment(\.instrumentoTheme) private var theme
 
     init(color: Color, diameter: CGFloat = 9) {
         self.color = color
@@ -255,7 +253,7 @@ struct HighlightDot: View {
                 // Enlarged flat handle: paper fill + colored ring, matching the «Instrumento» chart.
                 let d = max(diameter + 4, 13)
                 ZStack {
-                    Circle().fill(theme.paper).frame(width: d, height: d)
+                    Circle().fill(LiquidColor.fondoAlto).frame(width: d, height: d)
                     Circle().strokeBorder(color, lineWidth: 2.5).frame(width: d, height: d)
                 }
             } else {
@@ -267,7 +265,7 @@ struct HighlightDot: View {
                         .opacity(0.7)
                         .blendMode(.plusLighter)
                     Circle()
-                        .fill(InstrumentoTheme.base.paper)
+                        .fill(LiquidColor.fondoAlto)
                         .frame(width: diameter, height: diameter)
                     Circle()
                         .fill(color)
@@ -326,7 +324,7 @@ struct PositionedTooltip: View {
     }
     .padding(40)
     .frame(width: 320, height: 240)
-    .background(InstrumentoTheme.base.paper)
+    .background(LiquidColor.fondoAlto)
     .preferredColorScheme(.light)
 }
 #endif

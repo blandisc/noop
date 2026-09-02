@@ -34,8 +34,6 @@ public struct EntrenarFilaEjercicio<Miniatura: View>: View {
     private let onToggle: (() -> Void)?
     private let miniatura: () -> Miniatura
 
-    @Environment(\.instrumentoTheme) private var theme
-
     /// - Parameters:
     ///   - family: identidad de movimiento (tiñe el aro y el dato); `nil` → aro `tinta500`.
     ///   - nombre / meta: ya localizados.
@@ -139,7 +137,7 @@ public struct EntrenarFilaEjercicio<Miniatura: View>: View {
                 VStack(alignment: .trailing, spacing: 1) {
                     Text(verbatim: dato.valor)
                         .font(LiquidType.valorS)
-                        .foregroundStyle(family?.tint(theme) ?? LiquidColor.tinta900)
+                        .foregroundStyle(family?.tint() ?? LiquidColor.tinta900)
                     Text(verbatim: dato.rotulo)
                         .font(LiquidType.captionLectura)
                         .foregroundStyle(LiquidColor.tinta500)
@@ -182,7 +180,7 @@ public struct EntrenarFilaEjercicio<Miniatura: View>: View {
                         .padding(.vertical, LiquidSpace.s150)
                         .overlay(
                             Capsule(style: .continuous)
-                                .strokeBorder(theme.hairlineStrong, lineWidth: 1)
+                                .strokeBorder(LiquidColor.tinta10, lineWidth: 1)
                         )
                 }
             }
@@ -195,7 +193,7 @@ public struct EntrenarFilaEjercicio<Miniatura: View>: View {
     }
 
     private var aroTint: Color {
-        family?.tint(theme) ?? LiquidColor.tinta500
+        family?.tint() ?? LiquidColor.tinta500
     }
 }
 
@@ -220,7 +218,6 @@ private enum Metrics {
     }
     .padding(.horizontal, LiquidSpace.s400)
     .background(LiquidColor.fondoGradient)
-    .instrumentoTheme(.base)
 }
 
 #Preview("EntrenarFilaEjercicio · agregar") {
@@ -241,7 +238,6 @@ private enum Metrics {
     }
     .padding(.horizontal, LiquidSpace.s400)
     .background(LiquidColor.fondoGradient)
-    .instrumentoTheme(.base)
 }
 
 #Preview("EntrenarFilaEjercicio · agregar seleccionado") {
@@ -262,7 +258,6 @@ private enum Metrics {
     }
     .padding(.horizontal, LiquidSpace.s400)
     .background(LiquidColor.fondoGradient)
-    .instrumentoTheme(.base)
 }
 
 #Preview("EntrenarFilaEjercicio · aviso") {
@@ -280,7 +275,6 @@ private enum Metrics {
     }
     .padding(.horizontal, LiquidSpace.s400)
     .background(LiquidColor.fondoGradient)
-    .instrumentoTheme(.base)
 }
 
 #Preview("EntrenarFilaEjercicio · sin family") {
@@ -297,6 +291,5 @@ private enum Metrics {
     }
     .padding(.horizontal, LiquidSpace.s400)
     .background(LiquidColor.fondoGradient)
-    .instrumentoTheme(.base)
 }
 #endif

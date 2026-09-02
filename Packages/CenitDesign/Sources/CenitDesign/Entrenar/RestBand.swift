@@ -34,8 +34,6 @@ struct RestPulseRail: View {
     private let bpm: Int
     private let target: Int?
 
-    @Environment(\.instrumentoTheme) private var theme
-
     init(bpm: Int, target: Int?) { self.bpm = bpm; self.target = target }
 
     /// Cuánto se ha recorrido del pico nominal (objetivo + 40) hasta el objetivo. 0 = recién
@@ -60,12 +58,12 @@ struct RestPulseRail: View {
             ZStack(alignment: .leading) {
                 Capsule().fill(LiquidColor.tinta10)
                 Capsule()
-                    .fill(LinearGradient(colors: [theme.dataHeart, theme.dataRecovery],
+                    .fill(LinearGradient(colors: [LiquidColor.rosa, LiquidColor.verdePrimario],
                                          startPoint: .leading, endPoint: .trailing))
                     .frame(width: w * Self.fraccion(bpm: bpm, target: target))
                 // La marca del umbral: tinta, no hue — es geometría, no dato (§ADN: el marcador
                 // de referencia nunca compite con la señal).
-                Rectangle().fill(theme.ink)
+                Rectangle().fill(LiquidColor.tinta900)
                     .frame(width: 2, height: EntrenarMetrics.loadRail + 8)
                     .offset(x: w - 1)
             }
@@ -100,8 +98,6 @@ public struct RestBand<Next: View>: View {
     /// línea). `false` por defecto conserva el pixel de siempre en la lista en línea y el reloj — la
     /// lógica del descanso (`RestReadinessRule`) no cambia con esto, solo la piel.
     private let large: Bool
-
-    @Environment(\.instrumentoTheme) private var theme
 
     public init(kicker: LocalizedStringKey, mode: RestBandMode, trailing: String? = nil,
                 note: LocalizedStringKey? = nil, isAlmost: Bool = false, isReady: Bool = false,
@@ -150,7 +146,7 @@ public struct RestBand<Next: View>: View {
                 }
                 if let note {
                     Text(note)
-                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        .font(StrandFont.caption).foregroundStyle(LiquidColor.tinta500)
                         .multilineTextAlignment(large ? .center : .leading)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -166,13 +162,13 @@ public struct RestBand<Next: View>: View {
                         if large {
                             Text(isCeilingRelease ? "Continue" : "Skip rest")
                                 .font(StrandFont.caption.weight(.semibold))
-                                .foregroundStyle(theme.inkSecondary)
-                                .outlineCapsule(.papel, size: .xl, theme: theme)
+                                .foregroundStyle(LiquidColor.tinta700)
+                                .outlineCapsule(.papel, size: .xl, theme: .base)
                         } else {
                             Text(isCeilingRelease ? "Continue" : "Skip rest")
                                 .font(StrandFont.caption.weight(.semibold))
-                                .foregroundStyle(theme.inkSecondary)
-                                .outlineCapsule(.papel, size: .lg, theme: theme)
+                                .foregroundStyle(LiquidColor.tinta700)
+                                .outlineCapsule(.papel, size: .lg, theme: .base)
                         }
                     }
                     // dibujo 36 (46 en Foco), toque 44 (HIG)
@@ -210,10 +206,10 @@ public struct RestBand<Next: View>: View {
                 VStack(alignment: large ? .center : .leading, spacing: LiquidSpace.s100) {
                     Text(verbatim: "3:00")
                         .font(InstrumentoType.groteskNumber(headlineSize, weight: .bold, relativeTo: .largeTitle))
-                        .foregroundStyle(theme.ink)
+                        .foregroundStyle(LiquidColor.tinta900)
                     if let remaining, remaining > 0 {
                         Text("still \(remaining) bpm up · not on you")
-                            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                            .font(StrandFont.subhead).foregroundStyle(LiquidColor.tinta700)
                     }
                 }
                 .multilineTextAlignment(large ? .center : .leading)
@@ -234,13 +230,13 @@ public struct RestBand<Next: View>: View {
                             Text("Almost")
                                 .font(StrandFont.caption.weight(.semibold))
                                 .textCase(.uppercase)
-                                .foregroundStyle(theme.inkSecondary)
-                                .outlineCapsule(.papel, size: .sm, theme: theme)
+                                .foregroundStyle(LiquidColor.tinta700)
+                                .outlineCapsule(.papel, size: .sm, theme: .base)
                         }
                     }
                     (Text(verbatim: "\(current)")
                         .font(InstrumentoType.groteskNumber(headlineSize, weight: .bold, relativeTo: .largeTitle))
-                        .foregroundStyle(theme.dataHeart)
+                        .foregroundStyle(LiquidColor.rosa)
                      + Text(verbatim: " ")
                      + Text("♥ now · dropping")
                         .font(StrandFont.subhead)
@@ -254,14 +250,14 @@ public struct RestBand<Next: View>: View {
             } else {
                 // Sin Watch / sin lectura: no inventar un numeral de pulso.
                 Text("Waiting for your pulse")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .font(StrandFont.subhead).foregroundStyle(LiquidColor.tinta700)
             }
         case .clock(let elapsed, let target):
             (Text(verbatim: elapsed)
                 .font(InstrumentoType.groteskNumber(headlineSize, weight: .bold, relativeTo: .largeTitle))
-                .foregroundStyle(theme.ink)
+                .foregroundStyle(LiquidColor.tinta900)
              + Text(verbatim: " ")
-             + Text("of \(target)").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary))
+             + Text("of \(target)").font(StrandFont.subhead).foregroundStyle(LiquidColor.tinta700))
                 .multilineTextAlignment(large ? .center : .leading)
                 .fixedSize(horizontal: false, vertical: true)
                 .numeroVivo(value: elapsed)
@@ -289,14 +285,14 @@ public struct RestBand<Next: View>: View {
                 Capsule().fill(LiquidColor.tinta10)
                 if let p = railProgress {
                     Circle()
-                        .fill(isReady ? theme.positiveText : theme.dataHeart)
+                        .fill(isReady ? LiquidColor.positivo : LiquidColor.rosa)
                         .frame(width: 10, height: 10)
                         .offset(x: max(0, w * p - 5))
                 }
             }
             .overlay(alignment: .trailing) {
                 // El tick del objetivo: donde el descanso se da por cumplido.
-                Rectangle().fill(theme.inkTertiary).frame(width: 1, height: 10)
+                Rectangle().fill(LiquidColor.tinta500).frame(width: 1, height: 10)
             }
         }
         .frame(height: 4)
@@ -349,8 +345,7 @@ public struct RestBand<Next: View>: View {
                  trailing: "0:12")
     }
     .padding(24)
-    .background(InstrumentoTheme.base.paper)
-    .instrumentoTheme(.base)
+    .background(LiquidColor.fondoAlto)
 }
 
 #Preview("RestBand · reloj y xxxLarge") {
@@ -361,8 +356,7 @@ public struct RestBand<Next: View>: View {
                  note: "no watch: fixed clock", onSkip: {})
     }
     .padding(24)
-    .background(InstrumentoTheme.base.paper)
-    .instrumentoTheme(.base)
+    .background(LiquidColor.fondoAlto)
     .environment(\.dynamicTypeSize, .accessibility3)
 }
 #endif

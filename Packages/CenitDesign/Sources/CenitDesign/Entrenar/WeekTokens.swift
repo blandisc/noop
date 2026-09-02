@@ -22,8 +22,6 @@ public struct WeekTokens: View {
     private let labels: [String]
     private let action: (() -> Void)?
 
-    @Environment(\.instrumentoTheme) private var theme
-
     /// - Parameters:
     ///   - days: los 7 estados, en el orden en que se muestran (L→D en es-MX).
     ///   - labels: la inicial de cada día, ya localizada por la app.
@@ -37,7 +35,7 @@ public struct WeekTokens: View {
                 VStack(spacing: LiquidSpace.s100 + 2) {
                     token(day)
                     Text(verbatim: i < labels.count ? labels[i] : "")
-                        .entrenarWeekDayLabel().foregroundStyle(theme.inkTertiary)
+                        .entrenarWeekDayLabel().foregroundStyle(LiquidColor.tinta500)
                 }
                 .frame(maxWidth: .infinity)
             }
@@ -64,7 +62,7 @@ public struct WeekTokens: View {
                     VStack(spacing: LiquidSpace.s100 + 2) {
                         token(day)
                         Text(verbatim: i < labels.count ? labels[i] : "")
-                            .entrenarWeekDayLabel().foregroundStyle(theme.inkTertiary)
+                            .entrenarWeekDayLabel().foregroundStyle(LiquidColor.tinta500)
                     }
                     .frame(maxWidth: .infinity)
                     .accessibilityElement(children: .ignore)
@@ -101,17 +99,17 @@ public struct WeekTokens: View {
         let side = EntrenarMetrics.weekToken
         switch day {
         case .done(let f):
-            Circle().fill(f.tint(theme)).frame(width: side, height: side)
+            Circle().fill(f.tint()).frame(width: side, height: side)
         case .today(let isRest):
             Circle()
-                .strokeBorder(theme.ink,
+                .strokeBorder(LiquidColor.tinta900,
                               style: StrokeStyle(lineWidth: 2, dash: isRest ? [2, 2] : []))
                 .frame(width: side, height: side)
         case .planned(let f):
-            Circle().strokeBorder(f.tint(theme), lineWidth: 1.5).frame(width: side, height: side)
+            Circle().strokeBorder(f.tint(), lineWidth: 1.5).frame(width: side, height: side)
         case .rest:
             Circle()
-                .strokeBorder(theme.inkTertiary, style: StrokeStyle(lineWidth: 1, dash: [2, 3]))
+                .strokeBorder(LiquidColor.tinta500, style: StrokeStyle(lineWidth: 1, dash: [2, 3]))
                 .frame(width: side, height: side)
         }
     }
@@ -130,8 +128,6 @@ public struct SessionStatsBar: View {
     private let pulse: String?
     private let isPaused: Bool
     private let onFocus: (() -> Void)?
-
-    @Environment(\.instrumentoTheme) private var theme
 
     public init(volume: String, sets: String, pulse: String? = nil, isPaused: Bool = false,
                 onFocus: (() -> Void)? = nil) {
@@ -154,17 +150,17 @@ public struct SessionStatsBar: View {
     }
 
     @ViewBuilder private var stats: some View {
-        stat(volume, unit: "kg", tone: isPaused ? theme.inkSecondary : theme.ink)
+        stat(volume, unit: "kg", tone: isPaused ? LiquidColor.tinta700 : LiquidColor.tinta900)
         dot
-        stat(sets, unit: "sets", tone: isPaused ? theme.inkSecondary : theme.ink)
+        stat(sets, unit: "sets", tone: isPaused ? LiquidColor.tinta700 : LiquidColor.tinta900)
         if let pulse {
             dot
             // El numeral son 17 pt, no 24: por debajo del piso, el hue saturado NO se puede usar
-            // en texto. `dataHeart` da 4.24:1 sobre el papel. Va su tono de LECTURA — el mismo par
+            // en texto. `rosa` da 4.24:1 sobre el papel. Va su tono de LECTURA — el mismo par
             // «hue de dato / tono de lectura» que `EntrenarFamily.reading` ya obliga en la sección.
             stat(pulse, unit: "bpm",
-                 tone: isPaused ? theme.inkSecondary
-                                : OKLab.darkened(theme.dataHeart, toContrast: 4.5, against: theme.paper))
+                 tone: isPaused ? LiquidColor.tinta700
+                                : OKLab.darkened(LiquidColor.rosa, toContrast: 4.5, against: EntrenarMetrics.lienzoContraste))
         }
     }
 
@@ -180,12 +176,12 @@ public struct SessionStatsBar: View {
             .font(InstrumentoType.groteskNumber(17, weight: .bold, relativeTo: .body))
             .foregroundStyle(tone)
          + Text(verbatim: " ")
-         + Text(unit).font(StrandFont.caption).foregroundStyle(theme.inkTertiary))
+         + Text(unit).font(StrandFont.caption).foregroundStyle(LiquidColor.tinta500))
             .accessibilityElement(children: .combine)
     }
 
     private var dot: some View {
-        Text(verbatim: "·").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+        Text(verbatim: "·").font(StrandFont.caption).foregroundStyle(LiquidColor.tinta500)
             .accessibilityHidden(true)
     }
 
@@ -193,10 +189,10 @@ public struct SessionStatsBar: View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(StrandFont.glyph(.lead))
-                .foregroundStyle(theme.inkSecondary)
+                .foregroundStyle(LiquidColor.tinta700)
                 .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)
-                .background(theme.paper, in: Circle())
-                .overlay(Circle().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                .background(LiquidColor.papelTarjeta, in: Circle())
+                .overlay(Circle().strokeBorder(LiquidColor.tinta10, lineWidth: 1))
                 .contentShape(Circle())
         }
         .buttonStyle(EntrenarPressStyle())
@@ -217,8 +213,7 @@ public struct SessionStatsBar: View {
                    labels: ["L", "M", "X", "J", "V", "S", "D"])
     }
     .padding(24)
-    .background(InstrumentoTheme.base.paper)
-    .instrumentoTheme(.base)
+    .background(LiquidColor.fondoAlto)
 }
 
 #Preview("SessionStatsBar · estados") {
@@ -228,8 +223,7 @@ public struct SessionStatsBar: View {
         SessionStatsBar(volume: "12,480", sets: "24", pulse: "96", isPaused: true, onFocus: {})
     }
     .padding(24)
-    .background(InstrumentoTheme.base.paper)
-    .instrumentoTheme(.base)
+    .background(LiquidColor.fondoAlto)
 }
 
 #Preview("Semana y barra · xxxLarge") {
@@ -239,8 +233,7 @@ public struct SessionStatsBar: View {
         SessionStatsBar(volume: "4,880", sets: "12", pulse: "128", onFocus: {})
     }
     .padding(24)
-    .background(InstrumentoTheme.base.paper)
-    .instrumentoTheme(.base)
+    .background(LiquidColor.fondoAlto)
     .environment(\.dynamicTypeSize, .accessibility3)
 }
 #endif

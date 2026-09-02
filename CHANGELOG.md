@@ -21,6 +21,8 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 ## Unreleased
 
 - Catálogo Liquid al día: `LiquidSpace.s175`/`s450`, y el generador enumera `LiquidOLED`, `LiquidControl`, radios `tile`/`chip` y la familia tipográfica nueva de `LiquidType` (FER-318).
+- CenitDesign: piezas Liquid/Entrenar dejan de pedir `InstrumentoTheme` (leen `LiquidColor`; `theme:` opcional/ignorado) (FER-316).
+- FER-316 r2: bordes `hairlineStrong` → `tinta10` (visibles sobre papel); `EntrenarHilo(sobreOLED:)` para Watch; lienzo de contraste unificado; matices warning/dataSun/originComputed.
 - Higiene de diseño (FER-313 M4): literales de spacing envueltos en `LiquidSpace` / `.zero`, cápsulas de dato anotadas y `token-exempt` reclasificados con categoría en `Cenit/` y `CenitApp/`.
 - Gate de diseño: `no-weight-on-grotesk` también caza `.fontWeight(` (misma línea o la siguiente); Widgets y Watch entran a `no-legacy-api`, `no-instrumento-theme`, `no-deprecated-metrics` y `no-weight-on-grotesk` (fin del carve-out FER-219 para esas reglas); baseline apretado (FER-314).
 

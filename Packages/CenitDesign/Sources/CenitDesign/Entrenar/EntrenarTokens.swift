@@ -25,19 +25,22 @@ public enum EntrenarFamily: String, Sendable, CaseIterable, Hashable {
     ///
     /// Hue saturado: solo para bolitas, barras, marcos y numerales ≥ 24 pt, nunca para texto chico
     /// (para eso está `reading`).
-    public func tint(_ theme: InstrumentoTheme) -> Color {
+    public func tint(_ theme: InstrumentoTheme = .base) -> Color {
+        let _ = theme
         switch self {
-        case .push:            return theme.dataStrain
-        case .pull:            return theme.dataHrv
-        case .legs, .fullBody: return theme.dataSleep
+        case .push:            return LiquidColor.ambar
+        case .pull:            return LiquidColor.cian
+        case .legs, .fullBody: return LiquidColor.indigo
         }
     }
 
     /// El tono de LECTURA de esa misma identidad: el mismo hue oscurecido hasta cumplir contraste
     /// de texto (≥ 4.5:1) sobre el papel vivo. Es el par obligatorio del anterior — «hue de dato /
     /// tono de lectura» — para que un rótulo de familia nunca se pinte en el hue saturado.
-    public func reading(_ theme: InstrumentoTheme) -> Color {
-        theme.onPaper(tint(theme))
+    public func reading(_ theme: InstrumentoTheme = .base) -> Color {
+        let _ = theme
+        // AA sobre el lienzo de referencia (FER-316); ver nota en `EntrenarHilo.Tone.word`.
+        return OKLab.darkened(tint(), toContrast: 4.5, against: EntrenarMetrics.lienzoContraste)
     }
 
     /// Nombre visible de la familia (vía catálogo). Claves `muscleGroup.*` — un «Push» suelto
@@ -65,6 +68,10 @@ public enum EntrenarFamily: String, Sendable, CaseIterable, Hashable {
 /// El ritmo de la sección: las alturas y los blancos táctiles que se repiten en más de una pantalla.
 /// Base 4, alineado al handoff. Lo que no está aquí vive en `CenitMetrics` (márgenes, radios, gaps).
 public enum EntrenarMetrics {
+    /// Piso seguro de contraste de lectura: lo que pasa AA en el papel cálido pasa en
+    /// `fondoAlto` (FER-316). Migrar a `LiquidColor.fondoAlto` cuando ninguna pantalla
+    /// hospedadora siga en papel.
+    public static let lienzoContraste = InstrumentoTheme.base.paper
     /// Fila mínima y blanco táctil (HIG). El dibujo puede ser menor; el toque nunca.
     public static let row: CGFloat = LiquidControl.hitTarget      // 44
     /// Fila de la tabla de series: más alta que una fila de lista porque es un campo de captura.
@@ -303,22 +310,24 @@ public enum EntrenarCalendarState: Sendable, Hashable {
     /// Día planeado por la semana, aún no entrenado.
     case planned(EntrenarFamily)
 
-    public func fill(_ theme: InstrumentoTheme) -> Color {
+    public func fill(_ theme: InstrumentoTheme = .base) -> Color {
+        let _ = theme
         switch self {
         case .empty:         return LiquidColor.tinta7
         case .today, .future: return .clear
-        case .done(let f):   return f.tint(theme)
+        case .done(let f):   return f.tint()
         case .planned:       return .clear
         }
     }
 
-    public func stroke(_ theme: InstrumentoTheme) -> Color? {
+    public func stroke(_ theme: InstrumentoTheme = .base) -> Color? {
+        let _ = theme
         switch self {
         case .empty:          return nil
         case .future:         return LiquidColor.tinta10
         case .today:          return LiquidColor.tinta900
         case .done:           return nil
-        case .planned(let f): return f.tint(theme)
+        case .planned(let f): return f.tint()
         }
     }
 
@@ -375,7 +384,7 @@ public extension View {
 public struct EntrenarMarcaChip: View {
     let count: Int
     let theme: InstrumentoTheme
-    public init(_ count: Int, theme: InstrumentoTheme) { self.count = count; self.theme = theme }
+    public init(_ count: Int, theme: InstrumentoTheme = .base) { self.count = count; self.theme = theme }
     public var body: some View {
         // `theme` se conserva en la API; el tinte es `positivo` (FER-294).
         let _ = theme
@@ -462,49 +471,47 @@ public extension View {
 #Preview("Entrenar · cabecera kicker") {
     Text(verbatim: "Entrenar · Sáb 15 ago")
         .entrenarCabeceraKicker()
-        .foregroundStyle(InstrumentoTheme.base.inkSecondary)
+        .foregroundStyle(LiquidColor.tinta700)
         .padding(24)
-        .background(InstrumentoTheme.base.paper)
-        .instrumentoTheme(.base)
+        .background(LiquidColor.fondoAlto)
 }
 
 #Preview("Entrenar · tokens") {
-    let t = InstrumentoTheme.base
-    return VStack(alignment: .leading, spacing: 20) {
-        Text("FAMILIA · HUE Y TONO DE LECTURA").instrumentoOverline().foregroundStyle(t.inkTertiary)
+    VStack(alignment: .leading, spacing: 20) {
+        Text("FAMILIA · HUE Y TONO DE LECTURA").instrumentoOverline().foregroundStyle(LiquidColor.tinta500)
         ForEach(EntrenarFamily.allCases, id: \.self) { f in
             HStack(spacing: 12) {
-                Circle().fill(f.tint(t)).frame(width: 24, height: 24)
-                Text(f.label).font(StrandFont.subhead).foregroundStyle(f.reading(t))
+                Circle().fill(f.tint()).frame(width: 24, height: 24)
+                Text(f.label).font(StrandFont.subhead).foregroundStyle(f.reading())
                 Spacer()
-                RoutineRegionGlyph(f.glyph, tint: f.tint(t)).frame(width: 24, height: 24)
+                RoutineRegionGlyph(f.glyph, tint: f.tint()).frame(width: 24, height: 24)
             }
         }
-        Text("CALENDARIO · ESTADOS").instrumentoOverline().foregroundStyle(t.inkTertiary)
+        Text("CALENDARIO · ESTADOS").instrumentoOverline().foregroundStyle(LiquidColor.tinta500)
         HStack(spacing: EntrenarMetrics.calendarGap) {
             ForEach(Array([EntrenarCalendarState.empty, .done(.push), .done(.pull), .done(.legs),
                            .today, .planned(.push)].enumerated()), id: \.offset) { _, s in
                 RoundedRectangle(cornerRadius: EntrenarMetrics.calendarRadius, style: .continuous)
-                    .fill(s.fill(t))
+                    .fill(s.fill())
                     .frame(width: EntrenarMetrics.calendarCell, height: EntrenarMetrics.calendarCell)
                     .overlay {
-                        if let stroke = s.stroke(t) {
+                        if let stroke = s.stroke() {
                             RoundedRectangle(cornerRadius: EntrenarMetrics.calendarRadius, style: .continuous)
                                 .strokeBorder(stroke, lineWidth: 1.5)
                         }
                     }
             }
         }
-        Text("NIVELES · CHIP DE MARCA Y ETIQUETA DE DÍA").instrumentoOverline().foregroundStyle(t.inkTertiary)
+        Text("NIVELES · CHIP DE MARCA Y ETIQUETA DE DÍA").instrumentoOverline().foregroundStyle(LiquidColor.tinta500)
         HStack(spacing: 12) {
-            Text("1 mark").entrenarMarcaChip().foregroundStyle(t.positiveText)
+            Text("1 mark").entrenarMarcaChip().foregroundStyle(LiquidColor.positivo)
                 .padding(.horizontal, LiquidSpace.s200).padding(.vertical, LiquidSpace.s100)
-                .background(t.tint(t.positiveText), in: Capsule())
-            Text(verbatim: "L").entrenarWeekDayLabel().foregroundStyle(t.inkTertiary)
+                .background(LiquidColor.positivo.opacity(LiquidTono.intensidadDefault), in: Capsule())
+            Text(verbatim: "L").entrenarWeekDayLabel().foregroundStyle(LiquidColor.tinta500)
         }
     }
     .padding(24)
-    .background(t.paper)
+    .background(LiquidColor.fondoAlto)
 }
 #endif
 
@@ -522,8 +529,6 @@ public struct EntrenarFamilyDot: View {
     private let estilo: AnyShapeStyle
     private let sobreFondo: Bool
     private let size: CGFloat
-
-    @Environment(\.instrumentoTheme) private var theme
 
     /// - Parameters:
     ///   - estilo: el tinte ya resuelto. `AnyShapeStyle` y no `Color` porque «cuerpo completo» se
@@ -548,7 +553,7 @@ public struct EntrenarFamilyDot: View {
             .frame(width: size, height: size)
             .background {
                 if sobreFondo {
-                    Circle().fill(theme.paper)
+                    Circle().fill(LiquidColor.papelTarjeta)
                         .frame(width: EntrenarMetrics.familyDotKnockout,
                                height: EntrenarMetrics.familyDotKnockout)
                 }
@@ -560,18 +565,16 @@ public struct EntrenarFamilyDot: View {
 
 #if DEBUG
 #Preview("EntrenarFamilyDot · las cuatro familias, con y sin aro") {
-    let t = InstrumentoTheme.base
-    return VStack(alignment: .leading, spacing: 18) {
+    VStack(alignment: .leading, spacing: 18) {
         ForEach(EntrenarFamily.allCases, id: \.self) { f in
             HStack(spacing: 14) {
-                EntrenarFamilyDot(f.tint(t))
-                EntrenarFamilyDot(f.tint(t), sobreFondo: true)
-                Text(f.label).font(StrandFont.caption).foregroundStyle(t.inkSecondary)
+                EntrenarFamilyDot(f.tint())
+                EntrenarFamilyDot(f.tint(), sobreFondo: true)
+                Text(f.label).font(StrandFont.caption).foregroundStyle(LiquidColor.tinta700)
             }
         }
     }
     .padding(28)
-    .background(t.paper)
-    .instrumentoTheme(.base)
+    .background(LiquidColor.fondoAlto)
 }
 #endif

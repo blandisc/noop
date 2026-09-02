@@ -83,13 +83,11 @@ private enum Metrics {
     ])
     .padding(LiquidSpace.s550)
     .background(LiquidColor.fondoGradient)
-    .instrumentoTheme(.base)
 }
 
 #Preview("EntrenarHistorialLista · vacío") {
     EntrenarHistorialLista(vacio: "Todavía no hay sesiones en este periodo.", filas: [])
         .padding(LiquidSpace.s550)
         .background(LiquidColor.fondoGradient)
-        .instrumentoTheme(.base)
 }
 #endif

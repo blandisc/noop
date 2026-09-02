@@ -28,8 +28,6 @@ public struct TrainingCalendar: View {
     private let onTapDay: ((EntrenarCalendarDay) -> Void)?
     private let monthLabels: [Int: LocalizedStringKey]
 
-    @Environment(\.instrumentoTheme) private var theme
-
     /// - Parameters:
     ///   - onTapDay: toque POR CELDA (solo en días `.done`) — distinto de `action`, que es un único
     ///     toque para TODA la rejilla. Los dos son mutuamente exclusivos en la práctica (un call site
@@ -101,10 +99,10 @@ public struct TrainingCalendar: View {
     private func cell(_ day: EntrenarCalendarDay) -> some View {
         let shape = RoundedRectangle(cornerRadius: EntrenarMetrics.calendarRadius, style: .continuous)
         let box = shape
-            .fill(day.state.fill(theme))
+            .fill(day.state.fill())
             .frame(width: side, height: side)
             .overlay {
-                if let stroke = day.state.stroke(theme) { shape.strokeBorder(stroke, lineWidth: 1.5) }
+                if let stroke = day.state.stroke() { shape.strokeBorder(stroke, lineWidth: 1.5) }
             }
         // Solo un día CON sesión reacciona — el resto queda plano, sin `Button` (Alcance punto 2). El
         // toque por celda es un ATAJO visual, nunca el camino accesible: la rejilla entera sigue siendo
@@ -140,8 +138,6 @@ public struct MuscleLoadRow: View {
     private let isFresh: Bool
     private let action: (() -> Void)?
 
-    @Environment(\.instrumentoTheme) private var theme
-
     public init(name: LocalizedStringKey, load: Double, recency: LocalizedStringKey, sets: Double,
                 isFresh: Bool, action: (() -> Void)? = nil) {
         self.name = name; self.load = max(0, min(1, load))
@@ -174,21 +170,21 @@ public struct MuscleLoadRow: View {
             // de la derecha se dimensionan por su contenido.
             Text(name)
                 .font(StrandFont.subhead)
-                .foregroundStyle(isFresh ? theme.inkSecondary : theme.ink)
+                .foregroundStyle(isFresh ? LiquidColor.tinta700 : LiquidColor.tinta900)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
             rail.frame(maxWidth: 120)
             Text(recency)
-                .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                .font(StrandFont.caption).foregroundStyle(LiquidColor.tinta500)
                 .fixedSize(horizontal: true, vertical: false)
             Text(verbatim: Self.formattedSets(sets))
                 .font(InstrumentoType.groteskNumber(14, weight: .bold, relativeTo: .caption))
-                .foregroundStyle(isFresh ? theme.inkTertiary : theme.ink)
+                .foregroundStyle(isFresh ? LiquidColor.tinta500 : LiquidColor.tinta900)
                 .fixedSize(horizontal: true, vertical: false)
             if action != nil {
                 CenitIcon.disclosure.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold))
-                    .foregroundStyle(theme.inkTertiary)
+                    .foregroundStyle(LiquidColor.tinta500)
             }
         }
         .frame(minHeight: EntrenarMetrics.row)
@@ -204,7 +200,7 @@ public struct MuscleLoadRow: View {
                 Capsule().fill(LiquidColor.tinta10)
                 if !isFresh {
                     Capsule()
-                        .fill(theme.dataStrain.opacity(0.35 + 0.65 * load))   // token-exempt: la opacidad ES el dato (recencia)
+                        .fill(LiquidColor.ambar.opacity(0.35 + 0.65 * load))   // token-exempt: la opacidad ES el dato (recencia)
                         .frame(width: max(4, geo.size.width * load))
                 }
             }
@@ -241,26 +237,24 @@ private let demoMonthLabels: [Int: LocalizedStringKey] = [0: "jul", 5: "ago"]
         TrainingCalendar(days: [], size: .full, summary: "no sessions yet")
     }
     .padding(24)
-    .background(InstrumentoTheme.base.paper)
-    .instrumentoTheme(.base)
+    .background(LiquidColor.fondoAlto)
 }
 
 #Preview("MuscleLoadRow · estados") {
     VStack(spacing: 0) {
         MuscleLoadRow(name: "Quadriceps", load: 1.0, recency: "today", sets: 12, isFresh: false)
-        Divider().overlay(InstrumentoTheme.base.hairline)
+        Divider().overlay(LiquidColor.vidrioBorde)
         MuscleLoadRow(name: "Back", load: 0.45, recency: "3 d ago", sets: 8, isFresh: false)
-        Divider().overlay(InstrumentoTheme.base.hairline)
+        Divider().overlay(LiquidColor.vidrioBorde)
         MuscleLoadRow(name: "Chest", load: 0, recency: "fresh", sets: 0, isFresh: true)
-        Divider().overlay(InstrumentoTheme.base.hairline)
+        Divider().overlay(LiquidColor.vidrioBorde)
         MuscleLoadRow(name: "Posterior deltoid", load: 0.2, recency: "6 d ago", sets: 2, isFresh: false)
-        Divider().overlay(InstrumentoTheme.base.hairline)
+        Divider().overlay(LiquidColor.vidrioBorde)
         // FER-91 (E10): decimal series (un músculo secundario carga a 0.5) y la variante con `action`.
         MuscleLoadRow(name: "Shoulders", load: 0.7, recency: "1 d ago", sets: 8.5, isFresh: false, action: {})
     }
     .padding(24)
-    .background(InstrumentoTheme.base.paper)
-    .instrumentoTheme(.base)
+    .background(LiquidColor.fondoAlto)
 }
 
 #Preview("Calendario y carga · xxxLarge") {
@@ -270,8 +264,7 @@ private let demoMonthLabels: [Int: LocalizedStringKey] = [0: "jul", 5: "ago"]
         MuscleLoadRow(name: "Chest", load: 0, recency: "fresh", sets: 0, isFresh: true)
     }
     .padding(24)
-    .background(InstrumentoTheme.base.paper)
-    .instrumentoTheme(.base)
+    .background(LiquidColor.fondoAlto)
     .environment(\.dynamicTypeSize, .accessibility3)
 }
 #endif

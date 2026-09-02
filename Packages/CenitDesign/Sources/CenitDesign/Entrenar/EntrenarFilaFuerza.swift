@@ -17,7 +17,6 @@ public struct EntrenarFilaFuerza: View {
     private let esfuerzo: String?
     private let onTap: () -> Void
 
-    @Environment(\.instrumentoTheme) private var theme
     @Environment(\.dynamicTypeSize) private var typeSize
 
     /// - Parameters:
@@ -63,7 +62,7 @@ public struct EntrenarFilaFuerza: View {
             VStack(alignment: .leading, spacing: LiquidSpace.s050) {
                 HStack(spacing: LiquidSpace.s100) {
                     nombreText.lineLimit(1).minimumScaleFactor(0.8)
-                    if marcas > 0 { EntrenarMarcaChip(marcas, theme: theme) }
+                    if marcas > 0 { EntrenarMarcaChip(marcas) }
                 }
                 metaText.lineLimit(1).minimumScaleFactor(0.8)
             }
@@ -79,7 +78,7 @@ public struct EntrenarFilaFuerza: View {
             VStack(alignment: .leading, spacing: LiquidSpace.s050) {
                 HStack(spacing: LiquidSpace.s100) {
                     nombreText.fixedSize(horizontal: false, vertical: true)
-                    if marcas > 0 { EntrenarMarcaChip(marcas, theme: theme) }
+                    if marcas > 0 { EntrenarMarcaChip(marcas) }
                 }
                 metaText.fixedSize(horizontal: false, vertical: true)
                 datoDerecho
@@ -91,7 +90,7 @@ public struct EntrenarFilaFuerza: View {
     // MARK: Piezas
 
     private var glifo: some View {
-        RoutineRegionGlyph(family.glyph, tint: family.tint(theme))
+        RoutineRegionGlyph(family.glyph, tint: family.tint())
             .frame(width: Metrics.glyph, height: Metrics.glyph)
             .frame(width: Metrics.chip, height: Metrics.chip)
             .background(LiquidColor.tinta7,
@@ -147,7 +146,6 @@ private enum Metrics {
                        marcas: 2, esfuerzo: "14", onTap: {})
         .padding(.horizontal, LiquidSpace.s400)
         .background(LiquidColor.fondoGradient)
-        .instrumentoTheme(.base)
 }
 
 #Preview("EntrenarFilaFuerza · sin marca") {
@@ -156,7 +154,6 @@ private enum Metrics {
                        marcas: 0, esfuerzo: "11", onTap: {})
         .padding(.horizontal, LiquidSpace.s400)
         .background(LiquidColor.fondoGradient)
-        .instrumentoTheme(.base)
 }
 
 #Preview("EntrenarFilaFuerza · sin esfuerzo") {
@@ -165,7 +162,6 @@ private enum Metrics {
                        marcas: 1, esfuerzo: nil, onTap: {})
         .padding(.horizontal, LiquidSpace.s400)
         .background(LiquidColor.fondoGradient)
-        .instrumentoTheme(.base)
 }
 
 #Preview("EntrenarFilaFuerza · AX5") {
@@ -174,7 +170,6 @@ private enum Metrics {
                        marcas: 3, esfuerzo: "16", onTap: {})
         .padding(.horizontal, LiquidSpace.s400)
         .background(LiquidColor.fondoGradient)
-        .instrumentoTheme(.base)
         .environment(\.dynamicTypeSize, .accessibility3)
 }
 #endif
