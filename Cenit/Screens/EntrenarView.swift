@@ -224,7 +224,7 @@ private struct EntrenarLanding: View {
                 // esta pantalla ya no pudo leer NADA de la base, y un veredicto flotando sobre un
                 // error de lectura sugiere que el resto sí cargó cuando no fue así.
                 if !loadFailed {
-                    hiloDelVeredicto.padding(.top, CenitMetrics.space2)
+                    hiloDelVeredicto.padding(.top, LiquidSpace.s200)
                 }
                 if loaded {
                     if loadFailed {
@@ -245,18 +245,18 @@ private struct EntrenarLanding: View {
                         // (spec §«Estados no-rutina» — reemplaza a `muscleSectionModulo`+`bitacoraSection`).
                         heroSectionDescanso
                             .padding(.top, EntrenarMetrics.heroKickerTop)
-                        v18Mosaico.padding(.top, CenitMetrics.gap)
+                        v18Mosaico.padding(.top, LiquidSpace.s300)
                     } else if let r = todayRoutine {
                         // ① en rango / ② recupera — el héroe v18 (FER-171 · Parte B) + el mismo mosaico.
                         heroeV18(r)
                             .padding(.top, EntrenarMetrics.heroKickerTop)
-                        v18Mosaico.padding(.top, CenitMetrics.gap)
+                        v18Mosaico.padding(.top, LiquidSpace.s300)
                     }
                 }
             }
             .padding(.top, CenitMetrics.screenTop)   // shared titled-tab top inset
-            .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.bottom, CenitMetrics.screenPadding)
+            .padding(.horizontal, LiquidSpace.s600)
+            .padding(.bottom, LiquidSpace.s600)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .pantallaFondo()
@@ -407,7 +407,7 @@ private struct EntrenarLanding: View {
     // Semana → Dosis → Par → Cuerpo → Marcas+Volumen → Constancia → Historial, debajo del héroe (v18
     // o el viejo, según el estado) en los tres estados «con cuerpo» (rutina del día, descanso, sesión
     // viva — spec §«Estados no-rutina»). Cada módulo se auto-silencia con su propia regla; el mosaico
-    // solo decide el aire (12 pt, `CenitMetrics.gap`) entre los que sí hablan.
+    // solo decide el aire (12 pt, `LiquidSpace.s300`) entre los que sí hablan.
 
     @ViewBuilder private var v18Mosaico: some View {
         EntrenarHubSemana(
@@ -687,7 +687,7 @@ private struct EntrenarLanding: View {
                         movilidadButton
                         otraFormaEnlace(fillsWidth: false)
                     }
-                    VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+                    VStack(alignment: .leading, spacing: LiquidSpace.s200) {
                         movilidadButton
                         otraFormaEnlace(fillsWidth: false)
                     }
@@ -977,18 +977,18 @@ private struct EntrenarLanding: View {
                 }
                 filoDelPliegue
                 Text("Your routine for today stays put: this is separate, no guilt.")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .font(StrandFont.caption).foregroundStyle(LiquidColor.tinta500)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, CenitMetrics.rowVPad)
             }
-            .padding(.top, CenitMetrics.space2)
+            .padding(.top, LiquidSpace.s200)
             .transition(LiquidMotion.fadeTransition)
             .accessibilityElement(children: .contain)
         }
     }
 
     private var filoDelPliegue: some View {
-        Rectangle().fill(theme.hairline).frame(height: 1)
+        Rectangle().fill(LiquidColor.tinta10).frame(height: 1)
     }
 
     /// La cabecera de un nivel del hub (FER-130 «Ritmo 1b»): filo superior de 1 pt + el aire del
@@ -1017,18 +1017,18 @@ private struct EntrenarLanding: View {
         } label: {
             HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s225) {
                 Image(systemName: puerta.icon)
-                    .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                    .font(StrandFont.body).foregroundStyle(LiquidColor.tinta700)
                     .frame(minWidth: HojaMetrics.marcaDiametro, alignment: .leading)
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: LiquidSpace.s050) {
-                    Text(puerta.label).font(StrandFont.body).foregroundStyle(theme.ink)
+                    Text(puerta.label).font(StrandFont.body).foregroundStyle(LiquidColor.tinta900)
                     Text(puerta.subtitle)
-                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                        .font(StrandFont.caption).foregroundStyle(LiquidColor.tinta500)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                Spacer(minLength: CenitMetrics.space2)
+                Spacer(minLength: LiquidSpace.s200)
             }
-            .padding(.vertical, CenitMetrics.space2)
+            .padding(.vertical, LiquidSpace.s200)
             .frame(maxWidth: .infinity, minHeight: EntrenarMetrics.row, alignment: .leading)
             .contentShape(Rectangle())
         }
@@ -1159,7 +1159,7 @@ private struct EntrenarLanding: View {
                         .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.top, EntrenarMetrics.heroSubTop)
-                    primerUsoChips.padding(.top, CenitMetrics.gap)
+                    primerUsoChips.padding(.top, LiquidSpace.s300)
                     // Secundarias: «Desde cero» (biblioteca) + «Importar» — sin «Crear mi plan».
                     Button { showLibrary = true } label: {
                         HStack(spacing: CenitMetrics.space1) {
@@ -1205,12 +1205,12 @@ private struct EntrenarLanding: View {
     private var primerUsoChips: some View {
         let chips = Self.primerUsoGroups
         return ViewThatFits(in: .horizontal) {
-            HStack(spacing: CenitMetrics.space2) {
+            HStack(spacing: LiquidSpace.s200) {
                 ForEach(chips, id: \.name) { item in
                     primerUsoChip(name: item.name, group: item.group)
                 }
             }
-            VStack(alignment: .leading, spacing: CenitMetrics.space2) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s200) {
                 ForEach(chips, id: \.name) { item in
                     primerUsoChip(name: item.name, group: item.group)
                 }
@@ -1233,7 +1233,7 @@ private struct EntrenarLanding: View {
                 Text(LocalizedStringKey(name)).font(StrandFont.body).fontWeight(.semibold).foregroundStyle(theme.ink)
                 Text(countText).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
             }
-            .padding(.horizontal, CenitMetrics.space2)
+            .padding(.horizontal, LiquidSpace.s200)
             // EntrenarMetrics.row (44 pt) = mínimo HIG — no bajar.
             .frame(maxWidth: .infinity, minHeight: EntrenarMetrics.row, alignment: .leading)
             .liquidGlass(.pastillaSolida)
@@ -1281,14 +1281,15 @@ private struct EntrenarLanding: View {
     // open. Showing the onboarding empty state here would wrongly push them to rebuild their week, so we
     // surface a plain error with a retry that re-runs `load()`.
     private var loadErrorState: some View {
-        EntrenarModulo(tono: .neutro) {
-            VStack(alignment: .leading, spacing: CenitMetrics.gap) {
-                Text("I couldn't read your plan").font(InstrumentoType.groteskHeadline(20)).foregroundStyle(theme.ink)
-                Text("Something failed opening your routines · your data is intact")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                StrandCTAButton("Retry", kind: .outline) { Task { await load() } }
-            }
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+            LiquidPatternBlock(
+                overline: nil,
+                lineas: [
+                    String(localized: "I couldn't read your plan"),
+                    String(localized: "Something failed opening your routines · your data is intact"),
+                ],
+                tono: LiquidColor.tinta500)
+            LiquidGlassButton("Retry", variant: .solida) { Task { await load() } }
         }
     }
 
@@ -1351,15 +1352,15 @@ private struct EntrenarLanding: View {
     // los separa: la cabecera es de la PANTALLA (nombra el tab y el día), el hilo es del CUERPO.
 
     private var cabecera: some View {
-        HStack(spacing: CenitMetrics.space2) {
+        HStack(spacing: LiquidSpace.s200) {
             Text(cabeceraKicker)
-                .entrenarCabeceraKicker()
-                .foregroundStyle(theme.inkSecondary)
-            Spacer(minLength: CenitMetrics.space2)
+                .liquidKicker()
+                .foregroundStyle(LiquidColor.tinta700)
+            Spacer(minLength: LiquidSpace.s200)
             Button { showTricks = true } label: {
                 Image(systemName: "questionmark.circle")
                     .font(StrandFont.glyph(.lead))
-                    .foregroundStyle(theme.inkTertiary)
+                    .foregroundStyle(LiquidColor.tinta500)
                     .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)
                     .contentShape(Rectangle())
             }
