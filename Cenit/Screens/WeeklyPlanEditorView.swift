@@ -15,11 +15,11 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 // management (create / rename / move / delete) stays alive behind the «Plantillas · Importar · Carpetas»
 // menu and each routine's «···», and `folderId` and the folder model are untouched.
 //
-// «Instrumento diurno»: an editor has no measured datum, so there is NO saturated color for the week — the
-// assigned-vs-rest contrast is carried by ink WEIGHT (a routine name in `ink` vs «Rest» in `inkDim`), and
-// hierarchy by space + hairlines, no card-in-card. Routines carry their per-routine tint only on the 8pt
-// identity dot (via `RoutineClassifier`, the same hue the hub uses). Tapping a day opens a native paper
-// menu of routines (grouped by folder, FER-494) plus «Rest» to clear it; tapping a routine edits it.
+// «Liquid Glass · El Eje» (FER-292): an editor has no measured datum, so there is NO saturated color for
+// the week — assigned-vs-rest contrast is ink WEIGHT (`tinta900` vs `tinta500`), hierarchy by paper cards
+// + capillary `tinta10`, no card-in-card. Routines carry their per-routine tint only on the family dot /
+// glyph / mini-bars (via `RoutineClassifier`). Tapping a day opens a `liquidMenu` of routines (grouped by
+// folder) plus «Rest» to clear it; tapping a routine edits it.
 
 struct WeeklyPlanEditorView: View {
     @EnvironmentObject var repo: Repository
@@ -96,7 +96,7 @@ struct WeeklyPlanEditorView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s300) {
                 header
                 if loaded {
                     if !routines.isEmpty {
@@ -107,14 +107,12 @@ struct WeeklyPlanEditorView: View {
                 }
             }
             .padding(.top, EntrenarMetrics.heroKickerTop)
-            .padding(.horizontal, CenitMetrics.screenPadding)
-            .padding(.bottom, CenitMetrics.screenPadding)
+            .padding(.horizontal, LiquidSpace.s600)
+            .padding(.bottom, LiquidSpace.s600)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        // FER-200 (Anillo 2, épico FER-195): fondo de vidrio El Eje en vez del papel plano — la
-        // pantalla llega empujada (WeeklyPlanMap / AppMap) y conserva su navegación/toolbar del
-        // stack ambiente tal cual; su héroe («Your weekly plan») no trae botón de salida propio
-        // que sustituir. Los inputs de carpeta (nueva/renombrar) se quedan intactos.
+        // FER-200 (Anillo 2, épico FER-195): fondo de vidrio El Eje — la pantalla llega empujada
+        // (WeeklyPlanMap / AppMap) y conserva su navegación/toolbar del stack ambiente tal cual.
         .entrenarHojaFondo(tono: .neutro)
         .overlay(alignment: .bottom) {
             if let d = pendingUndo { undoBanner(d) }
@@ -138,7 +136,7 @@ struct WeeklyPlanEditorView: View {
             WorkoutImportView { await load() }
                 .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
-        .instrumentoInput(
+        .liquidInput(
             isPresented: Binding(get: { showNewFolder },
                                  set: { if !$0 { showNewFolder = false; newFolderName = ""; pendingMove = nil } }),
             text: $newFolderName,
@@ -147,7 +145,7 @@ struct WeeklyPlanEditorView: View {
             placeholder: String(localized: "Folder name"),
             cta: String(localized: "Create")
         ) { _ in createFolder() }
-        .instrumentoInput(
+        .liquidInput(
             isPresented: Binding(get: { renameFolder != nil },
                                  set: { if !$0 { renameFolder = nil } }),
             text: $renameText,
@@ -166,16 +164,18 @@ struct WeeklyPlanEditorView: View {
     // MARK: - Header
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s100) {
             // FER-952 (owner, propuesta C aprobada): ONE integrated hero title — «Your weekly plan» —
             // no overline; the count rides as the subtitle. Nothing else on the screen changes.
             Text("Your weekly plan")
-                .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
-                .foregroundStyle(theme.ink)
+                .font(LiquidType.displayS)
+                .tracking(LiquidType.displaySTracking)
+                .foregroundStyle(LiquidColor.tinta900)
             if loaded && !routines.isEmpty {
                 // Handoff v4b: a terse count («4 días · 3 rutinas»), not an opinion.
                 Text("\(assignedCount) days · \(routines.count) routines")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .font(LiquidType.cuerpoBanner)
+                    .foregroundStyle(LiquidColor.tinta700)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -191,17 +191,21 @@ struct WeeklyPlanEditorView: View {
     // MARK: - The week (one row per day)
 
     private var weekSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            // Handoff: the sunken section band, with the «tap a day» hint riding its trailing slot.
+        VStack(alignment: .leading, spacing: 0) {
             LiquidSectionHeader("The week") {
-                Text("tap a day to edit it").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                Text("tap a day to edit it")
+                    .font(LiquidType.unidad)
+                    .foregroundStyle(LiquidColor.tinta500)
             }
             VStack(spacing: 0) {
                 ForEach(weekdays, id: \.self) { wd in
                     dayRow(wd)
-                    if wd != weekdays.last { divider }
+                    if wd != weekdays.last { capillary }
                 }
             }
+            .padding(.vertical, LiquidSpace.s050)
+            .padding(.horizontal, LiquidSpace.handoff14)
+            .liquidGlass(.superficieSolida)
         }
     }
 
@@ -256,45 +260,33 @@ struct WeeklyPlanEditorView: View {
     private func assignedDayRowBody(_ wd: Int) -> some View {
         if let rid = schedule[wd], let r = routines.first(where: { $0.id == rid }) {
             let tint = routineTint(r)
-            HStack(spacing: 10) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(weekdayLabel(wd))
-                        .font(InstrumentoType.grotesk(14, weight: .medium))
-                        .foregroundStyle(wd == today ? theme.ink : theme.inkSecondary)
-                    if wd == today {
-                        Text("today").textCase(.uppercase)
-                            .font(StrandFont.footnote).fontWeight(.semibold).foregroundStyle(theme.ink)
-                    }
-                }
-                .frame(width: 52, alignment: .leading)
-                VStack(alignment: .leading, spacing: 5) {
-                    Button { openDay(wd) } label: {
-                        HStack(spacing: 6) {
-                            // FER-88: el punto de identidad tokenizado (antes un `RoundedRectangle`
-                            // ad hoc, exento del linter) — el mismo `EntrenarFamilyDot` que el resto
-                            // de la sección usa para esta identidad; el tinte sigue resolviendo por
-                            // `RoutineRegion` (sin cambio de lógica, solo de dibujo).
+            HStack(spacing: LiquidSpace.s300) {
+                dayLabelColumn(wd)
+                VStack(alignment: .leading, spacing: LiquidSpace.s125) {
+                    OutlineCapsule(theme: theme, size: .sm, action: { openDay(wd) }) {
+                        HStack(spacing: LiquidSpace.s150) {
                             EntrenarFamilyDot(tint)
-                            // Nombre largo: una línea, elipsis al final — el chip nunca empuja al ⇄.
-                            Text(r.name).font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
+                            Text(r.name)
+                                .font(LiquidType.tituloFila)
+                                .foregroundStyle(LiquidColor.tinta900)
                                 .lineLimit(1).truncationMode(.tail)
-                            StrandIcon.disclosure.image
-                                .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(tint)
+                            LiquidIcon(.chevron, size: 11, color: tint)
                         }
-                        .troquelChip(theme)
-                        .contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
                     .accessibilityLabel(Text("Edit \(r.name)"))
                     miniBars(rid)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                Text(seriesText(rid)).font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary)
+                Text(seriesText(rid))
+                    .font(LiquidType.captionLectura)
+                    .monospacedDigit()
+                    .foregroundStyle(LiquidColor.tinta500)
                     .layoutPriority(1)
                 Button { assignMenuDay = wd } label: {
                     Image(systemName: "arrow.left.arrow.right")
-                        .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
-                        .frame(width: 44, height: 44)
+                        .font(LiquidType.iconSF(size: 15))
+                        .foregroundStyle(LiquidColor.tinta500)
+                        .frame(width: LiquidControl.hitTarget, height: LiquidControl.hitTarget)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -305,14 +297,24 @@ struct WeeklyPlanEditorView: View {
                     items: assignMenuItems(wd)
                 )
             }
-            .frame(minHeight: 52)
-            .padding(.horizontal, wd == today ? 10 : 0)
-            .background {
-                if wd == today {
-                    Color.clear.liquidGlass(.superficieSolida)
-                }
+            .frame(minHeight: LiquidControl.hitTarget)
+            .padding(.vertical, LiquidSpace.filaRespiro)
+        }
+    }
+
+    private func dayLabelColumn(_ wd: Int) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(weekdayLabel(wd))
+                .font(LiquidType.tituloFila)
+                .foregroundStyle(wd == today ? LiquidColor.tinta900 : LiquidColor.tinta700)
+            if wd == today {
+                Text("today")
+                    .textCase(.uppercase)
+                    .font(LiquidType.microEstado)
+                    .foregroundStyle(LiquidColor.tinta900)
             }
         }
+        .frame(width: LiquidControl.lg, alignment: .leading)
     }
 
     private func routinePickItem(_ wd: Int, _ r: Routine) -> LiquidMenuItem {
@@ -320,40 +322,35 @@ struct WeeklyPlanEditorView: View {
     }
 
     private func rowLabel(_ wd: Int, chevron: String) -> some View {
-        HStack(spacing: 14) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(weekdayLabel(wd))
-                    .font(InstrumentoType.grotesk(14, weight: .medium))
-                    .foregroundStyle(wd == today ? theme.ink : theme.inkSecondary)
-                if wd == today {
-                    Text("today").textCase(.uppercase)
-                        .font(StrandFont.footnote).fontWeight(.semibold).foregroundStyle(theme.ink)
-                }
-            }
-            .frame(width: 52, alignment: .leading)
+        HStack(spacing: LiquidSpace.handoff14) {
+            dayLabelColumn(wd)
 
             if let rid = schedule[wd], let r = routines.first(where: { $0.id == rid }) {
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(r.name).font(StrandFont.body).fontWeight(wd == today ? .semibold : .regular)
-                        .foregroundStyle(theme.ink)
+                VStack(alignment: .leading, spacing: LiquidSpace.s125) {
+                    Text(r.name)
+                        .font(LiquidType.cuerpoBanner)
+                        .fontWeight(wd == today ? .semibold : .regular)
+                        .foregroundStyle(LiquidColor.tinta900)
                     miniBars(rid)
                 }
-                Spacer(minLength: 8)
-                Text(seriesText(rid)).font(StrandFont.caption).monospacedDigit().foregroundStyle(theme.inkTertiary)
+                Spacer(minLength: LiquidSpace.s200)
+                Text(seriesText(rid))
+                    .font(LiquidType.captionLectura)
+                    .monospacedDigit()
+                    .foregroundStyle(LiquidColor.tinta500)
             } else {
-                Text("Rest").font(StrandFont.body).foregroundStyle(theme.inkDim)
-                Spacer(minLength: 8)
+                Text("Rest")
+                    .font(LiquidType.cuerpoBanner)
+                    .foregroundStyle(LiquidColor.tinta500)
+                Spacer(minLength: LiquidSpace.s200)
             }
             Image(systemName: chevron)
-                .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                .font(LiquidType.iconSF(size: 15))
+                .foregroundStyle(LiquidColor.tinta500)
+                .frame(width: LiquidControl.hitTarget, height: LiquidControl.hitTarget)
         }
-        .frame(minHeight: 52)
-        .padding(.horizontal, wd == today ? 10 : 0)
-        .background {
-            if wd == today {
-                Color.clear.liquidGlass(.superficieSolida)
-            }
-        }
+        .frame(minHeight: LiquidControl.hitTarget)
+        .padding(.vertical, LiquidSpace.filaRespiro)
         .contentShape(Rectangle())
     }
 
@@ -362,12 +359,13 @@ struct WeeklyPlanEditorView: View {
     @ViewBuilder private func miniBars(_ rid: String) -> some View {
         let vol = (routineVolume[rid] ?? [:]).sorted { $0.value > $1.value }.prefix(3)
         let maxV = vol.map(\.value).max() ?? 1
-        HStack(spacing: 3) {
+        HStack(spacing: LiquidSpace.s075) {
             ForEach(Array(vol.enumerated()), id: \.offset) { _, e in
                 Capsule().fill(e.key.tint(theme))
                     .frame(width: max(12, CGFloat(e.value) / CGFloat(maxV) * 34), height: 4)
             }
         }
+        .accessibilityHidden(true)
     }
 
     private func seriesText(_ rid: String) -> String {
@@ -380,21 +378,24 @@ struct WeeklyPlanEditorView: View {
     private var volumeFooter: some View {
         let vol = weeklyVolume
         let maxV = MuscleGroup.allCases.map { vol[$0] ?? 0 }.max() ?? 1
-        return VStack(alignment: .leading, spacing: 10) {
+        return VStack(alignment: .leading, spacing: 0) {
             LiquidSectionHeader("Weekly volume by group")
-            HStack(alignment: .bottom, spacing: 14) {
+            HStack(alignment: .bottom, spacing: LiquidSpace.handoff14) {
                 ForEach(Array(MuscleGroup.allCases.enumerated()), id: \.element) { i, g in
                     let v = vol[g] ?? 0
-                    VStack(spacing: 5) {
+                    VStack(spacing: LiquidSpace.s125) {
                         RoundedRectangle(cornerRadius: 4, style: .continuous)  // token-exempt: geometría de dato
-                            .fill(v == 0 ? theme.hairlineStrong : g.tint(theme))
+                            .fill(v == 0 ? LiquidColor.tinta7 : g.tint(theme))
                             .frame(height: max(8, CGFloat(v) / CGFloat(max(1, maxV)) * 34))
                             .frame(maxWidth: .infinity)
                             // Handoff `recGrow`: each bar grows from its base on entry, staggered
                             // left→right (150→330 ms). Reduce Motion skips it (bars appear settled).
                             .scaleEffect(y: volumeBarsGrown || reduceMotion ? 1 : 0.001, anchor: .bottom)
                             .animation(LiquidMotion.suave.delay(0.15 + 0.06 * Double(i)), value: volumeBarsGrown)
-                        Text(g.label).font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                        Text(g.label)
+                            .liquidLabel()
+                            .foregroundStyle(LiquidColor.tinta500)
+                            .multilineTextAlignment(.center)
                     }
                 }
             }
@@ -422,44 +423,46 @@ struct WeeklyPlanEditorView: View {
     }
 
     private var routinesSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            // Handoff: the band carries «＋ Nueva» as its trailing action — the in-list row is gone.
+        VStack(alignment: .leading, spacing: 0) {
             LiquidSectionHeader("My routines") {
                 Button { showBuilder = true } label: {
                     (Text(verbatim: "＋ ") + Text("New"))
-                        .font(StrandFont.subhead).foregroundStyle(theme.ink)
+                        .font(LiquidType.tituloFila)
+                        .foregroundStyle(LiquidColor.tinta900)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text("New routine"))
             }
-            VStack(alignment: .leading, spacing: 0) {
-                if routines.isEmpty {
-                    Text("No routines yet. Create one, start from a template, or import a plan.")
-                        .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.vertical, 10)
-                    divider
-                } else if folders.isEmpty {
+            if routines.isEmpty {
+                Text("No routines yet. Create one, start from a template, or import a plan.")
+                    .font(LiquidType.cuerpoBanner)
+                    .foregroundStyle(LiquidColor.tinta700)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, LiquidSpace.seccionAire)
+                    .padding(.bottom, LiquidSpace.s200)
+            } else if folders.isEmpty {
+                VStack(spacing: 0) {
                     ForEach(routines) { r in
                         routineRow(r)
-                        if r.id != routines.last?.id { divider }
+                        if r.id != routines.last?.id { capillary }
                     }
-                    divider
-                } else {
-                    // Decisión Fer (2026-07-16 v2): carpetas = subdivisiones. FRONTERA DE TIPO
-                    // (AnyView): este bloque inline hacía explotar el layout de tipos de
-                    // AttributeGraph en el JIT de previews (crash SIGSEGV + VM 2.9 GB) — ver
-                    // Cenit-2026-07-16-220029.ips. No quitar sin re-verificar el canvas.
-                    foldersListErased
-                    divider
                 }
-                // FER-952 (owner): the folded row hid two of its three doors (the popover clipped
-                // near the screen bottom) — three STYLED chips instead, one per destination; the
-                // Folders chip anchors the folder-management paper menu.
-                toolsChipsRow
-                divider
-                actionRow("book", "Exercise library", action: openLibrary)
+                .padding(.vertical, LiquidSpace.s050)
+                .padding(.horizontal, LiquidSpace.handoff14)
+                .liquidGlass(.superficieSolida)
+            } else {
+                // Decisión Fer (2026-07-16 v2): carpetas = subdivisiones. FRONTERA DE TIPO
+                // (AnyView): este bloque inline hacía explotar el layout de tipos de
+                // AttributeGraph en el JIT de previews (crash SIGSEGV + VM 2.9 GB) — ver
+                // Cenit-2026-07-16-220029.ips. No quitar sin re-verificar el canvas.
+                foldersListErased
             }
+            toolsChipsRow
+            LiquidListCard {
+                LiquidListRow(title: String(localized: "Exercise library"),
+                              tone: nil, divider: false, action: openLibrary)
+            }
+            .padding(.top, LiquidSpace.s300)
         }
     }
 
@@ -485,13 +488,15 @@ struct WeeklyPlanEditorView: View {
     /// The three doors as equal-weight chips (FER-952): Templates and Import open their sheets;
     /// Folders anchors the folder-management paper menu (new / rename / delete).
     private var toolsChipsRow: some View {
-        HStack(spacing: CenitMetrics.space2) {
+        HStack(spacing: LiquidSpace.s200) {
             CrearPlanChip(onTemplates: { showTemplates = true }, onImport: { showImport = true })
             // Decisión Fer (2026-07-16 v2): UNA sola acción — crear la división. Renombrar/borrar
-            // viven en la banda de cada sección en Mis Rutinas (··· → undo de 4 s al borrar).
-            InstrumentoToolChip(systemImage: "folder.badge.plus", label: Text("New section")) { startNewFolder(moving: nil) }
+            // viven en la sub-cabecera de cada carpeta (··· → undo de 4 s al borrar).
+            EntrenarChipHerramienta(systemImage: "folder.badge.plus", label: Text("New section")) {
+                startNewFolder(moving: nil)
+            }
         }
-        .padding(.vertical, CenitMetrics.space2)
+        .padding(.top, LiquidSpace.s300)
     }
 
     /// El cuerpo de secciones, borrado a AnyView — la frontera que mantiene chico el tipo de la
@@ -500,43 +505,61 @@ struct WeeklyPlanEditorView: View {
         let byFolder = Dictionary(grouping: routines, by: \.folderId)
         let unfiled = byFolder[nil] ?? []
         return AnyView(
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s300) {
                 ForEach(folders) { folder in
                     let rs = byFolder[folder.id] ?? []
-                    folderBand(folder, count: rs.count)
-                        .routineDropTarget(active: dropTarget == folder.id, theme: theme) { id in
-                            accept(id, into: folder.id)
-                        } targeted: { on in
-                            dropTarget = on ? folder.id : (dropTarget == folder.id ? nil : dropTarget)
-                        }
-                    if !collapsedFolders.contains(folder.id) {
-                        ForEach(rs) { r in
-                            routineRow(r).routineDraggable(r.id)
-                            if r.id != rs.last?.id { divider }
-                        }
-                    }
+                    folderCard(folder: folder, routines: rs)
                 }
                 // «Sueltas» también recibe: soltar aquí SACA la rutina de su carpeta. Sin esto el arrastre
                 // sería de una sola dirección y habría que volver al menú para deshacerlo.
                 if !unfiled.isEmpty {
-                    sectionBand(String(localized: "Loose"), count: unfiled.count,
-                                collapsed: collapsedFolders.contains(Self.unfiledSectionID),
-                                toggle: { toggleCollapse(Self.unfiledSectionID) })
-                        .routineDropTarget(active: dropTarget == Self.unfiledSectionID, theme: theme) { id in
-                            accept(id, into: nil)
-                        } targeted: { on in
-                            dropTarget = on ? Self.unfiledSectionID
-                                            : (dropTarget == Self.unfiledSectionID ? nil : dropTarget)
-                        }
-                    if !collapsedFolders.contains(Self.unfiledSectionID) {
-                        ForEach(unfiled) { r in
-                            routineRow(r).routineDraggable(r.id)
-                            if r.id != unfiled.last?.id { divider }
-                        }
-                    }
+                    unfiledCard(routines: unfiled)
                 }
             }
         )
+    }
+
+    private func folderCard(folder: RoutineFolder, routines rs: [Routine]) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            folderBand(folder, count: rs.count)
+            if !collapsedFolders.contains(folder.id) {
+                ForEach(Array(rs.enumerated()), id: \.element.id) { i, r in
+                    if i > 0 { capillary }
+                    routineRow(r).routineDraggable(r.id)
+                }
+            }
+        }
+        .padding(.vertical, LiquidSpace.s050)
+        .padding(.horizontal, LiquidSpace.handoff14)
+        .liquidGlass(.superficieSolida)
+        .routineDropTarget(active: dropTarget == folder.id) { id in
+            accept(id, into: folder.id)
+        } targeted: { on in
+            dropTarget = on ? folder.id : (dropTarget == folder.id ? nil : dropTarget)
+        }
+    }
+
+    private func unfiledCard(routines unfiled: [Routine]) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            sectionBand(String(localized: "Loose"), count: unfiled.count,
+                        collapsed: collapsedFolders.contains(Self.unfiledSectionID),
+                        toggle: { toggleCollapse(Self.unfiledSectionID) })
+            if !collapsedFolders.contains(Self.unfiledSectionID) {
+                ForEach(Array(unfiled.enumerated()), id: \.element.id) { i, r in
+                    if i > 0 { capillary }
+                    routineRow(r).routineDraggable(r.id)
+                }
+            }
+        }
+        .padding(.vertical, LiquidSpace.s050)
+        .padding(.horizontal, LiquidSpace.handoff14)
+        .liquidGlass(.superficieSolida)
+        .routineDropTarget(active: dropTarget == Self.unfiledSectionID) { id in
+            accept(id, into: nil)
+        } targeted: { on in
+            dropTarget = on ? Self.unfiledSectionID
+                            : (dropTarget == Self.unfiledSectionID ? nil : dropTarget)
+        }
     }
 
     /// Recibe una rutina soltada sobre una sección. Resuelve el id contra las rutinas cargadas —lo que
@@ -553,8 +576,11 @@ struct WeeklyPlanEditorView: View {
                     collapsed: collapsedFolders.contains(f.id),
                     toggle: { toggleCollapse(f.id) }) {
             Button { menuFolderId = f.id } label: {
-                Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
-                    .foregroundStyle(theme.inkTertiary).frame(width: 44, height: 44).contentShape(Rectangle())
+                Image(systemName: "ellipsis")
+                    .font(LiquidType.iconSF(size: 15))
+                    .foregroundStyle(LiquidColor.tinta500)
+                    .frame(width: LiquidControl.hitTarget, height: LiquidControl.hitTarget)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .liquidMenu(
@@ -574,14 +600,20 @@ struct WeeklyPlanEditorView: View {
         }
     }
 
+    /// Sub-cabecera de carpeta El Eje: `liquidLabel` + conteo + trailing + chevron — sin banda
+    /// de papel ni sangría extra (FER-292); la tarjeta padre da la jerarquía.
     private func sectionBand<T: View>(_ name: String, count: Int, collapsed: Bool,
                                       toggle: @escaping () -> Void,
                                       @ViewBuilder trailing: () -> T = { EmptyView() }) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: LiquidSpace.s200) {
             Button(action: toggle) {
-                HStack(spacing: 8) {
-                    Text(verbatim: name).groteskOverline().foregroundStyle(theme.inkSecondary)
-                    Text(verbatim: "· \(count)").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                HStack(spacing: LiquidSpace.s200) {
+                    Text(verbatim: name)
+                        .liquidLabel()
+                        .foregroundStyle(LiquidColor.tinta500)
+                    Text(verbatim: "· \(count)")
+                        .font(LiquidType.filaConteo)
+                        .foregroundStyle(LiquidColor.tinta500)
                     Spacer(minLength: 0)
                 }
                 .contentShape(Rectangle())
@@ -590,37 +622,13 @@ struct WeeklyPlanEditorView: View {
             .accessibilityLabel(Text(verbatim: name))
             .accessibilityValue(Text(collapsed ? "collapsed" : "expanded"))
             trailing()
-            Image(systemName: collapsed ? "chevron.right" : "chevron.down")
-                .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+            // LiquidIcon.chevron apunta ›; expandido gira a ▾ (HTML estado 3).
+            LiquidIcon(.chevron, size: 12, color: LiquidColor.tinta500)
+                .rotationEffect(.degrees(collapsed ? 0 : 90))
         }
-        // El mismo truco de sangrado que `InstrumentoSectionBand` (SectionBand.swift): el fondo se pinta
-        // al ancho completo y luego un padding negativo lo saca del canalón de la pantalla. Sin esto la
-        // banda quedaba flotando con un hueco de papel a los lados, como una tarjeta a medio hacer.
-        // La indentación de más a la izquierda se conserva a propósito: es lo que dice que esto es una
-        // SUBsección de «Mis rutinas» y no otra sección al mismo nivel.
-        .padding(.leading, CenitMetrics.screenPadding + CenitMetrics.gap)
-        .padding(.trailing, CenitMetrics.screenPadding)
-        .frame(minHeight: 40)
+        .frame(minHeight: LiquidControl.hitTarget)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.patternBlock)
-        .padding(.horizontal, -CenitMetrics.screenPadding)
-        .padding(.top, 10)
-    }
-
-    private func actionRow(_ symbol: String, _ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                Image(systemName: symbol).frame(width: 30)
-                    .font(StrandFont.glyph(.lead)).foregroundStyle(theme.inkSecondary)
-                Text(title).font(StrandFont.body).foregroundStyle(theme.inkSecondary)
-                Spacer(minLength: 0)
-                // Handoff: both foot rows disclose (›) — the library row was missing its chevron.
-                StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold))
-                    .foregroundStyle(theme.inkTertiary)
-            }
-            .frame(minHeight: 44).contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
+        .padding(.top, LiquidSpace.s100)
     }
 
     /// The one-line metadata under a routine name (mock 1c): exercise count, then its top primary muscles.
@@ -657,34 +665,43 @@ struct WeeklyPlanEditorView: View {
                             set: { swipedRoutineId = $0 ? r.id : nil }),
             onDelete: { delete(r) }
         ) {
-            HStack(spacing: 8) {
+            HStack(spacing: LiquidSpace.s300) {
                 Button { openRoutine(r.id) } label: {
-                    // Handoff (opción B, FER-940): a sunken chip with the movement-family glyph in the
-                    // routine's tint, and the assigned days («lun·vie») as the trailing datum.
-                    HStack(spacing: 12) {
+                    HStack(spacing: LiquidSpace.s300) {
                         RoutineRegionGlyph(glyphKind(r), tint: routineTint(r))
                             .frame(width: 22, height: 22)
                             .frame(width: 38, height: 38)
-                            .background(theme.patternBlock,
-                                        in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
+                            .background(LiquidColor.tinta7,
+                                        in: RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous))
                             .accessibilityHidden(true)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(r.name).font(StrandFont.body).fontWeight(.semibold).foregroundStyle(theme.ink)
-                            Text(metadataLine(r)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                            Text(r.name)
+                                .font(LiquidType.tituloGemela)
+                                .foregroundStyle(LiquidColor.tinta900)
+                            Text(metadataLine(r))
+                                .font(LiquidType.filaConteo)
+                                .foregroundStyle(LiquidColor.tinta500)
+                                .lineLimit(1).truncationMode(.tail)
                         }
-                        Spacer(minLength: 8)
+                        Spacer(minLength: LiquidSpace.s200)
                         // Unassigned reads as the honest «—» (handoff: «Movilidad 20 min · —»).
                         Text(assignedDaysText(r) ?? "—")
-                            .font(InstrumentoType.grotesk(12, weight: .medium))
-                            .foregroundStyle(assignedDaysText(r) == nil ? theme.inkDim : theme.inkSecondary)
+                            .font(LiquidType.captionLectura)
+                            .foregroundStyle(assignedDaysText(r) == nil
+                                             ? LiquidColor.tinta500
+                                             : LiquidColor.tinta700)
                     }
-                    .frame(minHeight: 56).contentShape(Rectangle())
+                    .frame(minHeight: LiquidControl.lg)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
 
                 Button { menuRoutineId = r.id } label: {
-                    Image(systemName: "ellipsis").font(StrandFont.glyph(.inline, weight: .semibold))
-                        .foregroundStyle(theme.inkTertiary).frame(width: 32, height: 48).contentShape(Rectangle())
+                    Image(systemName: "ellipsis")
+                        .font(LiquidType.iconSF(size: 15))
+                        .foregroundStyle(LiquidColor.tinta500)
+                        .frame(width: 32, height: 48)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .liquidMenu(
@@ -874,7 +891,9 @@ struct WeeklyPlanEditorView: View {
 
     // MARK: - Bits
 
-    private var divider: some View { Divider().overlay(theme.hairline) }
+    private var capillary: some View {
+        Rectangle().fill(LiquidColor.tinta10).frame(height: 0.5)
+    }
 
     /// Localized short weekday name (respects the user's locale), capitalized and without a trailing dot.
     private func weekdayLabel(_ wd: Int) -> String {
@@ -1018,7 +1037,6 @@ struct WeeklyPlanEditorView: View {
 // MARK: - Swipe-to-delete row (FER-491)
 
 private struct SwipeToDeleteRow<Content: View>: View {
-    @Environment(\.instrumentoTheme) private var theme
     @Binding var isOpen: Bool
     let onDelete: () -> Void
     @ViewBuilder var content: Content
@@ -1032,18 +1050,18 @@ private struct SwipeToDeleteRow<Content: View>: View {
         ZStack(alignment: .trailing) {
             Button(action: onDelete) {
                 Image(systemName: "trash")
-                    .font(StrandFont.glyph(.lead, weight: .semibold))
-                    .foregroundStyle(theme.surface)
+                    .font(LiquidType.iconSF(size: 17))
+                    .foregroundStyle(LiquidColor.papelTarjeta)
                     .frame(width: revealWidth)
                     .frame(maxHeight: .infinity)
-                    .background(theme.critical)
+                    .background(LiquidColor.negativo)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(Text("Delete routine"))
 
             content
-                .background(theme.paper)
+                .background(LiquidColor.papelTarjeta)
                 .offset(x: offset)
                 .highPriorityGesture(drag)
         }
@@ -1109,7 +1127,7 @@ enum MuscleGroup: CaseIterable {
         case .push: return theme.dataStrain
         case .pull: return theme.dataHrv
         case .legs: return theme.dataSleep
-        case .core: return theme.inkTertiary
+        case .core: return LiquidColor.tinta500
         }
     }
 

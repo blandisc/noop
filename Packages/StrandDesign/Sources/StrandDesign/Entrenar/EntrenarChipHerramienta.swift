@@ -30,9 +30,9 @@ public struct EntrenarChipHerramienta: View {
             }
             .frame(maxWidth: .infinity, minHeight: LiquidControl.hitTarget)
             .contentShape(Rectangle())
+            .liquidGlass(.pastillaSolida)
         }
         .buttonStyle(.liquidPress)
-        .liquidGlass(.pastillaSolida)
     }
 }
 

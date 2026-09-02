@@ -5,11 +5,10 @@ import StrandDesign
 // MARK: - «Crear plan» (FER-88) — la puerta única que reemplaza el par duplicado
 //
 // `EntrenarView.nuevaRutinaRow` y `WeeklyPlanEditorView.toolsChipsRow` dibujaban, byte a byte, el
-// MISMO par de chips: `InstrumentoToolChip(systemImage: "square.stack.3d.up", label: "Templates")`
-// seguido de `InstrumentoToolChip(systemImage: "square.and.arrow.down", label: "Import")` — solo el
-// nombre de la bandera que abre el importador difería entre pantallas. Un chip, una puerta: toca
-// «Crear plan» y elige entre las mismas dos acciones en el `paperMenu` que ya usan los «···» de la
-// sección, en vez de inventar una hoja nueva para dos opciones.
+// MISMO par de chips: plantillas + importar — solo el nombre de la bandera que abre el importador
+// difería entre pantallas. Un chip, una puerta: toca «Crear plan» y elige entre las mismas dos
+// acciones en el `liquidMenu` que ya usan los «···» de la sección. Piel El Eje vía
+// `EntrenarChipHerramienta` (FER-292).
 
 struct CrearPlanChip: View {
     var onTemplates: () -> Void
@@ -18,7 +17,7 @@ struct CrearPlanChip: View {
     @State private var showMenu = false
 
     var body: some View {
-        InstrumentoToolChip(systemImage: "rectangle.stack.badge.plus", label: Text("Create plan")) {
+        EntrenarChipHerramienta(systemImage: "rectangle.stack.badge.plus", label: Text("Create plan")) {
             showMenu = true
         }
         .liquidMenu(isPresented: $showMenu, items: [
@@ -30,12 +29,11 @@ struct CrearPlanChip: View {
 
 #if DEBUG
 #Preview("CrearPlanChip") {
-    HStack(spacing: 8) {
+    HStack(spacing: LiquidSpace.s200) {
         CrearPlanChip(onTemplates: {}, onImport: {})
     }
-    .padding(24)
-    .background(CenitColor.pantalla)
-    .environment(\.instrumentoTheme, .base)
+    .padding(LiquidSpace.s600)
+    .background(LiquidColor.fondoGradient)
     .preferredColorScheme(.light)
 }
 #endif
