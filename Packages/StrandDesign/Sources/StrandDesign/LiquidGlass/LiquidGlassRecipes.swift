@@ -446,38 +446,6 @@ public struct LiquidSheetFondo: View {
     private static let plastaDerivaY: CGFloat = 36
 }
 
-// MARK: - Esfera (SignalOrb / dial) — variante esférica del vidrio
-
-/// El fondo esférico de vidrio: radial blanco → tinte del tono, borde blanco, inner-highlights
-/// y elipse especular arriba-izquierda. El anillo de progreso y el icono los pone el componente.
-public struct LiquidSphere: View {
-    /// Tono que tiñe el fondo del cuadrante inferior-derecho (al 22 %) y el inner-shadow (14 %).
-    public let tone: Color
-
-    public init(tone: Color) {
-        self.tone = tone
-    }
-
-    @Environment(\.liquidMotionDisabled) private var motionDisabled
-
-    public var body: some View {
-        // «LENTE» (elevación /inject 2026-07-22, camino 1 del dueño): disco de vidrio
-        // PLANO — el Liquid Glass real nunca simula volumen. La burbuja esférica del
-        // handoff (radial blanco + especular) se retiró: el arco y la joya brillan solos
-        // sobre vidrio honesto, con apenas un suspiro del tono del estado.
-        ZStack {
-            if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *), !motionDisabled {
-                Circle().glassEffect(.regular.tint(tone.opacity(0.10)), in: Circle())
-            } else {
-                Circle().fill(.ultraThinMaterial)
-                Circle().fill(tone.opacity(0.06))
-                Circle().strokeBorder(Color.white.opacity(0.45), lineWidth: 0.75)
-            }
-        }
-        .allowsHitTesting(false)
-    }
-}
-
 #if DEBUG
 #Preview("Liquid · Vidrio") {
     ZStack {
@@ -508,11 +476,6 @@ public struct LiquidSphere: View {
                 .foregroundStyle(LiquidColor.tinta900)
                 .padding(.vertical, 18).frame(maxWidth: .infinity)
                 .liquidGlass(.lente)
-            HStack(spacing: 24) {
-                LiquidSphere(tone: LiquidColor.verdePrimario).frame(width: 64, height: 64)
-                LiquidSphere(tone: LiquidColor.ambar).frame(width: 64, height: 64)
-                LiquidSphere(tone: LiquidColor.indigo).frame(width: 64, height: 64)
-            }
             Spacer().frame(height: 0)
         }
         .padding(28)

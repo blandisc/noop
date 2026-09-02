@@ -13,7 +13,7 @@ import SwiftUI
 // hoja (`.liquidGlass(.pastillaSolida)`) — el mismo patrón que `LiquidListRow`/`LiquidListCard`
 // ya usan para las filas de navegación, aquí para filas de AJUSTE.
 
-public struct EntrenarFilaHerramienta<Control: View>: View {
+struct EntrenarFilaHerramienta<Control: View>: View {
     private let rotulo: String
     private let valor: String?
     private let divider: Bool
@@ -25,7 +25,7 @@ public struct EntrenarFilaHerramienta<Control: View>: View {
     ///     que la fila repita «Activado»/«Desactivado» en texto).
     ///   - divider: filete inferior de 0.5 pt (tinta al 10 %) — `false` en la última fila de una
     ///     tarjeta agrupada, mismo contrato que `LiquidListRow.divider`.
-    public init(rotulo: String, valor: String? = nil, divider: Bool = true,
+    init(rotulo: String, valor: String? = nil, divider: Bool = true,
                 @ViewBuilder control: () -> Control) {
         self.rotulo = rotulo
         self.valor = valor
@@ -33,7 +33,7 @@ public struct EntrenarFilaHerramienta<Control: View>: View {
         self.control = control()
     }
 
-    public var body: some View {
+    var body: some View {
         HStack(spacing: LiquidSpace.s300) {
             VStack(alignment: .leading, spacing: LiquidSpace.s025) {
                 Text(rotulo)

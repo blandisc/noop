@@ -39,7 +39,7 @@ public enum ThermalPalette {
     public static let zoneRamp: [Color] = [zone1, zone1, zone2, zone3, zone4, zone5]
 
     /// HR-zone color for a 1…5 index (clamped). Index 0 mirrors Z1.
-    public static func zoneColor(_ z: Int) -> Color { zoneRamp[max(0, min(5, z))] }
+    static func zoneColor(_ z: Int) -> Color { zoneRamp[max(0, min(5, z))] }
 }
 
 // MARK: - Models
@@ -167,13 +167,13 @@ public struct ThermalTicketShape: Shape {
 
 /// A deterministic barcode drawn from a seed string — no randomness, so the same session always
 /// prints the same bars (stable across redraws / snapshots).
-public struct BarcodeGlyph: View {
-    public var seed: String
-    public var color: Color
-    public init(seed: String, color: Color = ThermalPalette.ink) {
+struct BarcodeGlyph: View {
+    var seed: String
+    var color: Color
+    init(seed: String, color: Color = ThermalPalette.ink) {
         self.seed = seed; self.color = color
     }
-    public var body: some View {
+    var body: some View {
         Canvas { ctx, size in
             var rng = seed.unicodeScalars.reduce(UInt64(1469598103934665603)) {
                 ($0 ^ UInt64($1.value)) &* 1099511628211
@@ -197,13 +197,13 @@ public struct BarcodeGlyph: View {
 
 /// The Cénit dial reduced to ink on white for the receipt header: a ring, four cardinal marks, and
 /// the «now» dot at the upper-right. Monochrome by design (a printed mark, not a themed datum).
-public struct ThermalDialGlyph: View {
+struct ThermalDialGlyph: View {
     public var diameter: CGFloat
-    public init(diameter: CGFloat = 22) { self.diameter = diameter }
+    init(diameter: CGFloat = 22) { self.diameter = diameter }
 
     /// Drawing lives in a free-standing typed function so `body` only has a one-line Canvas
     /// call (not the full GraphicsContext expression tree as part of View type-checking).
-    public var body: some View {
+    var body: some View {
         Canvas { ctx, size in Self.paint(&ctx, size) }
             .frame(width: diameter, height: diameter)
             .accessibilityHidden(true)
@@ -234,13 +234,13 @@ public struct ThermalDialGlyph: View {
 // MARK: - Time-in-zone stacked bar
 
 /// A single stacked bar of time-in-zone, colored by the Cénit zone ramp.
-public struct ZoneStackBar: View {
-    public var slices: [ThermalReceipt.ZoneSlice]
-    public var height: CGFloat
-    public init(slices: [ThermalReceipt.ZoneSlice], height: CGFloat = 9) {
+struct ZoneStackBar: View {
+    var slices: [ThermalReceipt.ZoneSlice]
+    var height: CGFloat
+    init(slices: [ThermalReceipt.ZoneSlice], height: CGFloat = 9) {
         self.slices = slices; self.height = height
     }
-    public var body: some View {
+    var body: some View {
         GeometryReader { geo in
             HStack(spacing: 0) {
                 ForEach(Array(slices.enumerated()), id: \.offset) { _, s in

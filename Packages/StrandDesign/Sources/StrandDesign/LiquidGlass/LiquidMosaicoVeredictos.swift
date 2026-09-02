@@ -170,7 +170,7 @@ public struct LiquidMosaicoVeredictos: View {
     }
 
     /// Tocar un día lo selecciona; re-tocarlo lo suelta.
-    public static func alterna(seleccion actual: String?, toca id: String) -> String? {
+    static func alterna(seleccion actual: String?, toca id: String) -> String? {
         actual == id ? nil : id
     }
 

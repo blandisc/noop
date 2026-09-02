@@ -73,16 +73,16 @@ public struct LiquidIconDrop: View {
 /// El caption de delta bajo un valor («+2 ms vs tu base»): caption 9/500 con el color
 /// semántico del tono de delta — nunca un color propio. Es texto de lectura: escala con
 /// Dynamic Type.
-public struct LiquidDeltaCaption: View {
+struct LiquidDeltaCaption: View {
     private let text: String
     private let tone: LiquidDeltaTone
 
-    public init(_ text: String, tone: LiquidDeltaTone) {
+    init(_ text: String, tone: LiquidDeltaTone) {
         self.text = text
         self.tone = tone
     }
 
-    public var body: some View {
+    var body: some View {
         Text(text)
             .font(LiquidType.captionLectura)
             .foregroundStyle(tone.color)
@@ -124,10 +124,10 @@ public enum LiquidOrigen: Sendable, Equatable {
 
 /// El punto de origen que marca un dato CALCULADO junto a su delta; la leyenda bajo la
 /// retícula lo decodifica. Decorativo para VoiceOver (la leyenda es quien habla).
-public struct LiquidOrigenDot: View {
-    public init() {}
+struct LiquidOrigenDot: View {
+    init() {}
 
-    public var body: some View {
+    var body: some View {
         Circle()
             .fill(LiquidColor.tinta500.opacity(0.55))
             .frame(width: 3, height: 3)

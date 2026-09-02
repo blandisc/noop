@@ -13,17 +13,17 @@ import SwiftUI
 // Contrato D3: los colores los pone el caller (LiquidColor.positivo/atencion/negativo) y los
 // strings llegan YA localizados y en MAYÚSCULAS; el DS no conoce `MetricLevels` ni locales.
 
-public struct LiquidZoneMeter: View {
+struct LiquidZoneMeter: View {
     /// Una zona del medidor: su peso en la escala (cualquier unidad positiva — la fila
     /// normaliza por la suma), su color de banda, si la lectura de hoy cae ahí, y su rótulo
     /// corto (ya localizado y en MAYÚSCULAS).
-    public struct Segmento: Sendable {
-        public let peso: Double
-        public let color: Color
-        public let activa: Bool
+    struct Segmento: Sendable {
+        let peso: Double
+        let color: Color
+        let activa: Bool
         public let etiqueta: String
 
-        public init(peso: Double, color: Color, activa: Bool, etiqueta: String) {
+        init(peso: Double, color: Color, activa: Bool, etiqueta: String) {
             self.peso = peso
             self.color = color
             self.activa = activa
@@ -49,7 +49,7 @@ public struct LiquidZoneMeter: View {
     /// (relativo a .caption2), para que el frame del GeometryReader no recorte los rótulos.
     @ScaledMetric(relativeTo: .caption2) private var etiquetaAlto: CGFloat = 14
 
-    public init(segmentos: [Segmento], fraccion: Double?) {
+    init(segmentos: [Segmento], fraccion: Double?) {
         self.segmentos = segmentos
         self.fraccion = fraccion
     }
@@ -64,7 +64,7 @@ public struct LiquidZoneMeter: View {
         return segmentos.map { CGFloat($0.peso / suma) * usable }
     }
 
-    public var body: some View {
+    var body: some View {
         GeometryReader { geo in
             let w = anchos(en: geo.size.width)
             VStack(alignment: .leading, spacing: LiquidSpace.s150) {

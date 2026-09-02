@@ -17,15 +17,15 @@ import SwiftUI
 // banner Instrumento de «Hoy» aún sin migrar (`TodayBanner` — muere al adoptar).
 
 /// Constantes de la receta — fuera de la View para que los tests no toquen MainActor.
-public enum LiquidAvisoMetrics {
+enum LiquidAvisoMetrics {
     /// Pad de la tarjeta — default de `liquidTarjetaSeccion` (HealthAlertBanner:50).
-    public static let tarjetaPadding: CGFloat = LiquidSpace.s400
+    static let tarjetaPadding: CGFloat = LiquidSpace.s400
     /// Tamaño del icono opcional — `connectNudge` (CuerpoView:1172) usa 17.
     public static let iconSize: CGFloat = 17
     /// Separación icono↔bloque / bloque↔CTA — `LiquidSpace.s300`.
-    public static let slotSpacing: CGFloat = LiquidSpace.s300
+    static let slotSpacing: CGFloat = LiquidSpace.s300
     /// Ancho de la barra lateral — el de `LiquidPatternBlock` (2.5).
-    public static let barraAncho: CGFloat = 2.5
+    static let barraAncho: CGFloat = 2.5
 }
 
 public struct LiquidAviso: View {

@@ -587,14 +587,8 @@ public struct LiquidLeyendaNiveles: View {
 
     // MARK: Contratos puros (los lee la prueba)
 
-    /// Cuántas paradas de VoiceOver produce la leyenda: UNA por peldaño, nunca una sola para
-    /// todos. Es la forma de fijar el agrupamiento sin renderizar.
-    public static func paradasDeVoiceOver(_ niveles: [LiquidCalendario90.NivelLeyenda]) -> Int {
-        niveles.count
-    }
-
     /// Lo que dicta cada parada: swatch y palabra combinados en una sola frase por peldaño.
-    public static func dictado(_ nivel: LiquidCalendario90.NivelLeyenda) -> String {
+    static func dictado(_ nivel: LiquidCalendario90.NivelLeyenda) -> String {
         nivel.etiqueta
     }
 }

@@ -3,9 +3,9 @@ import SwiftUI
 /// FER-51 · Sello-ícono de sección en modo Matriz: orbe denso de partículas (mismo material
 /// de los orbes del Cosmos) + glifo en color papel encima. `huesPar != nil` mezcla dos hues
 /// en el orbe (escudo bicolor del guardián: dorado + azul).
-public struct SelloIcono: View {
+struct SelloIcono: View {
 
-    public enum Glifo: Sendable {
+    enum Glifo: Sendable {
         case luna, corazon, onda, escudo, montana, flama, rayo, huellas
     }
 
@@ -14,14 +14,14 @@ public struct SelloIcono: View {
     private let huesPar: (Color, Color)?
     private let radio: CGFloat
 
-    public init(glifo: Glifo, hue: Color, huesPar: (Color, Color)? = nil, radio: CGFloat = 9) {
+    init(glifo: Glifo, hue: Color, huesPar: (Color, Color)? = nil, radio: CGFloat = 9) {
         self.glifo = glifo
         self.hue = hue
         self.huesPar = huesPar
         self.radio = radio
     }
 
-    public var body: some View {
+    var body: some View {
         let lado = radio * 2
         Canvas { ctx, size in
             let centro = CGPoint(x: size.width / 2, y: size.height / 2)

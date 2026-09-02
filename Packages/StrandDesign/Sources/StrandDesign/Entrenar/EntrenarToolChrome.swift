@@ -39,16 +39,16 @@ public struct EntrenarStatusPill: View {
 /// La tarjeta contenida: papel de superficie con filo de tinta. El orbe de respiración, el anillo
 /// de intervalos y sus lecturas necesitan una superficie sostenida donde asentarse — se usa poco
 /// (el ADN prefiere jerarquía por espacio), pero cuando se usa, es siempre esta misma pieza.
-public struct EntrenarToolCard<Content: View>: View {
+struct EntrenarToolCard<Content: View>: View {
     private let padding: CGFloat
     private let content: Content
 
-    public init(padding: CGFloat = 16, @ViewBuilder content: () -> Content) {
+    init(padding: CGFloat = 16, @ViewBuilder content: () -> Content) {
         self.padding = padding
         self.content = content()
     }
 
-    public var body: some View {
+    var body: some View {
         content
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)

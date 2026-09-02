@@ -358,14 +358,14 @@ public struct LiquidHoyContent: View {
 
 // MARK: - Pantalla de referencia (standalone)
 
-public struct LiquidHoyScreen: View {
+struct LiquidHoyScreen: View {
     private let model: LiquidHoyModel
     private let onSelectTab: ((LiquidTab) -> Void)?
     private let scrolls: Bool
     /// El fondo de referencia es el mismo de la app (FER-118): la atmósfera con su estado propio.
     @State private var atmosfera = AtmosferaEstado()
 
-    public init(model: LiquidHoyModel = .ejemplo, onSelectTab: ((LiquidTab) -> Void)? = nil) {
+    init(model: LiquidHoyModel = .ejemplo, onSelectTab: ((LiquidTab) -> Void)? = nil) {
         self.init(model: model, onSelectTab: onSelectTab, scrolls: true)
     }
 
@@ -378,7 +378,7 @@ public struct LiquidHoyScreen: View {
         self.scrolls = scrolls
     }
 
-    public var body: some View {
+    var body: some View {
         ZStack {
             LiquidAtmosfera(ambiente: model.ambiente, estado: atmosfera)
             if scrolls {

@@ -497,7 +497,7 @@ public struct LiquidGraficaSuperpuesta: View {
     }
 
     /// La unión ORDENADA y sin repetidos de las fechas visibles: lo que el dedo puede pisar.
-    public static func fechasUnion(_ visibles: [Serie]) -> [Date] {
+    static func fechasUnion(_ visibles: [Serie]) -> [Date] {
         var set = Set<Date>()
         for s in visibles { for p in s.puntos { set.insert(p.fecha) } }
         return set.sorted()
@@ -510,7 +510,7 @@ public struct LiquidGraficaSuperpuesta: View {
     /// Ojo (caller): el contrato es de 2 a 4 series. Con más de cuatro el componente NO
     /// recorta —tirar una serie en silencio sería mentir sobre lo que se está comparando—
     /// pero la lectura se degrada: cuatro colores es el techo legible sobre papel.
-    public static func resolverEstado(series: [Serie], visibles: [Serie]) -> Estado {
+    static func resolverEstado(series: [Serie], visibles: [Serie]) -> Estado {
         if series.count < 2 { return .minimo }
         if visibles.count < 2 { return .sinLecturas }
         return .datos
@@ -518,7 +518,7 @@ public struct LiquidGraficaSuperpuesta: View {
 
     /// El mismo veredicto, resuelto desde cero (lo que usan las pruebas y cualquier caller
     /// que quiera preguntar antes de montar la vista).
-    public static func resolverEstado(_ series: [Serie], _ rango: ClosedRange<Date>) -> Estado {
+    static func resolverEstado(_ series: [Serie], _ rango: ClosedRange<Date>) -> Estado {
         resolverEstado(series: series, visibles: recortadas(series, rango))
     }
 

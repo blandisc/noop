@@ -4,34 +4,10 @@ import Foundation
 
 /// Locks the "all four 90-day calendars are the same size" invariant: the rolling-window cell size must be
 /// a function of the available width ALONE — never of which weekday the 90-day window happens to start on.
-/// Sizing to the live `weekColumns` used to swing 13↔14 columns day to day (Recuperación / Sueño / Esfuerzo
-/// / Estrés drifting apart), which read as "the calendars are different sizes". (FER · calendarios estables)
+/// (FER · calendarios estables; `weekColumns` podado en FER-286 — ya no hay sizing al conteo vivo.)
 final class YearHeatStripSizingTests: XCTestCase {
 
-    /// Build a 90-day rolling window anchored at `today`, exactly as the detail screens do (UTC steps, +12h),
-    /// so `weekColumns` sees the same first-day weekday the app would.
-    private func rollingWindow(endingAt today: Date) -> [RecoveryDay] {
-        var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "UTC")!
-        return stride(from: 89, through: 0, by: -1).compactMap { off -> RecoveryDay? in
-            guard let d = cal.date(byAdding: .day, value: -off, to: today) else { return nil }
-            return RecoveryDay(date: d.addingTimeInterval(12 * 3600), score: nil)
-        }
-    }
-
-    /// The live column count genuinely swings between 13 and 14 across a week — that's the whole reason a
-    /// weekColumns-based cell size wobbled. Guards that our premise is real, not theoretical.
-    func testWeekColumnsSwingsAcrossTheWeek() {
-        var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "UTC")!
-        let base = cal.date(from: DateComponents(year: 2026, month: 7, day: 6))!
-        let counts = (0..<7).map { off -> Int in
-            let today = cal.date(byAdding: .day, value: off, to: base)!
-            return YearHeatStrip.weekColumns(for: rollingWindow(endingAt: today))
-        }
-        XCTAssertTrue(counts.contains(13) && counts.contains(14),
-                      "expected the live window to hit both 13 and 14 columns across a week, got \(counts)")
-    }
-
-    /// The fix: rollingCellSize is a pure function of width — identical for every day, so identical for every
+    /// rollingCellSize is a pure function of width — identical for every day, so identical for every
     /// screen. Feed it 14 different anchor days and assert the size never moves.
     func testRollingCellSizeIsStableAcrossDays() {
         let width: CGFloat = 350

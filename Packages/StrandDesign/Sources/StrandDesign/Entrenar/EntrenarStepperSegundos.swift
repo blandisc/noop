@@ -7,7 +7,7 @@ import SwiftUI
 // layout y de estado (deshabilitado en los extremos: 0 s no baja más, el tope de la hoja no
 // sube más). Pensado como el `control` de una `EntrenarFilaHerramienta`.
 
-public struct EntrenarStepperSegundos: View {
+struct EntrenarStepperSegundos: View {
     private let valor: String
     private let tono: LiquidTono
     private let puedeBajar: Bool
@@ -15,7 +15,7 @@ public struct EntrenarStepperSegundos: View {
     private let onBajar: () -> Void
     private let onSubir: () -> Void
 
-    public init(valor: String, tono: LiquidTono = .neutro,
+    init(valor: String, tono: LiquidTono = .neutro,
                 puedeBajar: Bool = true, puedeSubir: Bool = true,
                 onBajar: @escaping () -> Void, onSubir: @escaping () -> Void) {
         self.valor = valor
@@ -26,7 +26,7 @@ public struct EntrenarStepperSegundos: View {
         self.onSubir = onSubir
     }
 
-    public var body: some View {
+    var body: some View {
         HStack(spacing: LiquidSpace.s300) {
             boton("minus", habilitado: puedeBajar, action: onBajar,
                   etiqueta: String(localized: "Decrease", bundle: .main))

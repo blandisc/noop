@@ -85,7 +85,7 @@ public enum EcosistemaSimulacion {
     // MARK: Easings (la matemática de las recetas de `LiquidEcosistemaMotion`)
 
     /// back-out: sobrepasa y asienta. `s` = `LiquidEcosistemaMotion.fusionOvershoot`.
-    public static func backOut(_ u: Double, s: Double = LiquidEcosistemaMotion.fusionOvershoot) -> Double {
+    static func backOut(_ u: Double, s: Double = LiquidEcosistemaMotion.fusionOvershoot) -> Double {
         if u <= 0 { return 0 }
         if u >= 1 { return 1 }
         let v = u - 1
@@ -197,7 +197,7 @@ public enum EcosistemaSimulacion {
     /// nunca muta sola — esto resuelve la etiqueta al decidir un tap, para que el
     /// primer toque sobre un estado asentado SIEMPRE actúe (sin él, un `.separando`
     /// vencido se re-etiquetaba `.separada` y el tap moría — cazado en simulador).
-    public static func faseEfectiva(_ fase: Fase, t: TimeInterval) -> Fase {
+    static func faseEfectiva(_ fase: Fase, t: TimeInterval) -> Fase {
         switch fase {
         case .formando(let inicio):
             let fin = inicio + LiquidEcosistemaMotion.fusionIntroEspera
@@ -294,13 +294,13 @@ public enum EcosistemaSimulacion {
     // MARK: Esferas fibonacci (direcciones unitarias precomputables)
 
     /// `n` direcciones unitarias distribuidas uniformemente (espiral de Fibonacci).
-    public static func fibonacci(_ n: Int) -> [SIMD3<Double>] {
+    static func fibonacci(_ n: Int) -> [SIMD3<Double>] {
         (0..<n).map { direccion($0, de: n) }
     }
 
     /// UNA dirección fibonacci en forma cerrada — la misma fórmula del arreglo y del
     /// shader, para pedir un índice suelto sin fabricar la esfera entera (C.3).
-    public static func direccion(_ i: Int, de n: Int) -> SIMD3<Double> {
+    static func direccion(_ i: Int, de n: Int) -> SIMD3<Double> {
         let dorado = Double.pi * (3 - 5.0.squareRoot())
         let y = 1 - 2 * (Double(i) + 0.5) / Double(n)
         let r = (1 - y * y).squareRoot()
@@ -333,7 +333,7 @@ public enum EcosistemaSimulacion {
     /// Proyecta UNA dirección de la esfera al lienzo. Pura: (dir, índice, parámetros, t) →
     /// partícula. `nivel` activa el modo gauge (líquido/menisco/vapor); `capAmbar` tiñe el
     /// casquete que mira al guardián (x > 0.25 ∧ y < −0.15 tras la rotación).
-    public static func particula(dir: SIMD3<Double>, indice: Int, centro: CGPoint,
+    static func particula(dir: SIMD3<Double>, indice: Int, centro: CGPoint,
                                  radio: CGFloat, rotacion: Double, jitterAmp: Double,
                                  t: TimeInterval, alfaK: Double = 1, stretch: Double = 0,
                                  nivel: Double? = nil, nivelMezcla: Double = 1,
@@ -390,7 +390,7 @@ public enum EcosistemaSimulacion {
     /// contrato testeado). La clase es discreta (los backends bucketizan por clase):
     /// gana la configuración dominante. Precondición del trazo: a.n == b.n && a.paso
     /// == b.paso — misma esfera fuente, mismos índices.
-    public static func particulaMorfo(dir: SIMD3<Double>, indice: Int,
+    static func particulaMorfo(dir: SIMD3<Double>, indice: Int,
                                       a: Nube, b: Nube, mezcla: Double,
                                       t: TimeInterval) -> Particula {
         let pa = particula(dir: dir, indice: indice, centro: a.centro, radio: a.radio,
@@ -466,30 +466,6 @@ public enum EcosistemaSimulacion {
 
     static func lerpCG(_ a: CGFloat, _ b: CGFloat, _ u: CGFloat) -> CGFloat { a + (b - a) * u }
 
-    // MARK: Tributo (las lunas decisoras ALIMENTAN el orbe — revisión de usuario)
-
-    /// La mota `k` (0..<`tributoParticulas`) del chorro que fluye de la luna al orbe en
-    /// el instante `t`. Nace en la superficie de la luna, muere ya adentro del borde del
-    /// orbe (absorbida: encoge y se apaga en ambos extremos). La deriva lateral rompe la
-    /// línea recta — es un fluido, no un láser. Determinista; se calcula desde la
-    /// posición ACTUAL de la luna, así el chorro se curva solo con la órbita.
-    /// El guardián NO tributa (vigila, no vota) y una luna hueca no tiene qué dar.
-    public static func tributo(_ k: Int, t: TimeInterval,
-                               luna: CGPoint, radioLuna: CGFloat) -> Mota {
-        let fr = (t / LiquidEcosistemaMotion.tributoPeriodo + Double(k) * 0.618)
-            .truncatingRemainder(dividingBy: 1)
-        let dx = Double(Geometria.centro.x - luna.x)
-        let dy = Double(Geometria.centro.y - luna.y)
-        let d = max(1, (dx * dx + dy * dy).squareRoot())
-        let ux = dx / d, uy = dy / d
-        let s = lerp(Double(radioLuna) + 2, d - Double(Geometria.radioOrbe) * 0.82, suave(fr))
-        let lat = sin(fr * 2 * .pi + Double(k) * 2.1) * 2.2 * sin(.pi * fr)
-        return Mota(pos: CGPoint(x: Double(luna.x) + ux * s - uy * lat,
-                                 y: Double(luna.y) + uy * s + ux * lat),
-                    alfa: sin(.pi * fr) * 0.7,
-                    tamano: CGFloat(2.6 - 1.2 * fr))
-    }
-
     // MARK: Acreción (calibrando: espirales que caen al embrión)
 
     public struct Mota: Equatable, Sendable {
@@ -502,7 +478,7 @@ public enum EcosistemaSimulacion {
     /// en su ciclo de caída `c` alimenta el índice fibonacci `(i + 34·c) mod nLiquido` —
     /// SOLO el prefijo líquido de la esfera (`nivel`, piso 8 %): la materia acretada ES
     /// el líquido acumulado, jamás vapor. Determinista: (i, t, nivel) → índice.
-    public static func acrecionDestino(_ i: Int, t: TimeInterval, nivel: Double) -> Int {
+    static func acrecionDestino(_ i: Int, t: TimeInterval, nivel: Double) -> Int {
         let ciclo = Int((t * LiquidEcosistemaMotion.acrecionCaida
                          + Double(i) * 0.0294).rounded(.down))
         let nLiquido = max(1, Int(Double(Geometria.nEsfera)
@@ -516,7 +492,7 @@ public enum EcosistemaSimulacion {
     /// `ph = acrecionAterrizaje`, y de ahí FUNDE posición/alfa/tamaño hacia
     /// `particula(destino, embrión, t)` — su muerte es el nacimiento de materia de la
     /// esfera; ninguna mota se desvanece en el aire.
-    public static func motaAcrecion(_ i: Int, t: TimeInterval, embrion: Nube,
+    static func motaAcrecion(_ i: Int, t: TimeInterval, embrion: Nube,
                                     nivel: Double) -> Mota {
         let cruda = espiral(i, t: t)
         let ph = (t * LiquidEcosistemaMotion.acrecionCaida + Double(i) * 0.0294)
@@ -539,7 +515,7 @@ public enum EcosistemaSimulacion {
 
     /// La espiral `i` (0..<nEspirales) en el instante `t`: nace en el borde y cae al
     /// embrión con giro; su alfa y tamaño crecen conforme se acerca.
-    public static func espiral(_ i: Int, t: TimeInterval) -> Mota {
+    static func espiral(_ i: Int, t: TimeInterval) -> Mota {
         let ph = (t * LiquidEcosistemaMotion.acrecionCaida + Double(i) * 0.0294)
             .truncatingRemainder(dividingBy: 1)
         let ang = t * LiquidEcosistemaMotion.acrecionGiro + Double(i) * 1.9 - ph * 5.2

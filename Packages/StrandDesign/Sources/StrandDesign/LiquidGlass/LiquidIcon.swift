@@ -108,16 +108,16 @@ public struct LiquidIcon: View {
 /// La forma cruda del glifo (escala el path del viewBox al rect). `strokedWidth` no-nil
 /// devuelve el CONTORNO del trazo ya convertido a geometría (para rellenar); nil devuelve
 /// el path crudo para trazos custom.
-public struct LiquidIconShape: Shape {
-    public let glyph: LiquidIcon.Glyph
-    public var strokedWidth: CGFloat?
+struct LiquidIconShape: Shape {
+    let glyph: LiquidIcon.Glyph
+    var strokedWidth: CGFloat?
     /// `true` = dibuja la capa secundaria tenue del glifo (paths2).
     public var secondary: Bool = false
     /// `true` = dibuja la capa de geometría YA rellena del glifo (`pathsFilled`, los nodos
     /// de la curva de Tendencias). Ignora `strokedWidth`: el path se rellena tal cual.
-    public var relleno: Bool = false
+    var relleno: Bool = false
 
-    public init(glyph: LiquidIcon.Glyph, strokedWidth: CGFloat? = nil,
+    init(glyph: LiquidIcon.Glyph, strokedWidth: CGFloat? = nil,
                 secondary: Bool = false, relleno: Bool = false) {
         self.glyph = glyph
         self.strokedWidth = strokedWidth
@@ -125,7 +125,7 @@ public struct LiquidIconShape: Shape {
         self.relleno = relleno
     }
 
-    public func path(in rect: CGRect) -> Path {
+    func path(in rect: CGRect) -> Path {
         let spec = glyph.spec
         var combined = Path()
         let fuente = relleno ? spec.pathsFilled : (secondary ? spec.paths2 : spec.paths)

@@ -43,7 +43,7 @@ public enum SelloMetrica: String, Sendable, CaseIterable {
 }
 
 /// El sello dibujado, con su gota de identidad al 10 % detrás.
-public struct SelloMetricaVista: View {
+struct SelloMetricaVista: View {
     private let sello: SelloMetrica
     private let lado: CGFloat
     private let gota: Bool
@@ -56,14 +56,14 @@ public struct SelloMetricaVista: View {
     ///   - tono: el tono del halo. Por defecto el del sello, pero la pantalla manda: Estrés
     ///     recede a `tinta500` (FER-59) y su gota tiene que receder con él, no delatar el
     ///     ámbar que el dibujo lleva dentro.
-    public init(_ sello: SelloMetrica, lado: CGFloat, gota: Bool = true, tono: Color? = nil) {
+    init(_ sello: SelloMetrica, lado: CGFloat, gota: Bool = true, tono: Color? = nil) {
         self.sello = sello
         self.lado = lado
         self.gota = gota
         self.tono = tono
     }
 
-    public var body: some View {
+    var body: some View {
         ZStack {
             if gota {
                 Circle().fill((tono ?? sello.tono).opacity(0.10))

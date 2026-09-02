@@ -20,24 +20,24 @@ public struct RecoveryDay: Identifiable, Sendable {
     }
 }
 
-public struct YearHeatStrip: View {
+struct YearHeatStrip: View {
 
-    public var days: [RecoveryDay]
-    public var cellSize: CGFloat
-    public var spacing: CGFloat
-    public var showsMonthLabels: Bool
+    var days: [RecoveryDay]
+    var cellSize: CGFloat
+    var spacing: CGFloat
+    var showsMonthLabels: Bool
     /// Whether hovering a cell highlights it with a ring and shows a tooltip
     /// (date + score + recovery state word). Defaults on.
     public var showsScrub: Bool
     /// Tints a day's cell from its recovery score. Defaults to the dark-system recovery gradient so
     /// the shipped (dark) Trends caller is unchanged; the light «Instrumento» detail passes a warm
     /// band-color closure instead, so the calendar reads on warm paper. (FER-225)
-    public var tint: (Double) -> Color
+    var tint: (Double) -> Color
     /// Fill for an in-range day that has no data. Defaults to the dark `surfaceInset`; the light
     /// detail passes a warm hairline so empty days don't render as near-black squares on paper. (FER-225)
-    public var emptyFill: Color
+    var emptyFill: Color
     /// Hairline stroke around an empty-but-in-range day. (FER-225)
-    public var emptyStroke: Color
+    var emptyStroke: Color
     /// Color of the month + weekday gutter labels. Defaults to the dark `textTertiary`; the light
     /// detail passes warm `inkTertiary`. (FER-225)
     public var labelColor: Color
@@ -48,17 +48,17 @@ public struct YearHeatStrip: View {
     public var onSelect: ((RecoveryDay) -> Void)?
     /// Color of the tap-selection ring. Defaults to the dark `hairlineStrong`; the light detail passes
     /// warm ink. (FER-235)
-    public var selectionColor: Color
+    var selectionColor: Color
     /// Corner radius of each day cell. Defaults to 2.5 so the dark Trends caller is unchanged;
     /// `Calendario90` (Instrumento detail screens) passes 5 for a rounder cell.
-    public var cellCornerRadius: CGFloat
+    var cellCornerRadius: CGFloat
     /// Formats a day's score for the tooltip's bold line.
     public var valueFormat: (Double) -> String
     /// The metric word in the `.help` / VoiceOver label («date · <word> 67»). Defaults to "recovery"; a
     /// non-recovery caller (e.g. diet adherence) passes its own so the cell doesn't read "recovery". (FER-410)
-    public var valueWord: String
+    var valueWord: String
 
-    public init(
+    init(
         days: [RecoveryDay],
         cellSize: CGFloat = 12,
         spacing: CGFloat = 3,
@@ -90,22 +90,9 @@ public struct YearHeatStrip: View {
         self.valueWord = valueWord
     }
 
-    /// The number of week columns the grid will draw for `days` (Monday-first weeks). Exposed so a
-    /// caller that wants the grid to fill a known width can size `cellSize` to it without duplicating
-    /// the bucketing. Returns 0 for an empty set. (FER-225)
-    public static func weekColumns(for days: [RecoveryDay]) -> Int {
-        let sorted = days.sorted { $0.date < $1.date }
-        guard let first = sorted.first?.date else { return 0 }
-        var c = Calendar(identifier: .gregorian)
-        c.firstWeekday = 2
-        let wd = c.component(.weekday, from: first)
-        let firstRow = (wd + 5) % 7                       // Monday-first 0…6
-        return Int(ceil(Double(firstRow + sorted.count) / 7.0))
-    }
-
     /// Number of week-columns a rolling 90-day window can ever span. A 90-day window is 12.86 weeks, so it
     /// needs 13 columns when it starts on a Mon/Tue and 14 otherwise — the exact weekday depends on today.
-    public static let rollingWindowColumns = 14
+    static let rollingWindowColumns = 14
 
     /// The cell size that makes a rolling-90-day heat strip fill `width`, sized to a FIXED column count so
     /// every 90-day calendar renders at the SAME cell size — on every screen and every day. Sizing to the
@@ -114,7 +101,7 @@ public struct YearHeatStrip: View {
     /// removes that: on a 13-column day the grid simply leaves one column of trailing space, identically on
     /// all four calendars (Recuperación / Sueño / Esfuerzo / Estrés). Returns the 14pt fallback for width 0.
     /// (FER · calendarios mismo tamaño, estable)
-    public static func rollingCellSize(width: CGFloat, spacing: CGFloat = 4, gutter: CGFloat = 24) -> CGFloat {
+    static func rollingCellSize(width: CGFloat, spacing: CGFloat = 4, gutter: CGFloat = 24) -> CGFloat {
         guard width > 0 else { return 14 }
         let cols = CGFloat(rollingWindowColumns)
         return max(8, min(22, (width - gutter - spacing - (cols - 1) * spacing) / cols))
@@ -191,7 +178,7 @@ public struct YearHeatStrip: View {
         return [s[1], "", s[3], "", s[5], "", s[0]]
     }
 
-    public var body: some View {
+    var body: some View {
         let weeks = buildWeeks()
         // Total drawn size, so the hover overlay can be laid over the grid and
         // a tooltip can be clamped within bounds.

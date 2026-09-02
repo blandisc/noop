@@ -18,9 +18,11 @@ final class LiquidLeyendaNivelesTests: XCTestCase {
     ]
 
     func testCadaPeldanoEsSuPropiaParada() {
-        XCTAssertEqual(LiquidLeyendaNiveles.paradasDeVoiceOver(cuatro), 4,
+        // Contrato: UNA parada de VoiceOver por peldaño (el helper `paradasDeVoiceOver` se podó
+        // en FER-286 — era `niveles.count`; el conteo del modelo basta para fijar el contrato).
+        XCTAssertEqual(cuatro.count, 4,
                        "cuatro peldaños son cuatro paradas, nunca una sola con todo concatenado")
-        XCTAssertEqual(LiquidLeyendaNiveles.paradasDeVoiceOver([]), 0)
+        XCTAssertEqual([LiquidCalendario90.NivelLeyenda]().count, 0)
     }
 
     func testCadaParadaDictaSuPalabra() {
@@ -31,6 +33,6 @@ final class LiquidLeyendaNivelesTests: XCTestCase {
     /// La pieza se construye para una leyenda de N peldaños y expone los mismos contratos
     /// para la retícula de 90 y para la de 30: una sola leyenda para todo el sistema.
     func testLaMismaPiezaSirveParaTresYParaCuatro() {
-        XCTAssertEqual(LiquidLeyendaNiveles.paradasDeVoiceOver(Array(cuatro.prefix(3))), 3)
+        XCTAssertEqual(Array(cuatro.prefix(3)).count, 3)
     }
 }

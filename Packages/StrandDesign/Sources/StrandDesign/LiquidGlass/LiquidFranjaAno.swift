@@ -43,16 +43,16 @@ import SwiftUI
 // caller conoce su escala: recovery /100, strain /21), y las etiquetas de mes ya vienen
 // localizadas («E» «F» «M»…). Aquí no se formatea copy ni se consulta repo.
 
-public struct LiquidFranjaAno: View {
+struct LiquidFranjaAno: View {
 
     /// Un día de la franja: su fecha (que decide en qué columna/fila cae) y su intensidad
     /// NORMALIZADA 0…1. `nil` = sin lectura ese día → track neutro, no tono.
-    public struct Dia: Sendable {
-        public let fecha: Date
+    struct Dia: Sendable {
+        let fecha: Date
         /// 0…1 ya normalizada por el caller. Fuera de rango se clampa; `nil`/NaN = sin dato.
         public let intensidad: Double?
 
-        public init(fecha: Date, intensidad: Double?) {
+        init(fecha: Date, intensidad: Double?) {
             self.fecha = fecha
             self.intensidad = intensidad
         }
@@ -63,11 +63,11 @@ public struct LiquidFranjaAno: View {
     /// YA localizado y ya abreviado por el caller («E», «F», «M»…). A los anchos de teléfono
     /// una columna mide ≈5 pt, así que quien pase «ENE» verá los meses tocarse: la abreviación
     /// es decisión del caller, y la corta es la que cabe.
-    public struct MarcaMes: Sendable {
-        public let indice: Int
+    struct MarcaMes: Sendable {
+        let indice: Int
         public let etiqueta: String
 
-        public init(indice: Int, etiqueta: String) {
+        init(indice: Int, etiqueta: String) {
             self.indice = indice
             self.etiqueta = etiqueta
         }
@@ -88,7 +88,7 @@ public struct LiquidFranjaAno: View {
     /// sostener texto AX sin recortarlo, y la voz de la franja ya vive en `a11yValue`.
     @Environment(\.dynamicTypeSize) private var tamanoTexto
 
-    public init(dias: [Dia], tono: Color, meses: [MarcaMes], a11yLabel: String, a11yValue: String) {
+    init(dias: [Dia], tono: Color, meses: [MarcaMes], a11yLabel: String, a11yValue: String) {
         self.dias = dias
         self.tono = tono
         self.meses = meses
@@ -191,15 +191,15 @@ public struct LiquidFranjaAno: View {
     // MARK: Medidas (la resolución de layout — una sola, compartida con las pruebas)
 
     /// El resultado de resolver la franja contra un ancho medido.
-    public struct Medidas: Sendable {
+    struct Medidas: Sendable {
         public let columnas: Int
-        public let celda: CGFloat
-        public let separacion: CGFloat
+        let celda: CGFloat
+        let separacion: CGFloat
         /// ¿Se dibuja el gutter de iniciales de día?
-        public let conGutter: Bool
+        let conGutter: Bool
         /// Ancho y alto que la franja va a ocupar de verdad.
-        public let ancho: CGFloat
-        public let alto: CGFloat
+        let ancho: CGFloat
+        let alto: CGFloat
     }
 
     static func separacion(para celda: CGFloat) -> CGFloat { celda / razonSeparacion }
@@ -247,7 +247,7 @@ public struct LiquidFranjaAno: View {
     ///
     /// El piso de 0.20 es deliberado: sin él, un día medido en el mínimo saldría transparente
     /// y se confundiría con el hueco. Sin dato ≠ tono al 0 %.
-    public static func alfa(_ intensidad: Double?) -> Double? {
+    static func alfa(_ intensidad: Double?) -> Double? {
         guard let intensidad, intensidad.isFinite else { return nil }
         let k = min(1, max(0, intensidad))
         return alfaPiso + (alfaTecho - alfaPiso) * k
@@ -255,7 +255,7 @@ public struct LiquidFranjaAno: View {
 
     // MARK: Cuerpo
 
-    public var body: some View {
+    var body: some View {
         let rejilla = Self.rejilla(dias)
         let m = Self.medidas(columnas: rejilla.semanas.count,
                              ancho: anchoDisponible,

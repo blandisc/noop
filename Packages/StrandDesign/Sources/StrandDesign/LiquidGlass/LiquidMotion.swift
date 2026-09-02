@@ -74,7 +74,7 @@ public enum LiquidMotion {
     }
 
     /// `glass-spring` — sheets y apariciones con carácter (sobrepasa y asienta).
-    public static func glassSpring(_ duration: Double) -> Animation {
+    static func glassSpring(_ duration: Double) -> Animation {
         .timingCurve(0.34, 1.4, 0.4, 1, duration: duration)
     }
 
@@ -84,7 +84,7 @@ public enum LiquidMotion {
     }
 
     /// `flow` — SOLO dashes/pulsos que viajan.
-    public static func flowLinear(_ duration: Double) -> Animation {
+    static func flowLinear(_ duration: Double) -> Animation {
         .linear(duration: duration)
     }
 
@@ -230,7 +230,7 @@ public enum LiquidMotion {
 
     /// Progreso 0→1→0 del `drift` (CSS `alternate` + ease-in-out ≈ coseno; ciclo completo
     /// = 2 × periodo). `reverse` arranca en el extremo opuesto (alternate-reverse).
-    public static func driftProgress(time t: TimeInterval, period: Double, reverse: Bool = false) -> Double {
+    static func driftProgress(time t: TimeInterval, period: Double, reverse: Bool = false) -> Double {
         let u = 0.5 - 0.5 * cos(.pi * t / period)
         return reverse ? 1 - u : u
     }
@@ -244,7 +244,7 @@ public enum LiquidMotion {
     /// `flowPeriod` (6 s), lineal y continuo, con el delay de su cable (0 / 0.8 / 1.6).
     /// Es el equivalente en `trim` del `flowDash` de CSS (dash 2.5/93.5 → −96); en
     /// SwiftUI el pulso se dibuja con `Shape.trim`, no con stroke-dash.
-    public static func flowPulseProgress(time t: TimeInterval, delay: Double = 0) -> Double {
+    static func flowPulseProgress(time t: TimeInterval, delay: Double = 0) -> Double {
         let raw = ((t - delay) / flowPeriod).truncatingRemainder(dividingBy: 1)
         return raw < 0 ? raw + 1 : raw
     }

@@ -11,61 +11,61 @@ import SwiftUI
 // Lo que cambia en Liquid es la PIEL (tinta/vidrio/papel → tokens Liquid), nunca
 // estos números de interacción.
 
-public enum LiquidChart {
+enum LiquidChart {
 
     // MARK: Trazo
 
     /// Grosor de la línea de serie — 2.2, paridad exacta del mock (`#line{stroke-width:2.2}`,
     /// auditoría 2026-08-03; venía de 1.6→2.0→2.2).
-    public static let lineaAncho: CGFloat = 2.2
+    static let lineaAncho: CGFloat = 2.2
     /// Grosor de la línea tenue (media móvil, serie secundaria).
-    public static let lineaSecundariaAncho: CGFloat = 1.2
+    static let lineaSecundariaAncho: CGFloat = 1.2
     /// Alfa de la retícula/grid sobre el vidrio.
-    public static let gridAlfa: Double = 0.10
+    static let gridAlfa: Double = 0.10
     /// El punto final de la serie: la JOYA DE HOY (mismo lenguaje que el orbe).
-    public static let endpointRadio: CGFloat = 3.6   // > puntoDatoRadio 3.0 (pasada UI H5: la jerarquía estaba invertida)
+    static let endpointRadio: CGFloat = 3.6   // > puntoDatoRadio 3.0 (pasada UI H5: la jerarquía estaba invertida)
     /// Grosor del filo del TONO que ribetea la joya de hoy. El relleno es `papelAlto` (el
     /// papel casi-blanco del contenedor) y el filo es el tono, paridad del mock canónico
     /// (`.dot.today{fill:#fff;stroke:var(--tono);stroke-width:2}`, auditoría 2026-08-03).
-    public static let endpointBorde: CGFloat = 2
+    static let endpointBorde: CGFloat = 2
 
     // MARK: Bandas (I1 — luminosidad de lo seleccionado)
 
     /// Wash de banda en reposo.
-    public static let bandaReposoAlfa: Double = 0.08
+    static let bandaReposoAlfa: Double = 0.08
     /// Wash de la banda ACTIVA (la luminosidad que pide el dueño).
-    public static let bandaActivaAlfa: Double = 0.16
+    static let bandaActivaAlfa: Double = 0.16
     /// Wash del resto cuando hay una activa.
-    public static let bandaApagadaAlfa: Double = 0.03
+    static let bandaApagadaAlfa: Double = 0.03
     /// Wash de FILA activa (tabla de bandas, fila de nivel) — un solo número para I1
     /// fuera de la gráfica (QA F4-D7).
-    public static let filaActivaAlfa: Double = 0.12
+    static let filaActivaAlfa: Double = 0.12
     /// Wash de FILA resaltada (eco del scrub tabla↔gráfica): más tenue que `filaActivaAlfa`.
     /// Solo aplica cuando la fila NO es la activa de hoy.
-    public static let filaResaltadaAlfa: Double = 0.055
+    static let filaResaltadaAlfa: Double = 0.055
     /// Alfa del FILO de la banda del mini-riel de la boleta (gradiente de densidad: el
     /// patrón personal no tiene bordes duros — el núcleo usa `bandaActivaAlfa`).
-    public static let rielBandaFiloAlfa: Double = 0.06
+    static let rielBandaFiloAlfa: Double = 0.06
 
     /// Anillo de la gota-marca cuando la señal amaneció fuera (guardián / filas de señal;
     /// paridad del mockup sheet-guardian-final: rgba ámbar al 45 %).
-    public static let marcaAnilloAlfa: Double = 0.45
+    static let marcaAnilloAlfa: Double = 0.45
     /// Grosor del anillo de la gota-marca «fuera».
-    public static let marcaAnilloBorde: CGFloat = 1.5
+    static let marcaAnilloBorde: CGFloat = 1.5
 
     // MARK: Scrub (I2 — regla vertical + anillo)
 
     /// Alfa de la regla vertical de corte (tinta/900).
-    public static let scrubReglaAlfa: Double = 0.35
+    static let scrubReglaAlfa: Double = 0.35
     /// Ancho de la regla vertical.
-    public static let scrubReglaAncho: CGFloat = 1
+    static let scrubReglaAncho: CGFloat = 1
     /// Diámetro del anillo sobre el punto scrubbeado.
-    public static let scrubAnilloDiametro: CGFloat = 10
+    static let scrubAnilloDiametro: CGFloat = 10
     /// Grosor del borde del anillo (color de la banda del punto).
-    public static let scrubAnilloBorde: CGFloat = 2.5
+    static let scrubAnilloBorde: CGFloat = 2.5
     /// Diámetro de la gota de color del popup del scrub (tiñe la BANDA del punto, mismo
     /// resolver que el anillo — el popup explica el color que ves).
-    public static let popupPuntoDiametro: CGFloat = 7
+    static let popupPuntoDiametro: CGFloat = 7
 
     // MARK: Eje X (fila de fechas bajo el plot)
 
@@ -78,21 +78,21 @@ public enum LiquidChart {
     /// Dynamic Type — misma voz y misma exención que los labels del eje Y, que ya usan
     /// `unidadCompacta`. La lectura accesible la sirve el `accessibilityValue` de la
     /// gráfica, que sí escala sin tope.
-    public static let ejeXAlto: CGFloat = 22
+    static let ejeXAlto: CGFloat = 22
 
     // MARK: Puntos por dato
 
     /// Radio del disco que marca cada muestra cuando la serie es corta.
-    public static let puntoDatoRadio: CGFloat = 3.0   // 2.2 → 3.0 (pedido del dueño: más peso)
+    static let puntoDatoRadio: CGFloat = 3.0   // 2.2 → 3.0 (pedido del dueño: más peso)
     /// Hueco mínimo VISIBLE entre los BORDES de dos discos vecinos. Es lo que separa «una
     /// ventana contable» de «una tira de discos pegados»: por debajo de esto el ojo deja de
     /// distinguir cuántas lecturas hay y el disco pasa de dato a textura.
-    public static let puntoDatoHueco: CGFloat = 3
+    static let puntoDatoHueco: CGFloat = 3
     /// Distancia mínima entre CENTROS, en puntos (no en múltiplos del radio): dos radios +
     /// el hueco. Se expresa así a propósito — el gate viejo era `radio * 4`, atado al radio,
     /// así que cuando el dueño subió el radio de 2.2 a 3.0 el corte se movió solo de n≈34 a
     /// n≈26 y la ventana «M» (30 lecturas) perdió sus discos sin que nadie lo pidiera.
-    public static var puntoDatoSeparacion: CGFloat { puntoDatoRadio * 2 + puntoDatoHueco }
+    static var puntoDatoSeparacion: CGFloat { puntoDatoRadio * 2 + puntoDatoHueco }
     /// Tope de muestras para dibujar un disco por dato.
     /// INVARIANTE: debe quedar POR DEBAJO del tope de decimación del caller (80 puntos,
     /// `MetricWindowMath.decimatedPoints`). Los discos hacen CONTABLE la ventana; si la
@@ -103,12 +103,12 @@ public enum LiquidChart {
     /// y `puntoDatoSeparacion` = 9, la geometría corta en n≈34: 60 es el techo de honestidad
     /// (decimación), no el límite operativo. Quien lea «60» aquí y espere ver 60 discos se
     /// equivoca — manda `hayEspacioParaPuntos(centros:)`.
-    public static let puntoDatoUmbral: Int = 60
+    static let puntoDatoUmbral: Int = 60
     /// Alfa de los puntos FUERA de la banda activa (paridad `GraficaRangos`: el punto
     /// acompaña al wash, nunca compite con él — I1 se juega en 13 puntos de alfa).
-    public static let puntoApagadoAlfa: Double = 0.25
+    static let puntoApagadoAlfa: Double = 0.25
     /// Escala del radio de esos mismos puntos apagados.
-    public static let puntoApagadoEscala: CGFloat = 0.7
+    static let puntoApagadoEscala: CGFloat = 0.7
 
     /// ¿Cabe un disco por muestra? Dos condiciones, las dos del mismo invariante («la
     /// ventana tiene que quedar CONTABLE»): que la serie no venga decimada
@@ -134,9 +134,9 @@ public enum LiquidChart {
 
     /// Radio del selector de rango: `LiquidRadius.control` — rectangular con esquinas
     /// suaves, NUNCA cápsula (invariante del dueño).
-    public static var selectorRadio: CGFloat { LiquidRadius.control }
+    static var selectorRadio: CGFloat { LiquidRadius.control }
     /// Alto del selector de rango.
-    public static let selectorAlto: CGFloat = 28
+    static let selectorAlto: CGFloat = 28
 }
 
 #if DEBUG

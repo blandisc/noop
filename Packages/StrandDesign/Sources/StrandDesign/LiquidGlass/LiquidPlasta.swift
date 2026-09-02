@@ -46,7 +46,7 @@ private struct LiquidPlastaMasa {
 /// La plasta del veredicto: fondo casi blanco + 4 masas monocromas del clima + viñeta de luz.
 /// Es el fondo completo de la pantalla «El Tablero» (los orbes drift de Hoy se retiraron en
 /// FER-118: Hoy vive sobre `LiquidAtmosfera`).
-public struct LiquidPlasta: View {
+struct LiquidPlasta: View {
     private let ambiente: LiquidAmbiente
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -54,11 +54,11 @@ public struct LiquidPlasta: View {
     @Environment(\.liquidAmbientPaused) private var ambientPaused
     @Environment(\.liquidDebugHide) private var debugHide
 
-    public init(ambiente: LiquidAmbiente = .bien) {
+    init(ambiente: LiquidAmbiente = .bien) {
         self.ambiente = ambiente
     }
 
-    public var body: some View {
+    var body: some View {
         let still = reduceMotion || motionDisabled || ambientPaused
         let tonos = ambiente.plasta
         GeometryReader { geo in

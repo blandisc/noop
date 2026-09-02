@@ -23,7 +23,7 @@ private enum HojaCapsulaAccionMetrics {
 }
 
 /// La cápsula de acción de una hoja: texto corto en mayúsculas, con flecha opcional.
-public struct HojaCapsulaAccion: View {
+struct HojaCapsulaAccion: View {
     private let titulo: String
     private let mostrarFlecha: Bool
     private let action: () -> Void
@@ -34,13 +34,13 @@ public struct HojaCapsulaAccion: View {
     ///     ninguna navegación que anunciar). `true` agrega «›» para el caso raro en que la
     ///     cápsula SÍ empuje a otra hoja/pantalla desde dentro de una hoja.
     ///   - action: qué hace al tocarla.
-    public init(_ titulo: String, mostrarFlecha: Bool = false, action: @escaping () -> Void) {
+    init(_ titulo: String, mostrarFlecha: Bool = false, action: @escaping () -> Void) {
         self.titulo = titulo
         self.mostrarFlecha = mostrarFlecha
         self.action = action
     }
 
-    public var body: some View {
+    var body: some View {
         Button(action: action) {
             Text(verbatim: mostrarFlecha ? "\(titulo) \(HojaCapsulaAccionMetrics.chevron)" : titulo)
                 .font(InstrumentoType.grotesk(9.5, weight: .bold, relativeTo: .caption2))

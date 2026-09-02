@@ -16,36 +16,36 @@ import SwiftUI
 // aplicar `.shadow` ahí sin volver a cruzar la flecha).
 
 /// Constantes de geometría del menú — fuera de la View para que los tests no toquen MainActor.
-public enum LiquidMenuMetrics {
+enum LiquidMenuMetrics {
     /// Ancho fijo del popover (paridad PaperMenu / handoff 4b).
-    public static let cardWidth: CGFloat = 250
+    static let cardWidth: CGFloat = 250
     /// Estimación por fila sin subtítulo (incluye el divisor implícito en el promedio).
-    public static let rowEstimate: CGFloat = 49
+    static let rowEstimate: CGFloat = 49
     /// Extra cuando la fila lleva subtítulo.
-    public static let subtitleExtra: CGFloat = 14
+    static let subtitleExtra: CGFloat = 14
     /// Fila de regreso del submenú (chevron + título en mayúsculas).
-    public static let backRowEstimate: CGFloat = 41
+    static let backRowEstimate: CGFloat = 41
     /// Respiro vertical que limpia el redondeo del contenedor (`.padding(.vertical, 6)` × 2).
-    public static let verticalBreathing: CGFloat = 12
+    static let verticalBreathing: CGFloat = 12
     /// Tope: past that the ScrollView takes over.
-    public static let heightCap: CGFloat = 420
+    static let heightCap: CGFloat = 420
     /// Hit mínimo de fila (paridad PaperMenu; no hay token de hitTarget más específico).
-    public static let rowMinHeight: CGFloat = 48
+    static let rowMinHeight: CGFloat = 48
     /// Hit mínimo de la fila de regreso.
-    public static let backRowMinHeight: CGFloat = 40
+    static let backRowMinHeight: CGFloat = 40
     /// Tamaño del SF Symbol leading.
-    public static let iconPointSize: CGFloat = 15
+    static let iconPointSize: CGFloat = 15
     /// Tamaño de los chevrons (derecha / regreso).
-    public static let chevronPointSize: CGFloat = 12
+    static let chevronPointSize: CGFloat = 12
     /// Columna fija del icono — alinea títulos.
-    public static let iconColumn: CGFloat = LiquidSpace.s600
+    static let iconColumn: CGFloat = LiquidSpace.s600
     /// Divider entre filas.
-    public static let dividerHeight: CGFloat = LiquidSpace.s025
+    static let dividerHeight: CGFloat = LiquidSpace.s025
     /// Stack de filas + divisores — cero aire; el divisor es el único respiro.
-    public static let stackSpacing: CGFloat = 0
+    static let stackSpacing: CGFloat = 0
 
     /// Misma matemática que `PaperMenuCard.estimatedHeight` (FER-836/951).
-    public static func estimatedHeight(rowCount: Int,
+    static func estimatedHeight(rowCount: Int,
                                        subtitleCount: Int,
                                        hasBackRow: Bool) -> CGFloat {
         let base: CGFloat = hasBackRow ? backRowEstimate : 0
@@ -104,7 +104,7 @@ public extension View {
 
 /// The menu card — exposed for previews/tests; screens use `.liquidMenu`.
 @available(iOS 16.4, macOS 13.3, *)
-public struct LiquidMenuCard: View {
+struct LiquidMenuCard: View {
     let items: [LiquidMenuItem]
     @Binding var isPresented: Bool
 

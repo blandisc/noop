@@ -176,20 +176,7 @@ final class LiquidFranjaAnoTests: XCTestCase {
 
     // MARK: Paridad con la geometría del papel
 
-    /// El conteo de columnas de la franja es el MISMO que el de `YearHeatStrip` para el mismo
-    /// año — la retícula se portó, no se re-inventó.
-    func test_lasColumnasCoincidenConLasDelPapel() {
-        for offset in 0..<7 {
-            let dias = anioDeMuestra(offsetDias: offset)
-            let papel = YearHeatStrip.weekColumns(for: dias.map {
-                RecoveryDay(date: $0.fecha, score: $0.intensidad)
-            })
-            XCTAssertEqual(LiquidFranjaAno.columnas(para: dias), papel,
-                           "offset \(offset): la franja se separó de la retícula del papel")
-        }
-    }
-
-    /// Y coincide con la fórmula cerrada del papel, `ceil((primeraFila + total) / 7)`.
+    /// Coincide con la fórmula cerrada del papel, `ceil((primeraFila + total) / 7)`.
     func test_lasColumnasCoincidenConLaFormulaDelPapel() {
         let cal = LiquidFranjaAno.calendarioSemanal()
         for offset in 0..<7 {

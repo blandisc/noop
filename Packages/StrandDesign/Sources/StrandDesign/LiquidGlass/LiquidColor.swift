@@ -237,7 +237,7 @@ public enum LiquidColor {
     /// mismo alfa que `LiquidVeil`. Plano, no degradado — un gradiente vuelve la franja una
     /// barra de cabecera teñida, y la franja es una costura, no un encabezado.
     /// El gris neutro de formulario era lo más «papel» que quedaba en la pantalla.
-    public static func franjaVelo(_ tone: Color) -> Color { tone.opacity(0.04) }
+    static func franjaVelo(_ tone: Color) -> Color { tone.opacity(0.04) }
 
     /// El tono **oscurecido lo justo** para que sirva de campo teñido con tinta calada.
     ///
@@ -313,7 +313,7 @@ public enum LiquidColor {
     /// Relleno blanco de un módulo por índice de profundidad (0…3): la densidad sube hacia
     /// abajo — .42 → .46 → .50 → .54 — para que la pila de vidrio gane cuerpo conforme baja.
     /// Índices fuera de rango se clampan a los extremos.
-    public static func vidrioSuperficieDensidad(_ index: Int) -> Color {
+    static func vidrioSuperficieDensidad(_ index: Int) -> Color {
         let alfas: [Double] = [0.42, 0.46, 0.50, 0.54]
         let i = min(max(index, 0), alfas.count - 1)
         return Color.white.opacity(alfas[i])

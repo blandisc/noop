@@ -42,17 +42,17 @@ public enum ChartHaptics {
 
 /// A small dark read-out card shown near the snapped datum while scrubbing a chart.
 /// Renders a bold primary value line and a secondary label/date line.
-public struct ChartTooltip: View {
+struct ChartTooltip: View {
 
     /// The bold value line (e.g. "62 ms", "Recovery 88").
-    public var value: String
+    var value: String
     /// The secondary context line (e.g. a formatted date, stage clock, index).
-    public var label: String?
+    var label: String?
     /// An optional accent swatch shown as a leading dot (e.g. the sampled
     /// gradient colour for that datum) so the tooltip explains the colour.
-    public var accent: Color?
+    var accent: Color?
 
-    public init(value: String, label: String? = nil, accent: Color? = nil) {
+    init(value: String, label: String? = nil, accent: Color? = nil) {
         self.value = value
         self.label = label
         self.accent = accent
@@ -61,7 +61,7 @@ public struct ChartTooltip: View {
     /// Flat (no glow, soft shadow) in the «Instrumento diurno» light language (FER-131 · 03).
     @Environment(\.instrumentoFlat) private var flat
 
-    public var body: some View {
+    var body: some View {
         HStack(alignment: .center, spacing: 8) {
             if let accent {
                 Circle()
@@ -105,7 +105,7 @@ public struct ChartTooltip: View {
 
 /// Position a tooltip near an anchor point while keeping it inside `container`.
 /// Estimates the tooltip's size, then flips/clamps so it never spills off-edge.
-public struct ChartTooltipPlacement {
+struct ChartTooltipPlacement {
 
     /// Compute the tooltip centre for an anchor (typically the snapped point under
     /// the finger), given the tooltip's measured size and the chart bounds.
@@ -143,7 +143,7 @@ public struct ChartTooltipPlacement {
     /// first, flipping when it doesn't fit), which is what this type's doc promised all
     /// along. If neither side has room — a plot narrower than the tooltip — it falls back
     /// to `position`, which at least keeps everything on screen.
-    public static func positionBeside(
+    static func positionBeside(
         anchor: CGPoint,
         tooltipSize: CGSize,
         in container: CGSize,
@@ -177,11 +177,11 @@ public struct ChartTooltipPlacement {
 // MARK: - Nearest-point lookup
 
 /// Geometry helpers for mapping a scrub location to the nearest datum.
-public enum ChartScrubMath {
+enum ChartScrubMath {
 
     /// Index of the sample whose x-position (evenly spaced across `width`) is
     /// closest to `x`. Returns nil for an empty series.
-    public static func nearestIndex(toX x: CGFloat, count: Int, width: CGFloat) -> Int? {
+    static func nearestIndex(toX x: CGFloat, count: Int, width: CGFloat) -> Int? {
         guard count > 0 else { return nil }
         guard count > 1, width > 0 else { return 0 }
         let step = width / CGFloat(count - 1)
@@ -190,7 +190,7 @@ public enum ChartScrubMath {
     }
 
     /// Index of the point in `xs` (arbitrary x-positions) closest to `x`.
-    public static func nearestIndex(toX x: CGFloat, xs: [CGFloat]) -> Int? {
+    static func nearestIndex(toX x: CGFloat, xs: [CGFloat]) -> Int? {
         guard !xs.isEmpty else { return nil }
         var best = 0
         var bestDist = CGFloat.greatestFiniteMagnitude
@@ -208,18 +208,18 @@ public enum ChartScrubMath {
 /// stroke. Shared by TrendChart / Sparkline so the rule reads identically.
 /// Public so app-layer `Canvas`-drawn charts (e.g. the day-strain and ACWR
 /// curves) reuse the exact same crosshair instead of re-implementing it. (FER-748)
-public struct CrosshairRule: View {
+struct CrosshairRule: View {
     var x: CGFloat
     var height: CGFloat
     var color: Color = InstrumentoTheme.base.hairlineStrong
 
-    public init(x: CGFloat, height: CGFloat, color: Color = InstrumentoTheme.base.hairlineStrong) {
+    init(x: CGFloat, height: CGFloat, color: Color = InstrumentoTheme.base.hairlineStrong) {
         self.x = x
         self.height = height
         self.color = color
     }
 
-    public var body: some View {
+    var body: some View {
         Path { p in
             p.move(to: CGPoint(x: x, y: 0))
             p.addLine(to: CGPoint(x: x, y: height))
@@ -237,19 +237,19 @@ public struct CrosshairRule: View {
 /// A small accented dot marking the snapped sample on a line. In the dark system it blooms; on
 /// warm paper (`\.instrumentoFlat`) it reads as a flat, ENLARGED scrub handle — a paper-filled disc
 /// with a colored ring (no bloom), big enough to read as the draggable indicator (FER-131 · 03/10).
-public struct HighlightDot: View {
+struct HighlightDot: View {
     var color: Color
     var diameter: CGFloat = 9
 
     @Environment(\.instrumentoFlat) private var flat
     @Environment(\.instrumentoTheme) private var theme
 
-    public init(color: Color, diameter: CGFloat = 9) {
+    init(color: Color, diameter: CGFloat = 9) {
         self.color = color
         self.diameter = diameter
     }
 
-    public var body: some View {
+    var body: some View {
         Group {
             if flat {
                 // Enlarged flat handle: paper fill + colored ring, matching the «Instrumento» chart.
@@ -283,20 +283,20 @@ public struct HighlightDot: View {
 
 /// Wraps a tooltip so its measured size feeds back into placement. Fades in
 /// with StrandMotion and positions itself within `container` near `anchor`.
-public struct PositionedTooltip: View {
+struct PositionedTooltip: View {
     var anchor: CGPoint
     var container: CGSize
     var tooltip: ChartTooltip
 
     @State private var measured: CGSize = .zero
 
-    public init(anchor: CGPoint, container: CGSize, tooltip: ChartTooltip) {
+    init(anchor: CGPoint, container: CGSize, tooltip: ChartTooltip) {
         self.anchor = anchor
         self.container = container
         self.tooltip = tooltip
     }
 
-    public var body: some View {
+    var body: some View {
         tooltip
             .background(
                 GeometryReader { g in

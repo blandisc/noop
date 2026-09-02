@@ -113,7 +113,7 @@ public enum AcumulacionSimulacion {
     // MARK: Hash determinista
 
     /// 0…1 estable por índice. Mismo truco que `EntradaSimulacion.dispersa`: seno saturado, sin `Date()`.
-    public static func hash01(_ i: Int, sal: Double = 127.1) -> Double {
+    static func hash01(_ i: Int, sal: Double = 127.1) -> Double {
         let x = sin(Double(i) * sal) * 43_758.5453
         return x - x.rounded(.down)
     }
@@ -147,7 +147,7 @@ public enum AcumulacionSimulacion {
     ///   - centro / radio: dónde y qué tan grande es el orbe en el lienzo.
     ///   - centroB: el segundo orbe, solo para `.circulacion`.
     ///   - reduce: con «reducir movimiento» no hay viaje ni deriva; la mota está en su destino o no está.
-    public static func mota(indice i: Int,
+    static func mota(indice i: Int,
                             t: TimeInterval,
                             densidad: Double,
                             modo: Modo,

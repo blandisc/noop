@@ -19,8 +19,12 @@ public enum LiquidSheetDetent: Sendable, Equatable {
     case porContenido
 }
 
-/// PreferenceKey del alto medido del contenido (paridad SheetContentHeightKey).
-private struct LiquidSheetAltoKey: PreferenceKey {
+/// Carries a sheet's measured natural content height up to size its `.presentationDetents` (FER-112).
+/// `reduce` takes the max across all reporters in a frame — the canonical form used by every "size the
+/// sheet to its content" caller. The one documented exception is `ReceiptPrinterScreen`'s reveal-mask
+/// height, which needs the CURRENT value (not a running max) and keeps its own private key (FER-975).
+/// Moved here from SheetPaper.swift (FER-286); LiquidMetricSheet is the sole consumer.
+struct SheetContentHeightKey: PreferenceKey {
     static let defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
         value = max(value, nextValue())
@@ -71,7 +75,7 @@ public struct LiquidMetricSheet<Content: View>: View {
             .padding(LiquidSpace.s550)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(GeometryReader { geo in
-                Color.clear.preference(key: LiquidSheetAltoKey.self, value: geo.size.height)
+                Color.clear.preference(key: SheetContentHeightKey.self, value: geo.size.height)
             })
         }
         // El alto del contenido CRECE, nunca encoge (pedido del dueño /inject): con el
@@ -81,7 +85,7 @@ public struct LiquidMetricSheet<Content: View>: View {
         // evaluó y se DESCARTÓ: cerrar el ⓘ también encoge, y encogerlo ahí es justo el
         // salto prohibido. Si el hueco llega a molestar, atarlo a la CAUSA (el rango
         // seleccionado), no a un delta.
-        .onPreferenceChange(LiquidSheetAltoKey.self) { nuevo in
+        .onPreferenceChange(SheetContentHeightKey.self) { nuevo in
             // Nunca se fija con un frame de carga; y congelar `altoMedido` en la primera
             // medición (intento anterior) lo dejaba clavado con un layout a medio resolver
             // y la hoja abría corta — por eso el que se congela es el detent, no la medida.

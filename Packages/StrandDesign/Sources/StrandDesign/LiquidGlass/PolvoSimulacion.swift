@@ -14,64 +14,64 @@ import CoreGraphics
 // fórmulas, mismos tokens de `Fisica` viajando en el uniform). El `Canvas` de respaldo y los
 // tests recorren esta función; el contrato compartido es la función, no el rasterizado (la
 // misma regla de FER-13 para el héroe).
-public enum PolvoSimulacion {
+enum PolvoSimulacion {
 
     /// Los tokens del polvo. Cada uno viaja al shader en `EcosistemaPolvoU`: el shader no
     /// tiene constantes propias.
-    public enum Fisica {
+    enum Fisica {
         /// Área por partícula (pt²): 402×874 / 1 500 del prototipo aprobado.
-        public static let ptPorParticula: CGFloat = 234
-        public static let nMin = 600
-        public static let nMax = 2000
+        static let ptPorParticula: CGFloat = 234
+        static let nMin = 600
+        static let nMax = 2000
         /// Radio 1.0–2.4 pt (FER-125: el dueño las vio «poco crisp» — a 0.6 pt una mota eran
         /// menos de 2 px y el antialias del disco la volvía una nube; ahora la más chica mide 3 px).
-        public static let radioMin: CGFloat = 1.0
-        public static let radioMax: CGFloat = 2.4
+        static let radioMin: CGFloat = 1.0
+        static let radioMax: CGFloat = 2.4
         /// alfa = (alfaBase + alfaRango·densidad)·(0.5 + 0.5·h)·respiración
-        public static let alfaBase: Double = 0.07
-        public static let alfaRango: Double = 0.24
+        static let alfaBase: Double = 0.07
+        static let alfaRango: Double = 0.24
         /// La densidad sube con la altura: detrás del héroe (arriba) hay menos polvo que detrás
         /// de la cuadrícula. `densidadPiso` arriba, 1 abajo, rampa entre `desde` y `hasta` (en
         /// fracciones del alto del lienzo).
-        public static let densidadPiso: Double = 0.35
-        public static let densidadDesde: Double = 0.23
-        public static let densidadHasta: Double = 0.80
+        static let densidadPiso: Double = 0.35
+        static let densidadDesde: Double = 0.23
+        static let densidadHasta: Double = 0.80
         /// respiración = (1 − amp) + amp·sin(w·t + φ) — o sea el alfa oscila entre 1 − 2·amp (0.44) y 1,
         /// como en el prototipo aprobado; w ∈ [wMin, wMin + wRango] rad/s.
-        public static let respiracionAmp: Double = 0.28
-        public static let respiracionWMin: Double = 0.5
-        public static let respiracionWRango: Double = 0.9
+        static let respiracionAmp: Double = 0.28
+        static let respiracionWMin: Double = 0.5
+        static let respiracionWRango: Double = 0.9
         /// Deriva en pt/s: horizontal simétrica en ±derivaXMax; vertical SIEMPRE hacia arriba
         /// entre derivaYMin y derivaYMin + derivaYRango. FER-125 (dueño en simulador: «que se
         /// muevan un poco más»): ×1.5 sobre el prototipo — a 20 Hz la mota más rápida avanza
         /// ≤ 0.35 pt por cuadro (≈ 1 px a 3×), todavía una deriva, no un salto.
-        public static let derivaXMax: Double = 3.2
-        public static let derivaYMin: Double = 1.4
-        public static let derivaYRango: Double = 4.5
+        static let derivaXMax: Double = 3.2
+        static let derivaYMin: Double = 1.4
+        static let derivaYRango: Double = 4.5
         /// Cuánto se mueve el campo con el scroll (fracción del desplazamiento).
         public static let parallax: CGFloat = 0.22
         /// Sin veredicto (calibración, T3, T4, T5, base rancia): tinta neutra y alfa × 0.55.
-        public static let alfaNeutra: Double = 0.55
+        static let alfaNeutra: Double = 0.55
         /// Los bordes se desvanecen en estos puntos: sin esto una mota que sale por arriba (densidad
         /// 0.35, tenue) reaparece abajo (densidad 1, brillante) con un salto de alfa de 3× en un
         /// cuadro, y el campo «infinito» se ve como un cielo que parpadea en los dos bordes.
-        public static let bordeFade: Double = 40
+        static let bordeFade: Double = 40
         /// 80 % del polvo lleva el clima; el resto se reparte en cuartos iguales entre las cuatro
         /// identidades del héroe (reposo · sueño · vigía temp · vigía resp).
-        public static let umbralClima: Double = 0.80
+        static let umbralClima: Double = 0.80
     }
 
     /// De qué color es una mota. Los colores concretos los pone `EcosistemaPaleta` (la misma del
     /// héroe): así héroe y polvo comparten un solo diccionario.
-    public enum Tono: Equatable, Sendable {
+    enum Tono: Equatable, Sendable {
         case clima, reposo, sueno, vigiaTemp, vigiaResp, neutra
     }
 
-    public struct Particula: Equatable, Sendable {
-        public let centro: CGPoint
-        public let radio: CGFloat
-        public let alfa: Double
-        public let tono: Tono
+    struct Particula: Equatable, Sendable {
+        let centro: CGPoint
+        let radio: CGFloat
+        let alfa: Double
+        let tono: Tono
     }
 
     // MARK: Hash
@@ -90,14 +90,14 @@ public enum PolvoSimulacion {
 
     /// El `k`-ésimo número «aleatorio» de la partícula `i`, en [0, 1). Determinista: la misma
     /// (i, k) da siempre lo mismo, en la CPU y en la GPU.
-    public static func hash(_ i: UInt32, _ k: UInt32) -> Double {
+    static func hash(_ i: UInt32, _ k: UInt32) -> Double {
         Double(wang(i &* 0x9E37_79B1 &+ k &* 0x85EB_CA77)) / 4_294_967_296.0
     }
 
     // MARK: Cuenta y posición
 
     /// Cuántas partículas caben en un lienzo: área / `ptPorParticula`, acotado.
-    public static func cuenta(lienzo: CGSize) -> Int {
+    static func cuenta(lienzo: CGSize) -> Int {
         let area = max(0, lienzo.width) * max(0, lienzo.height)
         // Sin lienzo no hay motas (el primer `draw` de un `MTKView` puede llegar con bounds 0):
         // 600 instancias sobre un lienzo de 0×0 dividirían entre cero en el shader.
@@ -118,7 +118,7 @@ public enum PolvoSimulacion {
     /// reloj absoluto de la app: ver `EcosistemaFisicaU` sobre la precisión de un `Float`),
     /// en un lienzo de `lienzo` puntos, con el `desplazamiento` del scroll (≥ 0), en tinta
     /// `neutra` o no, y `still` (Reduce Motion / renders): sin tiempo y sin parallax.
-    public static func particula(indice: Int, t: TimeInterval, lienzo: CGSize,
+    static func particula(indice: Int, t: TimeInterval, lienzo: CGSize,
                                  desplazamiento: CGFloat, neutra: Bool,
                                  still: Bool) -> Particula {
         let i = UInt32(truncatingIfNeeded: max(0, indice))
