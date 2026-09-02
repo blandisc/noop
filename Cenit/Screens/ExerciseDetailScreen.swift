@@ -96,7 +96,7 @@ struct ExerciseDetailScreen: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s700) {
                 // Two-speed rhythm (handoff): the chrome block — title, hero, segmented — sits
                 // tight at `gap`; `sectionGap` breathes only between the block and the tab content.
                 VStack(alignment: .leading, spacing: LiquidSpace.s300) {

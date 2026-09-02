@@ -354,6 +354,7 @@ let liquidSpaceEntries: [(String, CGFloat, String?)] = [
     ("s400", ls.s400, "padding H de pastilla / interior horizontal de módulo"),
     ("s550", ls.s550, "margen horizontal de pantalla (legacy Liquid)"),
     ("s600", ls.s600, "margen horizontal de la pantalla «El Tablero»"),
+    ("s700", ls.s700, "gap entre secciones de una hoja/lista"),
     ("s800", ls.s800, nil),
     ("s1400", ls.s1400, "safe-area top (velo de status)"),
     ("ecosistemaAlto", ls.ecosistemaAlto, "alto de la zona del héroe «El Ecosistema»"),
@@ -369,6 +370,7 @@ let liquidSpaceEntries: [(String, CGFloat, String?)] = [
 
 let liquidRadiusEntries: [(String, CGFloat, String?)] = [
     ("hairline", lr.hairline, "antialiasing del trazo de 1pt (capilar divisor)"),
+    ("insetTarjeta", lr.insetTarjeta, "sub-tarjeta anidada dentro de otra tarjeta"),
     ("control", lr.control, "swatches, chips de día, inputs"),
     ("tarjeta", lr.tarjeta, "tiles, tarjetas, contenedores de lista"),
     ("modulo", lr.modulo, "módulos de vidrio de «El Tablero»"),

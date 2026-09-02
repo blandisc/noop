@@ -35,7 +35,7 @@ private struct AppMapCell: View {
     @State private var seeded = false
 
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: LiquidSpace.s250) {
             TodayView()
                 .environmentObject(model.repo)
                 .environment(model)
@@ -45,14 +45,15 @@ private struct AppMapCell: View {
                                                    noopDeviceId: "map"))
                 .preferredColorScheme(.light)
                 .frame(width: 393, height: 852)
+                // Marco de dispositivo (radio de iPhone en el canvas) — 42 es dato, no hoja(28).
                 .clipShape(RoundedRectangle(cornerRadius: 42, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 42, style: .continuous)
-                    .stroke(Color.black.opacity(0.12), lineWidth: 1))
+                    .stroke(LiquidColor.tinta900.opacity(StrandOpacity.tintFill), lineWidth: 1))
                 .scaleEffect(scale)
                 .frame(width: 393 * scale, height: 852 * scale)
 
             Text(title)
-                .font(.system(size: 13, weight: .semibold))
+                .font(LiquidType.tituloFila)
                 .foregroundStyle(.primary)
         }
         .task {
@@ -67,12 +68,13 @@ private struct AppMapCell: View {
 private struct AppMapGrid: View {
     let title: String
     let states: [(state: String?, title: String)]
-    private let columns = [GridItem(.adaptive(minimum: 393 * 0.42 + 24), spacing: 28)]
+    private let columns = [GridItem(.adaptive(minimum: 393 * 0.42 + LiquidSpace.s600),
+                                    spacing: LiquidSpace.s700)]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: LiquidSpace.seccionAire) {
             Text(title)
-                .font(.system(size: 18, weight: .bold))
+                .font(LiquidType.nivelTitulo)
                 .textCase(.uppercase)
                 .tracking(2)
                 .foregroundStyle(.secondary)
@@ -90,7 +92,7 @@ private struct AppMapGrid: View {
     ScrollView([.vertical, .horizontal]) {
         AppMapGrid(title: "Hoy · TodayView", states: AppMap.hoy)
     }
-    .background(Color(white: 0.14))
+    .background(LiquidColor.tinta900)
 }
 
 /// Una celda que monta el hub de Entrenar REAL, sembrado con el fixture `train` (FER-943) — la pantalla
@@ -541,7 +543,7 @@ private struct MapSessionPillHost: View {
             // En el canvas el host es la única superficie disponible: el velo se estira él mismo a
             // pantalla con el frame del cell (393×852), suficiente para validar las esquinas.
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-            .instrumentoConfirm(
+            .liquidConfirm(
                 isPresented: $confirmDiscard,
                 title: String(localized: "Discard this session?"),
                 context: String(localized: "SESSION · IN PROGRESS"),
@@ -556,6 +558,7 @@ private struct MapSessionPillHost: View {
     }
     @ViewBuilder private var hostBody: some View {
         if let session = model.strengthSession {
+            // SessionPill aún exige InstrumentoTheme en su API de paquete.
             let theme = InstrumentoTheme.base
             TimelineView(.periodic(from: .now, by: 1)) { context in
                 let total = session.runs.filter { !$0.skipped }.reduce(0) { $0 + $1.sets.count }
@@ -570,7 +573,7 @@ private struct MapSessionPillHost: View {
                     bpm: model.watchBpm,
                     detail: detail,
                     paused: session.paused,
-                    hue: theme.dataStrain,
+                    hue: LiquidColor.ambar,
                     theme: theme,
                     accessibilityLabel: Text(verbatim: session.routineName),
                     accessibilityHint: Text("Returns to the session"),

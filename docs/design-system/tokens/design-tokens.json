@@ -173,12 +173,13 @@
   "space": {
     "$type": "dimension",
     "liquid": {
-      "hairline": { "$value": 0.5, "$description": "antialiasing del trazo de 1pt (capilar divisor)" },
-      "control":  { "$value": 12, "$description": "swatches, chips de día, inputs" },
-      "tarjeta":  { "$value": 18, "$description": "tiles, tarjetas, contenedores de lista" },
-      "modulo":   { "$value": 20, "$description": "módulos de vidrio de «El Tablero»" },
-      "hoja":     { "$value": 28, "$description": "sheets y modales" },
-      "pastilla": { "$value": 999, "$description": "botones, dock, barras, badges (Capsule)" }
+      "hairline":     { "$value": 0.5, "$description": "antialiasing del trazo de 1pt (capilar divisor)" },
+      "insetTarjeta": { "$value": 10, "$description": "sub-tarjeta anidada dentro de otra tarjeta" },
+      "control":      { "$value": 12, "$description": "swatches, chips de día, inputs" },
+      "tarjeta":      { "$value": 18, "$description": "tiles, tarjetas, contenedores de lista" },
+      "modulo":       { "$value": 20, "$description": "módulos de vidrio de «El Tablero»" },
+      "hoja":         { "$value": 28, "$description": "sheets y modales" },
+      "pastilla":     { "$value": 999, "$description": "botones, dock, barras, badges (Capsule)" }
     }
   },
   "radius": {

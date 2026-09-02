@@ -110,7 +110,7 @@ struct HoyMatrizHost: View {
 
     private func estadoGrupo(_ texto: String) -> some View {
         Text(texto)
-            .font(InstrumentoType.grotesk(13, weight: .medium))
+            .font(LiquidType.cuerpoBanner)
             .foregroundStyle(LiquidColor.tinta500)
             .frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityIdentifier("hoy-estado-copy")
@@ -148,11 +148,11 @@ private struct AvisoDesconexion: View {
             latido
             VStack(alignment: .leading, spacing: LiquidSpace.s050) {
                 Text(partes.estado)
-                    .font(InstrumentoType.grotesk(13, weight: .semibold))
+                    .font(LiquidType.tituloFila)
                     .foregroundStyle(LiquidColor.rojoClaro)
                 if let detalle = partes.detalle {
                     Text(detalle)
-                        .font(InstrumentoType.grotesk(12, weight: .regular))
+                        .font(LiquidType.cuerpo)
                         .foregroundStyle(LiquidColor.rojoClaro.opacity(0.72))   // token-exempt: detalle a susurro
                 }
             }

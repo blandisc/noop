@@ -39,3 +39,11 @@ extension StrandFont {
         _ = registerBundledFonts
     }
 }
+
+extension LiquidType {
+    /// Warm Space Grotesk registration at launch (FER-305). Thin alias of
+    /// `StrandFont.ensureFontsRegistered` so call sites speak LiquidType, not StrandFont.
+    public static func ensureFontsRegistered() {
+        StrandFont.ensureFontsRegistered()
+    }
+}

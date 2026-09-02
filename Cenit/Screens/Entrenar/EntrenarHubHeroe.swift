@@ -141,7 +141,7 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
                     .font(EntrenarHubMetrics.heroOtraFormaTexto)
                     .foregroundStyle(LiquidColor.tinta700)
                 StrandIcon.down.image
-                    .font(StrandFont.glyph(.chevron, weight: .semibold))
+                    .font(LiquidType.iconSF(size: 12).weight(.semibold))
                     .foregroundStyle(LiquidColor.tinta700)
                     .rotationEffect(.degrees(otraFormaAbierta ? 180 : 0))
                     .accessibilityHidden(true)

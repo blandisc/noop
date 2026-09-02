@@ -5,9 +5,11 @@ import StrandDesign
 // MARK: - «Barra de instrumento» — the bottom tab bar (FER-163)
 //
 // Replaces the native dark `TabView` chrome (a heavy bar, green `.tint` painting
-// the icons) with a quiet bar in the app's «Instrumento diurno» language: warm
-// `paper` (read from `\.instrumentoTheme`), a single hairline, ink labels. The
-// dark legacy variant was retired in FER-430 — every screen is paper now.
+// the icons) with a quiet bar in Liquid Glass · El Eje: warm `papelDock` fill
+// (dock glass fill token), a single hairline, ink labels. The dark legacy variant
+// was retired in FER-430 — every screen is paper now. FER-305 migrates the fill
+// from Instrumento paper fill to `LiquidColor.papelDock` (receta `.dock` no
+// existe; el dock vivo en RootTabView ya usa `LiquidTabBar` + `.liquidGlass(.lente)`).
 //
 // The active tab is marked by INK + a now-dot (the green datum), never by a green
 // fill — color stays on the datum, not the chrome. The now-dot reuses the
@@ -41,20 +43,19 @@ struct InstrumentTabBar<Tag: Hashable>: View {
 
     let items: [Item]
     @Binding var selection: Tag
-    /// True when the visible screen speaks «Instrumento diurno» (Hoy): the bar
-    /// dresses in warm paper/ink; otherwise it stays in the dark `StrandPalette`.
+    /// True when the visible screen speaks light paper (Hoy): kept only as the
+    /// appear-animation trigger; it no longer switches palettes (FER-430).
     let isLight: Bool
 
-    @Environment(\.instrumentoTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    // The bar is always warm «Instrumento» paper now (the dark legacy was retired — FER-430).
-    // `isLight` is kept only as the appear-animation trigger; it no longer switches palettes.
-    private var surface: Color { theme.paper }
-    private var rule: Color { theme.hairline }
-    private var activeInk: Color { theme.ink }
-    private var idleInk: Color { theme.inkTertiary }
-    private var nowDotColor: Color { theme.dataRecovery }
+    // Dock fill + hairline + inks — Liquid Glass · El Eje (FER-305). Same height /
+    // hit-targets as before; only the token source changed.
+    private var surface: Color { LiquidColor.papelDock }
+    private var rule: Color { LiquidColor.vidrioBorde }
+    private var activeInk: Color { LiquidColor.tinta900 }
+    private var idleInk: Color { LiquidColor.tinta500 }
+    private var nowDotColor: Color { LiquidColor.verdePrimario }
 
     var body: some View {
         HStack(alignment: .top, spacing: .zero) {
@@ -73,7 +74,7 @@ struct InstrumentTabBar<Tag: Hashable>: View {
         .background(alignment: .top) {
             ZStack(alignment: .top) {
                 surface
-                Rectangle().fill(rule).frame(height: 0.5)
+                Rectangle().fill(rule).frame(height: LiquidRadius.hairline)
             }
             .ignoresSafeArea(edges: .bottom)
         }
@@ -89,12 +90,9 @@ struct InstrumentTabBar<Tag: Hashable>: View {
         } label: {
             VStack(spacing: LiquidSpace.s125) {
                 glyph(item.icon, ink: ink).frame(height: 23)
-                // `StrandFont.footnote` (11pt) is the app's quiet-label token; the
-                // whole app is fixed-size, so the bar matches it and degrades with
-                // grace (single line, shrink-to-fit) at large Dynamic Type rather
-                // than being the one element that grows out of the row.
+                // Dock rótulo: mismo rol que `LiquidTabBar` (`LiquidType.tab`).
                 Text(item.label)
-                    .font(StrandFont.footnote).fontWeight(active ? .medium : .regular)
+                    .font(LiquidType.tab(active: active))
                     .lineLimit(1).minimumScaleFactor(0.8)
                     .foregroundStyle(ink)
                 NowDot(color: nowDotColor, active: active, animates: !reduceMotion)
@@ -112,9 +110,8 @@ struct InstrumentTabBar<Tag: Hashable>: View {
         switch icon {
         case .system(let name):
             Image(systemName: name)
-                // StrandFont.tabTitle is 21pt (semibold); .weight(.regular) keeps the dock glyph
-                // at the same size/weight as before — no LiquidType/StrandFont token is 21/regular.
-                .font(StrandFont.tabTitle.weight(.regular))
+                // `infoGlifoTitular` (22) is the closest Liquid dock-glyph size; no 21/regular token.
+                .font(LiquidType.infoGlifoTitular.weight(.regular))
                 .symbolRenderingMode(.monochrome)
                 .foregroundStyle(ink)
         case .dial:

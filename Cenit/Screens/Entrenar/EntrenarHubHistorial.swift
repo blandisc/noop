@@ -36,7 +36,7 @@ struct EntrenarHubHistorial: View {
                         Text("History").liquidRegla().foregroundStyle(LiquidColor.tinta500)
                         Spacer(minLength: LiquidSpace.s200)
                         StrandIcon.disclosure.image
-                            .font(StrandFont.glyph(.inline, weight: .semibold))
+                            .font(LiquidType.iconSF(size: 15).weight(.semibold))
                             .foregroundStyle(LiquidColor.tinta500)
                     }
                     .frame(minHeight: EntrenarMetrics.row)
