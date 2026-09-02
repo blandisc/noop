@@ -173,18 +173,48 @@
   "space": {
     "$type": "dimension",
     "liquid": {
-      "hairline":     { "$value": 0.5, "$description": "antialiasing del trazo de 1pt (capilar divisor)" },
-      "insetTarjeta": { "$value": 10, "$description": "sub-tarjeta anidada dentro de otra tarjeta" },
-      "control":      { "$value": 12, "$description": "swatches, chips de día, inputs" },
-      "tarjeta":      { "$value": 18, "$description": "tiles, tarjetas, contenedores de lista" },
-      "modulo":       { "$value": 20, "$description": "módulos de vidrio de «El Tablero»" },
-      "hoja":         { "$value": 28, "$description": "sheets y modales" },
-      "pastilla":     { "$value": 999, "$description": "botones, dock, barras, badges (Capsule)" }
+      "s025":           { "$value": 1, "$description": "micro-gap — rótulo ↔ dato dentro de una columna" },
+      "s050":           { "$value": 2, "$description": "gaps de segmentos de barra" },
+      "s075":           { "$value": 3, "$description": "respiro exterior de la pastilla táctil" },
+      "s100":           { "$value": 4 },
+      "s125":           { "$value": 5, "$description": "gap rótulo ↔ ratio / diámetro" },
+      "s150":           { "$value": 6, "$description": "gota ↔ label" },
+      "s175":           { "$value": 7, "$description": "paso fino entre s150 y s200 (FER-318)" },
+      "s200":           { "$value": 8, "$description": "gap del grid de tiles" },
+      "s225":           { "$value": 9, "$description": "padding vertical interior de la pastilla táctil" },
+      "s250":           { "$value": 10, "$description": "gap entre módulos de «El Tablero»" },
+      "s300":           { "$value": 12, "$description": "padding H de tile, separación entre bloques chicos" },
+      "s350":           { "$value": 14, "$description": "padding del recibo térmico / screenTop (FER-309)" },
+      "s400":           { "$value": 16, "$description": "padding H de pastilla / interior horizontal de módulo" },
+      "s450":           { "$value": 18, "$description": "paso entre s400 y s550 (FER-318)" },
+      "s550":           { "$value": 22, "$description": "margen horizontal de pantalla (legacy Liquid)" },
+      "s600":           { "$value": 24, "$description": "margen horizontal de la pantalla «El Tablero»" },
+      "s700":           { "$value": 28, "$description": "gap entre secciones de una hoja/lista" },
+      "s800":           { "$value": 32 },
+      "s1400":          { "$value": 56, "$description": "safe-area top (velo de status)" },
+      "ecosistemaAlto": { "$value": 320, "$description": "alto de la zona del héroe «El Ecosistema»" },
+      "dockBottom":     { "$value": -22, "$description": "margen inferior del dock flotante (negativo)" },
+      "chipHorizontal": { "$value": 9, "$description": "respiro horizontal de chip/pastilla chica (FER-273)" },
+      "seccionCanto":   { "$value": 10, "$description": "canto de sección — antes/después de un Divider (FER-273)" },
+      "filaRespiro":    { "$value": 10, "$description": "respiro vertical de fila/chip compacto (FER-273)" },
+      "handoff14":      { "$value": 14, "$description": "padding de tarjetas/controles chicos del handoff (FER-273)" },
+      "handoff44":      { "$value": 44, "$description": "gap entre bloques de dato gemelos, == mínimo táctil HIG (FER-273)" },
+      "chipCompactoH":  { "$value": 11, "$description": "chip compacto del handoff — horizontal (FER-273)" },
+      "chipCompactoV":  { "$value": 5, "$description": "chip compacto del handoff — vertical (FER-273)" }
     }
   },
   "radius": {
     "$type": "dimension",
     "liquid": {
+      "hairline":     { "$value": 0.5, "$description": "antialiasing del trazo de 1pt (capilar divisor)" },
+      "chip":         { "$value": 8, "$description": "badge chico del handoff (FER-275)" },
+      "insetTarjeta": { "$value": 10, "$description": "sub-tarjeta anidada dentro de otra tarjeta" },
+      "control":      { "$value": 12, "$description": "swatches, chips de día, inputs" },
+      "tile":         { "$value": 17, "$description": "esquina del tile de métrica de Hoy (FER-309)" },
+      "tarjeta":      { "$value": 18, "$description": "tiles, tarjetas, contenedores de lista" },
+      "modulo":       { "$value": 20, "$description": "módulos de vidrio de «El Tablero»" },
+      "hoja":         { "$value": 28, "$description": "sheets y modales" },
+      "pastilla":     { "$value": 999, "$description": "botones, dock, barras, badges (Capsule)" }
     }
   },
   "dimension": {
