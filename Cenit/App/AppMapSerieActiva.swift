@@ -1,5 +1,6 @@
 #if DEBUG && os(iOS)
 import SwiftUI
+import CenitDesign
 import StrandTraining
 
 /// **Canvas de revisión de la «Serie activa»** (Acto II · épico FER-928) — monta `LiveStrengthSheet`
