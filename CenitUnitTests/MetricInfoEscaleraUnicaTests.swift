@@ -74,14 +74,14 @@ final class MetricInfoEscaleraUnicaTests: XCTestCase {
                                                theme: theme, fallback: .pink)
         let normal = MetricDetailScreen.laneColor(metric: "spo2", bandKey: "normal",
                                                   theme: theme, fallback: .pink)
-        XCTAssertNotEqual(low, theme.verdict, "«low» no puede pintarse del verde de veredicto")
-        XCTAssertNotEqual(low, theme.verdictDeep, "«low» no puede pintarse de ningún verde positivo")
-        XCTAssertNotEqual(normal, theme.warning, "«normal» no puede pintarse de ámbar de warning")
-        XCTAssertNotEqual(normal, theme.critical, "«normal» no puede pintarse de crítico")
+        XCTAssertNotEqual(low, LiquidColor.verdePrimario, "«low» no puede pintarse del verde de veredicto")
+        XCTAssertNotEqual(low, LiquidColor.verdeProfundo, "«low» no puede pintarse de ningún verde positivo")
+        XCTAssertNotEqual(normal, LiquidColor.atencion, "«normal» no puede pintarse de ámbar de warning")
+        XCTAssertNotEqual(normal, LiquidColor.negativo, "«normal» no puede pintarse de crítico")
         // El mapeo fijado: normal → veredicto; low → warning (absorbe el tramo «Borderline» retirado,
         // mismo criterio de suavizado que rhr FER-43 — ámbar honesto, no rojo de alarma).
-        XCTAssertEqual(normal, theme.verdict)
-        XCTAssertEqual(low, theme.warning)
+        XCTAssertEqual(normal, LiquidColor.verdePrimario)
+        XCTAssertEqual(low, LiquidColor.atencion)
     }
 
     /// Respiración: «elevated (≥ 20)» jamás en verde; «normal» en veredicto.
@@ -91,10 +91,10 @@ final class MetricInfoEscaleraUnicaTests: XCTestCase {
                                                   theme: theme, fallback: .pink)
         let elevated = MetricDetailScreen.laneColor(metric: "resp_rate", bandKey: "elevated",
                                                     theme: theme, fallback: .pink)
-        XCTAssertEqual(normal, theme.verdict)
-        XCTAssertNotEqual(elevated, theme.verdict, "«elevated» no puede pintarse de verde")
-        XCTAssertNotEqual(elevated, theme.verdictDeep)
-        XCTAssertEqual(elevated, theme.warning)
+        XCTAssertEqual(normal, LiquidColor.verdePrimario)
+        XCTAssertNotEqual(elevated, LiquidColor.verdePrimario, "«elevated» no puede pintarse de verde")
+        XCTAssertNotEqual(elevated, LiquidColor.verdeProfundo)
+        XCTAssertEqual(elevated, LiquidColor.atencion)
     }
 
     /// Resting HR conserva el mapeo FER-43 (athlete verde profundo · low verde · typical tinta ·
@@ -104,11 +104,11 @@ final class MetricInfoEscaleraUnicaTests: XCTestCase {
         func c(_ key: String) -> Color {
             MetricDetailScreen.laneColor(metric: "rhr", bandKey: key, theme: theme, fallback: .pink)
         }
-        XCTAssertEqual(c("rhrAthlete"), theme.verdictDeep)
-        XCTAssertEqual(c("rhrLow"), theme.verdict)
-        XCTAssertEqual(c("rhrTypical"), theme.inkSecondary)
-        XCTAssertEqual(c("rhrHigher"), theme.warning)
-        XCTAssertNotEqual(c("rhrHigher"), theme.critical, "FER-43: la banda alta es ámbar, no rojo")
+        XCTAssertEqual(c("rhrAthlete"), LiquidColor.verdeProfundo)
+        XCTAssertEqual(c("rhrLow"), LiquidColor.verdePrimario)
+        XCTAssertEqual(c("rhrTypical"), LiquidColor.tinta700)
+        XCTAssertEqual(c("rhrHigher"), LiquidColor.atencion)
+        XCTAssertNotEqual(c("rhrHigher"), LiquidColor.negativo, "FER-43: la banda alta es ámbar, no rojo")
     }
 
     /// Una clave desconocida (o nil, la escalera a mano sin claves de motor) cae al hue de la métrica

@@ -78,27 +78,27 @@ extension MetricDetailScreen {
                           theme: InstrumentoTheme, fallback: Color) -> Color {
         switch (metric, bandKey) {
         case ("spo2", "normal"):
-            return theme.verdict
+            return LiquidColor.verdePrimario
         case ("spo2", "low"):
             // < 95% absorbs the retired «Borderline» stretch (90–95), so it reads warning, not the old
             // sub-90 critical: one band, one honest amber — same softening logic as rhr's FER-43.
-            return theme.warning
+            return LiquidColor.atencion
         // Athlete range / Low / Typical / Higher — lower is better. FER-43 (gate /cso): la banda
         // alta baja de `critical` a `warning`. Se suavizó la PALABRA («Higher», no «Elevated»)
         // porque >80 lpm sigue dentro del normal adulto de la AHA (60–100); dejar el rojo de
         // alarma hacía que el color siguiera gritando lo que el copy ya no afirma.
         case ("rhr", "rhrAthlete"):
-            return theme.verdictDeep
+            return LiquidColor.verdeProfundo
         case ("rhr", "rhrLow"):
-            return theme.verdict
+            return LiquidColor.verdePrimario
         case ("rhr", "rhrTypical"):
-            return theme.inkSecondary
+            return LiquidColor.tinta700
         case ("rhr", "rhrHigher"):
-            return theme.warning
+            return LiquidColor.atencion
         case ("resp_rate", "normal"):
-            return theme.verdict
+            return LiquidColor.verdePrimario
         case ("resp_rate", "elevated"):
-            return theme.warning
+            return LiquidColor.atencion
         default:
             return fallback
         }
@@ -127,7 +127,7 @@ extension MetricDetailScreen {
     /// Rampa DELIBERADA de opacidad del `metricHue` (NO la paleta compartida `hrZoneRamp`): esta es su propia geometría de zonas, 1 de 3 superficies HR distintas — no se unifican (FER-908).
     func zoneFill(_ i: Int) -> Color {
         switch i {
-        case 0:  return theme.hairlineStrong
+        case 0:  return LiquidColor.vidrioCanto
         case 1:  return metricHue.opacity(0.35) // token-exempt: rampa de intensidad de zona (geometría de dato)
         case 2:  return metricHue.opacity(0.5)  // token-exempt: rampa de intensidad de zona (geometría de dato)
         case 3:  return metricHue.opacity(0.65) // token-exempt: rampa de intensidad de zona (geometría de dato)
@@ -170,21 +170,21 @@ extension MetricDetailScreen {
 
     static func whatMovesArrow(_ f: WhatMovesItFinding) -> String { f.trend == .rises ? "↑" : "↓" }
     func whatMovesColor(_ f: WhatMovesItFinding) -> Color {
-        f.relationship == .sleepDuration ? theme.verdict : theme.dataStrain
+        f.relationship == .sleepDuration ? LiquidColor.verdePrimario : LiquidColor.ambar
     }
 
     // MARK: - Colour + format
 
     var metricHue: Color {
         switch spec.descriptor.key {
-        case "hrv":               return theme.dataHrv
-        case "rhr":               return theme.dataHeart
-        case "resp_rate":         return theme.dataSpO2
-        case "spo2":              return theme.dataOxygen
-        case "heart_rate":        return theme.dataHeart
-        case "steps":             return theme.dataSteps
-        case "vo2max":            return theme.dataSpO2
-        default:                  return theme.dataRecovery
+        case "hrv":               return LiquidColor.cian
+        case "rhr":               return LiquidColor.rosa
+        case "resp_rate":         return LiquidColor.azul
+        case "spo2":              return LiquidColor.verdeCarga
+        case "heart_rate":        return LiquidColor.rosa
+        case "steps":             return LiquidColor.teal
+        case "vo2max":            return LiquidColor.azul
+        default:                  return LiquidColor.verdePrimario
         }
     }
 

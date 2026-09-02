@@ -11,7 +11,7 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 /// brings back a `noop.workout.v1` file; importing it creates the real routines of the strength tracker.
 /// NOOP never calls the network — the user runs the LLM step.
 ///
-/// «Instrumento diurno»: there's no measured datum here, so the screen is all-ink on warm paper; the
+/// «Liquid Glass · El Eje»: there's no measured datum here, so the screen is all-ink on glass; the
 /// Confirm step accents each routine with its type's hue (owner decision, Jul 2026), and the rest of
 /// the screen remains all-ink — `critical` on a parse error and `verdict` (green) on a just-resolved
 /// exercise. The one piece the format can't carry is the catalog identity of each exercise, so unmatched
@@ -102,7 +102,7 @@ struct WorkoutImportView: View {
         .interactiveDismissDisabled(midWork)
         // El gesto repite el guard del botón: a medias pregunta, nunca descarta el mapeo en silencio.
         .edgeSwipeToExit(dismissImport)
-        .instrumentoConfirm(
+        .liquidConfirm(
             isPresented: $confirmDiscard,
             title: String(localized: "Discard this import?"),
             context: String(localized: "IMPORT · IN PROGRESS"),
@@ -155,21 +155,21 @@ struct WorkoutImportView: View {
                 subtitulo: String(localized: "Import plan · bring your own AI"),
                 tono: .neutro, salida: .cerrar, onSalir: dismissImport)
             Text("Cénit never calls the network. Copy the prompt, run it in your AI with your plan, and paste the result here.")
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta700)
                 .fixedSize(horizontal: false, vertical: true)
 
             VStack(alignment: .leading, spacing: LiquidSpace.s300) {
                 HStack(alignment: .center, spacing: LiquidSpace.s200) {
-                    Text("STEP 1 · THE PROMPT").entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
+                    Text("STEP 1 · THE PROMPT").entrenarCabeceraKicker().foregroundStyle(LiquidColor.tinta500)
                     Spacer(minLength: LiquidSpace.s200)
                     QuietButton(copied ? "✓ Copied" : "Copy") { copyPrompt() }
                 }
                 .frame(minHeight: EntrenarMetrics.row)
-                // El prototipo dibuja la caja a 10.5; aquí va `StrandFont.mono` (footnote, ~13,
+                // El prototipo dibuja la caja a 10.5; aquí va `Font.system(.footnote, design: .monospaced)` (footnote, ~13,
                 // escalable): un bloque de texto que el usuario debe LEER y copiar no baja de la
                 // talla mínima legible ni se clava fuera de Dynamic Type. Desviación consciente.
                 Text(verbatim: WorkoutPrompt.forCurrentLocale())
-                    .font(StrandFont.mono).foregroundStyle(theme.inkSecondary)
+                    .font(Font.system(.footnote, design: .monospaced)).foregroundStyle(LiquidColor.tinta700)
                     .lineLimit(4)
                     .padding(LiquidSpace.s400)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -177,7 +177,7 @@ struct WorkoutImportView: View {
             }
 
             VStack(alignment: .leading, spacing: LiquidSpace.s300) {
-                Text("STEP 2 · BRING THE RESULT").entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
+                Text("STEP 2 · BRING THE RESULT").entrenarCabeceraKicker().foregroundStyle(LiquidColor.tinta500)
                     .frame(minHeight: EntrenarMetrics.row, alignment: .leading)
                 dashedPasteField
                 HStack(spacing: LiquidSpace.s300) {
@@ -194,7 +194,7 @@ struct WorkoutImportView: View {
             }
 
             Text("Exercises that don't match the catalog go through a mapping step (pick an equivalent or create it) before anything is written.")
-                .font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -209,19 +209,19 @@ struct WorkoutImportView: View {
     /// solo con el marco a rayas y el texto de invitación del handoff.
     private var dashedPasteField: some View {
         TextEditor(text: $pasteText)
-            .font(StrandFont.mono)
-            .foregroundStyle(theme.ink)
+            .font(Font.system(.footnote, design: .monospaced))
+            .foregroundStyle(LiquidColor.tinta900)
             .scrollContentBackground(.hidden)
             .frame(minHeight: 96)
             .padding(LiquidSpace.s400)
-            .background(theme.paper, in: RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.cardRadius, style: .continuous)
-                .strokeBorder(theme.hairlineStrong, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
+            .liquidGlass(.superficieSolida)
+            .overlay(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous)
+                .strokeBorder(LiquidColor.vidrioBordeFuerte, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
             .overlay(alignment: .center) {
                 if pasteText.isEmpty {
                     VStack(spacing: LiquidSpace.s100) {
-                        Text("Paste the JSON").font(StrandFont.subhead.weight(.semibold)).foregroundStyle(theme.ink)
-                        Text("or open the downloaded .json file").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                        Text("Paste the JSON").font(LiquidType.cuerpo.weight(.semibold)).foregroundStyle(LiquidColor.tinta900)
+                        Text("or open the downloaded .json file").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                     }
                     .multilineTextAlignment(.center)
                     .allowsHitTesting(false)
@@ -232,10 +232,10 @@ struct WorkoutImportView: View {
 
     private var openFileLink: some View {
         Button { showFileImporter = true } label: {
-            HStack(spacing: 6) {
-                Text("Open file").font(StrandFont.subhead.weight(.medium)).foregroundStyle(theme.inkSecondary)
+            HStack(spacing: LiquidSpace.s150) {
+                Text("Open file").font(LiquidType.cuerpo.weight(.medium)).foregroundStyle(LiquidColor.tinta700)
                 StrandIcon.disclosure.image
-                    .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    .font(LiquidType.iconSF(size: 12).weight(.semibold)).foregroundStyle(LiquidColor.tinta500)
                     .accessibilityHidden(true)
             }
             .frame(minHeight: LiquidControl.hitTarget, alignment: .leading)
@@ -247,10 +247,10 @@ struct WorkoutImportView: View {
     private func errorNote(_ error: WorkoutProgramParseError) -> some View {
         HStack(alignment: .top, spacing: LiquidSpace.s300) {
             Image(systemName: "exclamationmark.triangle")
-                .font(StrandFont.glyph(.lead)).foregroundStyle(theme.critical)
+                .font(LiquidType.iconSF(size: 15)).foregroundStyle(LiquidColor.negativo)
                 .accessibilityHidden(true)
             Text(message(for: error))
-                .font(StrandFont.subhead).foregroundStyle(theme.ink)
+                .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta900)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .accessibilityElement(children: .combine)
@@ -263,14 +263,14 @@ struct WorkoutImportView: View {
             stepper(current: .mapping)
             header("Import plan", "\(unmatched.count) exercises to set up")
             Text("These aren't in your library. Match each one to an exercise you have, or create it.")
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta700)
                 .fixedSize(horizontal: false, vertical: true)
 
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(Array(unmatched.enumerated()), id: \.offset) { index, name in
                     mappingRow(name)
                     if index < unmatched.count - 1 {
-                        Rectangle().fill(theme.hairline).frame(height: 0.5)
+                        Rectangle().fill(LiquidColor.vidrioBorde).frame(height: 0.5)
                     }
                 }
             }
@@ -289,14 +289,14 @@ struct WorkoutImportView: View {
         let resolved = resolution[key]
         let isOmitted = omitted.contains(key)
         return VStack(alignment: .leading, spacing: LiquidSpace.s200) {
-            Text(verbatim: name).font(StrandFont.body)
-                .foregroundStyle(isOmitted ? theme.inkTertiary : theme.ink)
+            Text(verbatim: name).font(LiquidType.cuerpo)
+                .foregroundStyle(isOmitted ? LiquidColor.tinta500 : LiquidColor.tinta900)
             if isOmitted {
                 HStack(spacing: LiquidSpace.s200) {
                     // Ronda 2 revisión final, hallazgo grave (g4-a11y): `.combine` vivía en el HStack
                     // completo, fundiendo «Undo» (un Button hermano) en un elemento estático — VoiceOver
                     // no podía deshacer un «Omitir». Solo el texto se combina; el botón queda suelto.
-                    Text("Omitted").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+                    Text("Omitted").font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
                         .accessibilityElement(children: .combine)
                     Spacer(minLength: LiquidSpace.s200)
                     undoLink { omitted.remove(key) }
@@ -305,47 +305,45 @@ struct WorkoutImportView: View {
                 let isAuto = autoMatched.contains(key)   // FER-794: pre-resolved, marked as automatic
                 HStack(spacing: LiquidSpace.s200) {
                     // Handoff: el match como pill verde lavada — el veredicto se lee de un vistazo.
-                    HStack(spacing: 5) {
+                    HStack(spacing: LiquidSpace.s125) {
                         Image(systemName: isAuto ? "sparkles" : "checkmark.circle.fill")
-                            .font(StrandFont.caption)
+                            .font(LiquidType.caption)
                             .accessibilityHidden(true)
                         Group {
                             if isAuto { Text("Matched automatically · \(StrengthDisplay.name(resolved))") }
                             else { Text("Matched · \(StrengthDisplay.name(resolved))") }
                         }
-                        .font(StrandFont.caption.weight(.semibold))
+                        .font(LiquidType.caption.weight(.semibold))
                         .lineLimit(1).minimumScaleFactor(0.85)
                     }
-                    .foregroundStyle(theme.verdict)
-                    .padding(.horizontal, 9).padding(.vertical, 3)  // token-exempt: sin token exacto (horizontal/chip handoff)
-                    .background(theme.verdict.opacity(StrandOpacity.tintFill), in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
+                    .foregroundStyle(LiquidColor.verdePrimario)
+                    .padding(.horizontal, LiquidSpace.s225).padding(.vertical, LiquidSpace.s075)  // chip handoff 9/3 → s225/s075
+                    .background(LiquidColor.verdePrimario.opacity(StrandOpacity.tintFill), in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
                     .accessibilityElement(children: .combine)
                     Spacer(minLength: LiquidSpace.s200)
                     undoLink { resolution[key] = nil; autoMatched.remove(key) }
                 }
                 Button { mappingTarget = MappingName(name: name) } label: {
-                    Text("Change mapping").font(InstrumentoType.grotesk(13, weight: .medium)).foregroundStyle(theme.inkTertiary).underline()
+                    Text("Change mapping").font(LiquidType.tituloFila.weight(.medium)).foregroundStyle(LiquidColor.tinta500).underline()
                 }
                 .buttonStyle(.plain)
             } else {
                 let suggestions = reconciler?.suggestions(for: name) ?? []
                 if !suggestions.isEmpty {
-                    Text("Did you mean…").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+                    Text("Did you mean…").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                     ForEach(suggestions, id: \.id) { s in
                         // Handoff: la sugerencia como tarjeta — sparkle ember, nombre, y «Usar» como botón oscuro.
                         Button { resolve(name, with: s) } label: {
                             HStack(spacing: LiquidSpace.s200) {
-                                Image(systemName: "sparkles").font(StrandFont.caption).foregroundStyle(theme.dataStrain)
-                                Text(StrengthDisplay.name(s)).font(StrandFont.subhead.weight(.medium)).foregroundStyle(theme.ink)
+                                Image(systemName: "sparkles").font(LiquidType.caption).foregroundStyle(LiquidColor.ambar)
+                                Text(StrengthDisplay.name(s)).font(LiquidType.cuerpo.weight(.medium)).foregroundStyle(LiquidColor.tinta900)
                                 Spacer(minLength: LiquidSpace.s200)
-                                Text("Use").font(InstrumentoType.grotesk(12, weight: .bold)).foregroundStyle(theme.paperHi)
-                                    .padding(.horizontal, 11).padding(.vertical, LiquidSpace.s100)  // token-exempt: sin token exacto (horizontal/chip handoff)
-                                    .background(theme.ink, in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
+                                Text("Use").font(LiquidType.tituloFila.weight(.bold)).foregroundStyle(LiquidColor.papelTarjeta)
+                                    .padding(.horizontal, 11).padding(.vertical, LiquidSpace.s100)  // token-exempt(falta-pieza): chip handoff 11 sin token exacto
+                                    .background(LiquidColor.tinta900, in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
                             }
-                            .padding(.horizontal, 10).padding(.vertical, LiquidSpace.s200)  // token-exempt: sin token exacto (edge ≠ rowVPad)
-                            .background(theme.surface, in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
-                                .strokeBorder(theme.hairline, lineWidth: 1))
+                            .padding(.horizontal, LiquidSpace.s250).padding(.vertical, LiquidSpace.s200)  // token-exempt(falta-pieza): edge handoff 10 → s250
+                            .liquidGlass(.superficieSolida)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -365,16 +363,16 @@ struct WorkoutImportView: View {
     /// A small underlined «Undo» link — reverts a suggestion/omit so the row goes back to unmatched.
     private func undoLink(_ action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text("Undo").font(InstrumentoType.grotesk(13, weight: .medium)).foregroundStyle(theme.inkTertiary).underline()
+            Text("Undo").font(LiquidType.tituloFila.weight(.medium)).foregroundStyle(LiquidColor.tinta500).underline()
         }
         .buttonStyle(.plain)
     }
 
     private func chip(_ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title).font(InstrumentoType.grotesk(12, weight: .semibold)).foregroundStyle(theme.inkSecondary)
-                .padding(.horizontal, 13).padding(.vertical, 6)  // token-exempt: sin token exacto (horizontal/chip handoff)
-                .overlay(Capsule().stroke(theme.hairlineStrong, lineWidth: 1))
+            Text(title).font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta700)
+                .padding(.horizontal, 13).padding(.vertical, LiquidSpace.s150)  // token-exempt(falta-pieza): chip handoff 13 sin token exacto
+                .overlay(Capsule().stroke(LiquidColor.vidrioBordeFuerte, lineWidth: 1))
         }
         .buttonStyle(.plain)
     }
@@ -398,17 +396,17 @@ struct WorkoutImportView: View {
             VStack(alignment: .leading, spacing: 0) {
                 // Ronda 2 (menor): el kicker es UNA sola cadena con el separador «·», como pide el
                 // spec — antes vivía partido en dos `Text` (nombre + metadato a la derecha).
-                // `.textCase(.uppercase)` de `instrumentoOverline()` gritaría también el sufijo
+                // `.textCase(.uppercase)` de `liquidKicker()` gritaría también el sufijo
                 // (`NOOP.WORKOUT.V1`), así que solo «Rutinas leídas» se sube a mayúsculas a mano —
                 // el identificador de formato se queda tal cual.
                 Text(verbatim: String(localized: "Routines read").uppercased() + " · noop.workout.v1")
-                    .font(InstrumentoType.overline).tracking(InstrumentoType.overlineTracking)
-                    .foregroundStyle(theme.inkTertiary)
+                    .font(LiquidType.kicker).tracking(LiquidType.kickerTracking)
+                    .foregroundStyle(LiquidColor.tinta500)
                     .frame(minHeight: EntrenarMetrics.row, alignment: .leading)
                 ForEach(Array(program.routines.enumerated()), id: \.offset) { index, routine in
                     routinePreview(routine)
                     if index < program.routines.count - 1 {
-                        Rectangle().fill(theme.hairline).frame(height: 0.5)
+                        Rectangle().fill(LiquidColor.vidrioBorde).frame(height: 0.5)
                     }
                 }
             }
@@ -416,7 +414,7 @@ struct WorkoutImportView: View {
             HStack(spacing: LiquidSpace.s300) {
                 Spacer(minLength: 0)
                 fixLink
-                StrandCTAButton(createRoutinesTitle(program.routines.count), tint: theme.positiveText, fillsWidth: false) {
+                StrandCTAButton(createRoutinesTitle(program.routines.count), tint: LiquidColor.verdeProfundo, fillsWidth: false) {
                     save(program)
                 }
             }
@@ -425,10 +423,10 @@ struct WorkoutImportView: View {
 
     private var fixLink: some View {
         Button { phase = .mapping } label: {
-            HStack(spacing: 6) {
-                Text("Fix").font(StrandFont.subhead.weight(.medium)).foregroundStyle(theme.inkSecondary)
+            HStack(spacing: LiquidSpace.s150) {
+                Text("Fix").font(LiquidType.cuerpo.weight(.medium)).foregroundStyle(LiquidColor.tinta700)
                 StrandIcon.disclosure.image
-                    .font(StrandFont.glyph(.chevron, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                    .font(LiquidType.iconSF(size: 12).weight(.semibold)).foregroundStyle(LiquidColor.tinta500)
                     .accessibilityHidden(true)
             }
             .frame(minHeight: LiquidControl.hitTarget)
@@ -468,17 +466,17 @@ struct WorkoutImportView: View {
         let mapped = mappedCount(routine)
         return HStack(alignment: .top, spacing: LiquidSpace.s300) {
             VStack(alignment: .leading, spacing: LiquidSpace.s200) {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s150) {
                     nameText(routine.name, fallback: "Routine")
-                        .font(StrandFont.body.weight(.semibold)).foregroundStyle(accent)
+                        .font(LiquidType.cuerpo.weight(.semibold)).foregroundStyle(accent)
                     if let tag = routine.tag {
-                        Text(verbatim: "· \(tag)").font(StrandFont.footnote).foregroundStyle(accent)
+                        Text(verbatim: "· \(tag)").font(LiquidType.caption).foregroundStyle(accent)
                     }
                 }
                 ForEach(Array(routine.exercises.enumerated()), id: \.offset) { _, ex in
                     if !omitted.contains(norm(ex.name)) {   // omitted exercises aren't imported (FER-536)
                         Text(verbatim: exerciseLine(ex))
-                            .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                            .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta700)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
@@ -486,9 +484,9 @@ struct WorkoutImportView: View {
             Spacer(minLength: LiquidSpace.s200)
             if mapped > 0 {
                 Text(mapped == 1 ? "1 mapped" : "\(mapped) mapped")
-                    .font(StrandFont.caption.weight(.semibold)).foregroundStyle(theme.verdict)
-                    .padding(.horizontal, 9).padding(.vertical, 3)  // token-exempt: sin token exacto (horizontal/chip handoff)
-                    .background(theme.verdict.opacity(StrandOpacity.tintFill),
+                    .font(LiquidType.caption.weight(.semibold)).foregroundStyle(LiquidColor.verdePrimario)
+                    .padding(.horizontal, LiquidSpace.s225).padding(.vertical, LiquidSpace.s075)  // chip handoff 9/3 → s225/s075
+                    .background(LiquidColor.verdePrimario.opacity(StrandOpacity.tintFill),
                                 in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
             }
         }
@@ -510,7 +508,7 @@ struct WorkoutImportView: View {
 
     /// Handoff: el cierre celebratorio — a diferencia de los pasos de trabajo, aquí el contenido se
     /// centra y respira. Un solo color (verdict verde), un solo gesto (el sello aparece con un pop
-    /// suave). Sin confeti: la celebración a la «Instrumento» es espacio + un verde honesto.
+    /// suave). Sin confeti: la celebración a la «Liquid Glass» es espacio + un verde honesto.
     private var doneFlow: some View {
         VStack(spacing: 0) {
             stepper(current: .done)
@@ -518,9 +516,9 @@ struct WorkoutImportView: View {
 
             VStack(spacing: CenitMetrics.sectionGap) {
                 ZStack {
-                    Circle().fill(theme.verdict.opacity(StrandOpacity.tintFill)).frame(width: 116, height: 116)
+                    Circle().fill(LiquidColor.verdePrimario.opacity(StrandOpacity.tintFill)).frame(width: 116, height: 116)
                     Image(systemName: "checkmark")
-                        .font(.system(size: 44, weight: .semibold)).foregroundStyle(theme.verdict)  // token-exempt: glifo héroe del cierre (44pt, pareado al círculo de 116)
+                        .font(.system(size: 44, weight: .semibold)).foregroundStyle(LiquidColor.verdePrimario)  // token-exempt: glifo héroe del cierre (44pt, pareado al círculo de 116)
                 }
                 .scaleEffect(celebrate ? 1 : 0.72)
                 .opacity(celebrate ? 1 : 0)
@@ -528,10 +526,10 @@ struct WorkoutImportView: View {
 
                 VStack(spacing: LiquidSpace.s200) {
                     Text(createdRoutinesTitle(createdCount))
-                        .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking).foregroundStyle(theme.ink)
+                        .font(LiquidType.displayS).tracking(LiquidType.displaySTracking).foregroundStyle(LiquidColor.tinta900)
                         .multilineTextAlignment(.center)
                     Text("They're in «My routines», ready to train.")
-                        .font(StrandFont.body).foregroundStyle(theme.inkSecondary)
+                        .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta700)
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -562,7 +560,7 @@ struct WorkoutImportView: View {
             HStack(spacing: LiquidSpace.s200) {
                 ForEach(0..<labels.count, id: \.self) { i in
                     Capsule()
-                        .fill(i <= currentIndex ? theme.dataStrain : theme.hairline)
+                        .fill(i <= currentIndex ? LiquidColor.ambar : LiquidColor.vidrioBorde)
                         .frame(height: 3)
                         .frame(maxWidth: .infinity)
                 }
@@ -571,8 +569,8 @@ struct WorkoutImportView: View {
             HStack(spacing: LiquidSpace.s200) {
                 ForEach(0..<labels.count, id: \.self) { i in
                     Text(labels[i])
-                        .font(InstrumentoType.grotesk(12, weight: .medium))
-                        .foregroundStyle(i == currentIndex ? theme.ink : theme.inkTertiary)
+                        .font(LiquidType.tituloFila.weight(.medium))
+                        .foregroundStyle(i == currentIndex ? LiquidColor.tinta900 : LiquidColor.tinta500)
                         .frame(maxWidth: .infinity, alignment: .center)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
@@ -598,8 +596,8 @@ struct WorkoutImportView: View {
 
     private func header(_ overline: LocalizedStringKey, _ title: LocalizedStringKey) -> some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s100) {
-            Text(overline).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-            Text(title).font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking).foregroundStyle(theme.ink)
+            Text(overline).liquidKicker().foregroundStyle(LiquidColor.tinta500)
+            Text(title).font(LiquidType.displayS).tracking(LiquidType.displaySTracking).foregroundStyle(LiquidColor.tinta900)
         }
     }
 

@@ -4,28 +4,25 @@ import StrandDesign
 import StrandAnalytics
 import Foundation
 
-// FER-105 · TND-32: la franja se separó de `TrainingLoadSheet.swift` para que la HOJA quede
-// libre de referencias a «Instrumento» (su migración a Liquid Glass). La franja SIGUE en
-// «Instrumento» —excepción sancionada, como `LiquidHill`; su gemelo Liquid es la Hoy Liquid—,
-// así que su código se mudó tal cual, sin re-tokenizar.
+// FER-105 · TND-32: la franja se separó de `TrainingLoadSheet.swift` para que la HOJA migrara
+// sola a Liquid Glass. FER-304: la franja también pasa a tokens Liquid · El Eje.
 
 // FER-119: vivía en `RecoveryDetailScreen`, que se retiró con el puntaje 0–100. Sus tres
 // consumidores siguen vivos (las columnas de Cuerpo y la hoja de carga), así que la extensión se
 // mudó al archivo de la carga —su usuario principal— en vez de irse con la pantalla.
 extension ReadinessEngine.Flag {
-    /// El único mapeo bandera → color «Instrumento»: bien → veredicto, neutro → tinta quieta,
-    /// vigilar → aviso, mal → crítico.
+    /// El único mapeo bandera → color Liquid: bien → verde, neutro → tinta, vigilar → aviso, mal → negativo.
     func color(_ theme: InstrumentoTheme) -> Color {
         switch self {
-        case .good:    return theme.verdict
-        case .neutral: return theme.inkSecondary
-        case .watch:   return theme.warning
-        case .bad:     return theme.critical
+        case .good:    return LiquidColor.verdePrimario
+        case .neutral: return LiquidColor.tinta700
+        case .watch:   return LiquidColor.atencion
+        case .bad:     return LiquidColor.negativo
         }
     }
 }
 
-// MARK: - Franja de carga (bloque fijo de «Hoy») — Instrumento (sin cambios en la migración Liquid)
+// MARK: - Franja de carga (bloque fijo de «Hoy») — Liquid Glass · El Eje (FER-304)
 
 /// La franja de dos filas en SEÑALES (única superficie de Hoy): label + palabra de banda + ratio + chevron,
 /// y una escala de 4 cápsulas con el punto de hoy. Tocarla abre la hoja. No respira (no es un dato vivo
@@ -41,7 +38,7 @@ struct TrainingLoadStrip: View {
 
     var body: some View {
         Button(action: onTap) {
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s150) {
                 labelRow
                 scaleRow
             }
@@ -58,33 +55,33 @@ struct TrainingLoadStrip: View {
     private var labelRow: some View {
         HStack(alignment: .firstTextBaseline, spacing: 0) {
             Text("Load")
-                .groteskOverline(small: true)
-                .foregroundStyle(theme.inkMuted)
-            Spacer(minLength: 8)
+                .liquidKicker()
+                .foregroundStyle(LiquidColor.tinta500)
+            Spacer(minLength: LiquidSpace.s200)
             if let band, let acwr = model.acwr {
                 Text(band.shortLabel)
-                    .font(InstrumentoType.grotesk(10, weight: .bold))
+                    .font(LiquidType.caption.weight(.bold))
                     .tracking(1.2)
                     .textCase(.uppercase)
                     .foregroundStyle(band.flag.color(theme))
                 Text(String(format: "%.2f", acwr))
-                    .font(InstrumentoType.groteskNumber(10, weight: .medium))
-                    .foregroundStyle(theme.inkMuted)
-                    .padding(.leading, 6)
+                    .font(LiquidType.caption)
+                    .foregroundStyle(LiquidColor.tinta500)
+                    .padding(.leading, LiquidSpace.s150)
                 StrandIcon.disclosure.image
                     .font(.system(size: 9, weight: .semibold)) // token-exempt: microtexto <10pt
-                    .foregroundStyle(theme.inkMuted)
-                    .padding(.leading, 6)
+                    .foregroundStyle(LiquidColor.tinta500)
+                    .padding(.leading, LiquidSpace.s150)
             } else {
                 Text("Calibrating")
-                    .font(InstrumentoType.grotesk(10, weight: .bold))
+                    .font(LiquidType.caption.weight(.bold))
                     .tracking(1.2)
                     .textCase(.uppercase)
-                    .foregroundStyle(theme.inkMuted)
+                    .foregroundStyle(LiquidColor.tinta500)
                 Text(verbatim: "··")
-                    .font(InstrumentoType.groteskNumber(10, weight: .medium))
-                    .foregroundStyle(theme.inkMuted)
-                    .padding(.leading, 6)
+                    .font(LiquidType.caption)
+                    .foregroundStyle(LiquidColor.tinta500)
+                    .padding(.leading, LiquidSpace.s150)
             }
         }
     }
@@ -93,10 +90,10 @@ struct TrainingLoadStrip: View {
         GeometryReader { g in
             let w = g.size.width
             ZStack(alignment: .topLeading) {
-                HStack(spacing: 2) {
+                HStack(spacing: LiquidSpace.s050) {
                     ForEach(LoadScale.bounds, id: \.lo) { seg in
                         Capsule()
-                            .fill(seg.band == band ? seg.band.flag.color(theme) : theme.hairline)
+                            .fill(seg.band == band ? seg.band.flag.color(theme) : LiquidColor.tinta10)
                             .frame(width: max(0, w * (seg.hi - seg.lo) / LoadScale.max - 2), height: 6)
                     }
                 }
@@ -104,8 +101,8 @@ struct TrainingLoadStrip: View {
                 if let acwr = model.acwr {
                     let x = min(max(acwr / LoadScale.max, 0.05), 0.95)
                     Circle()
-                        .fill(theme.surface)
-                        .overlay(Circle().strokeBorder(theme.ink, lineWidth: 3))
+                        .fill(LiquidColor.papelTarjeta)
+                        .overlay(Circle().strokeBorder(LiquidColor.tinta900, lineWidth: 3))
                         .frame(width: 12, height: 12)
                         .offset(x: w * x - 6, y: 0)
                         .strandAnimation(.spring(response: 0.5, dampingFraction: 0.8), value: acwr)  // token-exempt(unico): marcador ACWR sobre la franja de carga — spring único de esta geometría
@@ -120,12 +117,12 @@ struct TrainingLoadStrip: View {
 
 #if DEBUG
 #Preview("Franja") {
-    VStack(spacing: 24) {
+    VStack(spacing: LiquidSpace.s600) {
         TrainingLoadStrip(model: TrainingLoadModel(acwr: 1.09, series: [], days: []), theme: .base, onTap: {})
         TrainingLoadStrip(model: TrainingLoadModel(acwr: nil, series: [], days: []), theme: .base, onTap: {})
         TrainingLoadStrip(model: TrainingLoadModel(acwr: 1.62, series: [], days: []), theme: .base, onTap: {})
     }
-    .padding(24).background(CenitColor.pantalla)
+    .padding(LiquidSpace.s600).background(LiquidColor.fondoAlto)
 }
 #endif
 #endif
