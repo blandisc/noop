@@ -255,16 +255,16 @@ private struct CyclePhaseStateBody: View {
                 }
             }
         }
-        .confirmationDialog(
-            String(localized: "Turn off experiment"),
+        .liquidConfirm(
             isPresented: $confirmOff,
-            titleVisibility: .visible
-        ) {
-            Button(String(localized: "Turn off"), role: .destructive) { onDeactivate() }
-            Button(String(localized: "Keep estimating"), role: .cancel) { }
-        } message: {
-            Text(String(localized: "I'll stop estimating your phase. Your temperature data and everything else stay the same."))
-        }
+            title: String(localized: "Turn off experiment"),
+            context: String(localized: "CYCLE PHASE · EXPERIMENT"),
+            message: String(localized: "I'll stop estimating your phase. Your temperature data and everything else stay the same."),
+            actions: [
+                .init(String(localized: "Keep estimating"), role: .primary),
+                .init(String(localized: "Turn off"), role: .destructive) { onDeactivate() }
+            ]
+        )
     }
 
     @ViewBuilder private var content: some View {

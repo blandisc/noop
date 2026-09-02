@@ -152,19 +152,22 @@ private struct AjustesLanding: View {
             ProfileWheelSheet(wheel: wheel, profile: profile)
         }
         .sheet(item: $presentedSheet) { screen in sheetContent(screen) }
-        // Both confirmations hang here, on the STABLE body of the landing (ScrollView level), not
-        // inside the idle-branch Button of `recalibrateRow`: if the confirm lived only in the
-        // `else` branch, the swap to the «Deshacer» state would tear down the presenter mid-dismiss.
-        .confirmationDialog(
-            String(localized: "Recalibrate your recovery?"),
+        // Confirm de recalibrar cuelga del landing ESTABLE (no del idle-branch de `recalibrateRow`):
+        // si viviera solo en el `else`, el swap a «Deshacer» desmontaría al presentador a media salida.
+        // El de borrar-animaciones vive en la tarjeta de Biblioteca (vista distinta) — dos
+        // `liquidConfirm` en el mismo nodo no (bug FER-174).
+        .liquidConfirm(
             isPresented: $confirmRecalibrate,
-            titleVisibility: .visible
-        ) {
-            Button(String(localized: "Recalibrate from today"), role: .destructive) { model.recalibrateBaseline() }
-            Button(String(localized: "Leave the baseline as is"), role: .cancel) { }
-        } message: {
-            Text(String(localized: "Your baseline will re-anchor from today and your earlier nights will be ignored. You'll lose your recovery number for a few days while it recalibrates. Your data and history aren't deleted."))
-        }
+            title: String(localized: "Recalibrate your recovery?"),
+            context: String(localized: "RECOVERY · BASELINE"),
+            message: String(localized: "Your baseline will re-anchor from today and your earlier nights will be ignored. You'll lose your recovery number for a few days while it recalibrates. Your data and history aren't deleted."),
+            actions: [
+                .init(String(localized: "Leave the baseline as is"), role: .primary),
+                .init(String(localized: "Recalibrate from today"), role: .destructive) {
+                    model.recalibrateBaseline()
+                }
+            ]
+        )
     }
 
     // MARK: - Header (one-off chrome: wordmark + a privacy line)
@@ -467,23 +470,22 @@ private struct AjustesLanding: View {
             }
         }
         .liquidTarjetaSeccion()
-        // El confirm de borrar-animaciones vive en la tarjeta ESTABLE de la Biblioteca (siempre montada;
-        // solo el botón es condicional), NO en el landing: así NO comparte vista con el confirm de
-        // Recalibrar —SwiftUI honra un solo `.confirmationDialog` por vista, el bug de FER-174— y borrar
-        // (que desmonta el botón) no tumba al presentador a media salida.
-        .confirmationDialog(
-            String(localized: "Delete all downloaded exercise animations?"),
+        // Confirm de borrar-animaciones en la tarjeta ESTABLE de Biblioteca (siempre montada;
+        // solo el botón es condicional), NO en el landing: así NO comparte nodo con el confirm
+        // de Recalibrar (bug FER-174) y borrar no tumba al presentador a media salida.
+        .liquidConfirm(
             isPresented: $confirmDeleteMedia,
-            titleVisibility: .visible
-        ) {
-            Button(String(localized: "Delete the animations"), role: .destructive) {
-                mediaCoordinator.deleteAllCachedMedia()
-                mediaCoordinator.resetDownloadState()
-            }
-            Button(String(localized: "Keep the animations"), role: .cancel) { }
-        } message: {
-            Text(String(localized: "Saved animations are deleted from your iPhone. You can re-download them anytime."))
-        }
+            title: String(localized: "Delete all downloaded exercise animations?"),
+            context: String(localized: "LIBRARY · ANIMATIONS"),
+            message: String(localized: "Saved animations are deleted from your iPhone. You can re-download them anytime."),
+            actions: [
+                .init(String(localized: "Keep the animations"), role: .primary),
+                .init(String(localized: "Delete the animations"), role: .destructive) {
+                    mediaCoordinator.deleteAllCachedMedia()
+                    mediaCoordinator.resetDownloadState()
+                }
+            ]
+        )
     }
 
     /// «Recalibrar recuperación» (FER-677): re-anchors every nightly baseline from today. Two states —

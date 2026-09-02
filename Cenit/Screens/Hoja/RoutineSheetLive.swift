@@ -194,7 +194,7 @@ struct HojaSesionViva: View {
                         Button("Done") { detailExercise = nil }.foregroundStyle(sheet.theme.ink)
                     } }
                     .navigationBarTitleDisplayMode(.inline)
-                    .toolbarBackground(sheet.theme.paper, for: .navigationBar)
+                    .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
             }
             .instrumentoTheme(sheet.theme).environmentObject(sheet.repo).preferredColorScheme(.light)
         }
@@ -466,8 +466,14 @@ struct HojaSesionViva: View {
             HStack(spacing: LiquidSpace.s250) {
                 Button { archivarZombie() } label: {
                     Text("Archive").font(StrandFont.subhead.weight(.semibold)).foregroundStyle(sheet.theme.ink)
-                        .padding(.horizontal, LiquidSpace.s400).padding(.vertical, CenitMetrics.rowVPad)
-                        .overlay(Capsule().strokeBorder(sheet.theme.hairlineStrong, lineWidth: 1))
+                        .outlineCapsule(
+                            .outline,
+                            size: .aMedida(
+                                insets: EdgeInsets(top: CenitMetrics.rowVPad, leading: LiquidSpace.s400,
+                                                   bottom: CenitMetrics.rowVPad, trailing: LiquidSpace.s400),
+                                minHeight: nil,
+                                touchInset: .zero),
+                            theme: sheet.theme)
                 }
                 .buttonStyle(.plain)
                 Button { zombieAcknowledged = true } label: {

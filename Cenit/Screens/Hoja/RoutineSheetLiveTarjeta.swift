@@ -347,7 +347,7 @@ struct HojaTarjetaEjercicioSesion: View {
     /// B11 (FER-169): el copy del mapa — «RÉCORD peso máx · antes 100.0» — bajo la fila que acaba de
     /// batirlo. Mismo rosa que el destello de la fila (R16, `LiquidColor.rosa` — sin token de acento
     /// rosa en `NoteStrip`, que solo trae `.warning`/`.info`, así que este banner queda propio con las
-    /// mismas anotaciones `token-exempt` que ya usa el destello de arriba y `HojaLiveMetrics` abajo).
+    /// mismas anotaciones `token-exempt` que ya usa el destello de arriba).
     @ViewBuilder private func prFlashBanner(_ flash: PRFlash) -> some View {
         HStack(spacing: LiquidSpace.s150) {
             Text("RECORD").font(StrandFont.caption.weight(.bold)).foregroundStyle(LiquidColor.rosa)
@@ -792,12 +792,4 @@ struct HojaTarjetaSuperserieSesion: View {
     }
 }
 
-/// Constantes compartidas de «＋ SET» — F1 (`HojaTarjetaEjercicio.agregarSerie`) y la Hoja viva
-/// pintan la MISMA cápsula («la última vez» seed sobre vidrio); antes cada archivo repetía los
-/// literales `Color.white.opacity(0.72/0.9)` (Grok 15 + QA O5). Sin token público en StrandDesign
-/// todavía — GAP anotado en el reporte por si conviene promoverlas.
-enum HojaLiveMetrics {
-    static let capsulaFondo = Color.white.opacity(0.72)   // token-exempt: EntrenarCapsulaPuerta.fondoAlfa, sin token público (R21, compartida con F1)
-    static let capsulaBorde = Color.white.opacity(0.9)   // token-exempt: EntrenarCapsulaPuerta.highlightAlfa, sin token público (R21, compartida con F1)
-}
 #endif

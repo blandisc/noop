@@ -1295,7 +1295,7 @@ private struct CuerpoLanding: View {
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(theme.paper, for: .navigationBar)
+            .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { darkSheet = nil }.foregroundStyle(theme.ink)

@@ -240,10 +240,12 @@ private struct OutlineCapsuleChrome<CapsuleLabel: View>: ViewModifier {
                         shape.strokeBorder(
                             LiquidColor.tinta900.opacity(EntrenarHubMetrics.otraFormaCantoAlfa),
                             lineWidth: 0.5))
-                    .shadow(
-                        color: LiquidColor.tinta900.opacity(EntrenarHubMetrics.otraFormaShadowAlfa),
-                        radius: EntrenarHubMetrics.otraFormaShadowRadius,
-                        y: EntrenarHubMetrics.otraFormaShadowY)
+                    .liquidShadow([
+                        LiquidShadowLayer(
+                            color: LiquidColor.tinta900.opacity(EntrenarHubMetrics.otraFormaShadowAlfa),
+                            radius: EntrenarHubMetrics.otraFormaShadowRadius,
+                            y: EntrenarHubMetrics.otraFormaShadowY)
+                    ])
             case .tenida(let tono):
                 // Misma receta que `EntrenarHubHeroe.subPill`: highlight `papelTarjeta`, aro
                 // `vidrioEspecular` inset 1 pt (no `Color.white`).
@@ -264,10 +266,12 @@ private struct OutlineCapsuleChrome<CapsuleLabel: View>: ViewModifier {
                         shape.strokeBorder(
                             tono.base.opacity(EntrenarHubMetrics.subPillCantoAlfa),
                             lineWidth: 0.5))
-                    .shadow(
-                        color: tono.base.opacity(EntrenarHubMetrics.subPillShadowAlfa),
-                        radius: EntrenarHubMetrics.subPillShadowRadius,
-                        y: EntrenarHubMetrics.subPillShadowY)
+                    .liquidShadow([
+                        LiquidShadowLayer(
+                            color: tono.base.opacity(EntrenarHubMetrics.subPillShadowAlfa),
+                            radius: EntrenarHubMetrics.subPillShadowRadius,
+                            y: EntrenarHubMetrics.subPillShadowY)
+                    ])
             }
         }
     }

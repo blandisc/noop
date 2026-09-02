@@ -355,7 +355,7 @@ struct ChangeExerciseSheet: View {
             }
             .navigationTitle(Text("Change \(run.name)"))
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(theme.paper, for: .navigationBar)
+            .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { onClose() }.foregroundStyle(theme.ink)
@@ -403,16 +403,10 @@ struct ChangeExerciseSheet: View {
     }
 
     private var searchField: some View {
-        HStack(spacing: 9) {
-            StrandIcon.search.image.font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
-            TextField("Search the library…", text: $query)
-                .font(StrandFont.body).foregroundStyle(theme.ink).tint(theme.ink)
-                .autocorrectionDisabled()
-        }
-        .padding(.horizontal, 13).padding(.vertical, CenitMetrics.rowVPad)  // token-exempt: sin token exacto (horizontal/chip handoff)
-        .background(theme.surface, in: RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
-            .strokeBorder(theme.hairline, lineWidth: 1))
+        LiquidCampoBusqueda(
+            placeholder: String(localized: "Search exercise"),
+            text: $query,
+            a11yLimpiar: String(localized: "Clear search"))
     }
 
     /// «Pecho · PR 82,5 kg» — músculo + mejor marca combinados en un solo texto (`ExerciseCard.meta`
@@ -447,9 +441,15 @@ struct ChangeExerciseSheet: View {
     private func useButton(_ ex: Exercise) -> some View {
         Button { onUse(ex) } label: {
             Text("Use").font(StrandFont.caption).foregroundStyle(theme.ink)
-                .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s125)
-                .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
-                .frame(minHeight: 44)   // toque 44: la cápsula queda visualmente igual
+                .outlineCapsule(
+                    .outline,
+                    size: .aMedida(
+                        insets: EdgeInsets(top: LiquidSpace.s125, leading: LiquidSpace.s300,
+                                           bottom: LiquidSpace.s125, trailing: LiquidSpace.s300),
+                        minHeight: nil,
+                        touchInset: .zero),
+                    theme: theme)
+                .frame(minHeight: LiquidControl.hitTarget)   // toque 44: la cápsula queda visualmente igual
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
