@@ -187,28 +187,11 @@ struct HojaTarjetaEjercicio: View {
 
     // MARK: - ＋ SERIE
     //
-    // Cápsula compacta única (mock `.capsula`): el calentamiento se movió al «···» (A9), así que
-    // aquí solo queda agregar una serie de trabajo. Sin componente DS sellado sin chevron forzado
-    // (`EntrenarCapsulaPuerta` siempre añade «›»); se hace a mano con los MISMOS tokens/alfas —
-    // GAP anotado en el reporte por si conviene promoverla a StrandDesign.
+    // Cápsula compacta «＋ SET» — `HojaCapsulaAccion` del catálogo (FER-301); sin chevron
+    // (acción dentro de la hoja, no puerta a otra pantalla).
     private var agregarSerie: some View {
-        Button { sheet.addSet(idx) } label: {
-            Text(verbatim: "＋ \(String(localized: "SET"))")
-                .font(InstrumentoType.grotesk(9.5, weight: .bold, relativeTo: .caption2))
-                .tracking(1)
-                .foregroundStyle(LiquidColor.tinta900)
-                .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s150)
-                .frame(minHeight: HojaMetrics.hitMin)
-                .background {
-                    // FER-167 ronda 2 (R21, Grok 15 + QA O5): la MISMA constante que la Hoja viva
-                    // (`HojaLiveMetrics`) — antes cada archivo repetía el literal por separado.
-                    Capsule().fill(HojaLiveMetrics.capsulaFondo)
-                }
-                .overlay { Capsule().strokeBorder(HojaLiveMetrics.capsulaBorde, lineWidth: 1) }
-                .overlay { Capsule().stroke(LiquidColor.tinta900.opacity(0.12), lineWidth: 0.5) }   // token-exempt: EntrenarCapsulaPuerta.cantoAlfa, no expuesto
-        }
-        .buttonStyle(.liquidPress)
-        .accessibilityLabel(Text("Add set"))
+        HojaCapsulaAccion("＋ \(String(localized: "SET"))") { sheet.addSet(idx) }
+            .accessibilityLabel(Text("Add set"))
     }
 }
 

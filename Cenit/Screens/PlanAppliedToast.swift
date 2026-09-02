@@ -5,11 +5,11 @@ import StrandDesign
 // MARK: - «Plantilla aplicada» — el aviso de éxito que confirma la escritura silenciosa
 //
 // FER-137: aplicar una plantilla en `CrearPlanScreen` crea rutinas y arma la semana sin pedir
-// confirmación — un éxito silencioso necesita su propio eco, o el usuario no sabe si pasó algo. La
-// misma disciplina que `SaveErrorToast` (auto-descarte, sin toque), pero abajo y en tinta —
-// el prototipo lo dibuja como una píldora oscura flotando sobre el dock, no un banner arriba.
+// confirmación — un éxito silencioso necesita su propio eco, o el usuario no sabe si pasó algo.
+// FER-301: la píldora a mano (tinta + Capsule) cede a `LiquidAviso` del catálogo; sin acción
+// de deshacer (no es `UndoToast`). API pública del modifier intacta.
+
 struct PlanAppliedToast: ViewModifier {
-    @Environment(\.instrumentoTheme) private var theme
     @Binding var isPresented: Bool
     var seconds: Double = 3
 
@@ -17,17 +17,18 @@ struct PlanAppliedToast: ViewModifier {
         content
             .overlay(alignment: .bottom) {
                 if isPresented {
-                    Text("Template applied · your week is set, edit it whenever")
-                        .font(StrandFont.caption).fontWeight(.medium)
-                        .foregroundStyle(theme.paper)
-                        .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s200)
-                        .background(theme.ink, in: Capsule())
-                        .padding(.bottom, CenitMetrics.sectionGap)
-                        .transition(LiquidMotion.risingFadeTransition)
-                        .task {
-                            try? await Task.sleep(for: .seconds(seconds))
-                            isPresented = false
-                        }
+                    LiquidAviso(
+                        titulo: String(localized: "Template applied · your week is set, edit it whenever"),
+                        lineas: [],
+                        tono: LiquidColor.positivo
+                    )
+                    .padding(.horizontal, LiquidSpace.s600)
+                    .padding(.bottom, LiquidSpace.s600)
+                    .transition(LiquidMotion.risingFadeTransition)
+                    .task {
+                        try? await Task.sleep(for: .seconds(seconds))
+                        isPresented = false
+                    }
                 }
             }
             .animation(LiquidMotion.fundido, value: isPresented)

@@ -817,19 +817,12 @@ struct DataSourcesView: View {
         }
     }
 
-    /// The one destructive action on the screen: a critical-tinted capsule with a border instead of a
-    /// filled surface (no `.destructive` variant exists on `LiquidGlassButton`, so this composes the
-    /// same chrome — pill, min-height 44, `boton` type — with `negativo` in place of a fill).
+    /// The one destructive action on the screen: `LiquidGlassButton` · `.destructive`
+    /// (cápsula crítica con borde, sin relleno — FER-301).
     private var turnOffAutoBackupButton: some View {
-        Button { autoBackup.disable() } label: {
-            Text(String(localized: "Turn off automatic backup"))
-                .font(LiquidType.boton).tracking(LiquidType.botonTracking)
-                .foregroundStyle(LiquidColor.negativo)
-                .frame(maxWidth: .infinity, minHeight: 44)
-        }
-        .buttonStyle(.liquidPress)
-        .overlay {
-            Capsule().strokeBorder(LiquidColor.negativo.opacity(0.35), lineWidth: 1)  // token-exempt: borde de botón crítico único en la pantalla, sin variante .destructive en LiquidGlassButton
+        LiquidGlassButton(String(localized: "Turn off automatic backup"),
+                          variant: .destructive, expands: true) {
+            autoBackup.disable()
         }
     }
 

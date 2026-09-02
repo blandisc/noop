@@ -264,7 +264,7 @@ struct RoutineSheet: View {
                         Button("Done") { detailExercise = nil }.foregroundStyle(theme.ink)
                     } }
                     .navigationBarTitleDisplayMode(.inline)
-                    .toolbarBackground(theme.paper, for: .navigationBar)
+                    .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
             }
             .instrumentoTheme(theme).environmentObject(repo).environmentObject(mediaCoordinator).preferredColorScheme(.light)
         }
@@ -485,7 +485,7 @@ struct RoutineSheet: View {
             )
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
-            .presentationBackground(theme.paper)
+            .presentationBackground(LiquidColor.fondoAlto)
             .preferredColorScheme(.light)
         }
     }

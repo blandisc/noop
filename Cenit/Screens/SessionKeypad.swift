@@ -209,14 +209,18 @@ struct SessionKeypad: View {
     }
 
     /// 2A (ronda 3): geometría a medida — dibujo 34 como los iconos vecinos, toque 44 vía inset;
-    /// la barra de accesorios no crece.
+    /// la barra de accesorios no crece. FER-301: deshabilitada lleva `hairline` (no `hairlineStrong`).
     private func pill(_ text: String, enabled: Bool = true, action: @escaping () -> Void) -> some View {
-        OutlineCapsule(theme: theme,
-                       size: .aMedida(insets: EntrenarMetrics.keypadPillInsets, minHeight: EntrenarMetrics.keypadPill, touchInset: EntrenarMetrics.keypadPillTouchInset),
-                       estilo: .outline, action: { if enabled { action() } }) {
+        Button(action: { if enabled { action() } }) {
             Text(text).font(StrandFont.caption)
                 .foregroundStyle(enabled ? theme.ink : theme.inkMuted)
+                .padding(EntrenarMetrics.keypadPillInsets)
+                .frame(minHeight: EntrenarMetrics.keypadPill)
+                .background(Color.clear, in: Capsule())
+                .overlay(Capsule().strokeBorder(enabled ? theme.hairlineStrong : theme.hairline, lineWidth: 1))
+                .contentShape(Capsule().inset(by: -EntrenarMetrics.keypadPillTouchInset))
         }
+        .buttonStyle(EntrenarPressStyle())
         .disabled(!enabled)
     }
 

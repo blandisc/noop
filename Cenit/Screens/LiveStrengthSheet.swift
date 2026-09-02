@@ -366,7 +366,7 @@ struct LiveStrengthSheet: View {
             )
             .padding(.top, LiquidSpace.s300)
             .presentationDragIndicator(.visible)
-            .presentationBackground(theme.paper)
+            .presentationBackground(LiquidColor.fondoAlto)
             .preferredColorScheme(.light)
         }
     }
@@ -379,7 +379,7 @@ struct LiveStrengthSheet: View {
                     Button("Done") { detailExercise = nil }.foregroundStyle(theme.ink)
                 } }
                 .navigationBarTitleDisplayMode(.inline)
-                .toolbarBackground(theme.paper, for: .navigationBar)
+                .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
         }
         .instrumentoTheme(theme).environmentObject(model.repo).preferredColorScheme(.light)
     }
@@ -403,7 +403,7 @@ struct LiveStrengthSheet: View {
             onClose: { changeExercise = nil }
         )
         .instrumentoTheme(theme).preferredColorScheme(.light)
-        .presentationBackground(theme.paper)
+        .presentationBackground(LiquidColor.fondoAlto)
     }
 
     /// La boleta del veredicto (FER-133): `VeredictoActaSheet`, la MISMA vista que
@@ -609,7 +609,7 @@ struct LiveStrengthSheet: View {
         )
         .presentationDetents([.large])
         .presentationDragIndicator(.hidden)
-        .presentationBackground(theme.paper)
+        .presentationBackground(LiquidColor.fondoAlto)
     }
 
 
@@ -625,7 +625,7 @@ struct LiveStrengthSheet: View {
                  onClose: { rpeTarget = nil })
             .presentationDetents([.height(560)])
             .presentationDragIndicator(.visible)
-            .presentationBackground(theme.paper)
+            .presentationBackground(LiquidColor.fondoAlto)
             .preferredColorScheme(.light)
     }
 
@@ -651,7 +651,7 @@ struct LiveStrengthSheet: View {
             )
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
-            .presentationBackground(theme.paper)
+            .presentationBackground(LiquidColor.fondoAlto)
             .preferredColorScheme(.light)
         }
     }
@@ -679,7 +679,7 @@ struct LiveStrengthSheet: View {
             .preferredColorScheme(.light)
             .presentationDetents([.large])
             .presentationDragIndicator(.hidden)
-            .presentationBackground(theme.paper)
+            .presentationBackground(LiquidColor.fondoAlto)
         }
     }
 
@@ -831,18 +831,21 @@ struct LiveStrengthSheet: View {
     /// La píldora «papel + canto» de 36 pt de alto de la cabecera — mismo lenguaje que
     /// `sessionHeaderDisc`, en cápsula en vez de círculo.
     private func sessionHeaderPill(_ label: Text, accessibilityLabel: Text, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+        OutlineCapsule(
+            theme: theme,
+            size: .aMedida(
+                insets: EdgeInsets(top: .zero, leading: CenitMetrics.receiptPadding,
+                                   bottom: .zero, trailing: CenitMetrics.receiptPadding),
+                minHeight: EntrenarMetrics.secondaryButton,
+                touchInset: .zero),
+            estilo: .papel,
+            action: action
+        ) {
             label
                 .entrenarSessionEndLabel()
                 .foregroundStyle(theme.ink)
-                .padding(.horizontal, CenitMetrics.receiptPadding)
-                .frame(height: EntrenarMetrics.secondaryButton)
-                .background(Capsule().fill(theme.paper))
-                .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
         }
-        .buttonStyle(EntrenarPressStyle())
         .frame(minHeight: LiquidControl.hitTarget)   // 44 pt de toque sobre el dibujo de 36
-        .contentShape(Capsule())
         .accessibilityLabel(accessibilityLabel)
     }
 
@@ -1569,7 +1572,7 @@ struct LiveStrengthSheet: View {
                     Text("Duration").liquidLabel().foregroundStyle(LiquidColor.tinta500)
                     Text(receiptCountUp ? Self.clock(s.durationS) : "0:00")
                         .instrumentoHero(76).monospacedDigit().contentTransition(.numericText())
-                        .foregroundStyle(theme.ink)
+                        .foregroundStyle(LiquidColor.tinta900)
                         .lineLimit(1).minimumScaleFactor(0.6)
                 }
                 .accessibilityElement(children: .ignore)

@@ -676,7 +676,7 @@ struct TodayView: View {
             NavigationStack {
                 DataSourcesView()
                     .navigationBarTitleDisplayMode(.inline)
-                    .toolbarBackground(theme.paper, for: .navigationBar)
+                    .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) {
                             Button("Done") { showDataSources = false }

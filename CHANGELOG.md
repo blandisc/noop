@@ -21,6 +21,7 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 ## Unreleased
 
 - Diseño: los 8 miembros deprecados de `CenitMetrics` (space1, space2, gap, cardPadding, screenPadding, controlRadius, chipRadius, touchTarget) salen de toda la app iOS a favor de `LiquidSpace`, `LiquidRadius` y `LiquidControl`, valor por valor (FER-300). El Watch conserva su carve-out.
+- Entrenar adopta piezas huérfanas del catálogo: cápsulas Outline/Hoja, búsqueda Liquid, avisos, confirms y papel en presenters (FER-301 · FER-298).
 
 - La sesión en vivo, el hub y Tu cuerpo terminan de pasar al vidrio El Eje: teclado de vidrio, récord en rosa, barras de carga en su verde y figuras del cuerpo en módulo (FER-295).
 
