@@ -252,6 +252,9 @@ public struct SegmentedPillControl<T: Hashable>: View {
 }
 
 // MARK: - Badges
+//
+// `SourceBadge` queda vivo mientras `workoutSourceBadge` (WorkoutDetailScreen) lo consuma;
+// FER-294 B.2 lo sustituye por `LiquidOrigenBadge` y lo borra.
 
 public struct SourceBadge: View {
     let text: LocalizedStringKey; var tint: Color = StrandPalette.accent

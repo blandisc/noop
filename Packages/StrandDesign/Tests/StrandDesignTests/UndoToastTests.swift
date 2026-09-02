@@ -23,11 +23,9 @@ final class UndoToastTests: XCTestCase {
                        "WeeklyPlanEditor:760 — outer bottom 8")
     }
 
-    func test_radius_andCtaFont_matchRecipe() {
-        XCTAssertEqual(UndoToastMetrics.radius, CenitMetrics.cardRadius,
-                       "WeeklyPlanEditor:758 — cardRadius")
-        XCTAssertEqual(UndoToastMetrics.ctaFontSize, 15,
-                       "WeeklyPlanEditor:753 — grotesk 15 bold")
+    func test_radius_matchesLiquidTarjeta() {
+        XCTAssertEqual(UndoToastMetrics.radius, LiquidRadius.tarjeta,
+                       "FER-294 — radio tarjeta 18 (era cardRadius 16)")
     }
 
     @MainActor

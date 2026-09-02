@@ -84,7 +84,7 @@ public struct TrainingCalendar: View {
         Group {
             if let key = monthLabels[rowIndex] { Text(key) } else { Text(verbatim: "") }
         }
-        .font(InstrumentoType.grotesk(9)).foregroundStyle(theme.inkTertiary)
+        .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
         .frame(width: monthLabelWidth, alignment: .leading)
         // Decorativo: el resumen (VoiceOver, arriba) ya dice cuántas sesiones y en qué ventana; un
         // rótulo de mes suelto sin la celda que lo acompaña sería ruido.

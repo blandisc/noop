@@ -299,18 +299,18 @@ public enum EntrenarCalendarState: Sendable, Hashable {
 
     public func fill(_ theme: InstrumentoTheme) -> Color {
         switch self {
-        case .empty, .today: return theme.hairline
-        case .future:        return theme.paper
+        case .empty:         return LiquidColor.tinta7
+        case .today, .future: return .clear
         case .done(let f):   return f.tint(theme)
-        case .planned:       return theme.paper
+        case .planned:       return .clear
         }
     }
 
     public func stroke(_ theme: InstrumentoTheme) -> Color? {
         switch self {
         case .empty:          return nil
-        case .future:         return theme.hairline
-        case .today:          return theme.ink
+        case .future:         return LiquidColor.tinta10
+        case .today:          return LiquidColor.tinta900
         case .done:           return nil
         case .planned(let f): return f.tint(theme)
         }
@@ -371,12 +371,14 @@ public struct EntrenarMarcaChip: View {
     let theme: InstrumentoTheme
     public init(_ count: Int, theme: InstrumentoTheme) { self.count = count; self.theme = theme }
     public var body: some View {
+        // `theme` se conserva en la API; el tinte es `positivo` (FER-294).
+        let _ = theme
         Text(count == 1 ? "1 mark" : "\(count) marks")
             .entrenarMarcaChip()
-            .foregroundStyle(theme.positiveText)
+            .foregroundStyle(LiquidColor.positivo)
             .padding(.horizontal, LiquidSpace.s200)
             .padding(.vertical, LiquidSpace.s100)
-            .background(theme.tint(theme.positiveText), in: Capsule())
+            .background(LiquidColor.positivo.opacity(LiquidTono.intensidadDefault), in: Capsule())
     }
 }
 
