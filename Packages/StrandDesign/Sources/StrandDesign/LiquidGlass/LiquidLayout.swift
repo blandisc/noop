@@ -117,7 +117,7 @@ public enum LiquidSpace {
     // MARK: - Lote Uno (FER-275, aprobación del dueño 2026-09-01) — piezas nuevas
 
     /// 20 — tope de scroll: el padding superior de un `ScrollView` cuando debe quedar
-    /// DELIBERADAMENTE menor que `CenitMetrics.screenPadding` (24) para acercar el contenido
+    /// DELIBERADAMENTE menor que `LiquidSpace.s600` (24) para acercar el contenido
     /// al nav bar. CENSO «sin token exacto» (TrainingBodyScreen, WorkoutHistoryScreen,
     /// SavedTicketsScreen — 6 sitios).
     public static let topeScroll: CGFloat = 20
@@ -149,7 +149,7 @@ public enum LiquidSpace {
     public static let seccionAire: CGFloat = 20
 
     /// 20 — padding interior de una tarjeta AMPLIA (la tarjeta de compartir, la región de rutina):
-    /// más aire que `CenitMetrics.cardPadding` a propósito, porque la tarjeta es protagonista.
+    /// más aire que `LiquidSpace.s400` a propósito, porque la tarjeta es protagonista.
     /// Mismo veredicto FER-275 punto 3. (ShareCardView, RoutineRegion+Tint — 2 sitios.)
     public static let tarjetaAmplia: CGFloat = 20
 

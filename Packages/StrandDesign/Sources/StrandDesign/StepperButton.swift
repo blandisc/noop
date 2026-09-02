@@ -25,7 +25,7 @@ public struct StepperButton: View {
                 glyphLabel.contentShape(Circle())
             case .roundedControl:
                 glyphLabel.contentShape(
-                    RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous))
+                    RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous))
             }
         }
         .buttonStyle(.plain)
@@ -45,7 +45,7 @@ public struct StepperButton: View {
         case .circle:
             Circle().fill(theme.surface)
         case .roundedControl:
-            RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous).fill(theme.surface)
+            RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous).fill(theme.surface)
         }
     }
     @ViewBuilder private var border: some View {
@@ -53,7 +53,7 @@ public struct StepperButton: View {
         case .circle:
             Circle().strokeBorder(theme.hairlineStrong, lineWidth: 1)
         case .roundedControl:
-            RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
                 .strokeBorder(theme.hairlineStrong, lineWidth: 1)
         }
     }

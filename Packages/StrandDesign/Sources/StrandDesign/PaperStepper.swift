@@ -33,7 +33,7 @@ public struct PaperStepper: View {
     }
 
     public var body: some View {
-        HStack(spacing: CenitMetrics.space2) {
+        HStack(spacing: LiquidSpace.s200) {
             button("minus", delta: -step, enabled: value > range.lowerBound)
             button("plus", delta: step, enabled: value < range.upperBound)
         }
@@ -76,7 +76,7 @@ public struct PaperStepper: View {
 
 private extension View {
     func hitTarget(visible: CGFloat) -> some View {
-        let pad = max(0, (CenitMetrics.touchTarget - visible) / 2)
+        let pad = max(0, (LiquidControl.hitTarget - visible) / 2)
         return padding(pad).contentShape(Rectangle()).padding(-pad)
     }
 }
@@ -135,7 +135,7 @@ private struct PaperStepperDemo: View {
     @State private var rounds = 8
     var body: some View {
         let t = InstrumentoTheme.base
-        VStack(alignment: .leading, spacing: CenitMetrics.gap) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s300) {
             HStack {
                 Text("Trabajo").font(StrandFont.headline).foregroundStyle(t.ink)
                 Spacer()
@@ -149,7 +149,7 @@ private struct PaperStepperDemo: View {
                 PaperStepper(value: $rounds, in: 1...50, label: "Rondas", unit: "rondas")
             }
         }
-        .padding(CenitMetrics.screenPadding)
+        .padding(LiquidSpace.s600)
         .background(t.paper)
         .instrumentoTheme(t)
     }

@@ -155,6 +155,9 @@ final class DesignDriftTokenTests: XCTestCase {
     }
 
     // FER-280·3b: puente valor-neutral CenitMetrics → escala Liquid (paridad congelada).
+    // FER-287·1A: este test referencia a propósito los 8 símbolos deprecados de
+    // CenitMetrics (paridad congelada). El warning de deprecación es esperado;
+    // no silenciar — mismo patrón que test_strandMotionLiquidMotionParityFrozen.
     func test_cenitMetricsLiquidScaleParityFrozen() {
         XCTAssertEqual(CenitMetrics.space1, 4)
         XCTAssertEqual(CenitMetrics.space2, 8)

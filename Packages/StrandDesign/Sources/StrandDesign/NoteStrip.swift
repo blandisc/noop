@@ -28,10 +28,10 @@ public struct NoteStrip<Content: View>: View {
                 .padding(.horizontal, 12).padding(.vertical, 10)
                 .background(
                     theme.tint(theme.warning),
-                    in: RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
+                    in: RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: CenitMetrics.controlRadius, style: .continuous)
+                    RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
                         .strokeBorder(theme.softStroke(theme.warning), lineWidth: 1)
                 )
                 .overlay(alignment: .leading) { Rectangle().fill(theme.warning).frame(width: 2.5) }

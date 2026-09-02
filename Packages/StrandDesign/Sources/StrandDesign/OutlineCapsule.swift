@@ -17,14 +17,14 @@ public struct OutlineCapsule<Label: View>: View {
     public enum Size: Sendable {
         /// Pad H `LiquidSpace.s250` · V `LiquidSpace.s150` — raise / Start·Stop.
         case sm
-        /// Pad H `CenitMetrics.gap` · V 6 — chip de filtro de biblioteca.
+        /// Pad H `LiquidSpace.s300` · V 6 — chip de filtro de biblioteca.
         case md
 
         /// Pad horizontal fijado a la receta citada (no inventar).
         public var horizontalPad: CGFloat {
             switch self {
             case .sm: return LiquidSpace.s250
-            case .md: return CenitMetrics.gap
+            case .md: return LiquidSpace.s300
             }
         }
 

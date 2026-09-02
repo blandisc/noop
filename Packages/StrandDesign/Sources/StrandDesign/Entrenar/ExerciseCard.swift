@@ -39,7 +39,7 @@ public struct ExerciseCard: View {
     }
 
     public var body: some View {
-        HStack(spacing: CenitMetrics.gap) {
+        HStack(spacing: LiquidSpace.s300) {
             if let onTap {
                 Button(action: onTap) { identity }
                     .buttonStyle(EntrenarPressStyle())
@@ -48,7 +48,7 @@ public struct ExerciseCard: View {
             } else {
                 identity.accessibilityElement(children: .combine)
             }
-            Spacer(minLength: CenitMetrics.space2)
+            Spacer(minLength: LiquidSpace.s200)
             if let onMenu {
                 Button(action: onMenu) {
                     Image(systemName: "ellipsis")
@@ -64,7 +64,7 @@ public struct ExerciseCard: View {
     }
 
     private var identity: some View {
-        HStack(spacing: CenitMetrics.gap) {
+        HStack(spacing: LiquidSpace.s300) {
             thumbnail
             VStack(alignment: .leading, spacing: 2) {
                 Text(verbatim: name)
@@ -140,7 +140,7 @@ public struct RecetaLine: View {
     }
 
     private var row: some View {
-        HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space2) {
+        HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s200) {
             Text(verbatim: text)
                 .font(InstrumentoType.groteskNumber(15, weight: .bold, relativeTo: .subheadline))
                 .foregroundStyle(theme.ink)
@@ -150,7 +150,7 @@ public struct RecetaLine: View {
                     .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            Spacer(minLength: CenitMetrics.space2)
+            Spacer(minLength: LiquidSpace.s200)
             if action != nil {
                 StrandIcon.disclosure.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold))

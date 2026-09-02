@@ -45,7 +45,7 @@ public struct TodayBanner: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.space1 + 1) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s100 + 1) {
             if let label {
                 Text(label)
                     .font(InstrumentoType.grotesk(9, weight: .semibold))
@@ -59,7 +59,7 @@ public struct TodayBanner: View {
     }
 
     @ViewBuilder private var card: some View {
-        let content = HStack(spacing: CenitMetrics.space2 + 2) {
+        let content = HStack(spacing: LiquidSpace.s200 + 2) {
             Circle().fill(dot).frame(width: 7, height: 7)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 1) {
@@ -82,7 +82,7 @@ public struct TodayBanner: View {
             }
         }
         .padding(.vertical, 11)
-        .padding(.horizontal, CenitMetrics.cardPadding - 2)
+        .padding(.horizontal, LiquidSpace.s400 - 2)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)

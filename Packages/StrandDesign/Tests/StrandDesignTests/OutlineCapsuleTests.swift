@@ -13,7 +13,7 @@ final class OutlineCapsuleTests: XCTestCase {
     }
 
     func test_md_padding_matchesExerciseLibraryChip() {
-        XCTAssertEqual(OutlineCapsule<Text>.Size.md.horizontalPad, CenitMetrics.gap,
+        XCTAssertEqual(OutlineCapsule<Text>.Size.md.horizontalPad, LiquidSpace.s300,
                        "md H = ExerciseLibraryScreen:206")
         XCTAssertEqual(OutlineCapsule<Text>.Size.md.verticalPad, 6,
                        "md V = ExerciseLibraryScreen:206 (chip 6pt)")

@@ -6,18 +6,18 @@ import SwiftUI
 final class UndoToastTests: XCTestCase {
 
     func test_spacing_matchesWeeklyPlanEditor() {
-        XCTAssertEqual(UndoToastMetrics.hStackSpacing, CenitMetrics.gap,
+        XCTAssertEqual(UndoToastMetrics.hStackSpacing, LiquidSpace.s300,
                        "WeeklyPlanEditor:749 — HStack spacing 12")
-        XCTAssertEqual(UndoToastMetrics.spacerMin, CenitMetrics.space2,
+        XCTAssertEqual(UndoToastMetrics.spacerMin, LiquidSpace.s200,
                        "WeeklyPlanEditor:751 — Spacer minLength 8")
     }
 
     func test_padding_matchesWeeklyPlanEditor() {
-        XCTAssertEqual(UndoToastMetrics.padH, CenitMetrics.screenPadding,
+        XCTAssertEqual(UndoToastMetrics.padH, LiquidSpace.s600,
                        "WeeklyPlanEditor:757 — pad H screenPadding")
-        XCTAssertEqual(UndoToastMetrics.padV, CenitMetrics.cardPadding,
+        XCTAssertEqual(UndoToastMetrics.padV, LiquidSpace.s400,
                        "WeeklyPlanEditor:757 — pad V cardPadding")
-        XCTAssertEqual(UndoToastMetrics.outerPadH, CenitMetrics.screenPadding,
+        XCTAssertEqual(UndoToastMetrics.outerPadH, LiquidSpace.s600,
                        "WeeklyPlanEditor:759 — outer H screenPadding")
         XCTAssertEqual(UndoToastMetrics.outerPadBottom, 8,
                        "WeeklyPlanEditor:760 — outer bottom 8")

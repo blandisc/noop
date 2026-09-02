@@ -18,18 +18,18 @@ import SwiftUI
 
 /// Constantes de la receta — fuera de la View para que los tests no toquen MainActor.
 enum UndoToastMetrics {
-    /// `HStack` spacing — literal `12` en WeeklyPlanEditor:749 (= `CenitMetrics.gap`).
-    static let hStackSpacing: CGFloat = CenitMetrics.gap
-    /// `Spacer(minLength:)` — literal `8` en WeeklyPlanEditor:751 (= `CenitMetrics.space2`).
-    static let spacerMin: CGFloat = CenitMetrics.space2
-    /// Pad horizontal interno — `CenitMetrics.screenPadding` (WeeklyPlanEditor:757).
-    static let padH: CGFloat = CenitMetrics.screenPadding
-    /// Pad vertical interno — `CenitMetrics.cardPadding` (WeeklyPlanEditor:757).
-    static let padV: CGFloat = CenitMetrics.cardPadding
+    /// `HStack` spacing — literal `12` en WeeklyPlanEditor:749 (= `LiquidSpace.s300`).
+    static let hStackSpacing: CGFloat = LiquidSpace.s300
+    /// `Spacer(minLength:)` — literal `8` en WeeklyPlanEditor:751 (= `LiquidSpace.s200`).
+    static let spacerMin: CGFloat = LiquidSpace.s200
+    /// Pad horizontal interno — `LiquidSpace.s600` (WeeklyPlanEditor:757).
+    static let padH: CGFloat = LiquidSpace.s600
+    /// Pad vertical interno — `LiquidSpace.s400` (WeeklyPlanEditor:757).
+    static let padV: CGFloat = LiquidSpace.s400
     /// Radio del fondo de tinta — `CenitMetrics.cardRadius` (WeeklyPlanEditor:758).
     static let radius: CGFloat = CenitMetrics.cardRadius
-    /// Inset horizontal exterior — `CenitMetrics.screenPadding` (WeeklyPlanEditor:759).
-    static let outerPadH: CGFloat = CenitMetrics.screenPadding
+    /// Inset horizontal exterior — `LiquidSpace.s600` (WeeklyPlanEditor:759).
+    static let outerPadH: CGFloat = LiquidSpace.s600
     /// Inset inferior exterior — literal `8` (WeeklyPlanEditor:760).
     static let outerPadBottom: CGFloat = 8
     /// Tipografía del CTA — grotesk 15 bold (WeeklyPlanEditor:753).

@@ -28,11 +28,11 @@ public struct InstrumentoSectionBand<Trailing: View>: View {
             Spacer(minLength: 8)
             trailing
         }
-        .padding(.horizontal, CenitMetrics.screenPadding)
+        .padding(.horizontal, LiquidSpace.s600)
         .padding(.vertical, 9)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(theme.patternBlock)
-        .padding(.horizontal, -CenitMetrics.screenPadding)
+        .padding(.horizontal, -LiquidSpace.s600)
     }
 }
 
@@ -52,7 +52,7 @@ public extension InstrumentoSectionBand where Trailing == EmptyView {
             Text(verbatim: "＋ Nueva").font(StrandFont.subhead)
         }
     }
-    .padding(.horizontal, CenitMetrics.screenPadding)
+    .padding(.horizontal, LiquidSpace.s600)
     .padding(.vertical, 40)
     .background(InstrumentoTheme.base.paper)
 }

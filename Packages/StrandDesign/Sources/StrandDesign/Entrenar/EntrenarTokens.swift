@@ -66,7 +66,7 @@ public enum EntrenarFamily: String, Sendable, CaseIterable, Hashable {
 /// Base 4, alineado al handoff. Lo que no está aquí vive en `CenitMetrics` (márgenes, radios, gaps).
 public enum EntrenarMetrics {
     /// Fila mínima y blanco táctil (HIG). El dibujo puede ser menor; el toque nunca.
-    public static let row: CGFloat = CenitMetrics.touchTarget      // 44
+    public static let row: CGFloat = LiquidControl.hitTarget      // 44
     /// Fila de la tabla de series: más alta que una fila de lista porque es un campo de captura.
     public static let tableRow: CGFloat = 48
     /// Badge del número de serie (dibujo 28, toque 44).
@@ -92,7 +92,7 @@ public enum EntrenarMetrics {
     public static let progressBarRadius: CGFloat = 2
     /// Margen horizontal de la cabecera compacta, la barra de progreso y el hilo de la sesión en vivo
     /// (FER-133, handoff «Sesión en vivo» v4: «padding 30 20 0» / «margen 12 20 0»). Distinto de
-    /// `CenitMetrics.screenPadding` (24) que usa el resto de esta misma pantalla (resumen, listas) —
+    /// `LiquidSpace.s600` (24) que usa el resto de esta misma pantalla (resumen, listas) —
     /// esta cabecera compacta es una franja angosta de 36 pt, no el cuerpo de la hoja.
     public static let sessionHeaderMarginH: CGFloat = 20
     /// Aire sobre la cabecera compacta de la sesión en vivo, antes de la fila «‹»/título/reloj
@@ -186,8 +186,8 @@ public enum EntrenarMetrics {
     public static let heroKickerTop: CGFloat = 24
     /// El nombre de la rutina, separado de su kicker «HOY».
     public static let heroTitleTop: CGFloat = 6
-    /// La línea de músculos, separada del título. (= `CenitMetrics.space2`.)
-    public static let heroSubTop: CGFloat = CenitMetrics.space2
+    /// La línea de músculos, separada del título. (= `LiquidSpace.s200`.)
+    public static let heroSubTop: CGFloat = LiquidSpace.s200
     /// Los tres numerales de la sesión («~50 min · 6 ejercicios · 18 series»), separados del subtítulo.
     public static let heroNumeralsTop: CGFloat = 20
     /// El canal entre los tres numerales, cuando se dibujan como bloques sueltos (handoff «canal 28»)
@@ -195,8 +195,8 @@ public enum EntrenarMetrics {
     /// (`EntrenarView.swift`); corrección revisión final (g3-adn): el comentario decía huérfano y no
     /// lo era.
     public static let heroNumeralsGap: CGFloat = 28
-    /// La línea de progresión / subida del día, separada de los numerales. (= `CenitMetrics.gap`.)
-    public static let heroProgressTop: CGFloat = CenitMetrics.gap
+    /// La línea de progresión / subida del día, separada de los numerales. (= `LiquidSpace.s300`.)
+    public static let heroProgressTop: CGFloat = LiquidSpace.s300
     /// La fila «Empezar + Otra forma», separada del bloque de arriba.
     public static let ctaRowTop: CGFloat = 20
     /// El primer nivel del hub («Tu plan»), separado de la fila CTA.
@@ -205,8 +205,8 @@ public enum EntrenarMetrics {
     /// Los niveles siguientes (el prototipo los separa con margin-top 10; el README da el rango 2-10 y
     /// el segundo nivel real de la landing usa 10). Con 2 el filo quedaba pegado a la fila de arriba.
     public static let levelTop: CGFloat = 10
-    /// El aire entre el filo superior de un nivel y su fila de encabezado. (= `CenitMetrics.space1`.)
-    public static let levelPadTop: CGFloat = CenitMetrics.space1
+    /// El aire entre el filo superior de un nivel y su fila de encabezado. (= `LiquidSpace.s100`.)
+    public static let levelPadTop: CGFloat = LiquidSpace.s100
 
     /// El título del héroe de Descanso («Descanso»), FER-132: el prototipo lo dibuja a 40 pt / 700 /
     /// tracking -1 — un escalón MÁS GRANDE que el título de un día con rutina (Grotesk 32), porque
@@ -222,7 +222,7 @@ public enum EntrenarMetrics {
     // MARK: - «QUEDABAN» (RIR) del teclado propio (FER-134, handoff «Sesión en vivo»)
 
     /// El botón del segmento 0 · 1 · 2 · 3 · 4+ (`SessionKeypad.rirRow`): más chico que
-    /// `CenitMetrics.touchTarget` (44) a propósito — son cinco botones apretados en una sola
+    /// `LiquidControl.hitTarget` (44) a propósito — son cinco botones apretados en una sola
     /// píldora dentro de la fila del teclado, no un blanco táctil aislado; la fila entera (padding +
     /// alto) supera el mínimo de toque.
     public static let rirButton: CGFloat = 30
@@ -247,7 +247,7 @@ public enum EntrenarMetrics {
     // MARK: - Rejilla 4×4 del teclado propio (FER-134 ítem 8, handoff «Sesión en vivo» bloque teclado)
 
     /// El lado de cada tecla de la rejilla (numéricas y las 4 de acción) — el mismo mínimo de toque
-    /// que `CenitMetrics.touchTarget`, nombrado aquí porque la rejilla lo fija por diseño (handoff),
+    /// que `LiquidControl.hitTarget`, nombrado aquí porque la rejilla lo fija por diseño (handoff),
     /// no por regla de accesibilidad genérica.
     public static let keyCap: CGFloat = 44
     /// El radio de esquina de cada tecla.
@@ -374,8 +374,8 @@ public struct EntrenarMarcaChip: View {
         Text(count == 1 ? "1 mark" : "\(count) marks")
             .entrenarMarcaChip()
             .foregroundStyle(theme.positiveText)
-            .padding(.horizontal, CenitMetrics.space2)
-            .padding(.vertical, CenitMetrics.space1)
+            .padding(.horizontal, LiquidSpace.s200)
+            .padding(.vertical, LiquidSpace.s100)
             .background(theme.tint(theme.positiveText), in: Capsule())
     }
 }
@@ -490,7 +490,7 @@ public extension View {
         Text("NIVELES · CHIP DE MARCA Y ETIQUETA DE DÍA").instrumentoOverline().foregroundStyle(t.inkTertiary)
         HStack(spacing: 12) {
             Text("1 mark").entrenarMarcaChip().foregroundStyle(t.positiveText)
-                .padding(.horizontal, CenitMetrics.space2).padding(.vertical, CenitMetrics.space1)
+                .padding(.horizontal, LiquidSpace.s200).padding(.vertical, LiquidSpace.s100)
                 .background(t.tint(t.positiveText), in: Capsule())
             Text(verbatim: "L").entrenarWeekDayLabel().foregroundStyle(t.inkTertiary)
         }

@@ -63,6 +63,6 @@ public enum HojaMetrics {
     /// Hairline superior entre filas (`.trow` `border-top: 1px solid var(--t07)`).
     public static let separadorGrosor: CGFloat = 1
 
-    /// Blanco táctil mínimo de la fila completa (HIG; = `EntrenarMetrics.row` / `CenitMetrics.touchTarget`).
+    /// Blanco táctil mínimo de la fila completa (HIG; = `EntrenarMetrics.row` / `LiquidControl.hitTarget`).
     public static let hitMin: CGFloat = 44
 }

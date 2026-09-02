@@ -70,7 +70,7 @@ private struct LanguageDemo: View {
                 signal("Respiración", "14.2 rpm · normal")
             }
         }
-        .padding(CenitMetrics.screenPadding)
+        .padding(LiquidSpace.s600)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
@@ -101,7 +101,7 @@ private struct PaletteDemo: View {
             row("Tinta", [("ink 14.8:1", t.ink), ("secondary 6.5:1", t.inkSecondary), ("tertiary 4.9:1", t.inkTertiary)])
             row("Dato / estado", [("recovery", t.dataRecovery), ("strain", t.dataStrain), ("warning", t.warning), ("critical", t.critical)])
         }
-        .padding(CenitMetrics.screenPadding)
+        .padding(LiquidSpace.s600)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
     private func row(_ title: String, _ items: [(String, Color)]) -> some View {

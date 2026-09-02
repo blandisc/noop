@@ -96,7 +96,7 @@ public struct LiquidStatePill: View {
             .padding(.horizontal, LiquidStatePillMetrics.valenciaPadH)
             .padding(.vertical, LiquidStatePillMetrics.valenciaPadV)
             .background(tono.opacity(StrandOpacity.tintFill),
-                        in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+                        in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
             .accessibilityElement(children: .combine)
     }
 }
