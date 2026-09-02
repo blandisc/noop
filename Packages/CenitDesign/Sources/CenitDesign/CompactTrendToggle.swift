@@ -5,7 +5,8 @@ import SwiftUI
 // A tiny two-segment pill that sits INLINE to the right of a trend block's summary line (not a
 // full-width row). It flips the history view between the moving-average line («Media») and the
 // population lanes («Rangos»). Active segment is the ink chip on warm paper — «color solo en el dato»,
-// so the toggle itself stays monochrome. Pure SwiftUI; no UIKit/AppKit.
+// so the toggle itself stays monochrome. Pure SwiftUI; no UIKit/AppKit. Paints with `LiquidColor`
+// (FER-316).
 //
 // Accessibility: exposed as a two-option picker to VoiceOver (each segment is a button announcing its
 // selected state); the whole control is a ≥44pt tap target per segment.
@@ -28,11 +29,11 @@ public enum TrendMode: String, Sendable, CaseIterable {
 
 public struct CompactTrendToggle: View {
     @Binding private var mode: TrendMode
-    private let theme: InstrumentoTheme
 
-    public init(mode: Binding<TrendMode>, theme: InstrumentoTheme) {
+    /// - Parameter theme: ignored for painting (LiquidColor). Kept for call-site compatibility (FER-316).
+    public init(mode: Binding<TrendMode>, theme: InstrumentoTheme = .base) {
         self._mode = mode
-        self.theme = theme
+        _ = theme
     }
 
     public var body: some View {
@@ -42,7 +43,8 @@ public struct CompactTrendToggle: View {
             }
         }
         .padding(3)
-        .background(theme.trackWarm, in: Capsule())
+        // Warm track behind the ink chip (Instrumento `trackWarm` / `patternBlock` cousin).
+        .background(LiquidColor.papelBajo, in: Capsule())
     }
 
     private func segment(_ m: TrendMode) -> some View {
@@ -51,11 +53,11 @@ public struct CompactTrendToggle: View {
             .font(InstrumentoType.grotesk(10, weight: .semibold))
             .tracking(0.6)
             .textCase(.uppercase)
-            .foregroundStyle(active ? theme.paper : theme.inkTertiary)
+            .foregroundStyle(active ? LiquidColor.papelTarjeta : LiquidColor.tinta500)
             .padding(.horizontal, 11)
             .padding(.vertical, 5)
             .frame(minHeight: 34)
-            .background { if active { Capsule().fill(theme.ink) } }
+            .background { if active { Capsule().fill(LiquidColor.tinta900) } }
             .contentShape(Capsule())
             .onTapGesture {
                 withAnimation(StrandMotion.interactive) { mode = m }
@@ -69,14 +71,13 @@ public struct CompactTrendToggle: View {
     struct Demo: View {
         @State private var mode: TrendMode = .media
         var body: some View {
-            let t = InstrumentoTheme.base
-            return HStack {
-                Text("52").font(InstrumentoType.groteskNumber(20)).foregroundStyle(t.dataHrv)
+            HStack {
+                Text("52").font(InstrumentoType.groteskNumber(20)).foregroundStyle(LiquidColor.cian)
                 Spacer()
-                CompactTrendToggle(mode: $mode, theme: t)
+                CompactTrendToggle(mode: $mode)
             }
             .padding(18)
-            .background(t.paper)
+            .background(LiquidColor.fondoAlto)
         }
     }
     return Demo()

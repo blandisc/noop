@@ -30,8 +30,6 @@ public struct EntrenarHojaCabecera: View {
     private let salida: Salida
     private let onSalir: () -> Void
 
-    @Environment(\.instrumentoTheme) private var theme
-
     /// - Parameters:
     ///   - glifo: la gota de icono (34/16/12 %, misma receta que `LiquidSheetHeader`). `nil` =
     ///     hojas sin identidad de icono propia (Cambiar ejercicio, Crear ejercicio).
@@ -77,7 +75,7 @@ public struct EntrenarHojaCabecera: View {
     private var salidaControl: some View {
         switch salida {
         case .cerrar:
-            BackButton(role: .close, theme: theme, action: onSalir)
+            BackButton(role: .close, theme: .base, action: onSalir)
         case .cancelar(let texto):
             textoSalida(texto, tinta: LiquidColor.tinta700, peso: .semibold)
         case .guardar(let texto):
@@ -111,7 +109,6 @@ public struct EntrenarHojaCabecera: View {
     }
     .padding(LiquidSpace.s550)
     .background(LiquidColor.fondoGradient)
-    .instrumentoTheme(.base)
 }
 
 /// Sin glifo ni subtítulo — el mínimo de la cabecera (Cambiar ejercicio / Biblioteca).
@@ -119,7 +116,6 @@ public struct EntrenarHojaCabecera: View {
     EntrenarHojaCabecera(titulo: "Cambiar ejercicio", salida: .cerrar) {}
         .padding(LiquidSpace.s550)
         .background(LiquidColor.fondoGradient)
-        .instrumentoTheme(.base)
 }
 
 /// Dynamic Type grande: el título no se corta, el botón de texto envuelve antes que truncar.
@@ -129,7 +125,6 @@ public struct EntrenarHojaCabecera: View {
                          tono: .indigo, salida: .guardar("Guardar cambios")) {}
         .padding(LiquidSpace.s550)
         .background(LiquidColor.fondoGradient)
-        .instrumentoTheme(.base)
         .environment(\.dynamicTypeSize, .accessibility2)
 }
 #endif

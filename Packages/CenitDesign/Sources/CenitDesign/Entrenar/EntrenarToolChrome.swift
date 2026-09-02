@@ -14,8 +14,6 @@ public struct EntrenarStatusPill: View {
     private let text: LocalizedStringKey
     private let dotColor: Color?
 
-    @Environment(\.instrumentoTheme) private var theme
-
     public init(_ text: LocalizedStringKey, dotColor: Color? = nil) {
         self.text = text
         self.dotColor = dotColor
@@ -28,7 +26,7 @@ public struct EntrenarStatusPill: View {
             }
             Text(text)
                 .font(StrandFont.caption)
-                .foregroundStyle(theme.ink)
+                .foregroundStyle(LiquidColor.tinta900)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
@@ -60,27 +58,25 @@ struct EntrenarToolCard<Content: View>: View {
 #Preview("EntrenarStatusPill · con y sin punto") {
     VStack(alignment: .leading, spacing: 12) {
         EntrenarStatusPill("Ready")
-        EntrenarStatusPill("Session live", dotColor: InstrumentoTheme.base.dataRecovery)
+        EntrenarStatusPill("Session live", dotColor: LiquidColor.verdePrimario)
         EntrenarStatusPill("Paused")
     }
     .padding(24)
-    .background(InstrumentoTheme.base.paper)
-    .instrumentoTheme(.base)
+    .background(LiquidColor.fondoAlto)
 }
 
 #Preview("EntrenarToolCard · distinto padding") {
     VStack(alignment: .leading, spacing: 16) {
         EntrenarToolCard {
             Text("Padding 16 (default)")
-                .font(StrandFont.subhead).foregroundStyle(InstrumentoTheme.base.ink)
+                .font(StrandFont.subhead).foregroundStyle(LiquidColor.tinta900)
         }
         EntrenarToolCard(padding: 24) {
             Text("Padding 24")
-                .font(StrandFont.subhead).foregroundStyle(InstrumentoTheme.base.ink)
+                .font(StrandFont.subhead).foregroundStyle(LiquidColor.tinta900)
         }
     }
     .padding(24)
-    .background(InstrumentoTheme.base.paper)
-    .instrumentoTheme(.base)
+    .background(LiquidColor.fondoAlto)
 }
 #endif

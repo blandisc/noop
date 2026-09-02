@@ -169,7 +169,6 @@ private enum Metrics {
         onTap: {})
         .padding(.horizontal, LiquidSpace.s400)
         .background(LiquidColor.fondoGradient)
-        .instrumentoTheme(.base)
 }
 
 #Preview("EntrenarFilaCardio · Manual + duración") {
@@ -180,7 +179,6 @@ private enum Metrics {
         onTap: {})
         .padding(.horizontal, LiquidSpace.s400)
         .background(LiquidColor.fondoGradient)
-        .instrumentoTheme(.base)
 }
 
 #Preview("EntrenarFilaCardio · Apple fuerza-like (no rica)") {
@@ -191,7 +189,6 @@ private enum Metrics {
         onTap: {})
         .padding(.horizontal, LiquidSpace.s400)
         .background(LiquidColor.fondoGradient)
-        .instrumentoTheme(.base)
 }
 
 #Preview("EntrenarFilaCardio · AX5") {
@@ -202,7 +199,6 @@ private enum Metrics {
         onTap: {})
         .padding(.horizontal, LiquidSpace.s400)
         .background(LiquidColor.fondoGradient)
-        .instrumentoTheme(.base)
         .environment(\.dynamicTypeSize, .accessibility3)
 }
 #endif

@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - EntrenarHilo — el hilo del veredicto (FER-83 · E2 · reescrito en FER-85)
+// MARK: - EntrenarHilo — el hilo del veredicto (FER-83 · E2 · reescrito en FER-85 · FER-316)
 //
 // El ÚNICO portador del veredicto en toda la sección Entrenar, y la puerta al acta de Hoy.
 //
@@ -38,11 +38,13 @@ public struct EntrenarHilo: View {
         /// widget nunca calcula el suyo, solo reproduce el que `AppModel` ya resolvió (el snapshot del
         /// App Group trae el `Tone` crudo). Antes era `internal`; el único llamador fuera de este
         /// archivo era una prueba con `@testable import CenitDesign`.
-        public func hue(_ theme: InstrumentoTheme) -> Color {
+        /// `theme` se ignora (FER-316): lee `LiquidColor` directo.
+        public func hue(_ theme: InstrumentoTheme = .base) -> Color {
+            _ = theme
             switch self {
-            case .clear:   return theme.verdict
-            case .caution: return theme.warning
-            case .ease:    return theme.critical
+            case .clear:   return LiquidColor.verdePrimario
+            case .caution: return LiquidColor.ambar
+            case .ease:    return LiquidColor.negativo
             case .hollow:  return .clear
             }
         }
@@ -52,9 +54,14 @@ public struct EntrenarHilo: View {
         /// fondo real bajo la palabra es el papel, sin velo de por medio.
         ///
         /// `public` por la misma razón que `hue` arriba (FER-95).
-        public func word(_ theme: InstrumentoTheme) -> Color {
-            self == .hollow ? theme.inkSecondary
-                            : OKLab.darkened(hue(theme), toContrast: 4.5, against: theme.paper)
+        /// `theme` se ignora (FER-316): lee `LiquidColor` directo.
+        public func word(_ theme: InstrumentoTheme = .base) -> Color {
+            _ = theme
+            // AA sobre el papel cálido vivo (`.base.paper` #F4F1E8). No hay token Liquid con
+            // ese hex: `fondoAlto` es demasiado claro y el tono fallaría AA sobre el papel que
+            // las pantallas aún pintan (FER-316).
+            return self == .hollow ? LiquidColor.tinta700
+                            : OKLab.darkened(hue(), toContrast: 4.5, against: InstrumentoTheme.base.paper)
         }
     }
 
@@ -67,8 +74,6 @@ public struct EntrenarHilo: View {
     /// «botón» a secas y nadie sabía qué iba a abrir.
     private let hint: LocalizedStringKey?
     private let action: (() -> Void)?
-
-    @Environment(\.instrumentoTheme) private var theme
 
     /// - Parameters:
     ///   - tone: el color del día, ya traducido por la app.
@@ -108,7 +113,7 @@ public struct EntrenarHilo: View {
             if action != nil {
                 CenitIcon.disclosure.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold))
-                    .foregroundStyle(theme.inkTertiary)
+                    .foregroundStyle(LiquidColor.tinta500)
                     .accessibilityHidden(true)
             }
         }
@@ -119,7 +124,7 @@ public struct EntrenarHilo: View {
     private var palabra: some View {
         Text(word)
             .font(StrandFont.subhead.weight(.semibold))
-            .foregroundStyle(tone.word(theme))
+            .foregroundStyle(tone.word())
             .fixedSize(horizontal: false, vertical: true)
     }
 
@@ -127,7 +132,7 @@ public struct EntrenarHilo: View {
         if let advice {
             Text(advice)
                 .font(StrandFont.subhead)
-                .foregroundStyle(theme.inkSecondary)
+                .foregroundStyle(LiquidColor.tinta700)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -140,12 +145,12 @@ public struct EntrenarHilo: View {
         let lado = radio * 2.5
         if tone == .hollow {
             Circle()
-                .strokeBorder(theme.inkTertiary,
+                .strokeBorder(LiquidColor.tinta500,
                               style: StrokeStyle(lineWidth: 1.5, dash: [2, 3]))
                 .frame(width: EntrenarMetrics.aroHueco, height: EntrenarMetrics.aroHueco)
                 .frame(width: lado, height: lado)
         } else {
-            OrbeVivo(radio: radio, hue: tone.hue(theme), semillaID: "entrenar-hilo")
+            OrbeVivo(radio: radio, hue: tone.hue(), semillaID: "entrenar-hilo")
                 .frame(width: lado, height: lado)
                 .accessibilityHidden(true)
         }
@@ -175,8 +180,7 @@ public struct EntrenarPressStyle: ButtonStyle {
         EntrenarHilo(tone: .hollow, word: "Connect Apple Health") {}
     }
     .padding(24)
-    .background(InstrumentoTheme.base.paper)
-    .instrumentoTheme(.base)
+    .background(LiquidColor.fondoAlto)
 }
 
 #Preview("EntrenarHilo · los tres radios") {
@@ -188,8 +192,7 @@ public struct EntrenarPressStyle: ButtonStyle {
                      radio: EntrenarMetrics.orbeHoja) {}
     }
     .padding(24)
-    .background(InstrumentoTheme.base.paper)
-    .instrumentoTheme(.base)
+    .background(LiquidColor.fondoAlto)
 }
 
 #Preview("EntrenarHilo · xxxLarge") {
@@ -199,8 +202,7 @@ public struct EntrenarPressStyle: ButtonStyle {
         EntrenarHilo(tone: .hollow, word: "Getting to know you", advice: "no advice yet")
     }
     .padding(24)
-    .background(InstrumentoTheme.base.paper)
-    .instrumentoTheme(.base)
+    .background(LiquidColor.fondoAlto)
     .environment(\.dynamicTypeSize, .accessibility3)
 }
 #endif

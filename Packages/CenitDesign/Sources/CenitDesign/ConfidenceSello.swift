@@ -11,14 +11,13 @@ import SwiftUI
 // alarm colour — only ink emphasis varies (solid reads a step stronger than a thinner
 // tier). Shape + text carry the meaning, not colour, so it survives monochrome and
 // colour-blind reading. The label/a11y strings come from the CALLER (the app layer
-// owns the String Catalog; this package stays copy-free).
+// owns the String Catalog; this package stays copy-free). Paints with `LiquidColor` (FER-316).
 public struct ConfidenceSello: View {
 
     private let label: Text
     private let a11yLabel: Text
     private let dimmed: Bool
     private let onField: Bool
-    private let theme: InstrumentoTheme
 
     /// - Parameters:
     ///   - label: the visible tier text (already localized by the caller).
@@ -26,14 +25,16 @@ public struct ConfidenceSello: View {
     ///     never announced as a bare adjective.
     ///   - dimmed: true for a thinner tier (building/calibrating) — drops the ink one step.
     ///   - onField: true when the sello sits on a coloured data field (the Sleep/Strain hero),
-    ///     not light paper. Ink tokens read dark-on-dark there, so switch to `paper` for text
+    ///     not light paper. Ink tokens read dark-on-dark there, so switch to paper for text
     ///     and border. Shape+text still carry the meaning; only the tint flips to stay legible.
-    public init(_ label: Text, a11yLabel: Text, dimmed: Bool, onField: Bool = false, theme: InstrumentoTheme) {
+    ///   - theme: ignored for painting (LiquidColor). Kept for call-site compatibility (FER-316).
+    public init(_ label: Text, a11yLabel: Text, dimmed: Bool, onField: Bool = false,
+                theme: InstrumentoTheme = .base) {
         self.label = label
         self.a11yLabel = a11yLabel
         self.dimmed = dimmed
         self.onField = onField
-        self.theme = theme
+        _ = theme
     }
 
     public var body: some View {
@@ -50,25 +51,24 @@ public struct ConfidenceSello: View {
     }
 
     private var textTint: Color {
-        if onField { return dimmed ? theme.paper.opacity(OnFieldOpacity.secondary) : theme.paper }
-        return dimmed ? theme.inkTertiary : theme.inkSecondary
+        if onField { return dimmed ? LiquidColor.papelTarjeta.opacity(OnFieldOpacity.secondary) : LiquidColor.papelTarjeta }
+        return dimmed ? LiquidColor.tinta500 : LiquidColor.tinta700
     }
 
     private var borderTint: Color {
-        onField ? theme.paper.opacity(OnFieldOpacity.secondary) : theme.hairlineStrong
+        onField ? LiquidColor.papelTarjeta.opacity(OnFieldOpacity.secondary) : LiquidColor.tinta10
     }
 }
 
 #Preview("ConfidenceSello") {
-    let theme = InstrumentoTheme.base
-    return VStack(alignment: .leading, spacing: 12) {
+    VStack(alignment: .leading, spacing: 12) {
         ConfidenceSello(Text(verbatim: "Confianza alta"),
                         a11yLabel: Text(verbatim: "Confianza: alta"),
-                        dimmed: false, theme: theme)
+                        dimmed: false)
         ConfidenceSello(Text(verbatim: "Confianza media"),
                         a11yLabel: Text(verbatim: "Confianza: media"),
-                        dimmed: true, theme: theme)
+                        dimmed: true)
     }
     .padding(24)
-    .background(theme.paper)
+    .background(LiquidColor.fondoAlto)
 }

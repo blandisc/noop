@@ -18,8 +18,6 @@ public struct ExerciseCard: View {
     private let onMenu: (() -> Void)?
     private let onTap: (() -> Void)?
 
-    @Environment(\.instrumentoTheme) private var theme
-
     public init(family: EntrenarFamily?, name: String, meta: LocalizedStringKey? = nil,
                 thumb: Image? = nil, onMenu: (() -> Void)? = nil, onTap: (() -> Void)? = nil) {
         self.family = family; self.name = name; self.meta = meta.map { Text($0) }
@@ -53,7 +51,7 @@ public struct ExerciseCard: View {
                 Button(action: onMenu) {
                     Image(systemName: "ellipsis")
                         .font(StrandFont.glyph(.lead))
-                        .foregroundStyle(theme.inkTertiary)
+                        .foregroundStyle(LiquidColor.tinta500)
                         .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)
                         .contentShape(Rectangle())
                 }
@@ -69,12 +67,12 @@ public struct ExerciseCard: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(verbatim: name)
                     .font(StrandFont.body.weight(.semibold))
-                    .foregroundStyle(theme.ink)
+                    .foregroundStyle(LiquidColor.tinta900)
                     .fixedSize(horizontal: false, vertical: true)
                     .multilineTextAlignment(.leading)
                 if let meta {
                     meta
-                        .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                        .font(StrandFont.caption).foregroundStyle(LiquidColor.tinta700)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -92,24 +90,24 @@ public struct ExerciseCard: View {
             customThumb
                 .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)
                 .clipShape(shape)
-                .overlay(shape.strokeBorder(family?.tint(theme) ?? theme.hairlineStrong, lineWidth: 1.5))
+                .overlay(shape.strokeBorder(family?.tint() ?? LiquidColor.vidrioBordeFuerte, lineWidth: 1.5))
                 .accessibilityHidden(true)
         } else {
             Group {
                 if let thumb {
                     thumb.resizable().scaledToFill()
                 } else if let family {
-                    RoutineRegionGlyph(family.glyph, tint: family.tint(theme)).padding(6)
+                    RoutineRegionGlyph(family.glyph, tint: family.tint()).padding(6)
                 } else {
                     Image(systemName: "dumbbell")
                         .font(StrandFont.glyph(.lead))
-                        .foregroundStyle(theme.inkTertiary)
+                        .foregroundStyle(LiquidColor.tinta500)
                 }
             }
             .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)
-            .background(theme.paper, in: shape)
+            .background(LiquidColor.papelTarjeta, in: shape)
             .clipShape(shape)
-            .overlay(shape.strokeBorder(family?.tint(theme) ?? theme.hairlineStrong, lineWidth: 1.5))
+            .overlay(shape.strokeBorder(family?.tint() ?? LiquidColor.vidrioBordeFuerte, lineWidth: 1.5))
             .accessibilityHidden(true)
         }
     }
@@ -121,8 +119,6 @@ public struct RecetaLine: View {
     private let text: String
     private let detail: LocalizedStringKey?
     private let action: (() -> Void)?
-
-    @Environment(\.instrumentoTheme) private var theme
 
     public init(_ text: String, detail: LocalizedStringKey? = nil, action: (() -> Void)? = nil) {
         self.text = text; self.detail = detail; self.action = action
@@ -143,18 +139,18 @@ public struct RecetaLine: View {
         HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s200) {
             Text(verbatim: text)
                 .font(InstrumentoType.groteskNumber(15, weight: .bold, relativeTo: .subheadline))
-                .foregroundStyle(theme.ink)
+                .foregroundStyle(LiquidColor.tinta900)
                 .fixedSize(horizontal: false, vertical: true)
             if let detail {
                 Text(detail)
-                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                    .font(StrandFont.caption).foregroundStyle(LiquidColor.tinta700)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: LiquidSpace.s200)
             if action != nil {
                 CenitIcon.disclosure.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold))
-                    .foregroundStyle(theme.inkTertiary)
+                    .foregroundStyle(LiquidColor.tinta500)
                     .accessibilityHidden(true)
             }
         }
@@ -168,30 +164,28 @@ public struct RecetaLine: View {
     VStack(spacing: 0) {
         ExerciseCard(family: .legs, name: "Back squat", meta: "rest by heart rate · cap 2:30",
                      onMenu: {}, onTap: {})
-        Divider().overlay(InstrumentoTheme.base.hairline)
+        Divider().overlay(LiquidColor.vidrioBorde)
         ExerciseCard(family: .push, name: "Bench press", meta: "3 × 8 · 82.5 kg", onMenu: {})
-        Divider().overlay(InstrumentoTheme.base.hairline)
+        Divider().overlay(LiquidColor.vidrioBorde)
         ExerciseCard(family: .pull, name: "Barbell row", meta: nil)
-        Divider().overlay(InstrumentoTheme.base.hairline)
+        Divider().overlay(LiquidColor.vidrioBorde)
         ExerciseCard(family: nil, name: "Farmer's walk with a very long name that wraps two lines",
                      meta: "4 × 40 m", onMenu: {})
     }
     .padding(24)
-    .background(InstrumentoTheme.base.paper)
-    .instrumentoTheme(.base)
+    .background(LiquidColor.fondoAlto)
 }
 
 #Preview("RecetaLine · estados") {
     VStack(spacing: 0) {
         RecetaLine("3 sets · 80 kg × 8", detail: "progression on", action: {})
-        Divider().overlay(InstrumentoTheme.base.hairline)
+        Divider().overlay(LiquidColor.vidrioBorde)
         RecetaLine("4 sets · 12 reps")
-        Divider().overlay(InstrumentoTheme.base.hairline)
+        Divider().overlay(LiquidColor.vidrioBorde)
         RecetaLine("5 sets · 100 kg × 5", detail: "warm-up 2 sets · rest 2:30", action: {})
     }
     .padding(24)
-    .background(InstrumentoTheme.base.paper)
-    .instrumentoTheme(.base)
+    .background(LiquidColor.fondoAlto)
 }
 
 #Preview("Ejercicio y receta · xxxLarge") {
@@ -200,8 +194,7 @@ public struct RecetaLine: View {
         RecetaLine("3 sets · 80 kg × 8", detail: "progression on", action: {})
     }
     .padding(24)
-    .background(InstrumentoTheme.base.paper)
-    .instrumentoTheme(.base)
+    .background(LiquidColor.fondoAlto)
     .environment(\.dynamicTypeSize, .accessibility3)
 }
 #endif

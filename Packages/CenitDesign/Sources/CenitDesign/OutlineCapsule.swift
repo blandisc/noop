@@ -1,8 +1,8 @@
 import SwiftUI
 
-// MARK: - OutlineCapsule (FER-280 · clase 2 · FER-295 · 2A)
+// MARK: - OutlineCapsule (FER-280 · clase 2 · FER-295 · 2A · FER-316)
 //
-// Control tocable en cápsula con `strokeBorder(hairlineStrong)` ± fill opcional, o con
+// Control tocable en cápsula con `strokeBorder(vidrioBordeFuerte)` ± fill opcional, o con
 // `Estilo` (outline / papel / vidrio / teñida). Receta pixel-fiel de los sitios reales:
 //   · sm — `RoutineSheetLiveTarjeta.swift:125/336` (raise / Start·Stop): pad H s250 · V s150
 //   · md — `ExerciseLibraryScreen.swift:206` (chip de filtro): pad H gap · V 6; fill tinta
@@ -85,27 +85,27 @@ public struct OutlineCapsule<Label: View>: View {
         }
     }
 
-    private let theme: InstrumentoTheme
     private let size: Size
     private let estilo: Estilo
     /// Legacy (FER-280): `true` → relleno tinta, sin stroke (chip activo). Tiene prioridad
     /// sobre `estilo` para no romper callers de `filled:`/`fill:`.
     private let filled: Bool
-    /// Relleno cuando `filled`; `nil` = `theme.ink`.
+    /// Relleno cuando `filled`; `nil` = `LiquidColor.tinta900`.
     private let fill: Color?
     private let action: () -> Void
     private let label: () -> Label
 
     /// Init canónico (FER-295 · 2A). `estilo` default `.outline`; `filled`/`fill` legacy
     /// siguen compilando sin tocar una línea en los callers existentes.
-    public init(theme: InstrumentoTheme,
+    /// `theme` se ignora (FER-316): el cromo lee `LiquidColor` directo.
+    public init(theme: InstrumentoTheme = .base,
                 size: Size = .sm,
                 estilo: Estilo = .outline,
                 filled: Bool = false,
                 fill: Color? = nil,
                 action: @escaping () -> Void,
                 @ViewBuilder label: @escaping () -> Label) {
-        self.theme = theme
+        _ = theme
         self.size = size
         self.estilo = estilo
         self.filled = filled
@@ -118,7 +118,7 @@ public struct OutlineCapsule<Label: View>: View {
         Button(action: action) {
             label()
                 .modifier(OutlineCapsuleChrome<Label>(
-                    theme: theme, size: size, estilo: estilo,
+                    size: size, estilo: estilo,
                     filled: filled, fill: fill, expandTouch: true))
         }
         .buttonStyle(EntrenarPressStyle())
@@ -131,12 +131,12 @@ public extension OutlineCapsule {
     /// Cromo de la cápsula. Los alfas de `.vidrio` / `.tenida` reusan
     /// `EntrenarHubMetrics.otraForma*` / `subPill*` — no inventar números.
     enum Estilo: Sendable {
-        /// Stroke `theme.hairlineStrong`, sin relleno (comportamiento `filled: false`).
+        /// Stroke `LiquidColor.tinta10`, sin relleno (comportamiento `filled: false`).
         case outline
-        /// Stroke `theme.hairline` (canto suave), sin relleno: el estado DESHABILITADO de una
+        /// Stroke `LiquidColor.tinta7` (canto suave), sin relleno: el estado DESHABILITADO de una
         /// pill (teclado de sesión, FER-298 ítem 5) — misma geometría que `.outline`.
         case outlineSuave
-        /// Fondo `LiquidColor.papelTarjeta` + stroke `theme.hairlineStrong`
+        /// Fondo `LiquidColor.papelTarjeta` + stroke `LiquidColor.tinta10`
         /// (Terminar / Saltar descanso / Casi).
         case papel
         /// Vidrio blanco — alfas de `EntrenarHubMetrics.otraForma*` (Otra forma ⌄).
@@ -151,8 +151,9 @@ public extension OutlineCapsule {
 public extension OutlineCapsule where Label == Text {
     /// Atajo de rótulo simple (Start / Stop / Use / Archive…). `estilo` default `.outline`;
     /// `filled`/`fill` legacy sin cambios de firma.
+    /// `theme` se ignora (FER-316): el cromo lee `LiquidColor` directo.
     init(_ title: LocalizedStringKey,
-         theme: InstrumentoTheme,
+         theme: InstrumentoTheme = .base,
          size: Size = .sm,
          estilo: Estilo = .outline,
          filled: Bool = false,
@@ -160,7 +161,7 @@ public extension OutlineCapsule where Label == Text {
          foreground: Color? = nil,
          weight: Font.Weight = .semibold,
          action: @escaping () -> Void) {
-        let fg = foreground ?? (filled ? theme.paper : theme.ink)
+        let fg = foreground ?? (filled ? LiquidColor.fondoAlto : LiquidColor.tinta900)
         self.init(theme: theme, size: size, estilo: estilo, filled: filled, fill: fill,
                   action: action) {
             Text(title)
@@ -176,12 +177,21 @@ public extension View {
     /// Solo el cromo (padding de la talla + fondo + borde + sombra según `estilo`),
     /// sin `Button` — para rótulos que no son botón («ZONA 2», «Casi») o controles con
     /// su propio gesto.
+    /// `theme` se ignora (FER-316): el cromo lee `LiquidColor` directo.
+    func outlineCapsule(_ estilo: OutlineCapsule<Text>.Estilo = .outline,
+                        size: OutlineCapsule<Text>.Size = .sm) -> some View {
+        modifier(OutlineCapsuleChrome<Text>(
+            size: size, estilo: estilo,
+            filled: false, fill: nil, expandTouch: false))
+    }
+
+    /// `theme` ya no pinta nada (FER-316). Preferí `outlineCapsule(_:size:)`.
+    @available(*, deprecated, message: "theme ya no pinta nada: la pieza lee LiquidColor (FER-316)")
     func outlineCapsule(_ estilo: OutlineCapsule<Text>.Estilo = .outline,
                         size: OutlineCapsule<Text>.Size = .sm,
                         theme: InstrumentoTheme) -> some View {
-        modifier(OutlineCapsuleChrome<Text>(
-            theme: theme, size: size, estilo: estilo,
-            filled: false, fill: nil, expandTouch: false))
+        _ = theme
+        return outlineCapsule(estilo, size: size)
     }
 }
 
@@ -191,7 +201,6 @@ public extension View {
 /// Genérico en `CapsuleLabel` para que `Size`/`Estilo` (anidados en el genérico) no choquen
 /// entre `OutlineCapsule<Label>` y el modifier decorativo tipado a `Text`.
 private struct OutlineCapsuleChrome<CapsuleLabel: View>: ViewModifier {
-    let theme: InstrumentoTheme
     let size: OutlineCapsule<CapsuleLabel>.Size
     let estilo: OutlineCapsule<CapsuleLabel>.Estilo
     let filled: Bool
@@ -217,21 +226,22 @@ private struct OutlineCapsuleChrome<CapsuleLabel: View>: ViewModifier {
     private func applyChrome<V: View>(_ view: V) -> some View {
         if filled {
             view
-                .background(fill ?? theme.ink, in: shape)
+                .background(fill ?? LiquidColor.tinta900, in: shape)
         } else {
             switch estilo {
             case .outline:
+                // Papel regime: tinta10 (not vidrioBordeFuerte — white glass alfa is invisible on paper).
                 view
                     .background(Color.clear, in: shape)
-                    .overlay(shape.strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                    .overlay(shape.strokeBorder(LiquidColor.tinta10, lineWidth: 1))
             case .outlineSuave:
                 view
                     .background(Color.clear, in: shape)
-                    .overlay(shape.strokeBorder(theme.hairline, lineWidth: 1))
+                    .overlay(shape.strokeBorder(LiquidColor.tinta7, lineWidth: 1))
             case .papel:
                 view
                     .background(LiquidColor.papelTarjeta, in: shape)
-                    .overlay(shape.strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                    .overlay(shape.strokeBorder(LiquidColor.tinta10, lineWidth: 1))
             case .vidrio:
                 // Misma receta que `EntrenarHubHeroe.otraFormaPill`: papelTarjeta / vidrioEspecular
                 // (no `Color.white` crudo) para que el héroe se vea idéntico vía este estilo.
@@ -291,35 +301,32 @@ private struct OutlineCapsuleChrome<CapsuleLabel: View>: ViewModifier {
 
 #if DEBUG
 #Preview("OutlineCapsule") {
-    let t = InstrumentoTheme.base
     VStack(alignment: .leading, spacing: 16) {
-        Text("sm · outline").font(StrandFont.overline).foregroundStyle(t.inkTertiary)
+        Text("sm · outline").font(StrandFont.overline).foregroundStyle(LiquidColor.tinta500)
         HStack(spacing: 10) {
-            OutlineCapsule(theme: t, size: .sm, action: {}) {
+            OutlineCapsule(size: .sm, action: {}) {
                 HStack(spacing: LiquidSpace.s150) {
                     Text(verbatim: "▲").foregroundStyle(LiquidColor.verdeProfundo)
                     Text("Take the raise").font(StrandFont.caption.weight(.semibold))
-                        .foregroundStyle(t.ink)
+                        .foregroundStyle(LiquidColor.tinta900)
                 }
             }
-            OutlineCapsule("Start", theme: t, size: .sm, weight: .bold, action: {})
-            OutlineCapsule("Stop", theme: t, size: .sm, weight: .bold, action: {})
+            OutlineCapsule("Start", size: .sm, weight: .bold, action: {})
+            OutlineCapsule("Stop", size: .sm, weight: .bold, action: {})
         }
-        Text("md · filtro").font(StrandFont.overline).foregroundStyle(t.inkTertiary)
+        Text("md · filtro").font(StrandFont.overline).foregroundStyle(LiquidColor.tinta500)
         HStack(spacing: 10) {
-            OutlineCapsule("Equipment", theme: t, size: .md, action: {})
-            OutlineCapsule("Barbell", theme: t, size: .md, filled: true, action: {})
+            OutlineCapsule("Equipment", size: .md, action: {})
+            OutlineCapsule("Barbell", size: .md, filled: true, action: {})
         }
         Text("pressed = EntrenarPressStyle 0.97").font(StrandFont.caption)
-            .foregroundStyle(t.inkTertiary)
+            .foregroundStyle(LiquidColor.tinta500)
     }
     .padding(24)
-    .background(t.paper)
-    .instrumentoTheme(t)
+    .background(LiquidColor.fondoAlto)
 }
 
 #Preview("OutlineCapsule · estilos × tallas") {
-    let t = InstrumentoTheme.base
     let estilos: [(String, OutlineCapsule<Text>.Estilo)] = [
         ("outline", .outline),
         ("papel", .papel),
@@ -332,22 +339,21 @@ private struct OutlineCapsuleChrome<CapsuleLabel: View>: ViewModifier {
     ScrollView {
         VStack(alignment: .leading, spacing: 20) {
             ForEach(estilos, id: \.0) { nombre, estilo in
-                Text(nombre).font(StrandFont.overline).foregroundStyle(t.inkTertiary)
+                Text(nombre).font(StrandFont.overline).foregroundStyle(LiquidColor.tinta500)
                 HStack(spacing: 10) {
                     ForEach(tallas, id: \.0) { tallaNombre, size in
                         OutlineCapsule(LocalizedStringKey(stringLiteral: tallaNombre),
-                                       theme: t, size: size, estilo: estilo, action: {})
+                                       size: size, estilo: estilo, action: {})
                     }
                     Text(verbatim: "Z2")
                         .font(StrandFont.caption.weight(.semibold))
-                        .foregroundStyle(t.ink)
-                        .outlineCapsule(estilo, size: .sm, theme: t)
+                        .foregroundStyle(LiquidColor.tinta900)
+                        .outlineCapsule(estilo, size: .sm)
                 }
             }
         }
         .padding(24)
     }
-    .background(t.paper)
-    .instrumentoTheme(t)
+    .background(LiquidColor.fondoAlto)
 }
 #endif

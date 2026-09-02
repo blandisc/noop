@@ -19,7 +19,7 @@ import SwiftUI
 
 // MARK: - Opacidades sobre campo invertido
 
-/// Opacidades sancionadas para texto/chrome sobre un campo saturado (el texto es `theme.paper`
+/// Opacidades sancionadas para texto/chrome sobre un campo saturado (el texto es papel
 /// sobre el hue de la pantalla). Del handoff: secundarios 0.72–0.78, cápsula 0.16.
 enum OnFieldOpacity {
     /// Texto secundario sobre el campo («/100», «vs tu base», el driver del veredicto).
@@ -39,12 +39,12 @@ enum OnFieldOpacity {
 public struct BarraAncla: View {
     private let texto: String
     private let color: Color
-    private let theme: InstrumentoTheme
 
-    public init(_ texto: String, color: Color, theme: InstrumentoTheme) {
+    /// - Parameter theme: ignored for painting (LiquidColor). Kept for call-site compatibility (FER-316).
+    public init(_ texto: String, color: Color, theme: InstrumentoTheme = .base) {
         self.texto = texto
         self.color = color
-        self.theme = theme
+        _ = theme
     }
 
     public var body: some View {
@@ -53,7 +53,7 @@ public struct BarraAncla: View {
         Text(texto)
             .font(StrandFont.scaled(11))
             .lineSpacing(2.5)
-            .foregroundStyle(theme.inkTertiary)
+            .foregroundStyle(LiquidColor.tinta500)
             .fixedSize(horizontal: false, vertical: true)
             .padding(.leading, 7)
             .overlay(alignment: .leading) {
@@ -72,20 +72,17 @@ public struct BarraAncla: View {
 /// defecto. El título llega localizado desde la app; el contenido es libre.
 public struct Metodo<Content: View>: View {
     private let title: String
-    private let theme: InstrumentoTheme
     private let content: Content
     @State private var expanded = false
 
-    public init(title: String, theme: InstrumentoTheme, @ViewBuilder content: () -> Content) {
+    /// - Parameter theme: ignored for painting (LiquidColor). Kept for call-site compatibility (FER-316).
+    public init(title: String, theme: InstrumentoTheme = .base, @ViewBuilder content: () -> Content) {
         self.title = title
-        self.theme = theme
         self.content = content()
+        _ = theme
     }
 
     public var body: some View {
-        // `theme` se conserva en el init por compatibilidad de call-sites (RestEditor,
-        // preview Tendencias); la piel ya no lo lee — tokens Liquid fijos (FER-293).
-        let _ = theme
         DisclosureGroup(isExpanded: $expanded) {
             VStack(alignment: .leading, spacing: LiquidSpace.s250) {
                 Rectangle().fill(LiquidColor.tinta10).frame(height: 0.5)
@@ -116,17 +113,17 @@ public struct Metodo<Content: View>: View {
 #if DEBUG
 #if !os(watchOS)
 #Preview("BarraAncla + Metodo") {
-    let t = InstrumentoTheme.base
     VStack(alignment: .leading, spacing: 18) {
-        BarraAncla("El pronóstico es una proyección, no una garantía.", color: t.verdict, theme: t)
-        Metodo(title: "Cómo se calcula", theme: t) {
+        BarraAncla("El pronóstico es una proyección, no una garantía.",
+                   color: LiquidColor.verdePrimario)
+        Metodo(title: "Cómo se calcula") {
             Text("Cada señal se compara con tu propia base de 30 días.")
                 .font(StrandFont.scaled(13))
-                .foregroundStyle(t.inkSecondary)
+                .foregroundStyle(LiquidColor.tinta700)
         }
     }
     .padding(20)
-    .background(t.paper)
+    .background(LiquidColor.fondoAlto)
 }
 #endif
 #endif

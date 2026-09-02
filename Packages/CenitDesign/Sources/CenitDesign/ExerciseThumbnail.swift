@@ -16,8 +16,6 @@ import SwiftUI
 //     ExerciseDB media is a square GIF; a square slot shows the whole animation with no crop (FER-790).
 
 public struct ExerciseThumbnail: View {
-    @Environment(\.instrumentoTheme) private var theme
-
     private enum Form {
         case tile(side: CGFloat)      // square row thumbnail; corner scales with the side
         case hero                     // full-width square banner; fixed corner
@@ -98,7 +96,7 @@ public struct ExerciseThumbnail: View {
             ForEach([40, 44, 48, 54] as [CGFloat], id: \.self) { side in
                 VStack(spacing: 6) {
                     ExerciseThumbnail(side: side)
-                    Text("\(Int(side))").font(.caption2).foregroundStyle(InstrumentoTheme.base.inkTertiary)
+                    Text("\(Int(side))").font(.caption2).foregroundStyle(LiquidColor.tinta500)
                 }
             }
         }
@@ -106,7 +104,6 @@ public struct ExerciseThumbnail: View {
     }
     .padding(24)
     .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .background(InstrumentoTheme.base.paper)
-    .instrumentoTheme(.base)
+    .background(LiquidColor.fondoAlto)
 }
 #endif

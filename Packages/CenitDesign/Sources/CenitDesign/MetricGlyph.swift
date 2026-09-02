@@ -5,8 +5,8 @@ import SwiftUI
 // One place that says "this metric looks like THIS icon in THIS hue", so Hoy's SEÑALES tiles and the
 // Tendencias/Cuerpo detail titles can never drift apart (they used to each hardcode their own SF
 // Symbol string). Icons are SF Symbols — native, legible, and what the DNA/Cupertino guidance calls
-// for. Hues track the theme's data roles where one exists; the few metrics without a theme role carry
-// their handoff hex here. Pure SwiftUI; no UIKit/AppKit.
+// for. Hues track Liquid data roles where one exists; the few metrics without a role keep a fixed
+// handoff hex. Pure SwiftUI; no UIKit/AppKit. (FER-316)
 
 /// Every metric that gets a standardized icon + hue across Hoy and Tendencias.
 public enum MetricGlyph: String, Sendable, CaseIterable {
@@ -37,21 +37,22 @@ public enum MetricGlyph: String, Sendable, CaseIterable {
         }
     }
 
-    /// The metric's hue. Uses a theme data-role where one exists (so a palette change tracks
-    /// automatically); the rest carry their handoff hex.
-    public func hue(_ theme: InstrumentoTheme) -> Color {
+    /// The metric's hue. Uses a Liquid data-role where one exists; the rest keep their handoff hex.
+    /// `theme` is ignored for painting (FER-316).
+    public func hue(_ theme: InstrumentoTheme = .base) -> Color {
+        _ = theme
         switch self {
-        case .recovery, .fitnessAge, .bodyAge: return theme.dataRecovery
-        case .sleep:                            return theme.dataSleep
+        case .recovery, .fitnessAge, .bodyAge: return LiquidColor.verdePrimario
+        case .sleep:                            return LiquidColor.indigo
         case .strain, .skinTemp,
-             .trainingLoad, .workouts, .afterSport: return theme.dataStrain
-        case .stress:       return Color(hex: "#9C5E10")
-        case .heartRate:    return Color(hex: "#A23B49")
-        case .restingHR:    return theme.dataHeart
-        case .hrv:          return theme.dataHrv
-        case .respiration, .vo2max: return theme.dataSpO2
-        case .spo2:         return Color(hex: "#3F7A5E")
-        case .steps:        return theme.dataSteps
+             .trainingLoad, .workouts, .afterSport: return LiquidColor.ambar
+        case .stress:       return LiquidColor.atencionTexto
+        case .heartRate:    return LiquidColor.rosa
+        case .restingHR:    return LiquidColor.rosa
+        case .hrv:          return LiquidColor.cian
+        case .respiration, .vo2max: return LiquidColor.azul
+        case .spo2:         return LiquidColor.verdeCarga
+        case .steps:        return LiquidColor.teal
         }
     }
 }

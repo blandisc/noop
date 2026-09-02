@@ -20,8 +20,6 @@ public struct EntrenarNivel: View {
     private let value: LocalizedStringKey?
     private let action: (() -> Void)?
 
-    @Environment(\.instrumentoTheme) private var theme
-
     public init(_ kicker: LocalizedStringKey, value: LocalizedStringKey? = nil,
                 kickerStyle: KickerStyle = .overline, action: (() -> Void)? = nil) {
         self.kicker = kicker; self.kickerStyle = kickerStyle; self.value = value; self.action = action
@@ -45,20 +43,20 @@ public struct EntrenarNivel: View {
             // siempre. Default = lo de antes, para que un componente compartido no cambie pantallas que
             // nadie pidió tocar.
             if kickerStyle == .handoff {
-                Text(kicker).entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
+                Text(kicker).entrenarCabeceraKicker().foregroundStyle(LiquidColor.tinta500)
             } else {
-                Text(kicker).instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text(kicker).instrumentoOverline().foregroundStyle(LiquidColor.tinta500)
             }
             Spacer(minLength: LiquidSpace.s200)
             if let value {
                 Text(value)
-                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                    .font(StrandFont.caption).foregroundStyle(LiquidColor.tinta700)
                     .fixedSize(horizontal: false, vertical: true)
             }
             if action != nil {
                 CenitIcon.disclosure.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold))
-                    .foregroundStyle(theme.inkTertiary)
+                    .foregroundStyle(LiquidColor.tinta500)
                     .accessibilityHidden(true)
             }
         }
@@ -90,11 +88,12 @@ public struct EntrenarChip: View {
         /// El tono del TEXTO del chip: los tres son texto chico, así que ninguno puede ir en el hue
         /// saturado. El rosa del pulso sobre papel se queda en 4.24:1; oscurecido llega a 4.5:1 sin
         /// dejar de ser rosa, que es lo que amarra el chip a su métrica.
-        func tone(_ theme: InstrumentoTheme) -> Color {
+        func tone(_ theme: InstrumentoTheme = .base) -> Color {
+            let _ = theme
             switch self {
-            case .rest:        return OKLab.darkened(theme.dataHeart, toContrast: 4.5, against: theme.paper)
-            case .progression: return theme.positiveText
-            case .warmup:      return theme.inkSecondary
+            case .rest:        return OKLab.darkened(LiquidColor.rosa, toContrast: 4.5, against: LiquidColor.fondoAlto)
+            case .progression: return LiquidColor.positivo
+            case .warmup:      return LiquidColor.tinta700
             }
         }
     }
@@ -112,8 +111,6 @@ public struct EntrenarChip: View {
     /// sites existentes de `EntrenarChip` no lo mostraban y siguen sin mostrarlo.
     private let showsDisclosure: Bool
     private let action: (() -> Void)?
-
-    @Environment(\.instrumentoTheme) private var theme
 
     public init(_ kind: Kind, text: LocalizedStringKey, icon: String? = nil, tone: Color? = nil,
                 showsDisclosure: Bool = false, action: (() -> Void)? = nil) {
@@ -147,23 +144,23 @@ public struct EntrenarChip: View {
         HStack(spacing: LiquidSpace.s100 + 2) {
             Image(systemName: iconOverride ?? kind.symbol)
                 .font(StrandFont.glyph(.lead))
-                .foregroundStyle(toneOverride ?? kind.tone(theme))
+                .foregroundStyle(toneOverride ?? kind.tone())
             text
                 .font(StrandFont.caption)
-                .foregroundStyle(toneOverride ?? kind.tone(theme))
+                .foregroundStyle(toneOverride ?? kind.tone())
                 .fixedSize(horizontal: false, vertical: true)
             if showsDisclosure {
                 CenitIcon.disclosure.image
                     .font(StrandFont.glyph(.chevron, weight: .semibold))
-                    .foregroundStyle(theme.inkTertiary)
+                    .foregroundStyle(LiquidColor.tinta500)
                     .accessibilityHidden(true)
             }
         }
         .padding(.horizontal, LiquidSpace.s200 + 1)
         .frame(minHeight: EntrenarMetrics.badge)
-        .background(theme.paper, in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
+        .background(LiquidColor.papelTarjeta, in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous)
-            .strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            .strokeBorder(LiquidColor.vidrioBordeFuerte, lineWidth: 1))
         // El dibujo es de 28; el toque nunca baja de 44 (HIG).
         .frame(minHeight: action != nil ? EntrenarMetrics.row : EntrenarMetrics.badge)
         .contentShape(Rectangle())
@@ -174,16 +171,15 @@ public struct EntrenarChip: View {
 #Preview("EntrenarNivel · estados") {
     VStack(spacing: 0) {
         EntrenarNivel("Your week", value: "2 of 3") {}
-        Divider().overlay(InstrumentoTheme.base.hairline)
+        Divider().overlay(LiquidColor.vidrioBorde)
         EntrenarNivel("Loaded muscles", value: "estimate")
-        Divider().overlay(InstrumentoTheme.base.hairline)
+        Divider().overlay(LiquidColor.vidrioBorde)
         EntrenarNivel("Log")
-        Divider().overlay(InstrumentoTheme.base.hairline)
+        Divider().overlay(LiquidColor.vidrioBorde)
         EntrenarNivel("History and progress", value: "11 sessions · 90 days") {}
     }
     .padding(24)
-    .background(InstrumentoTheme.base.paper)
-    .instrumentoTheme(.base)
+    .background(LiquidColor.fondoAlto)
 }
 
 #Preview("EntrenarChip · tipos") {
@@ -200,15 +196,14 @@ public struct EntrenarChip: View {
         // FER-89: RestChip distingue reloj/pulso con overrides de icono+tono + el chevron «›» que
         // RestChip ya tenía (mismo grammar de antes, ahora desde la pieza compartida).
         HStack(spacing: 8) {
-            EntrenarChip(.rest, verbatim: "90 s", icon: "clock", tone: InstrumentoTheme.base.dataStrain,
+            EntrenarChip(.rest, verbatim: "90 s", icon: "clock", tone: LiquidColor.ambar,
                         showsDisclosure: true) {}
-            EntrenarChip(.rest, verbatim: "HR · 45%", icon: "heart.fill", tone: InstrumentoTheme.base.dataRecovery,
+            EntrenarChip(.rest, verbatim: "HR · 45%", icon: "heart.fill", tone: LiquidColor.verdePrimario,
                         showsDisclosure: true) {}
         }
     }
     .padding(24)
-    .background(InstrumentoTheme.base.paper)
-    .instrumentoTheme(.base)
+    .background(LiquidColor.fondoAlto)
 }
 
 #Preview("Nivel y chip · xxxLarge") {
@@ -217,8 +212,7 @@ public struct EntrenarChip: View {
         EntrenarChip(.rest, text: "by heart rate · cap 2:30") {}
     }
     .padding(24)
-    .background(InstrumentoTheme.base.paper)
-    .instrumentoTheme(.base)
+    .background(LiquidColor.fondoAlto)
     .environment(\.dynamicTypeSize, .accessibility3)
 }
 #endif

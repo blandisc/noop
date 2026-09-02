@@ -5,8 +5,8 @@ import SwiftUI
 // One line at the FOOT of every Tendencias/Cuerpo detail screen: a 6px dot in the origin's hue plus
 // «{Fuente} · {cuándo}». It answers "where did this number come from, and when" without stealing the
 // title (the §8.7 rule keeps the metric icon up top and moves provenance down here). The dot hue is an
-// alias of an existing theme role (`originBand`/`originApple`/`originComputed`) so origin and metric
-// hues can never drift apart. Pure SwiftUI; no UIKit/AppKit.
+// alias of an existing Liquid data role so origin and metric hues can never drift apart. Pure SwiftUI;
+// no UIKit/AppKit. Paints with `LiquidColor` (FER-316).
 
 /// Where a displayed reading came from. Drives both the dot color and the es-MX source label.
 public enum DataOrigin: Sendable, Hashable {
@@ -19,12 +19,13 @@ public enum DataOrigin: Sendable, Hashable {
 }
 
 public extension DataOrigin {
-    /// Dot color for this origin, pulled from the theme so it tracks the metric roles.
-    func color(_ theme: InstrumentoTheme) -> Color {
+    /// Dot color for this origin. `theme` is ignored for painting (LiquidColor, FER-316).
+    func color(_ theme: InstrumentoTheme = .base) -> Color {
+        _ = theme
         switch self {
-        case .band:     return theme.originBand
-        case .apple:    return theme.originApple
-        case .computed: return theme.originComputed
+        case .band:     return LiquidColor.verdePrimario
+        case .apple:    return LiquidColor.azul
+        case .computed: return LiquidColor.tinta500
         }
     }
 
@@ -48,29 +49,30 @@ public struct OriginStamp: View {
     private let origin: DataOrigin
     private let when: String
     private let inProgress: Bool
-    private let theme: InstrumentoTheme
 
-    public init(origin: DataOrigin, when: String, inProgress: Bool = false, theme: InstrumentoTheme) {
+    /// - Parameter theme: ignored for painting (LiquidColor). Kept for call-site compatibility (FER-316).
+    public init(origin: DataOrigin, when: String, inProgress: Bool = false,
+                theme: InstrumentoTheme = .base) {
         self.origin = origin
         self.when = when
         self.inProgress = inProgress
-        self.theme = theme
+        _ = theme
     }
 
     public var body: some View {
         HStack(spacing: 6) {
             Circle()
-                .fill(inProgress ? Color.clear : origin.color(theme))
+                .fill(inProgress ? Color.clear : origin.color())
                 .overlay {
                     if inProgress {
-                        Circle().strokeBorder(origin.color(theme), lineWidth: 1.5)
+                        Circle().strokeBorder(origin.color(), lineWidth: 1.5)
                     }
                 }
                 .frame(width: 6, height: 6)
             // «{Fuente} · {cuándo}» — one flat line, tertiary ink, 11pt.
             Text(verbatim: "\(origin.label) · \(when)")
                 .font(.system(size: 11))
-                .foregroundStyle(theme.inkTertiary)
+                .foregroundStyle(LiquidColor.tinta500)
         }
         .accessibilityElement(children: .combine)
     }
@@ -78,13 +80,12 @@ public struct OriginStamp: View {
 
 #if DEBUG
 #Preview("OriginStamp") {
-    let t = InstrumentoTheme.base
-    return VStack(alignment: .leading, spacing: 12) {
-        OriginStamp(origin: .band, when: "anoche", theme: t)
-        OriginStamp(origin: .apple, when: "medido hace 3 días", theme: t)
-        OriginStamp(origin: .computed, when: "hace 2 h", theme: t)
+    VStack(alignment: .leading, spacing: 12) {
+        OriginStamp(origin: .band, when: "anoche")
+        OriginStamp(origin: .apple, when: "medido hace 3 días")
+        OriginStamp(origin: .computed, when: "hace 2 h")
     }
     .padding(24)
-    .background(t.paper)
+    .background(LiquidColor.fondoAlto)
 }
 #endif
