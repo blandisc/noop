@@ -22,7 +22,7 @@ enum HojaCabeceraSesion {
                 vivo.sheet.model.strengthSheetPresented = false   // B17: minimizar, nunca termina
             } label: {
                 StrandIcon.back.image
-                    .font(StrandFont.glyph(.chevron, weight: .semibold))
+                    .font(LiquidType.infoGlifoCompacto.weight(.semibold))
                     .foregroundStyle(LiquidColor.tinta700)
                     .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)   // 44 pt de toque
                     .contentShape(Rectangle())
@@ -66,7 +66,7 @@ enum HojaCabeceraSesion {
             if vivo.puedeEnfocar {
                 Button { vivo.enterFoco() } label: {
                     Image(systemName: "arrow.up.left.and.arrow.down.right")
-                        .font(StrandFont.glyph(.inline, weight: .semibold))
+                        .font(LiquidType.infoGlifo.weight(.semibold))
                         .foregroundStyle(LiquidColor.tinta700)
                         .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)   // 44 pt de toque
                         .contentShape(Rectangle())
@@ -78,7 +78,7 @@ enum HojaCabeceraSesion {
             if let alternar = vivo.alternarPausa {
                 Button(action: alternar) {
                     Image(systemName: vivo.session.paused ? "play.fill" : "pause.fill")
-                        .font(StrandFont.glyph(.inline, weight: .semibold))
+                        .font(LiquidType.infoGlifo.weight(.semibold))
                         .foregroundStyle(LiquidColor.tinta700)
                         .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)   // 44 pt de toque
                         .contentShape(Rectangle())
@@ -108,8 +108,8 @@ enum HojaCabeceraSesion {
     @ViewBuilder private static func heartRate(vivo: HojaSesionViva) -> some View {
         if let bpm = vivo.sheet.model.watchBpm {
             HStack(spacing: LiquidSpace.s100) {
-                StrandIcon.heart.image.font(StrandFont.glyph(.chevron))
-                Text("\(bpm)").font(StrandFont.subhead.weight(.semibold))
+                StrandIcon.heart.image.font(LiquidType.infoGlifoCompacto)
+                Text("\(bpm)").font(LiquidType.cuerpoBanner.weight(.semibold))
             }
             .foregroundStyle(LiquidTono.rosa.rotulo)
             .accessibilityElement(children: .ignore)
@@ -140,7 +140,7 @@ enum HojaCabeceraSesion {
                 vivo.confirmFinish = true
             }
             Text("Your receipt is waiting on the other side")
-                .font(StrandFont.caption).foregroundStyle(vivo.sheet.theme.inkTertiary)
+                .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
         }
         .padding(.horizontal, LiquidSpace.s600)
         .padding(.top, LiquidSpace.s200)

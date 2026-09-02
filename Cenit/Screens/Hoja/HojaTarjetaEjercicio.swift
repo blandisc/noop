@@ -60,9 +60,9 @@ struct HojaTarjetaEjercicio: View {
             Button { sheet.detailExercise = item.exercise } label: {
                 VStack(alignment: .leading, spacing: LiquidSpace.s025) {
                     if type != .weightReps {
-                        Text(StrengthDisplay.subtitle(item.exercise)).instrumentoOverline().foregroundStyle(sheet.theme.inkTertiary)
+                        Text(StrengthDisplay.subtitle(item.exercise)).liquidKicker().foregroundStyle(LiquidColor.tinta500)
                     }
-                    Text(StrengthDisplay.name(item.exercise)).font(StrandFont.headline).foregroundStyle(sheet.theme.ink)
+                    Text(StrengthDisplay.name(item.exercise)).font(LiquidType.titulo).foregroundStyle(LiquidColor.tinta900)
                         .fixedSize(horizontal: false, vertical: true).multilineTextAlignment(.leading)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -81,8 +81,8 @@ struct HojaTarjetaEjercicio: View {
 
     private var menuButton: some View {
         Button { sheet.menuExerciseIndex = idx } label: {
-            StrandIcon.more.image.font(StrandFont.glyph(.inline, weight: .semibold))
-                .foregroundStyle(sheet.theme.inkTertiary).frame(width: 30, height: LiquidControl.hitTarget).contentShape(Rectangle())
+            StrandIcon.more.image.font(LiquidType.infoGlifo.weight(.semibold))
+                .foregroundStyle(LiquidColor.tinta500).frame(width: 30, height: LiquidControl.hitTarget).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("More options"))   // R12 (QA D13 = Grok G9)
@@ -98,11 +98,11 @@ struct HojaTarjetaEjercicio: View {
     private var notaF: some View {
         Button { sheet.openNote(idx) } label: {
             HStack(alignment: .top, spacing: LiquidSpace.s100) {
-                Text(verbatim: "✎").font(StrandFont.footnote)
+                Text(verbatim: "✎").font(LiquidType.caption)
                 let note = item.re.note?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
                 Text(note.isEmpty ? String(localized: "Add note") : note)
-                    .font(StrandFont.caption)
-                    .foregroundStyle(sheet.theme.inkTertiary)
+                    .font(LiquidType.caption)
+                    .foregroundStyle(LiquidColor.tinta500)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
             }

@@ -14,8 +14,8 @@ import StrandDesign
 // · **Gemelos de ancho completo.** El par se reparte la fila. Cuando ya hay rampa de calentamiento el
 //   control desaparece y «Serie» se queda con todo el ancho — el hueco no queda flotando.
 //
-// · **El primario es TINTA, no ember.** Un relleno `dataStrain` es cromo pintado con el color que el DNA
-//   reserva para el esfuerzo medido: gastarlo en un botón le quita significado al siguiente número naranja
+// · **El primario es TINTA, no ember.** Un relleno de esfuerzo medido es cromo pintado con el color que el
+//   DNA reserva para el dato: gastarlo en un botón le quita significado al siguiente número ámbar
 //   que aparezca. La tinta sobre papel pesa más por contraste y no toca la paleta de datos.
 //
 // · **El calentamiento conserva su caja.** Se muestra UNA vez por ejercicio y desaparece para siempre en
@@ -23,7 +23,7 @@ import StrandDesign
 //   contexto de menos atención — en plena sesión.
 //
 // · **44 pt de alto en ambas.** El editor traía 34, por debajo del mínimo de la HIG. Era un bug heredado,
-//   no una decisión de densidad.
+//   no una decisión de densidad. `.lg` dibuja a 36 y expande el toque a 44.
 //
 // · **El glifo conjuga: `+` en las DOS** (decisión Fer 2026-07-19). La derecha traía la llama, y ahí estaba
 //   la raíz del bug de dos renglones: el glifo cargaba el DOMINIO (calor) en vez del verbo, así que la
@@ -39,41 +39,46 @@ import StrandDesign
 //   reescribir aquella.
 struct SetActionPills: View {
     let showWarmup: Bool
-    let theme: InstrumentoTheme
     let addSet: () -> Void
     let addWarmup: () -> Void
 
-    private var shape: RoundedRectangle {
-        RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
-    }
-
     var body: some View {
         HStack(spacing: LiquidSpace.s200) {
-            Button(action: addSet) {
-                HStack(spacing: 6) {
-                    StrandIcon.add.image.font(StrandFont.glyph(.chevron, weight: .semibold))
+            OutlineCapsule(
+                theme: .base,
+                size: .lg,
+                estilo: .outline,
+                filled: true,
+                fill: LiquidColor.tinta900,
+                action: addSet
+            ) {
+                HStack(spacing: LiquidSpace.s150) {
+                    StrandIcon.add.image.font(LiquidType.infoGlifoCompacto.weight(.semibold))
                     Text("Set")
                 }
-                .font(InstrumentoType.grotesk(15, weight: .medium)).foregroundStyle(theme.paper)
-                .frame(maxWidth: .infinity, minHeight: 44)
-                .background(theme.ink, in: shape)
-                .contentShape(Rectangle())
+                .font(LiquidType.tituloGemela)
+                .foregroundStyle(LiquidColor.papelTarjeta)
+                .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.plain)
+            .frame(maxWidth: .infinity)
             .accessibilityLabel(Text("Add set"))
 
             if showWarmup {
-                Button(action: addWarmup) {
-                    HStack(spacing: 6) {
-                        StrandIcon.add.image.font(StrandFont.glyph(.chevron, weight: .semibold))
+                OutlineCapsule(
+                    theme: .base,
+                    size: .lg,
+                    estilo: .vidrio,
+                    action: addWarmup
+                ) {
+                    HStack(spacing: LiquidSpace.s150) {
+                        StrandIcon.add.image.font(LiquidType.infoGlifoCompacto.weight(.semibold))
                         Text("Warm-up")
                     }
-                    .font(InstrumentoType.grotesk(15, weight: .medium)).foregroundStyle(theme.dataStrain)
-                    .frame(maxWidth: .infinity, minHeight: 44)
-                    .overlay(shape.strokeBorder(theme.dataStrain.opacity(StrandOpacity.strokeSoft), lineWidth: 1))
-                    .contentShape(Rectangle())
+                    .font(LiquidType.tituloGemela)
+                    .foregroundStyle(LiquidColor.ambar)
+                    .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity)
                 .accessibilityLabel(Text("Add warm-up"))
             }
         }
@@ -82,12 +87,12 @@ struct SetActionPills: View {
 
 #if DEBUG
 #Preview("SetActionPills") {
-    VStack(spacing: 20) {
-        SetActionPills(showWarmup: true, theme: .base, addSet: {}, addWarmup: {})
-        SetActionPills(showWarmup: false, theme: .base, addSet: {}, addWarmup: {})
+    VStack(spacing: LiquidSpace.s600) {
+        SetActionPills(showWarmup: true, addSet: {}, addWarmup: {})
+        SetActionPills(showWarmup: false, addSet: {}, addWarmup: {})
     }
     .padding()
-    .background(CenitColor.pantalla)
+    .background(LiquidColor.fondoAlto)
 }
 #endif
 #endif

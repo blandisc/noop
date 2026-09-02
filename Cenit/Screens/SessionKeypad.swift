@@ -94,9 +94,8 @@ struct SessionKeypad: View {
             // restante del temporizador de intervalos): compartir esa clave habría pisado su copy
             // es-MX con «quedaban» (revisión ronda 3, hallazgo grave).
             Text("Reps left kicker").liquidKicker().foregroundStyle(LiquidColor.tinta700)
-            // `footnote` (11pt/`.caption2`) es el token existente más cercano al 11.5 SF del handoff —
-            // `.caption` (12pt) quedaba un escalón grande de más (revisión ronda 2, hallazgo menor).
-            Text("at check-off").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            // `LiquidType.caption` (10.5) es el token Liquid más cercano al 11.5 SF del handoff.
+            Text("at check-off").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
             Spacer(minLength: LiquidSpace.s200)
             // Un solo gesto sobre TODA la píldora, no cinco `Button`s vecinos con `contentShape`
             // agrandado: cinco blancos de 44pt apretados en 30pt de dibujo se traslapan entre sí
@@ -108,7 +107,7 @@ struct SessionKeypad: View {
                 HStack(spacing: 0) {
                     ForEach(Array(Self.rirLabels.enumerated()), id: \.offset) { idx, label in
                         let selected = selectedRIR == idx
-                        Text(label).font(StrandFont.caption.weight(.semibold))
+                        Text(label).font(LiquidType.captionFuerte)
                             .foregroundStyle(selected ? LiquidColor.papelTarjeta : LiquidColor.tinta700)
                             .frame(width: EntrenarMetrics.rirButton, height: EntrenarMetrics.rirButton)
                             .background(selected ? LiquidColor.tinta900 : Color.clear)
@@ -160,14 +159,14 @@ struct SessionKeypad: View {
 
     private var accessoryBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
+            HStack(spacing: LiquidSpace.s200) {
                 // Hide-keyboard at the far LEFT (mirror of «Next»), subordinated ink — never reads as
                 // «register». VoiceOver: «Hide keyboard», not «Done»/«Close». `nil` = no button
                 // (R19): the live console has no cell-tap gate to reopen it from.
                 if let onHide {
                     Button(action: onHide) {
                         Image(systemName: "chevron.down")
-                            .font(StrandFont.glyph(.inline, weight: .semibold))
+                            .font(LiquidType.infoGlifo.weight(.semibold))
                             .foregroundStyle(LiquidColor.tinta700)
                             .frame(width: 34, height: 34)
                             // Revisión final (FER-140), hallazgo grave: el dibujo se queda en 34pt (el
@@ -180,7 +179,7 @@ struct SessionKeypad: View {
                 if let onPause {
                     Button(action: onPause) {
                         Image(systemName: isPaused ? "play.fill" : "pause.fill")
-                            .font(StrandFont.glyph(.inline, weight: .semibold))
+                            .font(LiquidType.infoGlifo.weight(.semibold))
                             .foregroundStyle(LiquidColor.tinta700)
                             .frame(width: 34, height: 34)
                             .contentShape(Rectangle().inset(by: -5))
@@ -194,7 +193,7 @@ struct SessionKeypad: View {
                 }
                 Spacer(minLength: 4)
                 Button(action: onNext) {
-                    Text("Next").font(StrandFont.subhead).fontWeight(.semibold)
+                    Text("Next").font(LiquidType.cuerpoBanner).fontWeight(.semibold)
                         .foregroundStyle(LiquidColor.verdeProfundo)
                         .padding(.horizontal, 12).frame(height: 34)
                         // Revisión final (FER-140), hallazgo menor: 34pt de alto queda bajo el mínimo
@@ -209,16 +208,18 @@ struct SessionKeypad: View {
     }
 
     /// 2A (ronda 3): geometría a medida — dibujo 34 como los iconos vecinos, toque 44 vía inset;
-    /// la barra de accesorios no crece. FER-301: deshabilitada lleva `hairline` (no `hairlineStrong`).
+    /// la barra de accesorios no crece. FER-301: deshabilitada lleva canto suave (no el fuerte).
     private func pill(_ text: String, enabled: Bool = true, action: @escaping () -> Void) -> some View {
         Button(action: { if enabled { action() } }) {
-            Text(text).font(StrandFont.caption)
-                .foregroundStyle(enabled ? theme.ink : theme.inkMuted)
-                .padding(EntrenarMetrics.keypadPillInsets)
-                .frame(minHeight: EntrenarMetrics.keypadPill)
-                .background(Color.clear, in: Capsule())
-                .overlay(Capsule().strokeBorder(enabled ? theme.hairlineStrong : theme.hairline, lineWidth: 1))
-                .contentShape(Capsule().inset(by: -EntrenarMetrics.keypadPillTouchInset))
+            Text(text).font(LiquidType.caption)
+                .foregroundStyle(enabled ? LiquidColor.tinta900 : LiquidColor.tinta500)
+                .outlineCapsule(
+                    enabled ? .outline : .outlineSuave,
+                    size: .aMedida(
+                        insets: EntrenarMetrics.keypadPillInsets,
+                        minHeight: EntrenarMetrics.keypadPill,
+                        touchInset: EntrenarMetrics.keypadPillTouchInset),
+                    theme: theme)
         }
         .buttonStyle(EntrenarPressStyle())
         .disabled(!enabled)
@@ -303,7 +304,7 @@ struct SessionKeypad: View {
                             action: @escaping () -> Void) -> some View {
         Button(action: { if enabled { action() } }) {
             Text(label)
-                .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(LiquidColor.papelTarjeta)
+                .font(LiquidType.cuerpoBanner.weight(.semibold)).foregroundStyle(LiquidColor.papelTarjeta)
                 .frame(maxWidth: .infinity).frame(height: EntrenarMetrics.keyCap)
                 .background(RoundedRectangle(cornerRadius: EntrenarMetrics.keyRadius, style: .continuous).fill(LiquidColor.tinta900))
                 .opacity(enabled ? 1 : StrandPalette.disabledOpacity)
@@ -317,14 +318,13 @@ struct SessionKeypad: View {
 
 #if DEBUG
 #Preview("SessionKeypad") {
-    let t = InstrumentoTheme.base
-    return VStack {
+    VStack {
         Spacer()
-        SessionKeypad(theme: t, stepLabel: "±2,5", canCopyPrevious: true,
+        SessionKeypad(theme: .base, stepLabel: "±2,5", canCopyPrevious: true,
                       onDigit: { _ in }, onComma: {}, onBackspace: {}, onNext: {},
                       onCopyPrevious: {}, onStep: {})
     }
-    .background(t.paper)
+    .background(LiquidColor.fondoAlto)
     .preferredColorScheme(.light)
 }
 #endif

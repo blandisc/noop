@@ -23,15 +23,15 @@ enum HojaCabecera {
             // no dejar un control que toca y no hace nada.
             if sheet.dirty, !sheet.locked {
                 Button { sheet.undo() } label: {
-                    Text(String(localized: "Undo")).font(StrandFont.body).foregroundStyle(sheet.theme.ink)
+                    Text(String(localized: "Undo")).font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta900)
                         .frame(minHeight: LiquidControl.hitTarget).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text(String(localized: "Undo")))
             } else if sheet.loaded {
                 Text(String(localized: "Saved"))
-                    .font(StrandFont.caption)
-                    .foregroundStyle(sheet.theme.inkTertiary)
+                    .font(LiquidType.caption)
+                    .foregroundStyle(LiquidColor.tinta500)
             }
         }
         .padding(.horizontal, LiquidSpace.s600)
@@ -41,7 +41,7 @@ enum HojaCabecera {
     static func titleBlock(sheet: RoutineSheet) -> some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s200) {
             HStack(alignment: .firstTextBaseline) {
-                Text(sheet.overline).groteskOverline().foregroundStyle(sheet.theme.inkTertiary)
+                Text(sheet.overline).liquidKicker().foregroundStyle(LiquidColor.tinta500)
                 Spacer(minLength: LiquidSpace.s200)
                 if sheet.isPlanDay { dayMenu(sheet: sheet) }
             }
@@ -50,16 +50,16 @@ enum HojaCabecera {
                     get: { sheet.routine?.name ?? "" },
                     set: { sheet.routine?.name = $0; sheet.dirty = true }
                 ))
-                .font(InstrumentoType.groteskScreenTitle).tracking(InstrumentoType.groteskScreenTitleTracking)
-                .foregroundStyle(sheet.items.isEmpty ? sheet.theme.inkTertiary : sheet.theme.ink)
+                .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
+                .foregroundStyle(sheet.items.isEmpty ? LiquidColor.tinta500 : LiquidColor.tinta900)
                 .disabled(sheet.locked)
                 // ✎ decorativo (mock «.lapiz»): el campo ya se edita tocándolo; el glifo solo lo anuncia.
-                Text(verbatim: "✎").font(StrandFont.caption).foregroundStyle(sheet.theme.inkTertiary)
+                Text(verbatim: "✎").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                     .accessibilityHidden(true)
             }
             if sheet.locked {
                 Text("Session in progress · finish it to edit")
-                    .font(StrandFont.caption).foregroundStyle(sheet.theme.inkTertiary)
+                    .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                     .padding(.top, LiquidSpace.s050)
             }
             // R13 (QA D11, mapa A1): la meta calla con MENOS de 2 ejercicios — un solo ejercicio
@@ -75,16 +75,16 @@ enum HojaCabecera {
         HStack(spacing: LiquidSpace.s250) {
             HStack(spacing: LiquidSpace.s150) {
                 EntrenarFamilyDot(sheet.routineTint)
-                Text(sheet.groupTitle).font(StrandFont.caption).foregroundStyle(sheet.theme.inkTertiary)
+                Text(sheet.groupTitle).font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
             }
-            Text(String(localized: "\(sheet.items.count) exercises")).font(StrandFont.caption).foregroundStyle(sheet.theme.inkTertiary)
-            Text(String(localized: "\(sheet.totalSets) sets")).font(StrandFont.caption).foregroundStyle(sheet.theme.inkTertiary)
+            Text(String(localized: "\(sheet.items.count) exercises")).font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
+            Text(String(localized: "\(sheet.totalSets) sets")).font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                 .numeroVivo(value: sheet.totalSets)
-            Text(String(localized: "~\(sheet.estimatedMinutes) min")).font(StrandFont.caption).foregroundStyle(sheet.theme.inkTertiary)
+            Text(String(localized: "~\(sheet.estimatedMinutes) min")).font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                 .numeroVivo(value: sheet.estimatedMinutes)
             if let kg = sheet.estimatedTonnageKg {
                 Text(String(localized: "~\(StrengthDisplay.weightNumber(kg, system: sheet.system)) \(StrengthDisplay.weightUnit(sheet.system).lowercased())"))
-                    .font(StrandFont.caption).foregroundStyle(sheet.theme.inkTertiary)
+                    .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                     .numeroVivo(value: kg)
             }
         }
@@ -94,8 +94,8 @@ enum HojaCabecera {
     /// .planDay «···»: cambiar rutina / marcar descanso (A6/A7).
     private static func dayMenu(sheet: RoutineSheet) -> some View {
         Button { sheet.showDayMenu = true } label: {
-            StrandIcon.more.image.font(StrandFont.glyph(.inline, weight: .semibold))
-                .foregroundStyle(sheet.theme.inkTertiary).frame(width: LiquidControl.hitTarget, height: LiquidControl.hitTarget).contentShape(Rectangle())
+            StrandIcon.more.image.font(LiquidType.infoGlifo.weight(.semibold))
+                .foregroundStyle(LiquidColor.tinta500).frame(width: LiquidControl.hitTarget, height: LiquidControl.hitTarget).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("Day options"))

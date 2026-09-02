@@ -376,7 +376,7 @@ struct LiveStrengthSheet: View {
         NavigationStack {
             ExerciseDetailScreen(exercise: ex)
                 .toolbar { ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { detailExercise = nil }.foregroundStyle(theme.ink)
+                    Button("Done") { detailExercise = nil }.foregroundStyle(LiquidColor.tinta900)
                 } }
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
@@ -509,9 +509,9 @@ struct LiveStrengthSheet: View {
     private var railTint: Color {
         let muscles = session.runs.compactMap { ExerciseCatalog.byID($0.exerciseId)?.primaryMuscles }
         switch RoutineClassifier.classify(primaryMusclesPerExercise: muscles) {
-        case .pull: return theme.dataHrv
-        case .legs: return theme.dataSleep
-        default: return theme.dataStrain
+        case .pull: return LiquidColor.cian
+        case .legs: return LiquidColor.indigo
+        default: return LiquidColor.ambar
         }
     }
 
@@ -727,13 +727,13 @@ struct LiveStrengthSheet: View {
                     }
                     Text(isEmptyAdHoc ? String(localized: "Quick strength") : session.routineName)
                         .entrenarSessionHeaderTitle()
-                        .foregroundStyle(theme.ink)
+                        .foregroundStyle(LiquidColor.tinta900)
                         .lineLimit(1).minimumScaleFactor(0.8)
                 }
                 if !isEmptyAdHoc {
                     sessionHeaderSubtitle
-                        .font(StrandFont.footnote)
-                        .foregroundStyle(theme.inkTertiary)
+                        .font(LiquidType.caption)
+                        .foregroundStyle(LiquidColor.tinta500)
                         .lineLimit(1).minimumScaleFactor(0.8)   // mismo criterio que el título
                 }
             }
@@ -743,7 +743,7 @@ struct LiveStrengthSheet: View {
             if let alternarPausa {
                 sessionHeaderDisc(session.paused ? "play.fill" : "pause.fill",
                                    label: Text(session.paused ? "Resume session" : "Pause session"),
-                                   glyph: .inline, action: alternarPausa)
+                                   glyphInline: true, action: alternarPausa)
             }
             sessionHeaderEndButton
         }
@@ -764,10 +764,10 @@ struct LiveStrengthSheet: View {
         if let bpm = model.watchBpm {
             // El numeral es 13 pt, por debajo del piso de 24 en que el ADN permite el hue saturado en
             // texto — el mismo tono de lectura que `SessionStatsBar` ya usa para este mismo hue.
-            let tone = theme.onPaper(theme.dataHeart)
+            let tone = OKLab.darkened(LiquidColor.rosa, toContrast: 4.5, against: LiquidColor.papelTarjeta)
             HStack(spacing: LiquidSpace.s100) {
-                Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron))
-                Text("\(bpm)").font(StrandFont.subhead.weight(.semibold))
+                Image(systemName: "heart.fill").font(LiquidType.infoGlifoCompacto)
+                Text("\(bpm)").font(LiquidType.cuerpoBanner.weight(.semibold))
             }
             .foregroundStyle(tone)
             .accessibilityElement(children: .ignore)
@@ -779,9 +779,9 @@ struct LiveStrengthSheet: View {
         TimelineView(.periodic(from: Date(), by: 1)) { ctx in
             let elapsed = session.elapsedSeconds(now: ctx.date)
             Text(Self.clock(elapsed))
-                .font(InstrumentoType.groteskSessionClockCompact)
-                .tracking(InstrumentoType.groteskSessionClockCompactTracking)
-                .foregroundStyle(session.paused ? theme.inkTertiary : theme.ink)
+                .font(LiquidType.relojCompacto)   // dígitos tabulares: el reloj no salta
+                .tracking(LiquidType.relojCompactoTracking)
+                .foregroundStyle(session.paused ? LiquidColor.tinta500 : LiquidColor.tinta900)
                 // r22: los dígitos RUEDAN en vez de parpadear — misma voz que el descanso.
                 .contentTransition(.numericText())
                 .animation(.default, value: elapsed)
@@ -798,15 +798,17 @@ struct LiveStrengthSheet: View {
     /// reloj y «Terminar», y el disco de 40 de `BackButton` la desbordaba.
     /// `glyph`: `.chevron` (12) para el «‹» de minimizar, que SÍ es un chevron; `.inline` (15) para
     /// ❚❚/▶, el mismo tamaño con que el teclado dibuja la otra cara de `alternarPausa`.
-    private func sessionHeaderDisc(_ symbol: String, label: Text, glyph: StrandFont.GlyphSize = .chevron,
+    private func sessionHeaderDisc(_ symbol: String, label: Text, glyphInline: Bool = false,
                                    action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(StrandFont.glyph(glyph, weight: .semibold))
-                .foregroundStyle(theme.ink)
+                .font(glyphInline
+                      ? LiquidType.infoGlifo.weight(.semibold)
+                      : LiquidType.infoGlifoCompacto.weight(.semibold))
+                .foregroundStyle(LiquidColor.tinta900)
                 .frame(width: EntrenarMetrics.secondaryButton, height: EntrenarMetrics.secondaryButton)
-                .background(Circle().fill(theme.paper))
-                .overlay(Circle().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+                .background(Circle().fill(LiquidColor.papelTarjeta))
+                .overlay(Circle().strokeBorder(LiquidColor.vidrioCanto, lineWidth: 1))
                 .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)   // 44 pt de toque
                 .contentShape(Circle())
         }
@@ -843,7 +845,7 @@ struct LiveStrengthSheet: View {
         ) {
             label
                 .entrenarSessionEndLabel()
-                .foregroundStyle(theme.ink)
+                .foregroundStyle(LiquidColor.tinta900)
         }
         .frame(minHeight: LiquidControl.hitTarget)   // 44 pt de toque sobre el dibujo de 36
         .accessibilityLabel(accessibilityLabel)
@@ -855,9 +857,9 @@ struct LiveStrengthSheet: View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
                 RoundedRectangle(cornerRadius: EntrenarMetrics.progressBarRadius, style: .continuous)
-                    .fill(theme.hairline)
+                    .fill(LiquidColor.tinta10)
                 RoundedRectangle(cornerRadius: EntrenarMetrics.progressBarRadius, style: .continuous)
-                    .fill(session.paused ? theme.inkDim : railTint)
+                    .fill(session.paused ? LiquidColor.tinta500 : railTint)
                     .frame(width: geo.size.width * sessionProgressFraction)
             }
         }
@@ -950,19 +952,19 @@ struct LiveStrengthSheet: View {
     }
 
     private func watchLine(_ icon: String, _ text: LocalizedStringKey, retry: Bool) -> some View {
-        HStack(spacing: 6) {
+        HStack(spacing: LiquidSpace.s150) {
             // Ronda 2 revisión final, hallazgo grave (g4-a11y): `.combine` vivía en el HStack completo,
             // fundiendo el botón «Retry» — un `Button` hermano real — en un solo elemento estático sin
             // acción. Solo el icono+texto se combinan; el botón queda fuera, alcanzable para VoiceOver.
-            HStack(spacing: 6) {
-                Image(systemName: icon).font(StrandFont.glyph(.chevron)).foregroundStyle(theme.inkTertiary)
+            HStack(spacing: LiquidSpace.s150) {
+                Image(systemName: icon).font(LiquidType.infoGlifoCompacto).foregroundStyle(LiquidColor.tinta500)
                     .accessibilityHidden(true)
-                Text(text).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                Text(text).font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
             }
             .accessibilityElement(children: .combine)
             if retry {
                 Button { model.retryWatchMirroring() } label: {
-                    Text("Retry").font(StrandFont.caption).fontWeight(.medium).foregroundStyle(theme.ink)
+                    Text("Retry").font(LiquidType.caption).fontWeight(.medium).foregroundStyle(LiquidColor.tinta900)
                 }
                 .buttonStyle(.plain).padding(.leading, 2)  // token-exempt: ajuste óptico
             }
@@ -974,28 +976,28 @@ struct LiveStrengthSheet: View {
     private var saveErrorBanner: some View {
         HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s200) {
             Image(systemName: "exclamationmark.triangle")
-                .font(StrandFont.glyph(.chevron)).foregroundStyle(theme.critical)
+                .font(LiquidType.infoGlifoCompacto).foregroundStyle(LiquidColor.negativo)
                 .accessibilityHidden(true)
             // Ronda 2 revisión final, hallazgo grave (g4-a11y): `.combine` vivía en el HStack completo,
             // fundiendo el único botón «Retry» del camino de recuperación de errores — VoiceOver no
             // podía reintentar el guardado. Solo el bloque de texto se combina; el botón queda suelto.
-            VStack(alignment: .leading, spacing: 1) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s025) {
                 Text("Couldn't save the workout. Try again.")
-                    .font(StrandFont.caption).fontWeight(.medium).foregroundStyle(theme.ink)
+                    .font(LiquidType.caption).fontWeight(.medium).foregroundStyle(LiquidColor.tinta900)
                 Text("Your sets are safe on this phone.")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                    .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta700)
             }
             .accessibilityElement(children: .combine)
             Spacer(minLength: LiquidSpace.s200)
             Button { model.retryStrengthSave() } label: {
-                Text("Retry").font(StrandFont.caption).fontWeight(.medium).foregroundStyle(theme.ink)
+                Text("Retry").font(LiquidType.caption).fontWeight(.medium).foregroundStyle(LiquidColor.tinta900)
             }
             .buttonStyle(.plain)
         }
         .padding(.horizontal, LiquidSpace.s600)
         .padding(.vertical, CenitMetrics.rowVPad)
-        .background(theme.paper)
-        .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
+        .background(LiquidColor.fondoAlto)
+        .overlay(alignment: .bottom) { Rectangle().fill(LiquidColor.tinta10).frame(height: 1) }
     }
 
     /// Apply an edited rest from the 1e editor (FER-716): to the live session at the chosen scope, and —
@@ -1051,14 +1053,14 @@ struct LiveStrengthSheet: View {
         ScrollView {
             VStack(alignment: .leading, spacing: LiquidSpace.s300) {
                 Text("No routine: add exercises as you go. Rest defaults to 2 min, change it set by set.")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
                     .fixedSize(horizontal: false, vertical: true)
 
                 Button { showLibraryPicker = true } label: {
                     EntrenarModulo(tono: .neutro) {
-                        HStack(spacing: 9) {
-                            StrandIcon.search.image.font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
-                            Text("Search the library…").font(StrandFont.body).foregroundStyle(theme.inkTertiary)
+                        HStack(spacing: LiquidSpace.s225) {
+                            StrandIcon.search.image.font(LiquidType.infoGlifo).foregroundStyle(LiquidColor.tinta500)
+                            Text("Search the library…").font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta500)
                             Spacer(minLength: 0)
                         }
                     }
@@ -1071,7 +1073,7 @@ struct LiveStrengthSheet: View {
                 // returns no picks. Falling back to the search-only flow (no orphaned "Fresh today" header
                 // over an empty list) rather than a section with nothing under it.
                 if let suggestions = freshSuggestions, !suggestions.isEmpty {
-                    Text("Fresh today").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                    Text("Fresh today").liquidKicker().foregroundStyle(LiquidColor.tinta500)
                         .padding(.top, LiquidSpace.seccionCanto)
                     VStack(spacing: LiquidSpace.s200) {
                         ForEach(suggestions) { s in freshSuggestionChip(s) }
@@ -1079,7 +1081,7 @@ struct LiveStrengthSheet: View {
 
                     if let muscle = loadedMuscle {
                         (Text(MuscleAtlas.name(muscle)) + Text(verbatim: " ") + Text("still carries load · suggestions avoid it."))
-                            .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+                            .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta700)
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.horizontal, LiquidSpace.s400).padding(.vertical, LiquidSpace.s300)
                             .liquidGlass(.superficieSolida)
@@ -1087,9 +1089,9 @@ struct LiveStrengthSheet: View {
                     }
                 }
 
-                Divider().overlay(theme.hairline).padding(.top, LiquidSpace.seccionCanto)
+                Divider().overlay(LiquidColor.tinta10).padding(.top, LiquidSpace.seccionCanto)
                 Text("You'll be able to save this as a routine when you finish · it doesn't touch your plan.")
-                    .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                    .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .multilineTextAlignment(.center)
                     .padding(.top, LiquidSpace.seccionCanto)
@@ -1101,7 +1103,7 @@ struct LiveStrengthSheet: View {
         }
         // FER-198 (Ola 2): SIN fondo propio — lo aporta el `.entrenarHojaFondo` compartido de
         // `bodyChrome` (una sola raíz para las 3 secciones). Un segundo aquí apilaba material y
-        // destello (costura visible); el `.background(theme.paper)` opaco de antes se removió por lo
+        // destello (costura visible); el `.background(LiquidColor.papelTarjeta)` opaco de antes se removió por lo
         // mismo. Buscador de frescura y demás lógica de esta sección, intactos.
         .safeAreaInset(edge: .top, spacing: 0) { liveHead }
         // FER-82: las sugerencias las gatea el veredicto, así que una lista calculada mientras el
@@ -1127,17 +1129,17 @@ struct LiveStrengthSheet: View {
             EntrenarModulo(tono: tono) {
                 HStack(spacing: LiquidSpace.s300) {
                     RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
-                        .fill(theme.surface).frame(width: 40, height: 40)
-                        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous).strokeBorder(theme.hairline, lineWidth: 1))
+                        .fill(LiquidColor.papelTarjeta).frame(width: 40, height: 40)
+                        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous).strokeBorder(LiquidColor.tinta10, lineWidth: 1))
                         .accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(StrengthDisplay.name(s.exercise)).font(StrandFont.body).foregroundStyle(theme.ink)
+                    VStack(alignment: .leading, spacing: LiquidSpace.s025) {
+                        Text(StrengthDisplay.name(s.exercise)).font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta900)
                         (Text(MuscleAtlas.name(s.muscle)) + Text(verbatim: " · ") + Text("fresh")
                             + (lastTimeText(s).map { Text(verbatim: " · ") + Text("last time \($0)") } ?? Text(verbatim: "")))
-                            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+                            .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                     }
                     Spacer(minLength: LiquidSpace.s200)
-                    StrandIcon.add.image.font(StrandFont.glyph(.inline, weight: .semibold))
+                    StrandIcon.add.image.font(LiquidType.infoGlifo.weight(.semibold))
                         .foregroundStyle(tono.rotulo)
                         .accessibilityHidden(true)
                 }
@@ -1370,14 +1372,14 @@ struct LiveStrengthSheet: View {
     private var nothingToSaveCard: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.estadoVacioAire) {
             Image(systemName: "checkmark.seal")
-                .font(StrandFont.glyph(.empty)).foregroundStyle(theme.inkSecondary)
+                .font(LiquidType.iconSF(size: 34)).foregroundStyle(LiquidColor.tinta700)
                 .accessibilityHidden(true)
             Text("Nothing to save")
                 .font(LiquidType.displayS)
                 .tracking(LiquidType.displaySTracking)
                 .foregroundStyle(LiquidColor.tinta900)
             Text("Your history stays clean: no sets were logged this session.")
-                .font(StrandFont.subhead).foregroundStyle(LiquidColor.tinta700)
+                .font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
                 .fixedSize(horizontal: false, vertical: true)
             StrandCTAButton("Got it", tint: LiquidColor.tinta900) {
                 model.endStrengthSession(save: false)
@@ -1419,7 +1421,7 @@ struct LiveStrengthSheet: View {
                 receiptRecords(s.prs)
             } else if s.isFirstTime {
                 Text("First time logging these. From here on you'll see your progress.")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
@@ -1475,11 +1477,11 @@ struct LiveStrengthSheet: View {
     /// FER-742: the receipt's origin line when the Apple Watch recorded the real FC/kcal and saved the
     /// workout to Health — shown instead of the iPhone's energy-origin dot.
     private var receiptWatchOrigin: some View {
-        HStack(spacing: 5) {
-            Image(systemName: "applewatch").font(StrandFont.glyph(.chevron)).foregroundStyle(LiquidColor.tinta500)
+        HStack(spacing: LiquidSpace.s125) {
+            Image(systemName: "applewatch").font(LiquidType.infoGlifoCompacto).foregroundStyle(LiquidColor.tinta500)
                 .accessibilityHidden(true)
             Text("Heart rate and calories from Apple Watch, saved to Health")
-                .font(StrandFont.footnote).foregroundStyle(LiquidColor.tinta500)
+                .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .accessibilityElement(children: .combine)
@@ -1495,11 +1497,11 @@ struct LiveStrengthSheet: View {
     /// `"band_calculated"` (persisted, `Training.swift`) — only the human-facing copy changed; the app has
     /// no strap any more (F7 "la banda nunca existió").
     private func originRow(_ src: EnergySource) -> some View {
-        HStack(spacing: 5) {
+        HStack(spacing: LiquidSpace.s125) {
             Circle().fill(src == .bandCalculated ? LiquidColor.verdeCarga : LiquidColor.tinta500)
                 .frame(width: 6, height: 6)
             Text(src == .bandCalculated ? "Watch + calculated" : "Estimated")
-                .font(StrandFont.footnote).foregroundStyle(LiquidColor.tinta500)
+                .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
         }
         .accessibilityElement(children: .combine)
     }
@@ -1527,10 +1529,10 @@ struct LiveStrengthSheet: View {
 
     /// The receipt's dominant numeral (FER-87): promotes Effort/21 to a hero — same
     /// `MetricFormat.forMetric(.strain)` grammar as the Hoy hero/sheet (never a bespoke
-    /// `String(format:)`), colored `theme.dataStrain` — never the RPE hue (a different datum; see
+    /// `String(format:)`), colored `LiquidColor.ambar` — never the RPE hue (a different datum; see
     /// the enfoque's RPE door in `RoutineSheetLiveFoco.swift` for that one). Without cardiac data
     /// (no Watch, no HR permission, or a session too short) it falls back to the session's duration in
-    /// plain `theme.ink` — never invents a strain. `SessionRecoveryCost.cost(sessionStrain:)` (unchanged,
+    /// plain `LiquidColor.tinta900` — never invents a strain. `SessionRecoveryCost.cost(sessionStrain:)` (unchanged,
     /// called with no `meanHRRPct` fallback in `AppModel+Strength.swift`) already guarantees
     /// `s.costBand == nil` whenever `s.strain == nil`, so the COST block below stays correctly
     /// hidden with no extra guard.
@@ -1550,13 +1552,13 @@ struct LiveStrengthSheet: View {
                     .instrumentoHero(76).monospacedDigit().contentTransition(.numericText())
                     .foregroundStyle(LiquidColor.ambar)
                     .lineLimit(1).minimumScaleFactor(0.6)
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: LiquidSpace.s050) {
                     Text("Effort").liquidLabel().foregroundStyle(LiquidColor.tinta500)
                     if reflow, let suffix = format.scaleSuffix {
                         numeral
                         Text(suffix).font(LiquidType.boton).foregroundStyle(LiquidColor.ambar)
                     } else {
-                        HStack(alignment: .firstTextBaseline, spacing: 3) {
+                        HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s075) {
                             numeral
                             if let suffix = format.scaleSuffix {
                                 Text(suffix).font(LiquidType.boton).foregroundStyle(LiquidColor.ambar)
@@ -1568,7 +1570,7 @@ struct LiveStrengthSheet: View {
                 .accessibilityLabel(Text("Effort"))
                 .accessibilityValue(Text(Self.strainAccessibilityValue(value, scaleSuffix: format.scaleSuffix)))
             case .durationWithHR, .durationOnly:
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: LiquidSpace.s050) {
                     Text("Duration").liquidLabel().foregroundStyle(LiquidColor.tinta500)
                     Text(receiptCountUp ? Self.clock(s.durationS) : "0:00")
                         .instrumentoHero(76).monospacedDigit().contentTransition(.numericText())
@@ -1642,20 +1644,20 @@ struct LiveStrengthSheet: View {
             }
         }
         .padding(.bottom, LiquidSpace.s300)
-        .overlay(alignment: .bottom) { Rectangle().fill(theme.hairline).frame(height: 1) }
+        .overlay(alignment: .bottom) { Rectangle().fill(LiquidColor.tinta10).frame(height: 1) }
     }
 
     private func receiptStat(_ label: LocalizedStringKey, value: String, zero: String,
                              unit: String? = nil, color: Color? = nil) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s050) {
             Text(label).liquidLabel().foregroundStyle(LiquidColor.tinta500)
-            HStack(alignment: .firstTextBaseline, spacing: 2) {
+            HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s050) {
                 Text(receiptCountUp ? value : zero)
                     .font(LiquidType.valorL)
                     .monospacedDigit().contentTransition(.numericText())
                     .foregroundStyle(color ?? LiquidColor.tinta900)
                     .lineLimit(1).minimumScaleFactor(0.7)
-                if let unit { Text(unit).font(StrandFont.caption).foregroundStyle(LiquidColor.tinta500) }
+                if let unit { Text(unit).font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500) }
             }
         }
         .accessibilityElement(children: .combine)
@@ -1670,12 +1672,12 @@ struct LiveStrengthSheet: View {
     /// this row's one known blind spot, same as the rest of the app's best-effort Health mirror.
     /// Replaces the retired Diet block (FER-92/E11 already turned Diet into a dead route from Entrenar).
     private func receiptHealthSaved(_ s: StrengthSummary) -> some View {
-        HStack(spacing: 6) {
+        HStack(spacing: LiquidSpace.s150) {
             Image(systemName: "checkmark")
-                .font(StrandFont.glyph(.inline, weight: .semibold))
+                .font(LiquidType.infoGlifo.weight(.semibold))
                 .foregroundStyle(LiquidColor.verdeProfundo)
                 .accessibilityHidden(true)
-            Text(Self.healthSavedText(s)).font(StrandFont.caption).foregroundStyle(LiquidColor.tinta700)
+            Text(Self.healthSavedText(s)).font(LiquidType.caption).foregroundStyle(LiquidColor.tinta700)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .accessibilityElement(children: .combine)
@@ -1705,7 +1707,7 @@ struct LiveStrengthSheet: View {
         let minDiff = Int((Double(s.durationS - c.prevDurationS) / 60).rounded())
         let durDelta = minDiff == 0 ? "=" : (minDiff > 0
             ? String(localized: "+\(minDiff) min") : String(localized: "−\(-minDiff) min"))
-        return VStack(alignment: .leading, spacing: 10) {
+        return VStack(alignment: .leading, spacing: LiquidSpace.s250) {
             Text("Against your last \(s.routineName)").liquidKicker().foregroundStyle(LiquidColor.tinta700)
             comparisonRow("Volume", current: s.volumeKg, prev: c.prevVolumeKg,
                           delta: volDelta, positive: s.volumeKg > c.prevVolumeKg)
@@ -1721,8 +1723,8 @@ struct LiveStrengthSheet: View {
     private func comparisonRow(_ label: LocalizedStringKey, current: Double, prev: Double,
                                delta: String, positive: Bool, neutral: Bool = false) -> some View {
         let maxV = max(current, prev, 1)
-        return HStack(spacing: 10) {
-            Text(label).font(StrandFont.caption).foregroundStyle(LiquidColor.tinta700)
+        return HStack(spacing: LiquidSpace.s250) {
+            Text(label).font(LiquidType.caption).foregroundStyle(LiquidColor.tinta700)
                 .frame(width: 64, alignment: .leading)
             GeometryReader { geo in
                 let w = geo.size.width
@@ -1736,7 +1738,7 @@ struct LiveStrengthSheet: View {
                 }
             }
             .frame(height: 8)
-            Text(delta).font(InstrumentoType.groteskNumber(12, weight: .regular))
+            Text(delta).font(LiquidType.caption)
                 .foregroundStyle(positive ? LiquidColor.positivo : LiquidColor.tinta700)
                 .frame(width: 56, alignment: .trailing)
                 .lineLimit(1).minimumScaleFactor(0.8)
@@ -1751,27 +1753,27 @@ struct LiveStrengthSheet: View {
     private func receiptRecords(_ prs: [StrengthSummary.PR]) -> some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s100) {
             HStack(spacing: LiquidSpace.s200) {
-                Image(systemName: "star").font(StrandFont.glyph(.inline, weight: .semibold))
+                Image(systemName: "star").font(LiquidType.infoGlifo.weight(.semibold))
                     .foregroundStyle(LiquidColor.rosa)
                 Text(prs.count == 1 ? String(localized: "A personal record")
                      : String(localized: "\(prs.count) personal records"))
-                    .font(StrandFont.subhead).fontWeight(.semibold).foregroundStyle(LiquidColor.tinta900)
+                    .font(LiquidType.cuerpoBanner).fontWeight(.semibold).foregroundStyle(LiquidColor.tinta900)
             }
             .padding(.bottom, LiquidSpace.s100)
             ForEach(Array(prs.enumerated()), id: \.element.id) { i, pr in
                 HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s300) {
                     (Text(verbatim: pr.exercise) + Text(verbatim: " · ") + Text(Self.prMetricLabel(pr.metric)))
-                        .font(StrandFont.caption).foregroundStyle(LiquidColor.tinta900)
+                        .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta900)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     (Text(verbatim: prPriorText(pr)).foregroundColor(LiquidColor.tinta700)
                         + Text(verbatim: " → ")
                         + Text(verbatim: prValue(pr)).fontWeight(.semibold).foregroundColor(LiquidColor.tinta900))
                         // r26: los récords del recibo son valores → Grotesk tabular.
-                        .font(InstrumentoType.groteskNumber(12, weight: .regular))
+                        .font(LiquidType.caption)
                 }
                 .frame(minHeight: 38)
                 .overlay(alignment: .bottom) {
-                    if i < prs.count - 1 { Rectangle().fill(theme.hairline).frame(height: 1) }
+                    if i < prs.count - 1 { Rectangle().fill(LiquidColor.tinta10).frame(height: 1) }
                 }
                 .accessibilityElement(children: .combine)
             }
@@ -1787,16 +1789,16 @@ struct LiveStrengthSheet: View {
                 .padding(.bottom, 2)  // token-exempt: ajuste óptico
             ForEach(Array(lines.enumerated()), id: \.element.id) { i, line in
                 HStack(spacing: LiquidSpace.s300) {
-                    Text(line.name).font(StrandFont.subhead).foregroundStyle(LiquidColor.tinta900)
+                    Text(line.name).font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta900)
                         .lineLimit(1).minimumScaleFactor(0.8)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     Text(exerciseLineDetail(line))
-                        .font(StrandFont.caption).monospacedDigit().foregroundStyle(LiquidColor.tinta700)
+                        .font(LiquidType.caption).monospacedDigit().foregroundStyle(LiquidColor.tinta700)
                     exerciseTrendGlyph(line.trend)
                 }
                 .frame(minHeight: 40)
                 .overlay(alignment: .bottom) {
-                    if i < lines.count - 1 { Rectangle().fill(theme.hairline).frame(height: 1) }
+                    if i < lines.count - 1 { Rectangle().fill(LiquidColor.tinta10).frame(height: 1) }
                 }
                 .accessibilityElement(children: .combine)
             }
@@ -1817,15 +1819,15 @@ struct LiveStrengthSheet: View {
     @ViewBuilder private func exerciseTrendGlyph(_ trend: Int?) -> some View {
         switch trend {
         case .some(1):
-            StrandIcon.up.image.font(StrandFont.glyph(.chevron, weight: .semibold))
+            StrandIcon.up.image.font(LiquidType.infoGlifoCompacto.weight(.semibold))
                 .foregroundStyle(LiquidColor.positivo)
                 .accessibilityLabel(Text("Up vs last time"))
         case .some(-1):
-            Image(systemName: "arrow.down").font(StrandFont.glyph(.chevron, weight: .semibold))
-                .foregroundStyle(theme.inkTertiary)
+            Image(systemName: "arrow.down").font(LiquidType.infoGlifoCompacto.weight(.semibold))
+                .foregroundStyle(LiquidColor.tinta500)
                 .accessibilityLabel(Text("Down vs last time"))
         case .some:
-            Text(verbatim: "=").font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            Text(verbatim: "=").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                 .accessibilityLabel(Text("Same as last time"))
         case nil:
             Color.clear.frame(width: 12, height: 1)
@@ -1860,12 +1862,12 @@ struct LiveStrengthSheet: View {
                     }
                 }
             }
-            Text(Self.bandDetail(band)).font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
+            Text(Self.bandDetail(band)).font(LiquidType.caption).foregroundStyle(LiquidColor.tinta700)
                 .fixedSize(horizontal: false, vertical: true)
             // Revisión final (g5-copy): copy.md pide solo `estimación`, no «Estimación · tú decides».
             // Clave distinta a la «Estimate» ya existente (es «Estimado», otro contexto) para no
             // colisionar dos entradas iguales en el catálogo.
-            Text("Estimate, you decide").font(StrandFont.footnote).foregroundStyle(theme.inkTertiary)
+            Text("Estimate, you decide").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                 .padding(.top, 2)  // token-exempt: ajuste óptico
         }
         .accessibilityElement(children: .combine)
@@ -1877,12 +1879,12 @@ struct LiveStrengthSheet: View {
     private func bandNameText(_ b: SessionRecoveryCost.Band, active: SessionRecoveryCost.Band) -> some View {
         let isActive = b == active
         return Text(Self.bandLabel(b))
-            .font(StrandFont.caption.weight(isActive ? .semibold : .regular))
+            .font((isActive ? LiquidType.captionFuerte : LiquidType.captionRegular))
             .textCase(.uppercase)
             .underline(isActive)
             .foregroundStyle(isActive
-                ? theme.onPaper(bandColor(b))
-                : theme.inkTertiary)
+                ? OKLab.darkened(bandColor(b), toContrast: 4.5, against: LiquidColor.papelTarjeta)
+                : LiquidColor.tinta500)
             .accessibilityHidden(!isActive)
     }
 
@@ -1902,12 +1904,12 @@ struct LiveStrengthSheet: View {
     /// `openFatigueMap()`. The old per-chip hint («Tap a muscle to see when to train it again.») is
     /// retired with it — it described a per-muscle tap that no longer exists.
     private func summaryMuscles(_ muscles: [StrengthSummary.WorkedMuscle]) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s150) {
             HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s200) {
-                Text("Today's muscles").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+                Text("Today's muscles").liquidKicker().foregroundStyle(LiquidColor.tinta500)
                 Spacer(minLength: LiquidSpace.s200)
                 Button { openFatigueMap() } label: {
-                    Text("See map").font(StrandFont.subhead).foregroundStyle(theme.ink)
+                    Text("See map").font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta900)
                         .frame(minHeight: LiquidControl.hitTarget)   // toque 44 (HIG §8.7-4)
                         .contentShape(Rectangle())
                 }
@@ -1918,7 +1920,7 @@ struct LiveStrengthSheet: View {
             // Una sola línea de tinta corrida; el papel lo dice el peso, no un color (el hue no
             // entra aquí: sería un tercer significado en una fila que ya distingue por peso).
             musclesText(muscles)
-                .font(StrandFont.subhead).foregroundStyle(theme.ink)
+                .font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta900)
                 .fixedSize(horizontal: false, vertical: true)
                 // VoiceOver no oye la negrita: nombra el papel en palabras.
                 .accessibilityLabel(musclesAccessibilityLabel(muscles))
@@ -1929,7 +1931,7 @@ struct LiveStrengthSheet: View {
     private func musclesText(_ muscles: [StrengthSummary.WorkedMuscle]) -> Text {
         muscles.enumerated().reduce(Text(verbatim: "")) { acc, pair in
             let (i, m) = pair
-            let sep = i == 0 ? Text(verbatim: "") : Text(verbatim: " · ").foregroundStyle(theme.inkTertiary)
+            let sep = i == 0 ? Text(verbatim: "") : Text(verbatim: " · ").foregroundStyle(LiquidColor.tinta500)
             let name = Text(verbatim: m.name).fontWeight(m.isPrimary ? .semibold : .regular)
             return acc + sep + name
         }

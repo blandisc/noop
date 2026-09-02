@@ -81,7 +81,7 @@ struct HojaFoco: View {
                     heroes(run: run, ei: ei)
                     if let ant = vivo.antPlayhead(run) {
                         Text(verbatim: ant)
-                            .font(InstrumentoType.grotesk(FocoMetrics.antSize, weight: .bold, relativeTo: .caption2))
+                            .font(LiquidType.captionLecturaNegrita)
                             .tracking(FocoMetrics.antTracking)
                             .foregroundStyle(LiquidColor.tinta500)
                             .padding(.top, FocoMetrics.antTop)
@@ -90,7 +90,7 @@ struct HojaFoco: View {
                         .padding(.top, FocoMetrics.capsulasTop)
                     if let raise = run.proposedRaise, !raise.waiting {
                         Text(verbatim: String(localized: "raise earned: \(massText(raise.toKg)) ▲"))
-                            .font(StrandFont.subhead).foregroundStyle(LiquidColor.verdeProfundo)
+                            .font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.verdeProfundo)
                             .padding(.top, FocoMetrics.raiseTop)
                     }
                     // R3 (ronda 2 del gate, bloqueante): UN solo camino de registro por tipo. Tiempo/
@@ -118,7 +118,7 @@ struct HojaFoco: View {
                         etiquetaCerrar: String(localized: "Close focus mode"))
             VStack(spacing: LiquidSpace.s300) {
                 Spacer(minLength: 0)
-                Text("All done").font(InstrumentoType.grotesk(24, weight: .semibold)).foregroundStyle(LiquidColor.tinta900)
+                Text("All done").font(LiquidType.displayS).foregroundStyle(LiquidColor.tinta900)
                 Spacer(minLength: 0)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -169,7 +169,7 @@ struct HojaFoco: View {
                         vivo.platesTarget = LiveStrengthSheet.PlatesTarget(ei: ei, weightKg: vivo.session.currentSet?.weightKg ?? 0)
                     } label: {
                         Text(verbatim: "±\(StrengthDisplay.incrementNumber(vivo.weightStepKg, system: vivo.sheet.system)) · " + String(localized: "plates"))
-                            .font(StrandFont.caption).foregroundStyle(LiquidColor.tinta500).underline()
+                            .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500).underline()
                     }
                     .buttonStyle(.plain)
                     .padding(.top, FocoMetrics.capcionTop)
@@ -187,7 +187,7 @@ struct HojaFoco: View {
                 )
                 if let lr = run.lastReps {
                     Text(String(localized: "target \(lr)"))
-                        .font(StrandFont.caption).foregroundStyle(LiquidColor.tinta500)
+                        .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                         .padding(.top, FocoMetrics.capcionTop)
                 }
             }
@@ -225,7 +225,8 @@ struct HojaFoco: View {
                 TimelineView(.periodic(from: Date(), by: 1)) { ctx in
                     let texto = Self.clock(vivo.session.timerElapsed(now: ctx.date))
                     Text(texto)
-                        .font(InstrumentoType.groteskNumber(FocoMetrics.runningClockSize, weight: .bold))
+                        .font(LiquidType.displayS).monospacedDigit()
+                        .tracking(LiquidType.displaySTracking)
                         .foregroundStyle(LiquidColor.tinta900)
                         .numeroVivo(value: texto)
                         .padding(.top, FocoMetrics.capcionTop)
@@ -238,7 +239,7 @@ struct HojaFoco: View {
                 }
             }) {
                 Text(running ? String(localized: "Stop and save") : String(localized: "Start"))
-                    .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(LiquidColor.tinta900)
+                    .font(LiquidType.cuerpoBanner.weight(.semibold)).foregroundStyle(LiquidColor.tinta900)
             }
             .padding(.top, FocoMetrics.capcionTop)
         case .distance:
@@ -263,7 +264,8 @@ struct HojaFoco: View {
                     Text(texto).numeroVivo(value: texto)
                 }
             }
-            .font(InstrumentoType.groteskNumber(FocoMetrics.runningClockSize, weight: .bold))
+            .font(LiquidType.displayS).monospacedDigit()
+            .tracking(LiquidType.displaySTracking)
             .foregroundStyle(LiquidColor.tinta900)
             .padding(.top, FocoMetrics.capcionTop)
             if let bpm = vivo.sheet.model.watchBpm { zonaBadge(bpm).padding(.top, FocoMetrics.capcionTop) }
@@ -279,7 +281,7 @@ struct HojaFoco: View {
                 }
             }) {
                 Text(running ? String(localized: "Stop and save") : String(localized: "Start"))
-                    .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(LiquidColor.tinta900)
+                    .font(LiquidType.cuerpoBanner.weight(.semibold)).foregroundStyle(LiquidColor.tinta900)
             }
             .padding(.top, FocoMetrics.capcionTop)
         }
@@ -318,14 +320,14 @@ struct HojaFoco: View {
             HStack {
                 if let prev {
                     Button { focoJump(to: prev.id) } label: {
-                        Text(verbatim: "‹ \(prev.name)").font(StrandFont.subhead).foregroundStyle(LiquidColor.tinta500).lineLimit(1)
+                        Text(verbatim: "‹ \(prev.name)").font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta500).lineLimit(1)
                     }
                     .buttonStyle(.plain)
                 }
                 Spacer(minLength: LiquidSpace.s300)
                 if let next {
                     Button { focoJump(to: next.id) } label: {
-                        Text(verbatim: "\(next.name) ›").font(StrandFont.subhead.weight(.semibold)).foregroundStyle(LiquidColor.tinta900).lineLimit(1)
+                        Text(verbatim: "\(next.name) ›").font(LiquidType.cuerpoBanner.weight(.semibold)).foregroundStyle(LiquidColor.tinta900).lineLimit(1)
                     }
                     .buttonStyle(.plain)
                 }
@@ -392,7 +394,7 @@ struct HojaFoco: View {
 
     private func combustibleSegmento(_ label: String, activo: Bool, action: @escaping () -> Void) -> some View {
         Text(verbatim: label)
-            .font(InstrumentoType.grotesk(10, weight: .semibold)).tracking(0.6).textCase(.uppercase)
+            .font(LiquidType.captionFuerte).tracking(0.6).textCase(.uppercase)
             .foregroundStyle(activo ? LiquidColor.papelTarjeta : LiquidColor.tinta500)
             .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s125).frame(minHeight: EntrenarMetrics.secondaryButton)
             .background { if activo { Capsule().fill(LiquidColor.tinta900) } }
@@ -431,13 +433,14 @@ struct HojaFoco: View {
                 Spacer(minLength: 0)
                 Circle().fill(LiquidColor.verdePrimario)
                     .frame(width: LiquidControl.hitTarget, height: LiquidControl.hitTarget)
-                    .overlay { Image(systemName: "checkmark").font(StrandFont.glyph(.lead, weight: .bold)).foregroundStyle(LiquidColor.tintaSobreVerde) }
+                    .overlay { Image(systemName: "checkmark").font(LiquidType.iconSF(size: 18).weight(.bold)).foregroundStyle(LiquidColor.tintaSobreVerde) }
                     .accessibilityHidden(true)
                 // «Hecho · {nombre}» — NO «{nombre}, hecha» (el mapa lo dibuja así, pero esa
                 // concordancia rompe con nombres femeninos/masculinos mixtos del catálogo — decisión
                 // ya tomada en FER-150, portada tal cual; ver reporte).
                 (Text("Done heading") + Text(verbatim: " · \(nombre)"))
-                    .font(InstrumentoType.grotesk(FocoMetrics.doneTitleSize, weight: .bold))
+                    .font(LiquidType.displayS)
+                    .tracking(LiquidType.displaySTracking)
                     .foregroundStyle(LiquidColor.tinta900).multilineTextAlignment(.center)
                     .padding(.top, FocoMetrics.doneTitleTop)
                 Group {
@@ -447,11 +450,11 @@ struct HojaFoco: View {
                         Text(verbatim: String(localized: "\(doneN) of \(totalN) · complete"))
                     }
                 }
-                .font(StrandFont.subhead).foregroundStyle(LiquidColor.tinta500).multilineTextAlignment(.center)
+                .font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta500).multilineTextAlignment(.center)
                 .padding(.top, FocoMetrics.capcionTop)
                 if let raise = run.proposedRaise, !raise.waiting {
                     Text(verbatim: String(localized: "the raise to \(massText(raise.toKg)) is on record"))
-                        .font(StrandFont.caption).foregroundStyle(LiquidColor.verdeProfundo)
+                        .font(LiquidType.caption).foregroundStyle(LiquidColor.verdeProfundo)
                         .padding(.top, FocoMetrics.capcionTop)
                 }
                 Button {
@@ -468,7 +471,7 @@ struct HojaFoco: View {
                             Text("Finish") + Text(verbatim: " ›")
                         }
                     }
-                    .font(InstrumentoType.groteskHeadline(15)).foregroundStyle(LiquidColor.tintaSobreVerde)
+                    .font(LiquidType.tituloGemela).foregroundStyle(LiquidColor.tintaSobreVerde)
                     .padding(.horizontal, CenitMetrics.sectionGap)
                     .frame(height: EntrenarMetrics.primaryButton)
                     .background(LiquidColor.verdePrimario, in: Capsule())
@@ -490,7 +493,7 @@ struct HojaFoco: View {
         let pct = maxHR > 0 ? Double(bpm) / maxHR : 0
         let zone = max(1, min(5, Int((pct * 5).rounded(.up))))
         return Text("ZONE \(zone) · \(bpm)")
-            .font(StrandFont.caption.weight(.bold)).foregroundStyle(LiquidColor.tinta500)
+            .font(LiquidType.captionNegrita).foregroundStyle(LiquidColor.tinta500)
             .outlineCapsule(.outline, size: .sm, theme: vivo.sheet.theme)
     }
 
@@ -508,15 +511,12 @@ private enum FocoMetrics {
     static var contentTop: CGFloat { 26 }
     static var heroGap: CGFloat { 16 }
     static var capcionTop: CGFloat { 6 }
-    static var antSize: CGFloat { 9 }
     static var antTracking: CGFloat { 0.4 }
     static var antTop: CGFloat { 14 }
     static var capsulasTop: CGFloat { 18 }
     static var raiseTop: CGFloat { 12 }
     static var ctaTop: CGFloat { 22 }
     static var prevNextTop: CGFloat { 18 }
-    static var runningClockSize: CGFloat { 22 }
-    static var doneTitleSize: CGFloat { 22 }
     static var doneTitleTop: CGFloat { 12 }
 }
 #endif
