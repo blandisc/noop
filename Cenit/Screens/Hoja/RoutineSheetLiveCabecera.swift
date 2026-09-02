@@ -121,8 +121,10 @@ enum HojaCabeceraSesion {
     static func avance(vivo: HojaSesionViva) -> some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                Capsule().fill(LiquidColor.tinta10)
-                Capsule().fill(vivo.familyTint)
+                Capsule()
+                    .fill(LiquidColor.tinta10)
+                Capsule()
+                    .fill(vivo.familyTint)
                     .frame(width: geo.size.width * vivo.fraccionAvance)
             }
         }

@@ -70,7 +70,7 @@ struct SleepDetailScreen: View {
     var body: some View {
         ScrollView {
             // FER-964: Lazy para que el swap del modelo (FER-953) solo arme las secciones visibles.
-            LazyVStack(alignment: .leading, spacing: 0) {
+            LazyVStack(alignment: .leading, spacing: .zero) {
                 if let night = model.night {
                     campo(night)
                     if infoOpen { queMedimosCard }
@@ -399,8 +399,8 @@ struct SleepDetailScreen: View {
     /// para que la hoja de Hoy y este detalle pinten la MISMA noche con los mismos tonos.
     static let coloresEtapa: [LiquidHipnograma.Etapa: Color] = [
         .profundo: LiquidColor.indigo,
-        .rem: LiquidColor.indigo.opacity(0.78),    // token-exempt: rampa graduada de etapas
-        .ligero: LiquidColor.indigo.opacity(0.52), // token-exempt: rampa graduada de etapas
+        .rem: LiquidColor.indigo.opacity(0.78),  // token-exempt(dato): rampa graduada de etapas
+        .ligero: LiquidColor.indigo.opacity(0.52),  // token-exempt(dato): rampa graduada de etapas
         .despierto: LiquidColor.oro,
     ]
 
@@ -929,9 +929,9 @@ struct SleepDetailScreen: View {
     private static func colorCarril(_ key: String) -> Color {
         switch key {
         case "short":    return LiquidColor.atencion
-        case "adequate": return LiquidColor.indigo.opacity(0.52)  // token-exempt: rampa de sueño
+        case "adequate": return LiquidColor.indigo.opacity(0.52)  // token-exempt(dato): rampa de sueño
         case "optimal":  return LiquidColor.indigo
-        default:         return LiquidColor.indigo.opacity(0.72)  // token-exempt: rampa de sueño
+        default:         return LiquidColor.indigo.opacity(0.72)  // token-exempt(dato): rampa de sueño
         }
     }
 
@@ -1219,7 +1219,7 @@ struct SleepStagesInfoSheet: View {
                     .foregroundStyle(LiquidColor.tinta900)
                 LiquidNotaLine(String(localized: "Your night moves through four phases. The watch estimates them from your movement and heart rate, so they're approximate: it gets about 2 of 3 right."),
                                tono: LiquidColor.tinta700)
-                VStack(spacing: 0) {
+                VStack(spacing: .zero) {
                     ForEach(Array(etapas.enumerated()), id: \.element.id) { i, e in
                         fila(e)
                         if i < etapas.count - 1 { LiquidCapilar(eje: .horizontal) }

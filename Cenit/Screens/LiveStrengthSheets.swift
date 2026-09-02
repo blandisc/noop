@@ -44,7 +44,7 @@ struct RPESheet: View {
     /// Inject: los hooks van en la vista NO privada más externa del archivo (ver `EntrenarView`).
     @ObserveInjection private var inject
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: .zero) {
             header
             // Canvas pass 2026-07-15: sin ScrollView — con el grid 2×4 todo cabe; más aire arriba
             // (sectionGap) para que el héroe no se pegue a la colilla.
@@ -189,7 +189,7 @@ struct NoteSheet: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, LiquidSpace.s600)
-        .padding(.top, 32)  // token-exempt: aire del grabber (decisión dueño r12)
+        .padding(.top, LiquidSpace.s800)  // token-exempt(falta-pieza): aire del grabber (decisión dueño r12)
         .padding(.bottom, LiquidSpace.s600)
         // FER-198 (Ola 2): fondo de vidrio El Eje — el `TextEditor` sigue SIN envolver (regla dura
         // del épico), solo cambia el marco que lo rodea.

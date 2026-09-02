@@ -34,7 +34,7 @@ struct PreparacionDetailScreen: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: .zero) {
                 campo
                 switch modelo.estado {
                 case .cargando:        cargando
@@ -97,7 +97,7 @@ struct PreparacionDetailScreen: View {
     // MARK: - La ventana: el mosaico dominante, la atribución, el porqué de hoy, el método
 
     private var ventana: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             LiquidFranjaSeccion(String(localized: "prep.mosaico.titulo",
                                        defaultValue: "Your last 30 mornings"),
                                 pista: modelo.pistaCobertura, tono: tono)

@@ -60,7 +60,7 @@ struct WorkshopTricksScreen: View {
                     .foregroundStyle(LiquidColor.tinta900)
                 Text("Things you may not have found yet")
                     .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta700)
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: .zero) {
                     ForEach(tricks) { t in
                         trickRow(t)
                         if t.id != tricks.last?.id { Divider().overlay(LiquidColor.tinta10) }

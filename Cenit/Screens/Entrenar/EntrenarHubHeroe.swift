@@ -50,13 +50,13 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
     var body: some View {
         EntrenarModulo(tono: tono, intensidad: EntrenarHubMetrics.heroIntensidad,
                        insets: EntrenarHubMetrics.heroInsets) {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: .zero) {
                 // El bloque de LECTURA (kicker+título+meta+nombres) es UN elemento de accesibilidad
                 // — pero NO el héroe entero: la píldora de subida, «Empezar», «Otra forma» y el
                 // pliegue son botones propios, y combinarlos aquí les habría robado su acción a
                 // VoiceOver (regla del spec «un elemento por módulo» es para lectura, no para un
                 // módulo con varios controles vivos).
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: .zero) {
                     Text("Today · your session")
                         .liquidRegla()
                         .foregroundStyle(tono.rotulo)

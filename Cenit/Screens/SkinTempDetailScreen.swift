@@ -80,7 +80,7 @@ struct SkinTempDetailScreen: View {
 
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
+            LazyVStack(alignment: .leading, spacing: .zero) {
                 if let v = model.today {
                     campoConDato(v)
                 } else {
@@ -460,9 +460,9 @@ struct SkinTempDetailScreen: View {
     /// el papel ponía en «Unusual for you» no cruza al vidrio — la palabra del carril lo dice.
     private static func colorNivel(_ key: String) -> Color {
         switch key {
-        case "below":  return Self.tono.opacity(0.24)  // token-exempt: rampa graduada de temperatura
-        case "inBase": return Self.tono.opacity(0.45)  // token-exempt: rampa graduada de temperatura
-        case "warm":   return Self.tono.opacity(0.72)  // token-exempt: rampa graduada de temperatura
+        case "below":  return Self.tono.opacity(0.24)  // token-exempt(dato): rampa graduada de temperatura
+        case "inBase": return Self.tono.opacity(0.45)  // token-exempt(dato): rampa graduada de temperatura
+        case "warm":   return Self.tono.opacity(0.72)  // token-exempt(dato): rampa graduada de temperatura
         default:       return Self.tono                 // "elevated"
         }
     }

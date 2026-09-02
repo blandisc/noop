@@ -12,7 +12,7 @@ import CenitDesign
 
 struct HojaDecideTuDia: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             Text(String(localized: "manual.deciden.titulo",
                         defaultValue: "What decides your day?"))
                 .font(LiquidType.tituloHoja)
@@ -137,12 +137,13 @@ struct HojaDecideTuDia: View {
             .foregroundStyle(color)
             .padding(.horizontal, LiquidSpace.s150)
             .padding(.vertical, LiquidSpace.s025)
-            .overlay(Capsule().strokeBorder(color.opacity(0.45), lineWidth: 1)) // token-exempt: mismo aro al 45 % del sello «vota» de la Matriz
+            .overlay(Capsule()
+                .strokeBorder(color.opacity(0.45), lineWidth: 1))  // token-exempt(paridad): mismo aro al 45 % del sello «vota» de la Matriz
     }
 
     private func votante(orbe: Orbe, titulo: String, detalle: String, sello: Sello) -> some View {
         HStack(alignment: .top, spacing: LiquidSpace.s200) {
-            orbeView(orbe).padding(.top, 2)
+            orbeView(orbe).padding(.top, LiquidSpace.s050)
             VStack(alignment: .leading, spacing: LiquidSpace.s050) {
                 Text(titulo)
                     .font(LiquidType.tituloFila)
@@ -161,7 +162,7 @@ struct HojaDecideTuDia: View {
 
     private func combo(_ color: Color, _ titulo: String, _ detalle: String) -> some View {
         HStack(alignment: .top, spacing: LiquidSpace.s200) {
-            Circle().fill(color).frame(width: 10, height: 10).padding(.top, 3)
+            Circle().fill(color).frame(width: 10, height: 10).padding(.top, LiquidSpace.s075)
             VStack(alignment: .leading, spacing: LiquidSpace.s050) {
                 Text(titulo)
                     .font(LiquidType.tituloFila)

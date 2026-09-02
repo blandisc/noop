@@ -111,7 +111,7 @@ private struct DetailChrome<Content: View>: View {
     @ViewBuilder var content: Content
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: .zero) {
             HStack(spacing: LiquidSpace.s150) {
                 Button { onClose() } label: {
                     HStack(spacing: LiquidSpace.s100) {
@@ -609,11 +609,11 @@ private struct CuerpoLanding: View {
         Button(action: tap) {
             // Columns left-aligned; the metric name is quiet ink (`LiquidColumna`'s own convention) —
             // only the VALUE carries the data hue.
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s075) {
                 Text(label).liquidDato().foregroundStyle(LiquidColor.tinta500)
                     .multilineTextAlignment(.leading)
                     .minimumScaleFactor(0.9)
-                HStack(alignment: .firstTextBaseline, spacing: 2) {
+                HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s050) {
                     Text(value ?? "—")
                         .font(LiquidType.valorL)
                         .foregroundStyle(value == nil ? LiquidColor.tinta500 : color)
@@ -630,7 +630,7 @@ private struct CuerpoLanding: View {
                               gradient: ChartWell.fillGradient(color),
                               lineWidth: 1.6, showsArea: true, showsHead: false, showsScrub: false)
                         .frame(height: 16)
-                        .padding(.top, 2)
+                        .padding(.top, LiquidSpace.s050)
                         // Decorative only: `Sparkline` paints its own `contentShape`, which otherwise swallows
                         // taps on the chart (the biggest part of the tile) so the row didn't open. Disabling
                         // hit-testing hands EVERY tap in the tile to the Button below. (FER-566 follow-up)
@@ -687,7 +687,7 @@ private struct CuerpoLanding: View {
                 VStack(alignment: .leading, spacing: LiquidSpace.s250) {
                     moduleTitle("Training load")
                     HStack(spacing: LiquidSpace.s400) {
-                        VStack(alignment: .leading, spacing: 3) {
+                        VStack(alignment: .leading, spacing: LiquidSpace.s075) {
                             Text(band?.shortLabel ?? "—")
                                 .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
                                 .foregroundStyle(band.map(loadBandColor) ?? LiquidColor.tinta500)
@@ -703,7 +703,8 @@ private struct CuerpoLanding: View {
                         if let load, load.series.count > 1, let band {
                             let color = loadBandColor(band)
                             ZStack(alignment: .center) {
-                                Capsule().fill(LiquidColor.tinta10)
+                                Capsule()
+                                    .fill(LiquidColor.tinta10)
                                     .frame(width: 104, height: 3)
                                 Sparkline(values: load.series.map(\.value),
                                           gradient: ChartWell.fillGradient(color),
@@ -895,10 +896,12 @@ private struct CuerpoLanding: View {
     @ViewBuilder
     private func recoveryHeroAccessory(calibrating: Int?) -> some View {
         if let calibrating {
-            Capsule().fill(LiquidColor.tinta10)
+            Capsule()
+                .fill(LiquidColor.tinta10)
                 .frame(width: 132, height: 6)
                 .overlay(alignment: .leading) {
-                    Capsule().fill(LiquidColor.tinta500)
+                    Capsule()
+                        .fill(LiquidColor.tinta500)
                         .frame(width: 132 * CGFloat(calibrating) / CGFloat(Self.recoverySeed), height: 6)
                 }
                 .padding(.top, LiquidSpace.s200)
@@ -1172,10 +1175,10 @@ private struct CuerpoLanding: View {
                 }
                 .padding(.horizontal, LiquidSpace.s400)
                 .padding(.vertical, LiquidSpace.s300)
-                .background(LiquidColor.azul.opacity(0.07), // token-exempt: nudge tint, preview-approved
+                .background(LiquidColor.azul.opacity(0.07),  // token-exempt(optico): nudge tint, preview-approved
                            in: RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous)
-                    .strokeBorder(LiquidColor.azul.opacity(0.14), lineWidth: 1))  // token-exempt: nudge border, preview-approved
+                    .strokeBorder(LiquidColor.azul.opacity(0.14), lineWidth: 1))  // token-exempt(optico): nudge border, preview-approved
                 .contentShape(Rectangle())
             }
             .buttonStyle(.liquidPress)
@@ -1183,7 +1186,7 @@ private struct CuerpoLanding: View {
     }
 
     private var footerActions: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: .zero) {
             actionRow("Compare", icon: "arrow.left.arrow.right") { showCompare = true }
             LiquidCapilar(eje: .horizontal).padding(.leading, 46)
             actionRow("See all metrics", icon: "square.grid.2x2") { showExplore = true }
@@ -1697,7 +1700,7 @@ private struct LiquidLenteTenidaModifier: ViewModifier {
     /// El especular del canto superior: dice dónde empieza el material sin brillar (misma alfa de
     /// referencia que `LiquidCampoMetrica`, `LiquidCampo.alfaEspecularSuperior`).
     private var especularSuperior: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: .zero) {
             LinearGradient(colors: [.white.opacity(LiquidCampo.alfaEspecularSuperior), .clear],
                            startPoint: .top, endPoint: .bottom)
                 .frame(height: 40)

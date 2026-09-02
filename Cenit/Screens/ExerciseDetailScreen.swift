@@ -232,14 +232,14 @@ struct ExerciseDetailScreen: View {
                 // FER-121: círculo visible ≈28pt; el toque real crece a 44 (HIG) sin mover el
                 // círculo — padding + contentShape + padding negativo se cancelan en layout (mismo
                 // principio que `PaperStepper.hitTarget`, FER-947, CenitDesign).
-                .padding(8).contentShape(Rectangle()).padding(-8)  // token-exempt: hit slop pair (±8)
+                .padding(LiquidSpace.s200).contentShape(Rectangle()).padding(-LiquidSpace.s200)  // token-exempt(unico): hit slop pair simétrico ±s200
                 .padding(LiquidSpace.filaRespiro)
                 .accessibilityLabel(Text(isLoopPlaying ? "Pause preview" : "Play preview"))
             }
             // Handoff: the hero carries a frame in the movement family's hue — the same frame
             // the Library draws on its thumbnails (1.5pt El Eje).
             .overlay(RoundedRectangle(cornerRadius: ExerciseThumbnail.heroCornerRadius, style: .continuous)
-                .strokeBorder(familyTint, lineWidth: 1.5))  // token-exempt: aro del hero El Eje (1.5)
+                .strokeBorder(familyTint, lineWidth: 1.5))  // token-exempt(optico): aro del hero El Eje (1.5)
             .accessibilityElement(children: .contain)
             .accessibilityLabel(Text("\(exercise.name) preview"))
         } else {
@@ -253,7 +253,7 @@ struct ExerciseDetailScreen: View {
                 // the real media hero above without a second height living on the component itself.
                 .frame(maxWidth: .infinity).frame(height: EntrenarMetrics.detailHeroMedia).clipped()
                 .overlay(RoundedRectangle(cornerRadius: ExerciseThumbnail.heroCornerRadius, style: .continuous)
-                    .strokeBorder(familyTint, lineWidth: 1.5))  // token-exempt: aro del hero El Eje (1.5)
+                    .strokeBorder(familyTint, lineWidth: 1.5))  // token-exempt(optico): aro del hero El Eje (1.5)
                 if !mediaCoordinator.isEnabled { mediaOffHint }
             }
         }
@@ -311,11 +311,11 @@ struct ExerciseDetailScreen: View {
     /// and EVERY set of that day as quiet «82,5 × 8» chips.
     private var historyList: some View {
         let sessions = historySessions
-        return VStack(alignment: .leading, spacing: 0) {
+        return VStack(alignment: .leading, spacing: .zero) {
             ForEach(Array(sessions.enumerated()), id: \.offset) { idx, day in
                 VStack(alignment: .leading, spacing: LiquidSpace.s200) {
                     HStack(spacing: LiquidSpace.s200) {
-                        RoundedRectangle(cornerRadius: 3, style: .continuous)  // token-exempt: geometría del punto de familia (8×8)
+                        RoundedRectangle(cornerRadius: 3, style: .continuous)  // token-exempt(falta-pieza): geometría del punto de familia (8×8)
                             .fill(familyTint).frame(width: 8, height: 8)
                         historyDayText(day.ts, routineName: day.routineName)
                             .font(LiquidType.tituloGemela).foregroundStyle(LiquidColor.tinta900)
@@ -603,9 +603,9 @@ struct ExerciseDetailScreen: View {
 
     private var howToSection: some View {
         let cues = exercise.displayInstructions(localized: StrengthDisplay.localized)
-        return VStack(alignment: .leading, spacing: 0) {
+        return VStack(alignment: .leading, spacing: .zero) {
             LiquidSectionHeader("How to")
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: .zero) {
                 ForEach(Array(cues.enumerated()), id: \.offset) { index, cue in
                     // Handoff: the step number leads in the family hue, the cue in ink,
                     // capillary-divided rows.
@@ -643,7 +643,7 @@ struct ExerciseDetailScreen: View {
             }
         } label: {
             // Handoff: a flat row over a top capillary — no card. The icon sits in a small sunken square.
-            VStack(spacing: 0) {
+            VStack(spacing: .zero) {
                 Rectangle().fill(LiquidColor.tinta10).frame(height: LiquidRadius.hairline)
                 HStack(spacing: LiquidSpace.s300) {
                     Image(systemName: "play.rectangle")
@@ -676,7 +676,7 @@ struct ExerciseDetailScreen: View {
     private var progressSection: some View {
         let oneRM = series(.oneRM)
         let deltaPercent = trendDeltaPercent
-        return VStack(alignment: .leading, spacing: 0) {
+        return VStack(alignment: .leading, spacing: .zero) {
             // FER-149 spec A: the kicker is the FIXED text below, no conditional variant — it never
             // claims «TODAY»/«HOY» over stale data (the old bug the spec's collateral fix targeted)
             // because it says «90 DAYS», not a same-day claim, regardless of when the last log was.
@@ -758,7 +758,7 @@ struct ExerciseDetailScreen: View {
         let bestVolume = bestVolumeLine
         let cycle = cycleLine
         if bestSet != nil || bestVolume != nil || cycle != nil {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: .zero) {
                 LiquidSectionHeader("Records")
                 if let bestSet {
                     recordRow(Text("Best weight"), bestSet)
@@ -876,7 +876,7 @@ struct ExerciseDetailScreen: View {
     // MARK: - Honest empty
 
     private var emptyHistory: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             Rectangle().fill(LiquidColor.tinta10).frame(height: LiquidRadius.hairline)
             VStack(alignment: .leading, spacing: LiquidSpace.s200) {
                 Image(systemName: "clock.arrow.circlepath")
@@ -938,7 +938,7 @@ private struct TrendAxisChart: View {
         let botY: Double = bottom
         return ZStack(alignment: .topLeading) {
             // Gridlines + y labels, top→bottom; the bottom line slightly stronger (handoff).
-            VStack(spacing: 0) {
+            VStack(spacing: .zero) {
                 ForEach(0..<4, id: \.self) { (i: Int) in
                     let span: Double = topY - botY
                     let yVal: Double = topY - span * Double(i) / 3.0
@@ -972,15 +972,15 @@ private struct TrendAxisChart: View {
                         p.addLine(to: CGPoint(x: last.x, y: h))
                         p.closeSubpath()
                     }
-                    .fill(accent.opacity(0.10))  // token-exempt: área 10% del handoff — LiquidChart.gridAlfa no es public fuera de CenitDesign
+                    .fill(accent.opacity(0.10))  // token-exempt(dato): área 10% del handoff — LiquidChart.gridAlfa no es public fuera de CenitDesign
                     Path { (p: inout Path) in
                         guard let first = points.first else { return }
                         p.move(to: first)
                         points.dropFirst().forEach { (pt: CGPoint) in p.addLine(to: pt) }
                     }
-                    .stroke(accent, style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))  // token-exempt: linea 2.2 del handoff — LiquidChart.lineaAncho no es public fuera de CenitDesign
+                    .stroke(accent, style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))  // token-exempt(dato): linea 2.2 del handoff — LiquidChart.lineaAncho no es public fuera de CenitDesign
                     if let last = points.last, scrubIndex == nil {
-                        Circle().fill(accent.opacity(0.18)).frame(width: 16, height: 16).position(last)  // token-exempt: halo del handoff
+                        Circle().fill(accent.opacity(0.18)).frame(width: 16, height: 16).position(last)  // token-exempt(dato): halo del handoff
                         Circle().fill(accent).frame(width: 9, height: 9).position(last)
                     }
                     // The scrub pin: vertical hairline + dot at the nearest sample.
@@ -989,8 +989,8 @@ private struct TrendAxisChart: View {
                             p.move(to: CGPoint(x: points[i].x, y: 0))
                             p.addLine(to: CGPoint(x: points[i].x, y: h))
                         }
-                        .stroke(LiquidColor.tinta10, lineWidth: 1)  // token-exempt: capilar de scrub
-                        Circle().fill(accent.opacity(0.18)).frame(width: 16, height: 16).position(points[i])  // token-exempt: halo del handoff
+                        .stroke(LiquidColor.tinta10, lineWidth: 1)  // token-exempt(dato): capilar de scrub
+                        Circle().fill(accent.opacity(0.18)).frame(width: 16, height: 16).position(points[i])  // token-exempt(dato): halo del handoff
                         Circle().fill(accent).frame(width: 9, height: 9).position(points[i])
                     }
                 }
@@ -1015,7 +1015,7 @@ private struct TrendAxisChart: View {
 
     /// X captions: first month · middle month · TODAY in the hue.
     private var xCaptions: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: .zero) {
             Text(verbatim: xFirst)
                 .font(LiquidType.dato).tracking(LiquidType.datoTracking)
                 .foregroundStyle(LiquidColor.tinta500)

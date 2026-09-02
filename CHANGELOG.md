@@ -20,6 +20,8 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- Higiene de diseño (FER-313 M4): literales de spacing envueltos en `LiquidSpace` / `.zero`, cápsulas de dato anotadas y `token-exempt` reclasificados con categoría en `Cenit/` y `CenitApp/`.
+
 - Remate iOS (FER-310): `Cenit/`, `CenitApp/` salen de `CenitMetrics`, `InstrumentoType`, `.instrumentoHero`/`.instrumentoConfirm` y `.weight` sobre tokens grotesk; tipografía y espacio pasan a tokens Liquid (`tituloGemelaMedia` nuevo).
 - Watch: la sesión espejo pasa a Liquid sobre OLED (`LiquidOLED` + `LiquidType`/`LiquidSpace`); el negro se queda, las tintas y los tonos de dato alinean con el iPhone (FER-312, DECISIONS 2026-09-03).
 - Widgets y Live Activity pasan a Liquid Glass · El Eje: lienzo `fondoAlto` en inicio/lock, `LiquidOLED` en Dynamic Island, sin `InstrumentoTheme` ni hex sueltos (FER-311, DECISIONS 2026-09-03).

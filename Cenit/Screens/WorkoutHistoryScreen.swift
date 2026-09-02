@@ -429,7 +429,7 @@ struct WorkoutHistoryScreen: View {
         if !sports.isEmpty || strengthCount > 0 {
             VStack(alignment: .leading, spacing: LiquidSpace.s100) {
                 LiquidSectionHeader("By sport")
-                VStack(spacing: 0) {
+                VStack(spacing: .zero) {
                     if strengthCount > 0 {
                         porDeporteRow(symbol: "dumbbell.fill", name: String(localized: "Strength"),
                                       count: strengthCount, divider: !sports.isEmpty) {
@@ -643,7 +643,7 @@ struct WorkoutHistoryScreen: View {
                     let fill: Color = isSelected ? LiquidColor.verdeCarga : LiquidColor.tinta10
                     let ratio: Double = w.volumeKg / peak
                     let barH: CGFloat = max(CGFloat(3), CGFloat(ratio) * CGFloat(54))
-                    UnevenRoundedRectangle(topLeadingRadius: 3, topTrailingRadius: 3)  // token-exempt: geometría de dato
+                    UnevenRoundedRectangle(topLeadingRadius: 3, topTrailingRadius: 3)  // token-exempt(dato): geometría de dato
                         .fill(fill)
                         .frame(height: barH)
                         .frame(maxWidth: .infinity)
@@ -652,7 +652,7 @@ struct WorkoutHistoryScreen: View {
                 }
             }
             .frame(height: 58, alignment: .bottom)
-            Rectangle().fill(LiquidColor.tinta10).frame(height: 1.2)  // token-exempt: eje de dato
+            Rectangle().fill(LiquidColor.tinta10).frame(height: 1.2)  // token-exempt(dato): eje de dato
             HStack {
                 Text(weekLabel(weeks.first?.start)).font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
                 Spacer(minLength: LiquidSpace.s200)
@@ -753,7 +753,8 @@ struct WorkoutHistoryScreen: View {
                             .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta700)
                             .lineLimit(1).minimumScaleFactor(0.8)
                             .frame(width: 86, alignment: .leading)
-                        Capsule().fill(LiquidColor.tinta7)
+                        Capsule()
+                            .fill(LiquidColor.tinta7)
                             .frame(height: 12)
                             .overlay(alignment: .leading) {
                                 GeometryReader { geo in
@@ -1032,7 +1033,7 @@ struct WorkoutHistoryScreen: View {
                 LiquidSectionHeader("Progress") {
                     Text("per exercise").font(LiquidType.titulo).foregroundStyle(LiquidColor.tinta700)
                 }
-                VStack(spacing: 0) {
+                VStack(spacing: .zero) {
                     ForEach(Array(progressExercises.enumerated()), id: \.element.id) { idx, row in
                         progressRow(row, divider: idx != progressExercises.count - 1)
                     }
@@ -1786,8 +1787,8 @@ struct WorkoutSessionDetailScreen: View {
                 }
                 .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
             }
-            .frame(height: 34)  // token-exempt: barra de zonas 34 del handoff
-            HStack(spacing: 0) {
+            .frame(height: 34)  // token-exempt(dato): barra de zonas 34 del handoff
+            HStack(spacing: .zero) {
                 ForEach(percents.indices, id: \.self) { i in
                     VStack(spacing: LiquidSpace.s050) {
                         Text(verbatim: "Z\(i + 1)").font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
@@ -1870,7 +1871,7 @@ struct WorkoutSessionDetailScreen: View {
 
 
     private func exerciseBlock(_ g: (exerciseId: String, name: String, sets: [SetEntry]), index: Int) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             // A superset tag when this exercise shares its routine's `supersetGroup` with an adjacent one
             // in performed order (v3 · 2A). The datum here is anatomical/structural, so it stays in ink.
             if isInSuperset(index) {

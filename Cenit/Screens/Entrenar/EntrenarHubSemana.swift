@@ -25,7 +25,7 @@ struct EntrenarHubSemana: View {
 
     var body: some View {
         EntrenarModulo(tono: .neutro) {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: .zero) {
                 HStack(alignment: .firstTextBaseline) {
                     Text("Your week").liquidRegla().foregroundStyle(LiquidColor.tinta500)
                     Spacer(minLength: LiquidSpace.s200)

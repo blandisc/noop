@@ -61,7 +61,7 @@ struct StrainDetailScreen: View {
 
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
+            LazyVStack(alignment: .leading, spacing: .zero) {
                 if let v = shownToday {
                     campoConDato(v)
                 } else {
@@ -440,10 +440,10 @@ struct StrainDetailScreen: View {
     /// (`colorCarril`), nunca un semáforo (esta hoja es descriptiva).
     private static func colorNivel(_ key: String) -> Color {
         switch key {
-        case "rest":     return Self.tono.opacity(0.24)  // token-exempt: rampa graduada de esfuerzo
-        case "light":    return Self.tono.opacity(0.42)  // token-exempt: rampa graduada de esfuerzo
-        case "moderate": return Self.tono.opacity(0.62)  // token-exempt: rampa graduada de esfuerzo
-        case "hard":     return Self.tono.opacity(0.82)  // token-exempt: rampa graduada de esfuerzo
+        case "rest":     return Self.tono.opacity(0.24)  // token-exempt(dato): rampa graduada de esfuerzo
+        case "light":    return Self.tono.opacity(0.42)  // token-exempt(dato): rampa graduada de esfuerzo
+        case "moderate": return Self.tono.opacity(0.62)  // token-exempt(dato): rampa graduada de esfuerzo
+        case "hard":     return Self.tono.opacity(0.82)  // token-exempt(dato): rampa graduada de esfuerzo
         default:         return Self.tono                 // "extreme"
         }
     }

@@ -161,7 +161,7 @@ struct PlatesScreen: View {
 
     /// Edit mode: a stepper row per denomination, then the bar weight.
     private var inventoryEditor: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             ForEach(PlatesStore.selectableKg, id: \.self) { kg in
                 pairRow(kg)
                 Rectangle().fill(LiquidColor.tinta10).frame(height: 1)
@@ -220,7 +220,7 @@ struct PlatesScreen: View {
                 Text("The work weight is light. No warm-up needed.")
                     .font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
             } else {
-                VStack(spacing: 0) {
+                VStack(spacing: .zero) {
                     ForEach(Array(warmup.enumerated()), id: \.offset) { i, set in
                         if i > 0 { Rectangle().fill(LiquidColor.tinta10).frame(height: 1) }
                         HStack {

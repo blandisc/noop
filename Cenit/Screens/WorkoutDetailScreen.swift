@@ -63,7 +63,7 @@ struct WorkoutDetailScreen: View {
     @ObserveInjection private var inject
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: .zero) {
                 hero
                 contextLine
                     .padding(.top, LiquidSpace.s300)
@@ -156,9 +156,9 @@ struct WorkoutDetailScreen: View {
     }
 
     private var hero: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s100) {
             Text(heroOverline).liquidLabel().foregroundStyle(LiquidColor.tinta500)
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
+            HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s100) {
                 Text(heroValue)
                     .font(LiquidType.numeralHoja)
                     .foregroundStyle(heroColor)
@@ -219,10 +219,10 @@ struct WorkoutDetailScreen: View {
         // the raw percents can sum to < 100); the % labels below show the raw share. Same shape as the
         // sleep-stage bar / the old aggregate zones bar, but with the warm `hrZoneRamp`.
         let total = max(percents.reduce(0, +), 0.001)
-        return VStack(alignment: .leading, spacing: 12) {
+        return VStack(alignment: .leading, spacing: LiquidSpace.s300) {
             Text("Heart-rate zones").liquidLabel().foregroundStyle(LiquidColor.tinta500)
             GeometryReader { geo in
-                HStack(spacing: 2) {
+                HStack(spacing: LiquidSpace.s050) {
                     ForEach(0..<5, id: \.self) { i in
                         Rectangle()
                             .fill(theme.hrZoneRamp[i])
@@ -234,9 +234,9 @@ struct WorkoutDetailScreen: View {
             .clipShape(RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(zonesA11y(percents))
-            HStack(spacing: 0) {
+            HStack(spacing: .zero) {
                 ForEach(0..<5, id: \.self) { i in
-                    VStack(spacing: 3) {
+                    VStack(spacing: LiquidSpace.s075) {
                         Text("Z\(i + 1)" as String).font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                         Text("\(Int(percents[i].rounded()))%")
                             .font(LiquidType.valorS).foregroundStyle(LiquidColor.tinta900)
@@ -264,7 +264,7 @@ struct WorkoutDetailScreen: View {
     // MARK: - Distancia / energía / volumen (apoyos en tinta900, con disclaimer si no es WHOOP)
 
     private var supportsBlock: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s200) {
             HStack(spacing: LiquidSpace.handoff44) {
                 if let m = row.distanceM, m > 0 {
                     stat("Distance", UnitFormatter.distanceFromMeters(m, system: unitSystem), unit: nil, color: LiquidColor.tinta900)
@@ -286,9 +286,9 @@ struct WorkoutDetailScreen: View {
 
     /// One label-over-value support (liquidLabel + value). Color only when the caller passes a data hue.
     private func stat(_ label: LocalizedStringKey, _ value: String, unit: String?, color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s075) {
             Text(label).liquidLabel().foregroundStyle(LiquidColor.tinta500)
-            HStack(alignment: .firstTextBaseline, spacing: 3) {
+            HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s075) {
                 Text(value).font(LiquidType.valorM).foregroundStyle(color)
                 if let unit { Text(unit).font(LiquidType.unidad).foregroundStyle(LiquidColor.tinta500) }
             }
@@ -298,7 +298,7 @@ struct WorkoutDetailScreen: View {
     // MARK: - Notas
 
     private func notesBlock(_ notes: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s150) {
             Text("Notes").liquidLabel().foregroundStyle(LiquidColor.tinta500)
             Text(notes)
                 .font(Font.system(size: LiquidType.lecturaHojaBase))
@@ -310,7 +310,7 @@ struct WorkoutDetailScreen: View {
     // MARK: - Origen
 
     private var originBlock: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: LiquidSpace.s200) {
             Text("Source").liquidLabel().foregroundStyle(LiquidColor.tinta500)
             workoutOrigenBadge(for: row.source)
         }
@@ -434,7 +434,7 @@ struct WorkoutDetailScreen: View {
         case .loading, .noData:
             EmptyView()
         case .noCoverage:
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s150) {
                 Text("Cardiac recovery · 60 s").liquidLabel().foregroundStyle(LiquidColor.tinta500)
                 Text("No clean recovery reading for this session.")
                     .font(Font.system(size: LiquidType.lecturaHojaBase))
@@ -445,12 +445,12 @@ struct WorkoutDetailScreen: View {
             // Pink anchor bar (chrome, static) + a staggered column: the overline is fixed; the number,
             // verdict, baseline and disclaimer rise+fade 70 ms apart. Color lives only on the bpm datum.
             HStack(alignment: .top, spacing: 11) {
-                RoundedRectangle(cornerRadius: 2).fill(LiquidColor.rosa) // token-exempt: geometría de dato (barra ancla HRR)
-                    .frame(width: 3).padding(.vertical, 3)
-                VStack(alignment: .leading, spacing: 8) {
+                RoundedRectangle(cornerRadius: 2).fill(LiquidColor.rosa)  // token-exempt(dato): geometría de dato (barra ancla HRR)
+                    .frame(width: 3).padding(.vertical, LiquidSpace.s075)
+                VStack(alignment: .leading, spacing: LiquidSpace.s200) {
                     Text("Cardiac recovery · 60 s").liquidLabel().foregroundStyle(LiquidColor.tinta500)
                     hrrRise(0) {
-                        HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s100) {
                             Text("\(bpm)")
                                 .font(LiquidType.valorTileL)
                                 .foregroundStyle(LiquidColor.rosa)

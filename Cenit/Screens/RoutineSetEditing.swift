@@ -260,7 +260,8 @@ struct DeleteSetPill: View {
             .foregroundStyle(LiquidColor.negativo)
             .padding(.horizontal, LiquidSpace.s225).padding(.vertical, LiquidSpace.s125)
             .liquidGlass(.pastillaSolida)
-            .overlay(Capsule().strokeBorder(LiquidColor.negativo.opacity(CenitOpacity.dim), lineWidth: 1))
+            .overlay(Capsule()
+                .strokeBorder(LiquidColor.negativo.opacity(CenitOpacity.dim), lineWidth: 1))
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)

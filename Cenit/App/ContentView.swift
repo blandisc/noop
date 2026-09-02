@@ -252,7 +252,7 @@ private struct StoreFailureView: View {
     let onRestore: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             Spacer()
             Text(String(localized: "store.failure.title",
                         defaultValue: "Cénit couldn't open your database."))

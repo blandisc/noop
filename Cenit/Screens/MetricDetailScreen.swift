@@ -557,7 +557,7 @@ struct MetricDetailScreen: View {
     }
 
     @ViewBuilder private func narrativeBodyLiquid(_ window: MetricWindow) -> some View {
-        LazyVStack(alignment: .leading, spacing: 0) {
+        LazyVStack(alignment: .leading, spacing: .zero) {
             if let v = liquidValorFresco {
                 liquidCampoConDato(v)
             } else {
@@ -817,20 +817,20 @@ struct MetricDetailScreen: View {
     /// `laneColor` (TND-19) queda para el papel restante. Estática para poder fijarla en tests.
     static func liquidColorNivel(metric: String, key: String?, tono: Color) -> Color {
         switch (metric, key) {
-        case ("hrv", "below"):        return tono.opacity(0.32)  // token-exempt: rampa graduada de identidad (geometría de dato)
-        case ("hrv", "within"):       return tono.opacity(0.62)  // token-exempt: rampa graduada de identidad (geometría de dato)
+        case ("hrv", "below"):        return tono.opacity(0.32)  // token-exempt(dato): rampa graduada de identidad (geometría de dato)
+        case ("hrv", "within"):       return tono.opacity(0.62)  // token-exempt(dato): rampa graduada de identidad (geometría de dato)
         case ("hrv", "above"):        return tono
-        case ("rhr", "rhrAthlete"):   return tono.opacity(0.28)  // token-exempt: rampa graduada de identidad (geometría de dato)
-        case ("rhr", "rhrLow"):       return tono.opacity(0.48)  // token-exempt: rampa graduada de identidad (geometría de dato)
-        case ("rhr", "rhrTypical"):   return tono.opacity(0.70)  // token-exempt: rampa graduada de identidad (geometría de dato)
+        case ("rhr", "rhrAthlete"):   return tono.opacity(0.28)  // token-exempt(dato): rampa graduada de identidad (geometría de dato)
+        case ("rhr", "rhrLow"):       return tono.opacity(0.48)  // token-exempt(dato): rampa graduada de identidad (geometría de dato)
+        case ("rhr", "rhrTypical"):   return tono.opacity(0.70)  // token-exempt(dato): rampa graduada de identidad (geometría de dato)
         case ("rhr", "rhrHigher"):    return tono
-        case ("resp_rate", "normal"): return tono.opacity(0.55)  // token-exempt: rampa graduada de identidad (geometría de dato)
+        case ("resp_rate", "normal"): return tono.opacity(0.55)  // token-exempt(dato): rampa graduada de identidad (geometría de dato)
         case ("resp_rate", "elevated"): return tono
-        case ("spo2", "low"):         return tono.opacity(0.50)  // token-exempt: rampa graduada de identidad (geometría de dato)
+        case ("spo2", "low"):         return tono.opacity(0.50)  // token-exempt(dato): rampa graduada de identidad (geometría de dato)
         case ("spo2", "normal"):      return tono
         // Steps (TND-21): la tinta sube con el valor — misma rampa de 3 carriles que la de VFC.
-        case ("steps", "sedentary"):  return tono.opacity(0.32)  // token-exempt: rampa graduada de identidad (geometría de dato)
-        case ("steps", "active"):     return tono.opacity(0.62)  // token-exempt: rampa graduada de identidad (geometría de dato)
+        case ("steps", "sedentary"):  return tono.opacity(0.32)  // token-exempt(dato): rampa graduada de identidad (geometría de dato)
+        case ("steps", "active"):     return tono.opacity(0.62)  // token-exempt(dato): rampa graduada de identidad (geometría de dato)
         case ("steps", "veryActive"): return tono
         default:                      return tono
         }
@@ -1335,7 +1335,7 @@ struct MetricDetailScreen: View {
     /// El esqueleto Liquid de Pasos: campo → (ⓘ) → patrón → historial → método. «Tu patrón» va
     /// ANTES del historial — la posición de familia (A-UX-09), no el orden del papel.
     @ViewBuilder private func stepsBodyLiquid(_ window: MetricWindow) -> some View {
-        LazyVStack(alignment: .leading, spacing: 0) {
+        LazyVStack(alignment: .leading, spacing: .zero) {
             if let v = liquidValorFresco {
                 liquidStepsCampoConDato(v)
             } else {
@@ -1588,7 +1588,7 @@ struct MetricDetailScreen: View {
 
     /// El esqueleto Liquid de VO₂max: campo (ancla) → (ⓘ) → historial → dónde caes → método.
     @ViewBuilder private func vo2maxBodyLiquid(_ window: MetricWindow) -> some View {
-        LazyVStack(alignment: .leading, spacing: 0) {
+        LazyVStack(alignment: .leading, spacing: .zero) {
             // El campo enseña la última medición SIEMPRE que exista (hero `.latest`, paridad
             // papel) — la honestidad vive en el rótulo/sello, no en esconder el dato.
             // VIT-03: el primer frame abre con el valor del spec (el del tile), vía el ancla.
@@ -1863,7 +1863,7 @@ struct MetricDetailScreen: View {
 
     /// El esqueleto Liquid del intradía: campo → (ⓘ) → Tu día → zonas → método.
     @ViewBuilder private var intradayBodyLiquid: some View {
-        LazyVStack(alignment: .leading, spacing: 0) {
+        LazyVStack(alignment: .leading, spacing: .zero) {
             // VIT-03: el primer frame abre con la media que el spec ya trae del tile.
             if let v = liquidIntraAncla {
                 liquidIntraCampoConDato(v)
@@ -2104,10 +2104,10 @@ struct MetricDetailScreen: View {
     static func liquidZonaRampa(_ i: Int, tono: Color) -> Color {
         switch i {
         case 0:  return LiquidColor.tinta10
-        case 1:  return tono.opacity(0.35) // token-exempt: rampa de intensidad de zona (geometría de dato)
-        case 2:  return tono.opacity(0.5)  // token-exempt: rampa de intensidad de zona (geometría de dato)
-        case 3:  return tono.opacity(0.65) // token-exempt: rampa de intensidad de zona (geometría de dato)
-        case 4:  return tono.opacity(0.82) // token-exempt: rampa de intensidad de zona (geometría de dato)
+        case 1:  return tono.opacity(0.35)  // token-exempt(dato): rampa de intensidad de zona (geometría de dato)
+        case 2:  return tono.opacity(0.5)  // token-exempt(dato): rampa de intensidad de zona (geometría de dato)
+        case 3:  return tono.opacity(0.65)  // token-exempt(dato): rampa de intensidad de zona (geometría de dato)
+        case 4:  return tono.opacity(0.82)  // token-exempt(dato): rampa de intensidad de zona (geometría de dato)
         default: return tono
         }
     }

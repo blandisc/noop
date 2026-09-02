@@ -221,7 +221,7 @@ struct TrainingBodyScreen: View {
     // (`muscleReading`), nunca una segunda derivación del mapa.
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             Text("Your body · \(cabeceraFecha)").liquidKicker().foregroundStyle(LiquidColor.tinta700)
             if loaded {
                 hiloDelVeredicto.padding(.top, LiquidSpace.s200)
@@ -275,8 +275,8 @@ struct TrainingBodyScreen: View {
         // `EntrenarModulo` aplica su propio inset; se pasa el EdgeInsets óptico previo
         // (token-exempt) vía `insets:` para no duplicar aire ni perder el ajuste.
         EntrenarModulo(tono: .neutro, intensidad: LiquidTonoMetrics.intensidadDefault,
-                       insets: EdgeInsets(top: 16, leading: 10, bottom: 12, trailing: 10)) {  // token-exempt: EdgeInsets mixto sin token compuesto
-            VStack(spacing: 0) {
+                       insets: EdgeInsets(top: LiquidSpace.s400, leading: LiquidSpace.s250, bottom: LiquidSpace.s300, trailing: LiquidSpace.s250)) {
+            VStack(spacing: .zero) {
                 ZStack(alignment: .top) {
                     BodyFiguresView(theme: theme, loadByMuscle: loadByMuscle,
                                     maxLoad: loads.first?.load ?? 0,
@@ -291,7 +291,7 @@ struct TrainingBodyScreen: View {
                     legend.padding(.top, LiquidSpace.s150)
                     Text("Tap a muscle to see its load")
                         .font(LiquidType.filaConteo).foregroundStyle(LiquidColor.tinta500)
-                        .padding(.top, 10)  // token-exempt: sin token exacto (edge ≠ rowVPad)
+                        .padding(.top, LiquidSpace.s250)
                     if !loads.isEmpty {
                         markRecoveredButton.padding(.top, LiquidSpace.s300)
                     }
@@ -372,7 +372,7 @@ struct TrainingBodyScreen: View {
             Text("Tap again to see everything").font(LiquidType.filaConteo).foregroundStyle(LiquidColor.tinta500)
             Spacer()
             Button { withAnimation(LiquidMotion.toque) { peeked = nil } } label: {
-                HStack(spacing: 3) {
+                HStack(spacing: LiquidSpace.s075) {
                     Image(systemName: "arrow.uturn.backward").font(LiquidType.infoGlifoCompacto.weight(.semibold))
                     Text("Deselect").font(LiquidType.filaConteo)
                 }
@@ -387,7 +387,7 @@ struct TrainingBodyScreen: View {
     /// any workout history. (FER-525)
     private var markRecoveredButton: some View {
         OutlineCapsule(theme: theme, size: .lg, estilo: .outline, action: { showResetConfirm = true }) {
-            HStack(spacing: 6) {
+            HStack(spacing: LiquidSpace.s150) {
                 Image(systemName: "arrow.counterclockwise").font(LiquidType.infoGlifoCompacto.weight(.semibold))
                 Text("Mark all recovered").font(LiquidType.filaConteo)
             }
@@ -411,10 +411,10 @@ struct TrainingBodyScreen: View {
     }
 
     private var legend: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: LiquidSpace.s150) {
             LinearGradient(colors: theme.muscleLoadRamp, startPoint: .leading, endPoint: .trailing)
                 .frame(height: 8)
-                .clipShape(RoundedRectangle(cornerRadius: 4))  // token-exempt: geometría de dato
+                .clipShape(RoundedRectangle(cornerRadius: 4))  // token-exempt(dato): geometría de dato
             HStack {
                 Text("Fresh").font(LiquidType.filaConteo).foregroundStyle(LiquidColor.tinta700)
                 Spacer()
@@ -431,10 +431,10 @@ struct TrainingBodyScreen: View {
     /// «Músculos cargados · últimos 7 días» — fixed to the last 7 days (the handoff); each row
     /// carries its weekly sets, the raw number the Schoenfeld band judges.
     private var ranking: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             Text("Loaded muscles · last 7 days").liquidKicker().foregroundStyle(LiquidColor.tinta700)
                 .padding(.bottom, LiquidSpace.s200)
-            muscleColumnHeader.padding(.bottom, 2)  // token-exempt: ajuste óptico
+            muscleColumnHeader.padding(.bottom, LiquidSpace.s050)
             ForEach(Array(rankingLoads.enumerated()), id: \.element.muscle) { i, m in
                 if i > 0 { Divider().overlay(LiquidColor.tinta10) }
                 loadRow(m.muscle)
@@ -556,7 +556,7 @@ struct TrainingBodyScreen: View {
     // foot exists for; the full paragraph (still with its academic cite) stays behind the tap.
 
     private var method: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             Button { withAnimation(LiquidMotion.toque) { showMethod.toggle() } } label: {
                 Text("See the method ›")
                     .font(LiquidType.filaConteo).fontWeight(.semibold).foregroundColor(LiquidColor.tinta700)
@@ -572,8 +572,7 @@ struct TrainingBodyScreen: View {
                 Text("Each set adds load to the muscles it works, decaying by half every two days: the time course of muscle protein synthesis (MacDougall 1995; Damas 2015). Color is relative to your most-loaded muscle, so it reads which of your muscles are hot right now. Weekly volume is judged against the 10–20 sets-per-week band (Schoenfeld 2017), a hypertrophy guide per muscle group; the volume shown is weighted by involvement, so secondary muscles count less. The recommendation crosses this with today's verdict, the same one Hoy shows: a day that asks you to ease off gates everything to rest.")
                     .font(LiquidType.filaConteo).foregroundStyle(LiquidColor.tinta700)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 10)  // token-exempt: sin token exacto (edge ≠ rowVPad)
-            }
+                    .padding(.top, LiquidSpace.s250)}
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .overlay(alignment: .top) { Rectangle().fill(LiquidColor.tinta10).frame(height: 1) }
@@ -659,7 +658,7 @@ struct TrainingBodyScreen: View {
     // different questions and the épico's own spec preserves this section's rows as-is.
 
     private var volumeSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             Text("Volume per muscle").liquidLabel().foregroundStyle(LiquidColor.tinta500)
             volumeSpanPicker
                 .padding(.top, LiquidSpace.s300)
@@ -680,7 +679,7 @@ struct TrainingBodyScreen: View {
     }
 
     private var volumeRows: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: .zero) {
             ForEach(volumes, id: \.muscle) { v in
                 volumeRow(v)
             }
@@ -700,12 +699,12 @@ struct TrainingBodyScreen: View {
                 let hi = MuscleFatigueMap.weeklyBandHigh / railTop
                 ZStack(alignment: .leading) {
                     // the 10–20 band, the fixed reference
-                    RoundedRectangle(cornerRadius: 3).fill(LiquidColor.tinta10)  // token-exempt: geometría de dato
+                    RoundedRectangle(cornerRadius: 3).fill(LiquidColor.tinta10)  // token-exempt(dato): geometría de dato
                         .frame(width: w * (hi - lo), height: 14)
                         .offset(x: w * lo)
                     // the datum — each muscle wears its movement-family hue (handoff «Mis
                     // entrenamientos»: bars tell apart at a glance); below-band keeps the warning.
-                    RoundedRectangle(cornerRadius: 3)  // token-exempt: geometría de dato
+                    RoundedRectangle(cornerRadius: 3)  // token-exempt(dato): geometría de dato
                         .fill(below ? LiquidColor.atencionTexto : theme.movementFamilyTint(primaryMuscles: [v.muscle]))
                         .frame(width: max(4, w * min(v.setsPerWeek, railTop) / railTop), height: 6)
                 }
@@ -795,7 +794,7 @@ struct TrainingBodyScreen: View {
     }
 
     private var volumeEmptyState: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s150) {
             Text("No sets in this range")
                 .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
                 .foregroundStyle(LiquidColor.tinta900)
@@ -850,7 +849,7 @@ private struct BodyFiguresView: View {
     }
 
     private func figure(_ side: MuscleAtlas.Side) -> some View {
-        VStack(spacing: 5) {
+        VStack(spacing: LiquidSpace.s125) {
             ZStack {
                 // The silhouette is stroke-only (fill:none) so the body reads as paper and color
                 // lives only in the tinted muscles — the «Instrumento» rule (owner-approved, FER-781).
@@ -966,12 +965,12 @@ private struct MuscleDetailView: View {
             GeometryReader { geo in
                 let w = geo.size.width
                 ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 4).fill(LiquidColor.tinta10).frame(height: 8)  // token-exempt: geometría de dato
+                    RoundedRectangle(cornerRadius: 4).fill(LiquidColor.tinta10).frame(height: 8)  // token-exempt(dato): geometría de dato
                     // Banda 10–20: tinta un peldaño más presente que el riel (`tinta10`).
                     Rectangle().fill(LiquidColor.celdaVaciaPip)
                         .frame(width: w * (hi - lo) / top, height: 8)
                         .offset(x: w * lo / top)
-                    RoundedRectangle(cornerRadius: 1).fill(stateColor)  // token-exempt: geometría de dato
+                    RoundedRectangle(cornerRadius: 1).fill(stateColor)  // token-exempt(dato): geometría de dato
                         .frame(width: 2, height: 16)
                         .offset(x: min(w - 2, w * min(weeklySets, top) / top))
                 }
@@ -1037,7 +1036,7 @@ private struct MuscleDetailView: View {
     }
 
     private var exercises: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             Text("Exercises that work it").liquidKicker().foregroundStyle(LiquidColor.tinta500)
                 .padding(.bottom, LiquidSpace.s200)
             ForEach(Array(hits.prefix(6)), id: \.exerciseId) { hit in

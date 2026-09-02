@@ -89,7 +89,7 @@ struct StressDetailScreen: View {
 
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
+            LazyVStack(alignment: .leading, spacing: .zero) {
                 if let model {
                     // Level 1 · campo. Falls back to yesterday's reading (dated sello) when today is
                     // still incomplete; never blanks the screen. (FER-397)

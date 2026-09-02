@@ -288,7 +288,8 @@ struct IntervalTimerView: View {
                     .frame(maxWidth: .infinity)
                     .overlay {
                         if index > currentRound && phase != .done {
-                            Capsule().strokeBorder(LiquidColor.tinta10, lineWidth: 1)
+                            Capsule()
+                                .strokeBorder(LiquidColor.tinta10, lineWidth: 1)
                         }
                     }
             }
@@ -346,7 +347,7 @@ struct IntervalTimerView: View {
             }
             .frame(height: LiquidSpace.s200)
 
-            HStack(spacing: 0) {
+            HStack(spacing: .zero) {
                 overviewStat("Work", "\(workSeconds)s", LiquidColor.ambar)
                 overviewStat("Rest", "\(restSeconds)s", LiquidColor.cian)
                 overviewStat("Rounds", "\(rounds)", LiquidColor.tinta900)

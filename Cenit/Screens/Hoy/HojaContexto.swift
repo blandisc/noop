@@ -13,7 +13,7 @@ import CenitDesign
 
 struct HojaContexto: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             Text(String(localized: "manual.contexto.titulo",
                         defaultValue: "Your context"))
                 .font(LiquidType.tituloHoja)

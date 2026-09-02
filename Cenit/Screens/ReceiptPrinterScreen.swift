@@ -63,7 +63,7 @@ struct ReceiptPrinterScreen: View {
     private var removeThreshold: CGFloat { -(screenHeight * 0.33) }
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: .zero) {
             printerMouthRow
                 .padding(.top, LiquidSpace.s100)
 
@@ -116,7 +116,7 @@ struct ReceiptPrinterScreen: View {
                               includeHR: true, includeKcal: true, includeRecords: true)
                     .frame(width: ShareCardView.width)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
+                    .padding(.vertical, LiquidSpace.s300)
             }
         } else if ticketState == .removed {
             VStack(spacing: LiquidSpace.s400) {
@@ -146,7 +146,7 @@ struct ReceiptPrinterScreen: View {
                 ThermalTicketShape(topRadius: 7, toothWidth: 11, toothHeight: 7)
                     .fill(ThermalPalette.paper)
                     .frame(width: ticketWidth, height: 18)
-                    .shadow(color: .black.opacity(0.08), radius: 2, y: 1)   // token-exempt: recibo térmico, el único objeto no-Instrumento (sombra de la impresora)
+                    .shadow(color: .black.opacity(0.08), radius: 2, y: 1)  // token-exempt(unico): recibo térmico, el único objeto no-Instrumento (sombra de la impresora)
                     .offset(y: 2)
             }
 
@@ -270,14 +270,14 @@ struct ReceiptPrinterScreen: View {
     // MARK: - Action bar
 
     private var actionBar: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: LiquidSpace.s250) {
             CenitCTAButton("Ver en Apple Health") {
                 if let url = URL(string: "x-apple-health://") {
                     UIApplication.shared.open(url)
                 }
             }
 
-            HStack(spacing: 10) {
+            HStack(spacing: LiquidSpace.s250) {
                 CenitCTAButton("Guardar", kind: .outline) {
                     if let img = renderTicket() { FileExport.saveImageToPhotos(img) }
                 }

@@ -21,7 +21,7 @@ struct ShareCardView: View {
     let includeRecords: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             Text("Cénit").font(LiquidType.tituloHoja)
                 .foregroundStyle(LiquidColor.tinta900)
             Text(title).font(LiquidType.displayS).tracking(LiquidType.displaySTracking)

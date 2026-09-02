@@ -213,7 +213,7 @@ struct WorkoutEditSheet: View {
             Text("Routine").liquidLabel().foregroundStyle(LiquidColor.tinta500)
             Spacer(minLength: 12)
             Button { showRoutineMenu = true } label: {
-                HStack(spacing: 6) {
+                HStack(spacing: LiquidSpace.s150) {
                     // El punto vive solo junto a la rutina YA elegida (Alcance punto 5) — el picker
                     // (`LiquidMenuItem`) es un componente general de la app, sin swatch por opción.
                     if let region = routineId.flatMap({ routineRegions[$0] }) {
@@ -241,7 +241,7 @@ struct WorkoutEditSheet: View {
     @ViewBuilder
     private var capturedSection: some View {
         if session.strain != nil || session.avgHr != nil {
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s150) {
                 Text("From your body").liquidLabel().foregroundStyle(LiquidColor.tinta500)
                 HStack(spacing: LiquidSpace.seccionAire) {
                     if let strain = session.strain {
@@ -263,8 +263,8 @@ struct WorkoutEditSheet: View {
     }
 
     private func readonlyStat(_ value: String, unit: String? = nil, label: LocalizedStringKey) -> some View {
-        VStack(alignment: .leading, spacing: 1) {
-            HStack(alignment: .firstTextBaseline, spacing: 3) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s025) {
+            HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s075) {
                 Text(value)
                     .font(LiquidType.valorM)
                     .foregroundStyle(LiquidColor.tinta500)
@@ -282,7 +282,7 @@ struct WorkoutEditSheet: View {
 
     private func exerciseHeader(_ gi: Int) -> some View {
         Button { reassignGroup = ReassignTarget(index: gi) } label: {
-            HStack(spacing: 6) {
+            HStack(spacing: LiquidSpace.s150) {
                 Text(exerciseName(groups[gi].exerciseId))
                     .font(LiquidType.titulo)
                     .foregroundStyle(LiquidColor.tinta900)
@@ -302,7 +302,7 @@ struct WorkoutEditSheet: View {
 
     private func addSetRow(_ gi: Int) -> some View {
         Button { addSet(gi) } label: {
-            HStack(spacing: 6) {
+            HStack(spacing: LiquidSpace.s150) {
                 CenitIcon.add.image.font(LiquidType.iconSF(size: 12))
                 Text("Add set").font(LiquidType.tituloFila)
             }
@@ -315,7 +315,7 @@ struct WorkoutEditSheet: View {
     }
 
     private func setRow(gi: Int, si: Int, type: ExerciseType) -> some View {
-        HStack(spacing: 10) {
+        HStack(spacing: LiquidSpace.s250) {
             Text("Set \(si + 1)")
                 .font(LiquidType.cuerpo)
                 .foregroundStyle(LiquidColor.tinta500)
@@ -340,7 +340,7 @@ struct WorkoutEditSheet: View {
                     .monospacedDigit()
             }
         }
-        .padding(.vertical, 5)
+        .padding(.vertical, LiquidSpace.s125)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text(setAccessibilityLabel(gi: gi, si: si, type: type)))
     }
@@ -369,7 +369,7 @@ struct WorkoutEditSheet: View {
     }
 
     private var notesSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s150) {
             Text("Notes").liquidLabel().foregroundStyle(LiquidColor.tinta500)
             TextField(
                 "",
@@ -384,7 +384,7 @@ struct WorkoutEditSheet: View {
     }
 
     private func validationNote(_ key: LocalizedStringKey) -> some View {
-        HStack(spacing: 6) {
+        HStack(spacing: LiquidSpace.s150) {
             Image(systemName: "exclamationmark.triangle")
                 .font(LiquidType.iconSF(size: 12))
             Text(key).font(LiquidType.captionLectura)

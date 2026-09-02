@@ -686,7 +686,7 @@ struct LiveStrengthSheet: View {
     // MARK: _LiveHead (FER-929 — cabecera COMPACTA desde FER-133, handoff «Sesión en vivo» v4)
 
     private var liveHead: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             sessionHeaderRow
             // Barra 3pt en el tinte de la rutina (FER-133 · V4) — reemplaza el desglose por ejercicio
             // de FER-929: el handoff la simplifica a «% ejercicios hechos», y el desglose ya se lee en
@@ -965,8 +965,7 @@ struct LiveStrengthSheet: View {
                 Button { model.retryWatchMirroring() } label: {
                     Text("Retry").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta900)
                 }
-                .buttonStyle(.plain).padding(.leading, 2)  // token-exempt: ajuste óptico
-            }
+                .buttonStyle(.plain).padding(.leading, LiquidSpace.s050)}
         }
     }
 
@@ -1065,8 +1064,7 @@ struct LiveStrengthSheet: View {
                     }
                 }
                 .buttonStyle(EntrenarPressStyle())
-                .padding(.top, 2)  // token-exempt: ajuste óptico
-                .accessibilityLabel(Text("Search the exercise library"))
+                .padding(.top, LiquidSpace.s050).accessibilityLabel(Text("Search the exercise library"))
 
                 // FER-762: a brand-new user has no muscle-load history yet — `loadFreshSuggestions` then
                 // returns no picks. Falling back to the search-only flow (no orphaned "Fresh today" header
@@ -1084,8 +1082,7 @@ struct LiveStrengthSheet: View {
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.horizontal, LiquidSpace.s400).padding(.vertical, LiquidSpace.s300)
                             .liquidGlass(.superficieSolida)
-                            .padding(.top, 3)  // token-exempt: ajuste óptico
-                    }
+                            .padding(.top, LiquidSpace.s075)}
                 }
 
                 Divider().overlay(LiquidColor.tinta10).padding(.top, LiquidSpace.seccionCanto)
@@ -1104,7 +1101,7 @@ struct LiveStrengthSheet: View {
         // `bodyChrome` (una sola raíz para las 3 secciones). Un segundo aquí apilaba material y
         // destello (costura visible); el `.background(LiquidColor.papelTarjeta)` opaco de antes se removió por lo
         // mismo. Buscador de frescura y demás lógica de esta sección, intactos.
-        .safeAreaInset(edge: .top, spacing: 0) { liveHead }
+        .safeAreaInset(edge: .top, spacing: .zero) { liveHead }
         // FER-82: las sugerencias las gatea el veredicto, así que una lista calculada mientras el
         // veredicto todavía se computaba está vencida en cuanto aterriza. Se recalcula cuando el
         // consejo con el que se calculó ya no es el de hoy.
@@ -1730,8 +1727,10 @@ struct LiveStrengthSheet: View {
             GeometryReader { geo in
                 let w = geo.size.width
                 ZStack(alignment: .leading) {
-                    Capsule().fill(LiquidColor.tinta10)
-                    Capsule().fill(neutral ? LiquidColor.tinta10 : LiquidColor.verdeCarga)
+                    Capsule()
+                        .fill(LiquidColor.tinta10)  // token-exempt(dato): track de progreso
+                    Capsule()
+                        .fill(neutral ? LiquidColor.tinta10 : LiquidColor.verdeCarga)
                         .opacity(neutral || positive ? 1 : 0.75)
                         .frame(width: max(4, w * (current / maxV)))
                     Rectangle().fill(LiquidColor.tinta900).frame(width: 2, height: 14)
@@ -1785,10 +1784,10 @@ struct LiveStrengthSheet: View {
 
     /// «Por ejercicio»: one quiet row per exercise — sets · top datum · trend vs «la última vez».
     private func receiptExercises(_ lines: [StrengthSummary.ExerciseLine]) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             Text("By exercise").liquidKicker().foregroundStyle(LiquidColor.tinta700)
-                .padding(.bottom, 2)  // token-exempt: ajuste óptico
-            ForEach(Array(lines.enumerated()), id: \.element.id) { i, line in
+                .padding(.bottom, LiquidSpace.s050)
+                ForEach(Array(lines.enumerated()), id: \.element.id) { i, line in
                 HStack(spacing: LiquidSpace.s300) {
                     Text(line.name).font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta900)
                         .lineLimit(1).minimumScaleFactor(0.8)
@@ -1856,7 +1855,7 @@ struct LiveStrengthSheet: View {
                         bandNameText(.high, active: band)
                     }
                 } else {
-                    HStack(spacing: 14) {
+                    HStack(spacing: LiquidSpace.s350) {
                         bandNameText(.light, active: band)
                         bandNameText(.moderate, active: band)
                         bandNameText(.high, active: band)
@@ -1869,8 +1868,7 @@ struct LiveStrengthSheet: View {
             // Clave distinta a la «Estimate» ya existente (es «Estimado», otro contexto) para no
             // colisionar dos entradas iguales en el catálogo.
             Text("Estimate, you decide").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
-                .padding(.top, 2)  // token-exempt: ajuste óptico
-        }
+                .padding(.top, LiquidSpace.s050)}
         .accessibilityElement(children: .combine)
     }
 

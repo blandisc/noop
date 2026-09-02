@@ -89,7 +89,7 @@ struct HojaTarjetaSuperserieCompuesta: View {
                 .foregroundStyle(LiquidColor.tinta900)
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            HStack(alignment: .firstTextBaseline, spacing: 0) {
+            HStack(alignment: .firstTextBaseline, spacing: .zero) {
                 Text(verbatim: sheet.showsWeight(type) ? (set?.weightKg.map { StrengthDisplay.weightNumber($0, system: sheet.system) } ?? "—") : "—")
                     .font(LiquidType.valorS).foregroundStyle(LiquidColor.tinta900)
                 if sheet.showsWeight(type) {

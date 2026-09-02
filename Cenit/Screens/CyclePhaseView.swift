@@ -187,7 +187,7 @@ private struct CyclePhaseWhatItIs: View {
                     HStack(alignment: .top, spacing: LiquidSpace.s200) {
                         Image(systemName: "xmark")
                             .font(LiquidType.iconSF(size: 12))
-                            .foregroundStyle(LiquidColor.tinta500).padding(.top, 3)
+                            .foregroundStyle(LiquidColor.tinta500).padding(.top, LiquidSpace.s075)
                         Text(line).font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -361,8 +361,10 @@ private struct CyclePhaseProgressBar: View {
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                Capsule().fill(LiquidColor.tinta10)
-                Capsule().fill(LiquidColor.verdePrimario)
+                Capsule()
+                    .fill(LiquidColor.tinta10)
+                Capsule()
+                    .fill(LiquidColor.verdePrimario)
                     .frame(width: max(0, min(1, fraction)) * geo.size.width)
             }
         }
