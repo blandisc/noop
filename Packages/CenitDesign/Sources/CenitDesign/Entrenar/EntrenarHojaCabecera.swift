@@ -75,7 +75,7 @@ public struct EntrenarHojaCabecera: View {
     private var salidaControl: some View {
         switch salida {
         case .cerrar:
-            BackButton(role: .close, theme: .base, action: onSalir)
+            BackButton(role: .close, action: onSalir)
         case .cancelar(let texto):
             textoSalida(texto, tinta: LiquidColor.tinta700, peso: .semibold)
         case .guardar(let texto):

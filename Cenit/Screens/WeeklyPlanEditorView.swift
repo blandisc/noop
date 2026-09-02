@@ -751,7 +751,6 @@ struct WeeklyPlanEditorView: View {
         // FER-280·2c: receta → `UndoToast`; transition + auto-descarte quedan en el caller.
         UndoToast(message: String(localized: "Routine deleted"),
                   cta: String(localized: "Undo"),
-                  theme: .base,
                   action: { undoDelete(d) })
             .transition(LiquidMotion.risingFadeTransition)
             .task(id: d.id) {
@@ -867,7 +866,6 @@ struct WeeklyPlanEditorView: View {
         // FER-280·2c: gemela de undoBanner → `UndoToast`.
         UndoToast(message: String(localized: "Folder deleted"),
                   cta: String(localized: "Undo"),
-                  theme: .base,
                   action: { undoDeleteFolder(d) })
             .transition(LiquidMotion.risingFadeTransition)
             .task(id: d.id) {

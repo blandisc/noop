@@ -85,10 +85,10 @@ struct WorkoutEditSheet: View {
                 ToolbarItem(placement: .cancellationAction) {
                     // FER-998: el disco de papel en vez de la palabra «Cancel» — la misma salida que
                     // el resto de la app. `cancel()` conserva la confirmación de descartar.
-                    BackButton(role: .close, theme: .base) { cancel() }
+                    BackButton(role: .close) { cancel() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    HeaderActionButton(Text("Save"), enabled: canSave, theme: .base) { save() }
+                    HeaderActionButton(Text("Save"), enabled: canSave) { save() }
                 }
             }
         }

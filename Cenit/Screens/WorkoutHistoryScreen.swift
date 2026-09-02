@@ -1220,7 +1220,6 @@ struct WorkoutHistoryScreen: View {
         // FER-285·c: receta → `UndoToast` (pad de la pieza); transition + auto-descarte en el caller.
         UndoToast(message: String(localized: "Workout deleted"),
                   cta: String(localized: "Undo"),
-                  theme: .base,
                   action: { undoDelete(d) })
             .transition(LiquidMotion.risingFadeTransition)
             .task(id: d.id) {

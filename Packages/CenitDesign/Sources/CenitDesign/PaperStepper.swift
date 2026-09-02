@@ -18,8 +18,6 @@ public struct PaperStepper: View {
     private let label: String
     private let unit: String?
 
-    @Environment(\.instrumentoTheme) private var theme
-
     /// - Parameters:
     ///   - label: nombre del valor, para VoiceOver («Trabajo»).
     ///   - unit: unidad hablada y anunciada («s», «rondas»); nil si el valor va solo.
@@ -55,8 +53,7 @@ public struct PaperStepper: View {
 
     private func button(_ system: String, delta: Int, enabled: Bool) -> some View {
         StepperButton(system: system, size: Self.glyphSize, shape: .circle,
-                      glyph: StrandFont.glyph(.inline, weight: .semibold),
-                      theme: theme) { nudge(delta) }
+                      glyph: StrandFont.glyph(.inline, weight: .semibold)) { nudge(delta) }
             .opacity(enabled ? 1 : Self.disabledOpacity)
             .disabled(!enabled)
             .hitTarget(visible: Self.glyphSize)
@@ -134,24 +131,22 @@ private struct PaperStepperDemo: View {
     @State private var work = 40
     @State private var rounds = 8
     var body: some View {
-        let t = InstrumentoTheme.base
         VStack(alignment: .leading, spacing: LiquidSpace.s300) {
             HStack {
-                Text("Trabajo").font(StrandFont.headline).foregroundStyle(t.ink)
+                Text("Trabajo").font(StrandFont.headline).foregroundStyle(LiquidColor.tinta900)
                 Spacer()
-                Text("\(work)").font(StrandFont.number(24)).foregroundStyle(t.dataStrain)
+                Text("\(work)").font(StrandFont.number(24)).foregroundStyle(LiquidColor.ambar)
                 PaperStepper(value: $work, in: 10...600, step: 5, label: "Trabajo", unit: "s")
             }
             HStack {
-                Text("Rondas").font(StrandFont.headline).foregroundStyle(t.ink)
+                Text("Rondas").font(StrandFont.headline).foregroundStyle(LiquidColor.tinta900)
                 Spacer()
-                Text("\(rounds)").font(StrandFont.number(24)).foregroundStyle(t.ink)
+                Text("\(rounds)").font(StrandFont.number(24)).foregroundStyle(LiquidColor.tinta900)
                 PaperStepper(value: $rounds, in: 1...50, label: "Rondas", unit: "rondas")
             }
         }
         .padding(LiquidSpace.s600)
-        .background(t.paper)
-        .instrumentoTheme(t)
+        .background(LiquidColor.fondoAlto)
     }
 }
 

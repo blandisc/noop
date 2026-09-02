@@ -7,24 +7,25 @@ import SwiftUI
 /// y la barra deja de leerse asimétrica cuando conviven.
 ///
 /// El relleno es de papel, no de tinta: en «Instrumento diurno» el peso visual se reserva para el
-/// dato, y una barra de navegación es chrome.
+/// dato, y una barra de navegación es chrome. Paints with `LiquidColor` (FER-320).
 public struct HeaderActionButton: View {
     private let label: Text
     private let enabled: Bool
-    private let theme: InstrumentoTheme
     private let action: () -> Void
 
+    /// - Parameter theme: ignored for painting (LiquidColor). Kept for call-site compatibility (FER-320).
     public init(_ label: Text, enabled: Bool = true,
-                theme: InstrumentoTheme, action: @escaping () -> Void) {
-        self.label = label; self.enabled = enabled; self.theme = theme; self.action = action
+                theme: InstrumentoTheme = .base, action: @escaping () -> Void) {
+        self.label = label; self.enabled = enabled; self.action = action
+        _ = theme
     }
 
     public var body: some View {
         Button(action: action) {
             label
                 .font(StrandFont.subhead.weight(.medium))
-                .foregroundStyle(enabled ? theme.ink : theme.inkTertiary)
-                .headerCapsule(theme)
+                .foregroundStyle(enabled ? LiquidColor.tinta900 : LiquidColor.tinta500)
+                .headerCapsule()
                 // El marco táctil lo pone el BOTÓN, no el cromo: la sesión activa mete sus cápsulas
                 // en una fila de 32 junto al reloj, y forzarles 44 desde el modificador le crecería
                 // el encabezado 12pt a una pantalla ya publicada.
@@ -47,34 +48,34 @@ public extension View {
     /// Dibuja 32 de alto y NO impone área táctil: quien lo use decide si envolverlo en un marco de
     /// 44. `HeaderActionButton` lo hace; la sesión no puede, porque sus cápsulas comparten fila con
     /// el reloj y crecerían el encabezado.
-    func headerCapsule(_ theme: InstrumentoTheme) -> some View {
-        self
+    /// - Parameter theme: ignored for painting (LiquidColor). Kept for call-site compatibility (FER-320).
+    func headerCapsule(_ theme: InstrumentoTheme = .base) -> some View {
+        _ = theme
+        return self
             .padding(.horizontal, 14)
             .frame(height: 32)
-            .background(Capsule().fill(theme.surface))
-            .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            .background(Capsule().fill(LiquidColor.papelTarjeta))
+            .overlay(Capsule().strokeBorder(LiquidColor.tinta10, lineWidth: 1))
     }
 }
 
 #if DEBUG
 #Preview("HeaderActionButton") {
-    let t = InstrumentoTheme.base
     VStack(spacing: 20) {
         // La barra completa: el disco para salir, la cápsula para la acción con nombre.
         HStack {
-            BackButton(role: .close, theme: t, action: {})
+            BackButton(role: .close, action: {})
             Spacer()
-            Text(verbatim: "Nueva rutina").font(StrandFont.body).foregroundStyle(t.ink)
+            Text(verbatim: "Nueva rutina").font(StrandFont.body).foregroundStyle(LiquidColor.tinta900)
             Spacer()
-            HeaderActionButton(Text(verbatim: "Guardar"), theme: t, action: {})
+            HeaderActionButton(Text(verbatim: "Guardar"), action: {})
         }
         HStack(spacing: 12) {
-            HeaderActionButton(Text(verbatim: "Guardar"), theme: t, action: {})
-            HeaderActionButton(Text(verbatim: "Guardar"), enabled: false, theme: t, action: {})
+            HeaderActionButton(Text(verbatim: "Guardar"), action: {})
+            HeaderActionButton(Text(verbatim: "Guardar"), enabled: false, action: {})
         }
     }
     .padding(24)
-    .background(t.paper)
-    .instrumentoTheme(t)
+    .background(LiquidColor.fondoAlto)
 }
 #endif

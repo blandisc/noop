@@ -7,14 +7,17 @@ import SwiftUI
 // language elevation is exceptional and therefore means something (they sit above the session's
 // time). Both share `floatShadow`. The session progress bar is a flat instrument (segments by
 // exercise, partial fill), color = routine identity, position = the channel — no shadow.
+// Paints with `LiquidColor` (FER-320).
 
 public extension View {
     /// The single «float» shadow of the Entrenar flow (FER-716): a soft ink drop used by the rest
     /// card (radius 12, y 8) and, lighter, the session pill (radius 9, y 6). Deliberately scarce —
     /// nothing else on the paper casts a shadow.
-    func floatShadow(_ theme: InstrumentoTheme, radius: CGFloat = 12, y: CGFloat = 8,
+    /// - Parameter theme: ignored for painting (LiquidColor). Kept for call-site compatibility (FER-320).
+    func floatShadow(_ theme: InstrumentoTheme = .base, radius: CGFloat = 12, y: CGFloat = 8,
                      opacity: Double = 0.13) -> some View {
-        shadow(color: theme.ink.opacity(opacity), radius: radius, x: 0, y: y)
+        _ = theme
+        return shadow(color: LiquidColor.tinta900.opacity(opacity), radius: radius, x: 0, y: y)
     }
 }
 
@@ -24,8 +27,10 @@ public extension View {
     /// The «patrón/conexión» block idiom (FER-708): a `patternBlock` fill with the top/bottom-right
     /// corners rounded (0/0/8/8) and a 2.5 pt colored bar down the leading edge. Single source so the
     /// Today brief and the strength receipt share one geometry (FER-716).
-    func patternBlock(_ theme: InstrumentoTheme, bar: Color, cornerRadius: CGFloat = 8) -> some View {
-        background(theme.patternBlock,
+    /// - Parameter theme: ignored for painting (LiquidColor). Kept for call-site compatibility (FER-320).
+    func patternBlock(_ theme: InstrumentoTheme = .base, bar: Color, cornerRadius: CGFloat = 8) -> some View {
+        _ = theme
+        return background(LiquidColor.papelBajo,
                    in: UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 0,
                                               bottomTrailingRadius: cornerRadius,
                                               topTrailingRadius: cornerRadius, style: .continuous))
@@ -62,7 +67,6 @@ public struct SessionPill: View {
     /// Paused state (FER-952): dims the clock and flips the trailing button to ▶.
     let paused: Bool
     let hue: Color
-    let theme: InstrumentoTheme
     /// VoiceOver label + hint, provided by the CALLER — the package has no string catalog, so the
     /// app layer localizes them (FER-716).
     let accessibilityLabel: Text
@@ -74,17 +78,19 @@ public struct SessionPill: View {
     /// VoiceOver label del ✕ («Descartar sesión») — caller-localized (FER-716).
     let discardAccessibilityLabel: Text?
 
+    /// - Parameter theme: ignored for painting (LiquidColor). Kept for call-site compatibility (FER-320).
     public init(routineName: String, elapsed: String, bpm: Int?,
                 detail: String? = nil, paused: Bool = false, hue: Color,
-                theme: InstrumentoTheme, accessibilityLabel: Text, accessibilityHint: Text,
+                theme: InstrumentoTheme = .base, accessibilityLabel: Text, accessibilityHint: Text,
                 action: @escaping () -> Void, onDiscard: (() -> Void)? = nil,
                 discardAccessibilityLabel: Text? = nil) {
         self.routineName = routineName; self.elapsed = elapsed; self.bpm = bpm
         self.detail = detail; self.paused = paused
-        self.hue = hue; self.theme = theme
+        self.hue = hue
         self.accessibilityLabel = accessibilityLabel; self.accessibilityHint = accessibilityHint
         self.action = action; self.onDiscard = onDiscard
         self.discardAccessibilityLabel = discardAccessibilityLabel
+        _ = theme
     }
 
     public var body: some View {
@@ -94,21 +100,21 @@ public struct SessionPill: View {
                     Circle().fill(hue).frame(width: 6, height: 6)
                     Text(routineName)
                         .font(StrandFont.subhead).fontWeight(.semibold)
-                        .foregroundStyle(theme.ink)
+                        .foregroundStyle(LiquidColor.tinta900)
                         .lineLimit(1)
                     dot
                     Text(elapsed)
                         .font(InstrumentoType.groteskNumber(14))
-                        // inkTertiary, not inkDim: the frozen clock is still READ (§8.7 — inkDim
+                        // tinta500, not inkDim: the frozen clock is still READ (§8.7 — inkDim
                         // never carries copy that must be legible).
-                        .foregroundStyle(paused ? theme.inkTertiary : theme.ink)
+                        .foregroundStyle(paused ? LiquidColor.tinta500 : LiquidColor.tinta900)
                         .layoutPriority(1)
                     if let bpm {
                         dot
                         HStack(spacing: 3) {
-                            Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron)).foregroundStyle(theme.dataHeart)
+                            Image(systemName: "heart.fill").font(StrandFont.glyph(.chevron)).foregroundStyle(LiquidColor.rosa)
                             // r26: measured datum speaks Grotesk tabular (same voice as the session header).
-                            Text("\(bpm)").font(InstrumentoType.groteskNumber(12, weight: .medium)).foregroundStyle(theme.dataHeart)
+                            Text("\(bpm)").font(InstrumentoType.groteskNumber(12, weight: .medium)).foregroundStyle(LiquidColor.rosa)
                         }
                         .layoutPriority(1)
                     }
@@ -116,7 +122,7 @@ public struct SessionPill: View {
                         dot
                         Text(detail)
                             .font(InstrumentoType.groteskNumber(12, weight: .medium))
-                            .foregroundStyle(theme.inkSecondary)
+                            .foregroundStyle(LiquidColor.tinta700)
                             .layoutPriority(1)
                     }
                 }
@@ -134,9 +140,9 @@ public struct SessionPill: View {
                 Button(action: onDiscard) {
                     Image(systemName: "xmark")
                         .font(StrandFont.glyph(.inline, weight: .bold))
-                        .foregroundStyle(theme.ink)
+                        .foregroundStyle(LiquidColor.tinta900)
                         .frame(width: 34, height: 34)
-                        .background(Circle().fill(theme.patternBlock))
+                        .background(Circle().fill(LiquidColor.papelBajo))
                         // 34 visual, 44 tocable — el mínimo HIG nunca se negocia (§8.7).
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
@@ -146,32 +152,31 @@ public struct SessionPill: View {
                 .padding(.trailing, 2)
             }
         }
-        .background(Capsule(style: .continuous).fill(theme.surface))
-        .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
-        .floatShadow(theme, radius: 9, y: 6, opacity: 0.12)
+        .background(Capsule(style: .continuous).fill(LiquidColor.papelTarjeta))
+        .overlay(Capsule(style: .continuous).strokeBorder(LiquidColor.tinta10, lineWidth: 1))
+        .floatShadow(radius: 9, y: 6, opacity: 0.12)
         // Instrumento compacto flotante: cap de Dynamic Type (la info completa viaja en el label a11y).
         .dynamicTypeSize(...DynamicTypeSize.xxLarge)
     }
 
     private var dot: some View {
-        Text("·").font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+        Text("·").font(StrandFont.subhead).foregroundStyle(LiquidColor.tinta500)
     }
 }
 
 #if DEBUG
 #Preview("Session instruments") {
-    let t = InstrumentoTheme.base
-    return VStack(spacing: 28) {
-        SessionPill(routineName: "Pierna", elapsed: "24:10", bpm: 118, hue: t.dataSleep,
-                    theme: t, accessibilityLabel: Text(verbatim: "Sesión activa"),
+    VStack(spacing: 28) {
+        SessionPill(routineName: "Pierna", elapsed: "24:10", bpm: 118, hue: LiquidColor.indigo,
+                    accessibilityLabel: Text(verbatim: "Sesión activa"),
                     accessibilityHint: Text(verbatim: "Vuelve a la sesión")) {}
-        SessionPill(routineName: "Pierna", elapsed: "24:10", bpm: nil, hue: t.dataSleep,
-                    theme: t, accessibilityLabel: Text(verbatim: "Sesión activa"),
+        SessionPill(routineName: "Pierna", elapsed: "24:10", bpm: nil, hue: LiquidColor.indigo,
+                    accessibilityLabel: Text(verbatim: "Sesión activa"),
                     accessibilityHint: Text(verbatim: "Vuelve a la sesión")) {}
     }
     .padding(32)
     .frame(maxWidth: .infinity)
-    .background(t.paper)
+    .background(LiquidColor.fondoAlto)
     .preferredColorScheme(.light)
 }
 #endif

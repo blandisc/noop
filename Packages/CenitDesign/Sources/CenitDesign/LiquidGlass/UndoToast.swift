@@ -14,7 +14,7 @@ import SwiftUI
 // Cuándo SÍ: snack de «X borrado · Deshacer» tras un delete reversible (rutina, carpeta,
 // sesión). Cuándo NO: banner de error de escritura (usa `.saveErrorToast`); aviso Liquid
 // de lectura/heads-up (usa `LiquidAviso`); confirmación con consecuencia (usa
-// `.instrumentoConfirm`).
+// `.instrumentoConfirm`). Paints with `LiquidColor` (FER-294 / FER-320).
 
 /// Constantes de la receta — fuera de la View para que los tests no toquen MainActor.
 enum UndoToastMetrics {
@@ -35,7 +35,6 @@ enum UndoToastMetrics {
 }
 
 public struct UndoToast: View {
-    private let theme: InstrumentoTheme
     private let message: String
     private let cta: String
     private let action: () -> Void
@@ -43,21 +42,19 @@ public struct UndoToast: View {
     /// - Parameters:
     ///   - message: texto ya resuelto (`String(localized:)` en el caller) — p. ej. «Routine deleted».
     ///   - cta: rótulo del botón; default «Undo» (paridad con los 3 sitios actuales).
-    ///   - theme: tema Instrumento que aporta `ink`/`surface` (la barra es de la era tinta).
+    ///   - theme: ignored for painting (LiquidColor). Kept for call-site compatibility (FER-320).
     ///   - action: deshacer — el caller decide qué restaurar.
     public init(message: String,
                 cta: String = "Undo",
-                theme: InstrumentoTheme,
+                theme: InstrumentoTheme = .base,
                 action: @escaping () -> Void) {
         self.message = message
         self.cta = cta
-        self.theme = theme
         self.action = action
+        _ = theme
     }
 
     public var body: some View {
-        // `theme` se conserva en la API pública; la piel es Liquid (FER-294).
-        let _ = theme
         HStack(spacing: UndoToastMetrics.hStackSpacing) {
             Text(verbatim: message)
                 .font(LiquidType.cuerpoBanner)
@@ -82,14 +79,12 @@ public struct UndoToast: View {
 
 #if DEBUG
 #Preview("UndoToast") {
-    let t = InstrumentoTheme.base
     VStack(spacing: LiquidSpace.s400) {
-        UndoToast(message: "Routine deleted", theme: t, action: {})
-        UndoToast(message: "Folder deleted", theme: t, action: {})
-        UndoToast(message: "Workout deleted", cta: "Undo", theme: t, action: {})
+        UndoToast(message: "Routine deleted", action: {})
+        UndoToast(message: "Folder deleted", action: {})
+        UndoToast(message: "Workout deleted", cta: "Undo", action: {})
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-    .background(t.paper)
-    .instrumentoTheme(t)
+    .background(LiquidColor.fondoAlto)
 }
 #endif
