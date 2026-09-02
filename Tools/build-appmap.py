@@ -382,9 +382,6 @@ SHOT_W = 800   # ancho al que se reescalan las capturas para el repo/muro (níti
 # núcleo: un renglón por pieza y el resto se acomoda solo (grid por familia + puente de captura).
 COMPONENTS = [
     ("LiquidGlassButton",       "Botones"),
-    ("OutlineCapsule",          "Botones"),
-    ("HeaderActionButton",      "Botones"),
-    ("BackButton",              "Botones"),
     ("LiquidMetricTile",        "Tiles"),
     ("LiquidCajita",            "Tiles"),
     ("EntrenarTile",            "Tiles"),
@@ -405,7 +402,6 @@ COMPONENTS = [
     ("LiquidSheetHeader",       "Estructura"),
     ("LiquidSectionHeader",     "Estructura"),
     ("LiquidAviso",             "Avisos"),
-    ("UndoToast",               "Avisos"),
     ("ConfirmCard",             "Avisos"),
     ("LiquidInputCard",         "Avisos"),
     ("LiquidPatternBlock",      "Avisos"),

@@ -39,33 +39,6 @@ enum ComponentGallery {
                 LiquidGlassButton("Turn off automatic backup", variant: .destructive, expands: true) {}
             })
         },
-        Entry(name: "OutlineCapsule", family: "Botones") {
-            let t = InstrumentoTheme.base
-            return AnyView(VStack(alignment: .leading, spacing: 16) {
-                HStack(spacing: 10) {
-                    OutlineCapsule("Start", theme: t, size: .sm, weight: .bold, action: {})
-                    OutlineCapsule("Stop", theme: t, size: .sm, weight: .bold, action: {})
-                }
-                HStack(spacing: 10) {
-                    OutlineCapsule("Equipment", theme: t, size: .md, action: {})
-                    OutlineCapsule("Barbell", theme: t, size: .md, filled: true, action: {})
-                }
-            }.instrumentoTheme(t))
-        },
-        Entry(name: "HeaderActionButton", family: "Botones") {
-            let t = InstrumentoTheme.base
-            return AnyView(HStack(spacing: 12) {
-                HeaderActionButton(Text(verbatim: "Guardar"), theme: t, action: {})
-                HeaderActionButton(Text(verbatim: "Guardar"), enabled: false, theme: t, action: {})
-            }.instrumentoTheme(t))
-        },
-        Entry(name: "BackButton", family: "Botones") {
-            let t = InstrumentoTheme.base
-            return AnyView(HStack(spacing: 20) {
-                BackButton(role: .back, theme: t, action: {})
-                BackButton(role: .close, theme: t, action: {})
-            }.instrumentoTheme(t))
-        },
 
         // MARK: Tiles / datos
         Entry(name: "LiquidMetricTile", family: "Tiles") {
@@ -94,7 +67,7 @@ enum ComponentGallery {
             })
         },
         Entry(name: "EntrenarTile", family: "Tiles") {
-            AnyView(HStack(spacing: 12) {
+            AnyView(HStack(spacing: LiquidSpace.s300) {
                 EntrenarTile(tono: .ambar) {
                     Text(verbatim: "TILE").font(LiquidType.micro)
                         .foregroundStyle(LiquidTono.ambar.rotulo)
@@ -105,7 +78,7 @@ enum ComponentGallery {
             })
         },
         Entry(name: "EntrenarModulo", family: "Tiles") {
-            AnyView(VStack(alignment: .leading, spacing: 8) {
+            AnyView(VStack(alignment: .leading, spacing: LiquidSpace.s200) {
                 EntrenarModulo(tono: .indigo) {
                     Text(verbatim: "MÓDULO · indigo")
                         .font(LiquidType.micro)
@@ -154,15 +127,14 @@ enum ComponentGallery {
             })
         },
         Entry(name: "LiquidStatePill", family: "Chips") {
-            let t = InstrumentoTheme.base
-            return AnyView(VStack(alignment: .leading, spacing: LiquidSpace.s400) {
+            AnyView(VStack(alignment: .leading, spacing: LiquidSpace.s400) {
                 HStack(spacing: LiquidSpace.s200) {
                     LiquidStatePill("Session live", dot: LiquidStatePillMetrics.dotVivoDefault)
                     LiquidStatePill("Ready")
                 }
                 HStack(spacing: LiquidSpace.s200) {
-                    LiquidStatePill(valencia: "↗ +12% vs. last month", tono: t.positiveText)
-                    LiquidStatePill(valencia: "↘ −8% vs. last month", tono: t.warning)
+                    LiquidStatePill(valencia: "↗ +12% vs. last month", tono: LiquidColor.verdePrimario)
+                    LiquidStatePill(valencia: "↘ −8% vs. last month", tono: LiquidColor.ambar)
                 }
             })
         },
@@ -179,7 +151,7 @@ enum ComponentGallery {
             })
         },
         Entry(name: "LiquidChecklistRow", family: "Filas") {
-            AnyView(VStack(alignment: .leading, spacing: 0) {
+            AnyView(VStack(alignment: .leading, spacing: 0) {   // token-exempt(unico): filas de checklist se pegan sin gap (demo DEBUG)
                 LiquidChecklistRow(etiqueta: "Frecuencia cardiaca en reposo", presente: true)
                 LiquidChecklistRow(etiqueta: "VO₂ máx estimado", presente: true)
                 LiquidChecklistRow(etiqueta: "Sueño", presente: false,
@@ -198,7 +170,7 @@ enum ComponentGallery {
                 RoundedRectangle(cornerRadius: ExerciseThumbnail.tileCornerRadius(side: 52), style: .continuous)
                     .fill(LiquidColor.tinta10)
                     .frame(width: 52, height: 52)
-            }.instrumentoTheme(.base))
+            })
         },
 
         // MARK: Controles
@@ -241,12 +213,12 @@ enum ComponentGallery {
                                       infoOcultar: "Ocultar explicación"))
         },
         Entry(name: "LiquidSectionHeader", family: "Estructura") {
-            AnyView(VStack(alignment: .leading, spacing: 0) {
+            AnyView(VStack(alignment: .leading, spacing: LiquidSpace.s200) {
                 LiquidSectionHeader("La sesión de hoy")
                 Text("El contenido de la sección vive aquí, sin banda de papel.")
                     .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta900)
                 LiquidSectionHeader("Tu plan") {
-                    Text("Editar semana").font(StrandFont.subhead).foregroundStyle(LiquidColor.tinta700)
+                    Text("Editar semana").font(LiquidType.pie).foregroundStyle(LiquidColor.tinta700)
                 }
             })
         },
@@ -257,11 +229,6 @@ enum ComponentGallery {
                 titulo: "Heads up",
                 cuerpo: "Your resting heart rate has been higher than usual. Consider easing up today.",
                 tono: LiquidColor.atencion))
-        },
-        Entry(name: "UndoToast", family: "Avisos") {
-            let t = InstrumentoTheme.base
-            return AnyView(UndoToast(message: "Routine deleted", theme: t, action: {})
-                .instrumentoTheme(t))
         },
         Entry(name: "ConfirmCard", family: "Avisos") {
             AnyView(ConfirmCard(

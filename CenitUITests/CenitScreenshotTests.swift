@@ -236,9 +236,6 @@ final class CenitScreenshotTests: XCTestCase {
     /// black-box: el test no puede importar el módulo de la app, así que la lista vive aquí también.
     private static let componentNames = [
         "LiquidGlassButton",
-        "OutlineCapsule",
-        "HeaderActionButton",
-        "BackButton",
         "LiquidMetricTile",
         "LiquidCajita",
         "EntrenarTile",
@@ -259,7 +256,6 @@ final class CenitScreenshotTests: XCTestCase {
         "LiquidSheetHeader",
         "LiquidSectionHeader",
         "LiquidAviso",
-        "UndoToast",
         "ConfirmCard",
         "LiquidInputCard",
         "LiquidPatternBlock",
