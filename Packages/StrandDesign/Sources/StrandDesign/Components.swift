@@ -9,10 +9,13 @@ import SwiftUI
 
 public enum CenitMetrics {
     public static let cardRadius: CGFloat = 16
+    @available(*, deprecated, message: "usa LiquidSpace.s400")
     public static let cardPadding: CGFloat = LiquidSpace.s400
+    @available(*, deprecated, message: "usa LiquidSpace.s300")
     public static let gap: CGFloat = LiquidSpace.s300          // gap between cards
     public static let cardGap: CGFloat = 4       // distancia ÚNICA entre elementos tipo tarjeta en toda la app (dueño 2026-08-29): apúntale desde cada pantalla, no repitas literales
     public static let sectionGap: CGFloat = 28   // gap between sections
+    @available(*, deprecated, message: "usa LiquidSpace.s600")
     public static let screenPadding: CGFloat = LiquidSpace.s600
     /// Top inset of a titled tab landing — the same distance from the safe area for «Patrones»,
     /// «Tendencias», «Entrenar» and «Ajustes» so their `InstrumentoTabHeader` lines up as you swipe
@@ -23,14 +26,19 @@ public enum CenitMetrics {
     // Named steps below `gap` (plus a compact section rhythm and two control radii) so
     // the «Instrumento» Today path stops using magic numbers — every spacing/radius
     // there snaps to one of these instead of an inline literal.
+    @available(*, deprecated, message: "usa LiquidSpace.s100")
     public static let space1: CGFloat = LiquidSpace.s100              // finest step (tight icon↔text, a unit hugging a numeral)
+    @available(*, deprecated, message: "usa LiquidSpace.s200")
     public static let space2: CGFloat = LiquidSpace.s200              // tight step, below gap = 12
     public static let sectionGapCompact: CGFloat = 16  // compact section rhythm on iPhone Today (FER-202)
+    @available(*, deprecated, message: "usa LiquidRadius.control")
     public static let controlRadius: CGFloat = LiquidRadius.control      // buttons / CTAs
+    @available(*, deprecated, message: "usa LiquidRadius.chip")
     public static let chipRadius: CGFloat = LiquidRadius.chip          // small inline chips / pills
     public static let tileRadius: CGFloat = 17         // «Hoy» metric tile corner (handoff «Hoy · Estados»)
     public static let ctaRadius: CGFloat = 14          // the ink CTA bar («Aplicar»/«Listo», FER-716 handoff)
     public static let insetRadius: CGFloat = 10        // sub-tarjeta anidada dentro de otra tarjeta (auditoría jul-2026, H3 — absorbe 9/10/11)
+    @available(*, deprecated, message: "usa LiquidControl.hitTarget")
     public static let touchTarget: CGFloat = LiquidControl.hitTarget        // área táctil mínima (HIG) — el glifo visible puede ser menor
     public static let rowVPad: CGFloat = 10          // padding vertical de una fila de lista «Instrumento» (handoff Biblioteca — absorbe 9/10/11/13)
     public static let receiptPadding: CGFloat = 14     // padding interno de la tarjeta-recibo de la sesión de fuerza (canvas 2026-07, decisión del dueño — entre gap 12 y cardPadding 16)
@@ -141,7 +149,7 @@ public enum HomeWidgetMetrics {
 // silent fix: FOUR different heights exist for equivalent buttons — `ctaHeight` (the wrist «Registrar
 // serie»), `pillHeight` (±30/Saltar), `controlHeight` (the control-page's Saltar/Registrar/Terminar),
 // `summarySecondaryHeight`/`summaryPrimaryHeight` (the end-of-session sheet) — alongside
-// `CenitMetrics.touchTarget` (44pt), which `WatchSessionRootView` already uses on its own primary CTA.
+// `LiquidControl.hitTarget` (44pt), which `WatchSessionRootView` already uses on its own primary CTA.
 public enum WatchMetrics {
     public static let ctaHeight: CGFloat = 38
     public static let pillHeight: CGFloat = 30
@@ -266,10 +274,10 @@ public extension View {
     func troquelChip(_ theme: InstrumentoTheme) -> some View {
         self
             .padding(.horizontal, 12).padding(.vertical, 7)
-            .background(theme.paper, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
+            .background(theme.paper, in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous)
                 .strokeBorder(theme.hairlineStrong, lineWidth: 1))
-            .contentShape(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
     }
 }
 

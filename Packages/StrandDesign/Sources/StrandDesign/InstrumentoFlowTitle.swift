@@ -47,7 +47,7 @@ public struct InstrumentoFlowTitle: View {
                              Text(verbatim: "Empuje pesado de pecho y hombros"))
     }
     .frame(width: 390, alignment: .leading)
-    .padding(CenitMetrics.screenPadding)
+    .padding(LiquidSpace.s600)
     .background(InstrumentoTheme.base.paper)
     .instrumentoTheme(.base)
 }

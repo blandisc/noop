@@ -34,7 +34,7 @@ public struct WeekTokens: View {
     public var body: some View {
         let cells = HStack(spacing: 0) {
             ForEach(Array(days.enumerated()), id: \.offset) { i, day in
-                VStack(spacing: CenitMetrics.space1 + 2) {
+                VStack(spacing: LiquidSpace.s100 + 2) {
                     token(day)
                     Text(verbatim: i < labels.count ? labels[i] : "")
                         .entrenarWeekDayLabel().foregroundStyle(theme.inkTertiary)
@@ -61,7 +61,7 @@ public struct WeekTokens: View {
             // fila— no llegaba a quien no la ve.
             HStack(spacing: 0) {
                 ForEach(Array(days.enumerated()), id: \.offset) { i, day in
-                    VStack(spacing: CenitMetrics.space1 + 2) {
+                    VStack(spacing: LiquidSpace.s100 + 2) {
                         token(day)
                         Text(verbatim: i < labels.count ? labels[i] : "")
                             .entrenarWeekDayLabel().foregroundStyle(theme.inkTertiary)
@@ -144,10 +144,10 @@ public struct SessionStatsBar: View {
         // de aplastar el dato (que es lo que el usuario subió de tamaño), la barra se parte: los
         // números arriba, los controles abajo. `ViewThatFits` elige sin medir a mano.
         ViewThatFits(in: .horizontal) {
-            HStack(spacing: CenitMetrics.gap) { stats; Spacer(minLength: CenitMetrics.space2); controls }
-            VStack(alignment: .leading, spacing: CenitMetrics.space2) {
-                HStack(spacing: CenitMetrics.gap) { stats }
-                HStack(spacing: CenitMetrics.gap) { controls }
+            HStack(spacing: LiquidSpace.s300) { stats; Spacer(minLength: LiquidSpace.s200); controls }
+            VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+                HStack(spacing: LiquidSpace.s300) { stats }
+                HStack(spacing: LiquidSpace.s300) { controls }
             }
         }
         .frame(minHeight: EntrenarMetrics.row)

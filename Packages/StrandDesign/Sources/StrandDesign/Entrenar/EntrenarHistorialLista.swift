@@ -56,7 +56,7 @@ private enum Metrics {
     /// Hairline de lista — mismo peso visual que el mock (1 px tinta7).
     static let separador: CGFloat = 1
     /// Sangrado bajo el glifo 38 + gap 12, para que el filo arranque con el texto, no con el chip.
-    static let sangrado: CGFloat = 38 + CenitMetrics.gap
+    static let sangrado: CGFloat = 38 + LiquidSpace.s300
 }
 
 #if DEBUG

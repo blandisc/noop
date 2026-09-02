@@ -35,7 +35,7 @@ final class LiquidStatePillTests: XCTestCase {
     func test_valencia_tintFill_andChipRadius_areCanonical() {
         // Candado de los tokens que el chip usa (WorkoutHistoryScreen:656-657).
         XCTAssertEqual(StrandOpacity.tintFill, 0.10, accuracy: 0.0001)
-        XCTAssertEqual(CenitMetrics.chipRadius, 8)
+        XCTAssertEqual(LiquidRadius.chip, 8)
     }
 
     @MainActor

@@ -46,7 +46,7 @@ struct HojaCapsulaAccion: View {
                 .font(InstrumentoType.grotesk(9.5, weight: .bold, relativeTo: .caption2))
                 .tracking(1)
                 .foregroundStyle(LiquidColor.tinta900)
-                .padding(.horizontal, CenitMetrics.gap)
+                .padding(.horizontal, LiquidSpace.s300)
                 .padding(.vertical, LiquidSpace.s150)
                 .frame(minHeight: HojaMetrics.hitMin)
                 .background {

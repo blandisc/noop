@@ -131,7 +131,7 @@ public struct RestBand<Next: View>: View {
                 } else {
                     HStack(alignment: .firstTextBaseline) {
                         Text(kicker).instrumentoOverline().foregroundStyle(theme.inkTertiary)
-                        Spacer(minLength: CenitMetrics.space2)
+                        Spacer(minLength: LiquidSpace.s200)
                         if let trailing {
                             Text(verbatim: trailing)
                                 .font(InstrumentoType.groteskNumber(13, weight: .bold, relativeTo: .caption))
@@ -164,7 +164,7 @@ public struct RestBand<Next: View>: View {
                     Text(isCeilingRelease ? "Continue" : "Skip rest")
                         .font(StrandFont.caption.weight(.semibold))
                         .foregroundStyle(theme.inkSecondary)
-                        .padding(.horizontal, CenitMetrics.gap)
+                        .padding(.horizontal, LiquidSpace.s300)
                         .frame(height: large ? EntrenarMetrics.focusRestSkip : EntrenarMetrics.secondaryButton)
                         .background(theme.paper, in: Capsule())
                         .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
@@ -200,7 +200,7 @@ public struct RestBand<Next: View>: View {
         case .heartRate(let remaining, let target, let current):
             if isCeilingRelease {
                 // R13 (mapa B4): el tope de 3:00 sin recuperación honesta — nunca «Listo» verde.
-                VStack(alignment: large ? .center : .leading, spacing: CenitMetrics.space1) {
+                VStack(alignment: large ? .center : .leading, spacing: LiquidSpace.s100) {
                     Text(verbatim: "3:00")
                         .font(InstrumentoType.groteskNumber(headlineSize, weight: .bold, relativeTo: .largeTitle))
                         .foregroundStyle(theme.ink)
@@ -217,8 +217,8 @@ public struct RestBand<Next: View>: View {
                     .foregroundStyle(theme.positiveText)
             } else if let current {
                 // FER-167: la meta + el pulso vivo (mock P4). «te faltan N bpm» muere en iPhone.
-                VStack(alignment: large ? .center : .leading, spacing: CenitMetrics.space1) {
-                    HStack(spacing: CenitMetrics.space2) {
+                VStack(alignment: large ? .center : .leading, spacing: LiquidSpace.s100) {
+                    HStack(spacing: LiquidSpace.s200) {
                         Text("rest · down to \(target)")
                             .instrumentoOverline()
                             .foregroundStyle(theme.inkTertiary)
@@ -228,8 +228,8 @@ public struct RestBand<Next: View>: View {
                                 .font(StrandFont.caption.weight(.semibold))
                                 .textCase(.uppercase)
                                 .foregroundStyle(theme.inkSecondary)
-                                .padding(.horizontal, CenitMetrics.space2)
-                                .padding(.vertical, CenitMetrics.space1)
+                                .padding(.horizontal, LiquidSpace.s200)
+                                .padding(.vertical, LiquidSpace.s100)
                                 .background(theme.paper, in: Capsule())
                                 .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
                         }

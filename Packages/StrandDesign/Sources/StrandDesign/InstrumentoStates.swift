@@ -47,7 +47,7 @@ public struct ScreenScaffold<Content: View>: View {
             }
             content()
         }
-        .padding(CenitMetrics.screenPadding)
+        .padding(LiquidSpace.s600)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(theme.paper.ignoresSafeArea())
     }

@@ -39,7 +39,7 @@ public struct EntrenarNivel: View {
     }
 
     private var row: some View {
-        HStack(alignment: .firstTextBaseline, spacing: CenitMetrics.space2) {
+        HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s200) {
             // FER-130: el hub de Entrenar pide el kicker del handoff (Grotesk 11.5/600 +1.5, uppercase); los
             // demás llamadores (la hoja «Ver toda la biblioteca» de la sesión) conservan el overline de
             // siempre. Default = lo de antes, para que un componente compartido no cambie pantallas que
@@ -49,7 +49,7 @@ public struct EntrenarNivel: View {
             } else {
                 Text(kicker).instrumentoOverline().foregroundStyle(theme.inkTertiary)
             }
-            Spacer(minLength: CenitMetrics.space2)
+            Spacer(minLength: LiquidSpace.s200)
             if let value {
                 Text(value)
                     .font(StrandFont.caption).foregroundStyle(theme.inkSecondary)
@@ -144,7 +144,7 @@ public struct EntrenarChip: View {
     }
 
     private var chip: some View {
-        HStack(spacing: CenitMetrics.space1 + 2) {
+        HStack(spacing: LiquidSpace.s100 + 2) {
             Image(systemName: iconOverride ?? kind.symbol)
                 .font(StrandFont.glyph(.lead))
                 .foregroundStyle(toneOverride ?? kind.tone(theme))
@@ -159,10 +159,10 @@ public struct EntrenarChip: View {
                     .accessibilityHidden(true)
             }
         }
-        .padding(.horizontal, CenitMetrics.space2 + 1)
+        .padding(.horizontal, LiquidSpace.s200 + 1)
         .frame(minHeight: EntrenarMetrics.badge)
-        .background(theme.paper, in: RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.chipRadius, style: .continuous)
+        .background(theme.paper, in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous)
             .strokeBorder(theme.hairlineStrong, lineWidth: 1))
         // El dibujo es de 28; el toque nunca baja de 44 (HIG).
         .frame(minHeight: action != nil ? EntrenarMetrics.row : EntrenarMetrics.badge)

@@ -168,7 +168,7 @@ public struct MuscleLoadRow: View {
     }
 
     private var rowContent: some View {
-        HStack(spacing: CenitMetrics.gap) {
+        HStack(spacing: LiquidSpace.s300) {
             // Anchos RELATIVOS, no fijos: con Dynamic Type grande los 96/62/28 de antes dejaban al
             // conteo de series fuera de su columna. El nombre manda, el riel cede, y los dos datos
             // de la derecha se dimensionan por su contenido.

@@ -53,7 +53,7 @@ public struct StrandCTAButton: View {
                 .tracking(0.3)
                 .foregroundStyle(kind == .solid ? theme.paperHi : theme.ink)
                 .frame(maxWidth: fillsWidth ? .infinity : nil)
-                .padding(.horizontal, fillsWidth ? 0 : CenitMetrics.sectionGapCompact + CenitMetrics.gap)
+                .padding(.horizontal, fillsWidth ? 0 : CenitMetrics.sectionGapCompact + LiquidSpace.s300)
                 .padding(.vertical, 15)
                 .background {
                     let shape = RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous)
@@ -79,12 +79,12 @@ public struct StrandCTAButton: View {
 
 #if DEBUG
 #Preview("Instrumento · StrandCTAButton") {
-    VStack(spacing: CenitMetrics.gap) {
+    VStack(spacing: LiquidSpace.s300) {
         StrandCTAButton("Empezar", action: {})
         StrandCTAButton("Descartar", kind: .outline, action: {})
         StrandCTAButton("Guardar", action: {}).disabled(true)
     }
-    .padding(CenitMetrics.screenPadding)
+    .padding(LiquidSpace.s600)
     .frame(width: 390)
     .background(InstrumentoTheme.base.paper)
     .instrumentoTheme(.base)

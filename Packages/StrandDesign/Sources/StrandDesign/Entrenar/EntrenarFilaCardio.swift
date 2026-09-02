@@ -76,26 +76,26 @@ public struct EntrenarFilaCardio: View {
     // MARK: Layouts
 
     private var filaCompacta: some View {
-        HStack(spacing: CenitMetrics.gap) {
+        HStack(spacing: LiquidSpace.s300) {
             glifo
             VStack(alignment: .leading, spacing: LiquidSpace.s050) {
-                HStack(spacing: CenitMetrics.space1) {
+                HStack(spacing: LiquidSpace.s100) {
                     deporteText.lineLimit(1).minimumScaleFactor(0.8)
                     origenBadge
                 }
                 metaText.lineLimit(1).minimumScaleFactor(0.8)
             }
-            Spacer(minLength: CenitMetrics.space2)
+            Spacer(minLength: LiquidSpace.s200)
             datoDerecho
         }
     }
 
     /// AX5: el dato baja bajo el título; la meta envuelve — la fila no se corta.
     private var filaAccesible: some View {
-        HStack(alignment: .top, spacing: CenitMetrics.gap) {
+        HStack(alignment: .top, spacing: LiquidSpace.s300) {
             glifo
             VStack(alignment: .leading, spacing: LiquidSpace.s050) {
-                HStack(spacing: CenitMetrics.space1) {
+                HStack(spacing: LiquidSpace.s100) {
                     deporteText.fixedSize(horizontal: false, vertical: true)
                     origenBadge
                 }
