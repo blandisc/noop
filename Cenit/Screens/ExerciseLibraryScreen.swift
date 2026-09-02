@@ -7,8 +7,8 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 // ExerciseLibraryScreen.swift — browse the on-device exercise catalog (FER-346). Two modes from one
 // view: BROWSE (opened from the Train hub — tap an exercise to open its detail) and ADD (presented by
 // the routine builder with `onAdd` — multi-select, then "Add N" hands the picks back). Search + muscle
-// and equipment filters narrow a long catalog; «Create exercise» adds a user-defined one. «Báscula de
-// papel»: ink on paper, no datum here so no color; selection is quiet ink chrome.
+// and equipment filters narrow a long catalog; «Create exercise» adds a user-defined one. FER-289:
+// piel Liquid Glass · El Eje (`LiquidCampoBusqueda` · `EntrenarFilaEjercicio` · `.superficieSolida`).
 
 // MARK: - Touch target (FER-121)
 // The same principle as `PaperStepper.hitTarget` (FER-947, StrandDesign): padding + contentShape +
@@ -76,7 +76,6 @@ struct ExerciseLibraryScreen: View {
                 header
                 searchField
                 filterChips
-                Divider().overlay(theme.hairline)
                 exerciseList
                 createRow
             }
@@ -111,7 +110,7 @@ struct ExerciseLibraryScreen: View {
                         Button("Done") { detail = nil }.foregroundStyle(theme.ink)
                     } }
                     .navigationBarTitleDisplayMode(.inline)
-                    .toolbarBackground(theme.paper, for: .navigationBar)
+                    .toolbarBackground(LiquidColor.papelTarjeta, for: .navigationBar)
             }
             .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
         }
@@ -138,38 +137,29 @@ struct ExerciseLibraryScreen: View {
         // Handoff V10 (FER-139): a single kicker line — «Biblioteca · N ejercicios» — not the older
         // count-as-hero-title pattern (FER-942). The count reflects the REAL loaded catalog (never a
         // made-up figure); until it loads, the line falls back to the section name alone.
-        Group {
-            if loaded {
-                Text("Library · \(exercises.count) exercises")
-            } else {
-                Text(createFlow ? "New routine · pick exercises" : (addMode ? "Add to routine" : "Library"))
-            }
+        kickerText
+            .liquidKicker()
+            .foregroundStyle(LiquidColor.tinta700)
+    }
+
+    private var kickerText: Text {
+        if loaded {
+            return Text("Library · \(exercises.count) exercises")
         }
-        .entrenarCabeceraKicker().foregroundStyle(theme.inkTertiary)
+        return Text(createFlow ? "New routine · pick exercises" : (addMode ? "Add to routine" : "Library"))
     }
 
     private var searchField: some View {
-        HStack(spacing: CenitMetrics.space2) {
-            StrandIcon.search.image.font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTertiary)
-            TextField("Search exercise", text: $search)
-                .font(StrandFont.body).foregroundStyle(theme.ink)
-                .autocorrectionDisabled().textInputAutocapitalization(.never)
-            if !search.isEmpty {
-                Button { search = "" } label: {
-                    StrandIcon.close.image.foregroundStyle(theme.inkTertiary)
-                }.buttonStyle(.plain)
-                    .accessibilityLabel(Text("Clear search"))
-            }
-        }
-        .padding(.horizontal, CenitMetrics.gap).padding(.vertical, CenitMetrics.rowVPad)
-        // Campo de búsqueda opaco (anti vidrio-sobre-vidrio) dentro de la hoja El Eje.
-        .liquidGlass(.superficieSolida)
+        LiquidCampoBusqueda(
+            placeholder: String(localized: "Search exercise"),
+            text: $search,
+            a11yLimpiar: String(localized: "Clear search"))
     }
 
     // MARK: - Filters
 
     private var filterChips: some View {
-        HStack(spacing: CenitMetrics.space1) {
+        HStack(spacing: LiquidSpace.s200) {
             filterMenu(title: String(localized: "Muscle"), isPresented: $showMuscleFilter,
                        selection: $muscle, options: muscleOptions, label: StrengthDisplay.muscle)
             filterMenu(title: String(localized: "Equipment"), isPresented: $showEquipmentFilter,
@@ -197,12 +187,13 @@ struct ExerciseLibraryScreen: View {
         }
         return OutlineCapsule(theme: theme, size: .md, filled: active != nil,
                               action: { isPresented.wrappedValue = true }) {
-            HStack(spacing: CenitMetrics.space1) {
+            HStack(spacing: LiquidSpace.s200) {
                 Text(active.map(label) ?? title)
-                    .font(StrandFont.subhead)
-                    .foregroundStyle(active == nil ? theme.ink : theme.paper)
-                StrandIcon.down.image.font(StrandFont.glyph(.chevron, weight: .semibold))
-                    .foregroundStyle(active == nil ? theme.inkTertiary : theme.paper)
+                    .font(LiquidType.tituloFila)
+                    .foregroundStyle(active == nil ? LiquidColor.tinta900 : LiquidColor.papelTarjeta)
+                LiquidIcon(.chevron, size: 12,
+                           color: active == nil ? LiquidColor.tinta500 : LiquidColor.papelTarjeta)
+                    .rotationEffect(.degrees(90))
             }
         }
         // FER-121: el chip visible mide ~28pt de alto; el toque real crece a 44 (HIG) SOLO en
@@ -213,41 +204,55 @@ struct ExerciseLibraryScreen: View {
     }
 
     // MARK: - List
+    //
+    // Un contenedor `.superficieSolida` POR sección (historial + cada grupo muscular), no por
+    // fila ni uno solo envolviendo toda la lista: el `LiquidSectionHeader` queda fuera del
+    // papel (mismo patrón que `LiquidListCard` + encabezado), y cada bloque visual es UNA
+    // tarjeta de vidrio con pad V `s050` / H 14.
 
     private var exerciseList: some View {
         LazyVStack(alignment: .leading, spacing: 0) {
             if loaded && filtered.isEmpty {
                 Text("No exercises match your filters.")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
-                    .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, CenitMetrics.sectionGapCompact)
+                    .font(LiquidType.cuerpoBanner)
+                    .foregroundStyle(LiquidColor.tinta700)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, LiquidSpace.seccionAire)
             }
-            // «Con historial tuyo» — the exercises you've logged, first, each with its best mark + sparkline.
+            // «Con historial tuyo» — the exercises you've logged, first, each with its best mark.
             if !mine.isEmpty {
                 LiquidSectionHeader("With your history") {
-                    Text("Best mark").font(InstrumentoType.grotesk(11, weight: .semibold)).tracking(1.4)
-                        .textCase(.uppercase).foregroundStyle(theme.inkTertiary)
+                    Text("Best mark").liquidLabel().foregroundStyle(LiquidColor.tinta500)
                 }
-                .padding(.top, CenitMetrics.space1).padding(.bottom, CenitMetrics.space2)
-                ForEach(mine) { ex in
-                    exerciseRow(ex, showsHistory: true)
-                    if ex.id != mine.last?.id { Divider().overlay(theme.hairline.opacity(StrandOpacity.muted)) }
+                sectionCard {
+                    ForEach(Array(mine.enumerated()), id: \.element.id) { _, ex in
+                        exerciseRow(ex, showsHistory: true,
+                                    divider: ex.id != mine.last?.id)
+                    }
                 }
             }
             // «De la biblioteca» — catalog remainder, one overline section per primary muscle.
             if !rest.isEmpty {
-                ForEach(Array(libraryGroups.enumerated()), id: \.element.key) { index, group in
+                ForEach(Array(libraryGroups.enumerated()), id: \.element.key) { _, group in
                     LiquidSectionHeader("\(group.key.isEmpty ? String(localized: "Other") : StrengthDisplay.muscle(group.key)) · \(String(localized: "FROM THE LIBRARY"))")
-                        .padding(.top, index == 0 && mine.isEmpty ? CenitMetrics.space1 : CenitMetrics.sectionGapCompact)
-                        .padding(.bottom, CenitMetrics.space2)
-                    ForEach(group.items) { ex in
-                        exerciseRow(ex, showsHistory: false)
-                        if ex.id != group.items.last?.id {
-                            Divider().overlay(theme.hairline.opacity(StrandOpacity.muted))
+                    sectionCard {
+                        ForEach(Array(group.items.enumerated()), id: \.element.id) { _, ex in
+                            exerciseRow(ex, showsHistory: false,
+                                        divider: ex.id != group.items.last?.id)
                         }
                     }
                 }
             }
         }
+        .padding(.top, LiquidSpace.seccionAire)
+    }
+
+    /// Papel opaco de una sección de filas (pad 2/14 · radio tarjeta vía la receta).
+    private func sectionCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        VStack(spacing: 0) { content() }
+            .padding(.vertical, LiquidSpace.s050)
+            .padding(.horizontal, 14)
+            .liquidGlass(.superficieSolida)
     }
 
     /// A user-created exercise with no primary muscle: it doesn't count toward the muscle map or the
@@ -256,148 +261,54 @@ struct ExerciseLibraryScreen: View {
         customIds.contains(ex.id) && ex.primaryMuscles.isEmpty
     }
 
-    /// Two real actions live on this row in ADD mode — open the detail vs. toggle the pick — so it can't
-    /// be one `Button` whose label nests a second real `Button` inside it. That's exactly what shipped
-    /// before FER-121: a `Button`-inside-a-`Button`, and VoiceOver couldn't reach the trailing toggle.
-    /// In BROWSE there's only one action, so the whole row stays one real `Button`, as before.
-    private func exerciseRow(_ ex: Exercise, showsHistory: Bool) -> some View {
-        Group {
-            if addMode {
-                // The identity content becomes its own tappable element via `.onTapGesture` + an
-                // explicit `.isButton` trait — a sibling of the trailing toggle's real `Button`, not a
-                // container around it. VoiceOver now reaches "open detail" and "add/remove" one after
-                // the other, in visual order, instead of one swallowing the other.
-                HStack(spacing: CenitMetrics.gap) {
-                    rowIdentity(ex, showsHistory: showsHistory)
-                        .contentShape(Rectangle())
-                        .accessibilityElement(children: .combine)
-                        .accessibilityAddTraits(.isButton)
-                        .onTapGesture { openDetail(ex) }
-                    trailingAccessory(ex)
-                }
-                .padding(.vertical, CenitMetrics.rowVPad)
-            } else {
-                Button {
-                    openDetail(ex)
-                } label: {
-                    HStack(spacing: CenitMetrics.gap) {
-                        rowIdentity(ex, showsHistory: showsHistory)
-                        trailingAccessory(ex)
-                    }
-                    .padding(.vertical, CenitMetrics.rowVPad).contentShape(Rectangle())
-                }
-                .buttonStyle(EntrenarPressStyle())
-            }
+    /// Fila vía `EntrenarFilaEjercicio`. En ADD: dos botones hermanos (detalle + toggle) —
+    /// FER-121. En BROWSE: un solo Button con chevron.
+    private func exerciseRow(_ ex: Exercise, showsHistory: Bool, divider: Bool) -> some View {
+        let incomplete = needsMuscle(ex)
+        let family: EntrenarFamily? = {
+            guard let primary = ex.primaryMuscles.first, !primary.isEmpty else { return nil }
+            return theme.movementFamily(primaryMuscles: [primary])
+        }()
+        let dato: (valor: String, rotulo: String)? = {
+            guard showsHistory, let kg = bestKg[ex.id] else { return nil }
+            return (valor: StrengthDisplay.weight(kg, system: system),
+                    rotulo: String(localized: "your record"))
+        }()
+        return EntrenarFilaEjercicio(
+            family: family,
+            nombre: StrengthDisplay.name(ex),
+            meta: StrengthDisplay.subtitle(ex),
+            dato: dato,
+            afordancia: addMode
+                ? .agregar(seleccionado: selected.contains(ex.id))
+                : .chevron,
+            aviso: incomplete ? String(localized: "No muscle · tap to complete") : nil,
+            divider: divider,
+            agregarLabel: String(localized: "Add"),
+            a11yAgregar: String(localized: "Add to selection"),
+            a11yQuitar: String(localized: "Remove from selection"),
+            action: { openDetail(ex) },
+            onToggle: addMode ? { toggle(ex) } : nil
+        ) {
+            ExerciseThumbView(exercise: ex, side: 52)
         }
     }
 
     /// Opens the row's detail — or, for a custom exercise still missing its muscle, the completion form
-    /// instead (FER-995). Shared by both `exerciseRow` branches so BROWSE and ADD agree on what a tap does.
+    /// instead (FER-995). Shared by both modes so BROWSE and ADD agree on what a tap does.
     private func openDetail(_ ex: Exercise) {
         if needsMuscle(ex) { editingExercise = ex } else { detail = ex }
     }
 
-    /// The row's identity: thumbnail + name/subtitle + (in "With your history") the best-mark datum.
-    /// In BROWSE it's wrapped in the row's own `Button`; in ADD mode it's a tappable sibling of the
-    /// trailing toggle `Button` (see `exerciseRow`) — never a container around another real `Button`.
-    private func rowIdentity(_ ex: Exercise, showsHistory: Bool) -> some View {
-        HStack(spacing: CenitMetrics.gap) {
-            // Handoff: the thumbnail carries a 2px frame in the exercise's movement-family hue.
-            ExerciseThumbView(exercise: ex, side: 52)   // handoff: 52px thumb · cached GIF still or paper placeholder (FER-790)
-                .overlay(RoundedRectangle(cornerRadius: ExerciseThumbnail.tileCornerRadius(side: 52), style: .continuous)
-                    .strokeBorder(familyTint(ex), lineWidth: 2))
-            VStack(alignment: .leading, spacing: 2) {
-                Text(StrengthDisplay.name(ex)).font(StrandFont.body).foregroundStyle(theme.ink)
-                    .multilineTextAlignment(.leading)
-                if needsMuscle(ex) {
-                    Text("No muscle · tap to complete")
-                        .font(StrandFont.caption).foregroundStyle(theme.dataStrain)
-                } else {
-                    Text(StrengthDisplay.subtitle(ex)).font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
-                }
-            }
-            Spacer(minLength: 8)
-            // No sparkline here (FER-951): with long catalog names it starved the title into a
-            // 4-line wrap. The record datum carries the story; the full trend lives in the detail.
-            // Handoff: the best mark as the right-hand datum, in the family hue («82,5 kg / tu récord»).
-            if showsHistory, let kg = bestKg[ex.id] {
-                VStack(alignment: .trailing, spacing: 1) {
-                    Text(StrengthDisplay.weight(kg, system: system))
-                        .font(InstrumentoType.grotesk(15, weight: .bold)).foregroundStyle(familyTint(ex))
-                    Text("your record")
-                        .font(InstrumentoType.groteskOverline).tracking(InstrumentoType.groteskOverlineTracking)
-                        .foregroundStyle(theme.inkTertiary)
-                }
-                .accessibilityElement(children: .combine)
-            }
-        }
-    }
-
-    /// The movement-family hue for an exercise (push=ember · pull=teal · legs=indigo), from its
-    /// first primary muscle — same mapping as the history screen's muscle bars.
-    private func familyTint(_ ex: Exercise) -> Color {
-        // r21: mapeo PROMOVIDO a StrandDesign (`movementFamilyTint`) — una sola fuente de verdad.
-        theme.movementFamilyTint(primaryMuscles: [ex.primaryMuscles.first ?? ""])
-    }
-
-    /// The trailing control: an «Add» affordance in ADD mode (a check when picked), a chevron in BROWSE.
-    /// In ADD mode this is its own real `Button` — a sibling of the row's identity, never nested inside
-    /// another `Button` (FER-121; see `exerciseRow`).
-    @ViewBuilder
-    private func trailingAccessory(_ ex: Exercise) -> some View {
-        if addMode {
-            Button {
-                toggle(ex)
-            } label: {
-                // Ancho FIJO y alineado a la derecha: la cápsula «Agregar» y el círculo de la palomita
-                // tienen anchos muy distintos, así que al alternar SwiftUI interpolaba entre los dos y la
-                // palomita se veía deslizarse hacia la izquierda (bug Fer 2026-07-18). Con el carril fijo,
-                // el control cambia en su sitio.
-                Group {
-                    if selected.contains(ex.id) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 21)).foregroundStyle(theme.ink)  // token-exempt: glifo 21pt fuera de banda lead
-                    } else {
-                        // «Agregar» es un BOTÓN: va en Grotesk, no en la SF del cuerpo de texto
-                        // (DESIGN.md §«Space Grotesk toma … y botones»).
-                        Text("Add").font(InstrumentoType.grotesk(13, weight: .semibold)).foregroundStyle(theme.ink)
-                            .padding(.horizontal, CenitMetrics.gap).padding(.vertical, CenitMetrics.space1)
-                            .overlay(Capsule().strokeBorder(theme.hairlineStrong, lineWidth: 1))
-                    }
-                }
-                // FER-121: ancho fijo de 78 (sin cambio) + alto a `EntrenarMetrics.row` (44, HIG). La
-                // fila ya mide 52+ pt por la miniatura, así que crecer este alto no mueve nada — el
-                // carril visible queda centrado igual, solo agranda el toque real del glifo/cápsula.
-                .frame(width: 78, height: EntrenarMetrics.row)
-            }
-            .buttonStyle(EntrenarPressStyle())
-            .contentShape(Rectangle())
-            .animation(nil, value: selected)   // sin interpolación de layout: el cambio es instantáneo
-            .accessibilityLabel(Text(selected.contains(ex.id) ? "Remove from selection" : "Add to selection"))
-        } else {
-            StrandIcon.disclosure.image.font(StrandFont.glyph(.chevron, weight: .semibold))
-                .foregroundStyle(theme.inkTertiary)
-        }
-    }
-
-    // Handoff V10 (FER-139): a paper pill, bottom-right, 44pt tall — not a full-width list row.
+    // Handoff V10 (FER-139) + FER-289: pastilla sólida bottom-right, sin ＋ ámbar.
     private var createRow: some View {
         HStack {
             Spacer(minLength: 0)
-            Button { showCreate = true } label: {
-                HStack(spacing: CenitMetrics.space2) {
-                    StrandIcon.add.image.font(StrandFont.glyph(.inline, weight: .semibold))
-                        .foregroundStyle(theme.dataStrain)   // handoff: the ＋ carries the ember accent
-                    Text("Create exercise").font(StrandFont.body).foregroundStyle(theme.ink)
-                }
-                .padding(.horizontal, CenitMetrics.gap)
-                .frame(height: EntrenarMetrics.row)
-                .liquidGlass(.pastillaSolida)
-                .overlay(Capsule(style: .continuous).strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            LiquidGlassButton(String(localized: "Create exercise"), variant: .solida) {
+                showCreate = true
             }
-            .buttonStyle(EntrenarPressStyle())
         }
-        .padding(.top, CenitMetrics.space1)
+        .padding(.top, LiquidSpace.s400)
     }
 
     // MARK: - Add bar (ADD mode)
@@ -415,16 +326,14 @@ struct ExerciseLibraryScreen: View {
     }
 
     private var addBar: some View {
-        // Mismo componente que «＋ Nueva rutina» del hub (decisión Fer 2026-07-19): agregar a una lista
-        // se ve igual en toda la app. `prominent` solo en el flujo de CREACIÓN, donde el botón es la
-        // salida del flujo y no una acción más. `addBarLabel` ya resuelve el copy y los plurales.
-        InstrumentoAddButton(theme: theme,
-                             label: addBarLabel,
-                             prominent: createFlow,
-                             disabled: selected.isEmpty) {
+        // FER-289: `StrandCTAButton` sustituye a `InstrumentoAddButton`. `.solid` en creación
+        // (salida del flujo); `.outline` al agregar a rutina existente. Copy y disabled iguales.
+        StrandCTAButton(LocalizedStringKey(addBarLabel),
+                        kind: createFlow ? .solid : .outline) {
             onAdd?(exercises.filter { selected.contains($0.id) })
             dismiss()
         }
+        .disabled(selected.isEmpty)
         .padding(.horizontal, CenitMetrics.screenPadding)
         // Libra el dock, que se queda visible (decisión Fer): el `safeAreaInset` inferior comparte carril
         // con la barra de pestañas y el botón quedaba medio tapado. Sin banda de papel detrás — la lámina

@@ -2,10 +2,10 @@ import SwiftUI
 
 // MARK: - Liquid Glass · GlassButton (handoff §5.4)
 //
-// Botón pill, min-height 44 (hit target), padding H 22, texto botón (SG 600 14). Cuatro
-// variantes: primary (gradiente verde), glass (vidrio/pastilla), quiet (transparente) y
-// destructive (cápsula crítica con borde, sin relleno — FER-280 · 1c, clase 5). Press: la
-// receta del sistema (scale 0.97 · dur/instant · glass-out).
+// Botón pill, min-height 44 (hit target), padding H 22, texto botón (SG 600 14). Cinco
+// variantes: primary (gradiente verde), glass (vidrio/pastilla), solida (papel opaco),
+// quiet (transparente) y destructive (cápsula crítica con borde, sin relleno — FER-280 ·
+// 1c, clase 5). Press: la receta del sistema (scale 0.97 · dur/instant · glass-out).
 //
 // **Cuándo sí:** cualquier botón pill de pantalla, incluida la ÚNICA acción destructiva de una
 // pantalla (`.destructive`: apagar respaldo, borrar, etc. — la anatomía real de
@@ -19,6 +19,9 @@ public struct LiquidGlassButton: View {
         /// receta que `DataSourcesView.swift:820-834` construía a mano por falta de esta
         /// variante (FER-280 · 1c, clase 5: «APIs del catálogo incompletas que obligan al fork»).
         case destructive
+        /// Pastilla OPACA (papel) — hermana de `.glass` con receta `.pastillaSolida` en vez
+        /// de `.pastilla` (FER-289: «Crear ejercicio» sobre hoja El Eje, sin vidrio-sobre-vidrio).
+        case solida
     }
 
     private let label: String
@@ -83,6 +86,10 @@ public struct LiquidGlassButton: View {
             text
                 .foregroundStyle(LiquidColor.tinta900)
                 .liquidGlass(.pastilla) // token-exempt: boton de pantalla, no de hoja
+        case .solida:
+            text
+                .foregroundStyle(LiquidColor.tinta900)
+                .liquidGlass(.pastillaSolida)
         case .quiet:
             text
                 .foregroundStyle(LiquidColor.verdeProfundo)
@@ -102,6 +109,7 @@ public struct LiquidGlassButton: View {
         LiquidGlassButton("Empezar", variant: .primary, expands: true) {}
         LiquidGlassButton("Empezar", variant: .primary, minWidth: 168) {}
         LiquidGlassButton("Ver detalle", variant: .glass) {}
+        LiquidGlassButton("Crear ejercicio", variant: .solida) {}
         LiquidGlassButton("Editar semana", variant: .quiet) {}
         LiquidGlassButton("Turn off automatic backup", variant: .destructive, expands: true) {}
     }
