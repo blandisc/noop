@@ -258,7 +258,7 @@ private struct CyclePhaseStateBody: View {
         .liquidConfirm(
             isPresented: $confirmOff,
             title: String(localized: "Turn off experiment"),
-            context: String(localized: "CYCLE · EXPERIMENT"),
+            context: String(localized: "CYCLE PHASE · EXPERIMENT"),
             message: String(localized: "I'll stop estimating your phase. Your temperature data and everything else stay the same."),
             actions: [
                 .init(String(localized: "Keep estimating"), role: .primary),

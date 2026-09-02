@@ -32906,6 +32906,23 @@
         }
       }
     },
+    "LIBRARY · ANIMATIONS" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LIBRARY · ANIMATIONS"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "BIBLIOTECA · ANIMACIONES"
+          }
+        }
+      }
+    },
     "RECOVERY · BASELINE" : {
       "extractionState" : "manual",
       "localizations" : {
