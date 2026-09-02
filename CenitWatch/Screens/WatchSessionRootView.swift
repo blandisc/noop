@@ -16,7 +16,7 @@ struct WatchSessionRootView: View {
         content
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(LiquidOLED.fondo.ignoresSafeArea())
-            .instrumentoTheme(.watch)
+            .instrumentoTheme(.watch)   // token-exempt(paridad): EntrenarHilo (paquete) aún lee \.instrumentoTheme; deuda del paquete, no del Watch
     }
 
     @ViewBuilder private var content: some View {

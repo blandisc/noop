@@ -128,7 +128,7 @@ Tabla humana (resumen) — la verdad máquina-legible es el bloque JSON de abajo
 | no-raw-shadow | staged Screens | changed Screens | árbol Screens |
 | no-sheet-glass | staged (todos)¹ | changed (todos)¹ | árbol CenitDesign+Cenit+CenitApp+CenitShared+CenitWidgets |
 | no-spacing-literal (trinquete) | árbol 5 raíces | árbol 5 raíces | árbol 5 raíces |
-| no-legacy-api (trinquete) | árbol 8 raíces | árbol 8 raíces | árbol 8 raíces |
+| no-legacy-api (trinquete) | árbol 10 raíces (Widgets y Watch desde FER-314) | árbol 10 raíces | árbol 10 raíces |
 | token-exempt (trinquete) | árbol 8 raíces + CenitDesign | árbol 8 raíces + CenitDesign | árbol 8 raíces + CenitDesign |
 | no-raw-color / no-edgeinsets-literal / no-token-arithmetic (trinquete, FER-276) | árbol 8 raíces | árbol 8 raíces | árbol 8 raíces |
 | no-motion-literal (trinquete, FER-269) | árbol 5 raíces | árbol 5 raíces | árbol 5 raíces |
@@ -146,7 +146,7 @@ raíces explícitas donde vive el defecto (incluye el paquete, excluye CenitWatc
   "baseline_path": "Tools/design-drift-baseline.json",
   "tree_roots": {
     "spacing": ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "CenitApp"],
-    "legacy": ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "CenitApp"],
+    "legacy": ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "CenitApp", "CenitWidgets", "CenitWatch"],
     "exempt": ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "Packages/CenitDesign/Sources", "CenitApp"],
     "dtcap": ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "CenitWidgets", "CenitWatch", "CenitApp"],
     "sheet_glass_ci": ["Packages/CenitDesign/Sources", "Cenit", "CenitApp", "CenitShared", "CenitWidgets"]
