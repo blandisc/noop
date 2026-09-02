@@ -442,7 +442,7 @@ struct WorkoutDetailScreen: View {
         case let .reading(bpm, trend):
             // Pink anchor bar (chrome, static) + a staggered column: the overline is fixed; the number,
             // verdict, baseline and disclaimer rise+fade 70 ms apart. Color lives only on the bpm datum.
-            HStack(alignment: .top, spacing: 11) {
+            HStack(alignment: .top, spacing: LiquidChip.compactoHorizontal) {
                 RoundedRectangle(cornerRadius: 2).fill(LiquidColor.rosa)  // token-exempt(dato): geometría de dato (barra ancla HRR)
                     .frame(width: 3).padding(.vertical, LiquidSpace.s075)
                 VStack(alignment: .leading, spacing: LiquidSpace.s200) {

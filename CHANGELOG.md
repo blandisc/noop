@@ -20,6 +20,8 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- Diseño, remates del loop 3 (FER-321): fuera los últimos dos usos de API retirada (`StrandPalette.disabledOpacity`, `PaperStepper` en Intervalos), dos lecturas muertas del tema Instrumento y baseline del gate regrabado tras el loop 2.
+
 - Funeral de `CenitMetrics` en el paquete (alias muertos fuera; literales 7/18 a `s175`/`s450`; AppMap y cápsulas chrome; catálogo de `LiquidRampas`) (FER-319).
 - CenitDesign: últimas 10 firmas con `theme: InstrumentoTheme` pasan a default `.base` y pintan con `LiquidColor` (FER-320).
 - Pantallas de `Cenit/` y `CenitApp/` dejan de pasar `InstrumentoTheme`; las rampas de dato viven en `LiquidRampas` (FER-317).

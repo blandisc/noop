@@ -305,7 +305,7 @@ struct SessionKeypad: View {
                 .font(LiquidType.cuerpoBanner.weight(.semibold)).foregroundStyle(LiquidColor.papelTarjeta)
                 .frame(maxWidth: .infinity).frame(height: EntrenarMetrics.keyCap)
                 .background(RoundedRectangle(cornerRadius: EntrenarMetrics.keyRadius, style: .continuous).fill(LiquidColor.tinta900))
-                .opacity(enabled ? 1 : StrandPalette.disabledOpacity)
+                .opacity(enabled ? 1 : CenitOpacity.dim)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
