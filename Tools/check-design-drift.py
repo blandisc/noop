@@ -18,6 +18,7 @@ Rules (each activated in the PR that finishes its migration — pass `--rules` t
     no-deprecated-metrics  a retired `CenitMetrics` member (space1/space2/gap/…) — pure prohibition (FER-306)
     no-instrumento-theme   `theme.ink/paper/…` / `StrandFont.*` access outside the Watch/Widget carve-out (FER-306; ratchet)
     no-weight-on-grotesk   `.weight(...)` on a grotesk `LiquidType` token — a silent no-op on `.custom` fonts (FER-308; pure)
+    no-iphone-tone-on-oled  an iPhone data tone (`LiquidColor.rosa/negativo/…`) painted in `CenitWatch/` — OLED wants `LiquidOLED.*` (retro FER-309; pure)
     token-exempt       pseudo-rule: counts the escape hatches themselves        (FER-263; ratchet — an exemption
                        is frozen debt too, so a NEW `token-exempt` fails unless its budget allows it)
 
@@ -52,7 +53,7 @@ DEFAULT_ROOTS = [
 DESIGN_PKG = "Packages/CenitDesign"
 EXEMPT = re.compile(r"//\s*token-exempt\b")
 
-ALL_RULES = ["no-hex", "no-adhoc-font", "no-radius-literal", "no-opacity-literal", "no-emdash-string", "no-raw-shadow", "no-sheet-glass", "no-spacing-literal", "no-legacy-api", "token-exempt", "no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic", "no-motion-literal", "no-dt-cap-adhoc", "no-deprecated-metrics", "no-instrumento-theme", "no-weight-on-grotesk"]
+ALL_RULES = ["no-hex", "no-adhoc-font", "no-radius-literal", "no-opacity-literal", "no-emdash-string", "no-raw-shadow", "no-sheet-glass", "no-spacing-literal", "no-legacy-api", "token-exempt", "no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic", "no-motion-literal", "no-dt-cap-adhoc", "no-deprecated-metrics", "no-instrumento-theme", "no-weight-on-grotesk", "no-iphone-tone-on-oled"]
 
 # Per-rule default roots — mirrors `.github/workflows/design-lint.yml` exactly (FER-282).
 # A bare `python3 Tools/check-design-drift.py --baseline …` (no roots) must not paint red on
@@ -84,6 +85,7 @@ DEFAULT_ROOTS_BY_RULE = {
     "no-deprecated-metrics": list(_ROOTS_LEGACY),
     "no-instrumento-theme": list(_ROOTS_LEGACY),
     "no-weight-on-grotesk": list(_ROOTS_LEGACY),
+    "no-iphone-tone-on-oled": ["CenitWatch"],
 }
 # no-emdash-string: an em-dash (—, U+2014) inside a user-facing Swift string literal. ADN copy rule
 # (FER-878): on-screen copy uses «:», «·» or a comma, never an em-dash. Scoped to STRING LITERALS so the
@@ -238,6 +240,12 @@ def _font_grotesk_re():
 RE_FONT_GROTESK = _font_grotesk_re()
 RE_FONTWEIGHT = re.compile(r"\.fontWeight\(")
 
+# no-iphone-tone-on-oled (retro FER-309): el QA cazó tres veces tintas del iPhone (`rosa` 4.4:1,
+# `negativo` 3.7:1) como texto sobre el negro del Watch. Sobre OLED el texto y el dato pintan con
+# `LiquidOLED.*` (calibrado ≥4.5:1, ver `LiquidOLEDContrasteTests`). Solo `CenitWatch/` (en
+# `CenitWidgets/` conviven la pantalla bloqueada clara y la isla negra en el mismo archivo).
+RE_IPHONE_TONE_ON_OLED = re.compile(r"\bLiquidColor\.(?:rosa|negativo|ambar|atencion|atencionTexto|verdePrimario|verdeProfundo|indigo|cian|azul|oro|teal|tinta900|tinta700|tinta500)\b")
+
 RULE_PATTERNS = {
     "no-hex": RE_HEX,
     "no-adhoc-font": RE_FONT,
@@ -255,6 +263,7 @@ RULE_PATTERNS = {
     "no-deprecated-metrics": RE_DEPRECATED_METRICS,
     "no-instrumento-theme": RE_INSTRUMENTO_THEME,
     "no-weight-on-grotesk": RE_WEIGHT_ON_GROTESK,
+    "no-iphone-tone-on-oled": RE_IPHONE_TONE_ON_OLED,
 }
 
 
@@ -347,7 +356,7 @@ def check(paths, rules):
             for rule in rules:
                 if rule == "token-exempt":
                     continue
-                if rule in ("no-hex", "no-legacy-api", "no-raw-color", "no-token-arithmetic", "no-deprecated-metrics", "no-instrumento-theme", "no-weight-on-grotesk") and in_design_pkg:
+                if rule in ("no-hex", "no-legacy-api", "no-raw-color", "no-token-arithmetic", "no-deprecated-metrics", "no-instrumento-theme", "no-weight-on-grotesk", "no-iphone-tone-on-oled") and in_design_pkg:
                     continue
                 if rule in ("no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic", "no-motion-literal") and in_widget_watch:
                     continue
