@@ -3,7 +3,7 @@ import SwiftUI
 import StrandDesign
 import StrandAnalytics
 
-// MARK: - Plate calculator + warm-up (FER-720 · 3a)
+// MARK: - Plate calculator + warm-up (FER-720 · 3a · FER-302 Liquid Glass · El Eje)
 //
 // Pushed from the session keypad's «⛓ discos» accessory for a work weight. Shows the bar loaded to
 // scale (per side, heaviest first), the user's editable plate inventory, and a suggested warm-up ramp
@@ -38,14 +38,14 @@ struct PlatesScreen: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                VStack(alignment: .leading, spacing: 22) {
+                VStack(alignment: .leading, spacing: LiquidSpace.s550) {
                     // FER-198 (Ola 2): la cabecera de la familia El Eje reemplaza el overline a
                     // mano + `BackButton` — mismo `exerciseName`, sin copy nueva.
                     EntrenarHojaCabecera(titulo: exerciseName, tono: .ambar, salida: .cerrar, onSalir: onClose)
                     loadedTotal
                     barDiagram
                     inventorySection
-                    Rectangle().fill(theme.hairline).frame(height: 1)
+                    Rectangle().fill(LiquidColor.tinta10).frame(height: 1)
                     warmupSection
                         .id("warmup")
                 }
@@ -65,16 +65,16 @@ struct PlatesScreen: View {
     // MARK: The dominant number — the loaded total
 
     private var loadedTotal: some View {
-        VStack(alignment: .center, spacing: 6) {
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                // Canvas pass 2026-07-15 (UI·armonía #1): one hero size across sibling sheets (64,
-                // same as the RPE sheet).
+        VStack(alignment: .center, spacing: LiquidSpace.s150) {
+            HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s100) {
+                // FER-302: numeral de hoja El Eje (hermanas RestEditor / RPE).
                 Text(kg(loading.achievedKg))
-                    .font(InstrumentoType.groteskSheetHero).tracking(InstrumentoType.groteskSheetHeroTracking)
-                    .foregroundStyle(theme.ink)
-                Text("kg").font(InstrumentoType.grotesk(20, weight: .regular)).foregroundStyle(theme.inkTertiary)
+                    .font(LiquidType.numeralHoja)
+                    .foregroundStyle(LiquidColor.tinta900)
+                    .accessibilityLabel(Text("Loaded total \(kg(loading.achievedKg)) kg"))
+                Text("kg").font(LiquidType.numeralHojaUnidad).foregroundStyle(LiquidColor.tinta500)
             }
-            Text(perSideCaption).font(StrandFont.subhead).foregroundStyle(theme.inkTertiary)
+            Text(perSideCaption).font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta500)
             // (shortfall notice moved next to the CTA that resolves it — handoff placement.)
         }
         .frame(maxWidth: .infinity)
@@ -82,13 +82,11 @@ struct PlatesScreen: View {
 
     /// Amber strip under the dominant number when the rack can't hit the target exactly.
     private var shortfallNotice: some View {
-        NoteStrip(style: .warning, theme: theme) {
-            Text("Your plates can't hit \(kg(targetKg)) kg exactly, closest is \(kg(loading.achievedKg)) kg")
-                .font(StrandFont.caption)
-                .foregroundStyle(theme.inkSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(.top, 4)
+        LiquidAviso(
+            titulo: String(localized: "healthAlert.overline.atencion", defaultValue: "Heads up"),
+            cuerpo: String(localized: "Your plates can't hit \(kg(targetKg)) kg exactly, closest is \(kg(loading.achievedKg)) kg"),
+            tono: LiquidColor.atencion)
+        .padding(.top, LiquidSpace.s100)
     }
 
     /// «por lado: 20 + 15 + 1,25 · barra 20 kg» — the per-side breakdown, heaviest first (handoff
@@ -103,9 +101,7 @@ struct PlatesScreen: View {
 
     // FER-198 (Ola 2): `EntrenarFilaDiscos` es el mismo diagrama re-vestido — misma fórmula de
     // alto/ancho por kg, mismo orden invertido/directo por lado, mismo color del DATO
-    // (`theme.dataStrain` == `LiquidColor.ambar` #C4631F); la barra central y el microtexto migran
-    // a tokens Liquid (`tinta10`, `LiquidRadius.hairline`, `papelTarjeta`) — reemplaza el
-    // `plateBar` a mano de abajo.
+    // (`LiquidColor.ambar`); la barra central y el microtexto migran a tokens Liquid.
     private var barDiagram: some View {
         EntrenarFilaDiscos(
             discos: loading.perSide.map { EntrenarFilaDiscos.Disco(masaKg: $0, etiqueta: plate($0)) },
@@ -116,9 +112,9 @@ struct PlatesScreen: View {
     // MARK: Inventory
 
     private var inventorySection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s250) {
             HStack {
-                Text("YOUR INVENTORY · PER SIDE").groteskOverline().foregroundStyle(theme.inkTertiary)
+                Text("YOUR INVENTORY · PER SIDE").liquidKicker().foregroundStyle(LiquidColor.tinta500)
                 Spacer()
                 // FER-89 (auditoría Reduce Motion): sin esto el pliegue del editor de inventario
                 // animaba siempre, sin alternativa quieta. `LiquidMotion.condicionado` apaga la animación
@@ -127,7 +123,7 @@ struct PlatesScreen: View {
                 Button(action: { withAnimation(LiquidMotion.condicionado(.snappy, reduceMotion)) { editingInventory.toggle() } }) {
                     // UI·armonía #2: acción de UI en tinta, no en hue de dato de salud.
                     Text(editingInventory ? "Done" : "Edit")
-                        .font(StrandFont.caption.weight(.semibold)).foregroundStyle(theme.ink)
+                        .font(LiquidType.filaConteo.weight(.semibold)).foregroundStyle(LiquidColor.tinta900)
                         // FER-89: sin esto el toque real era del tamaño del texto (~20 pt) — bajo el
                         // piso de 44 pt (HIG). El dibujo no cambia (texto pegado al filo derecho);
                         // solo crece, hacia la izquierda, el área que responde.
@@ -136,6 +132,11 @@ struct PlatesScreen: View {
                 }
                 // FER-89: adopta el press de la sección — antes no tenía NINGÚN buttonStyle explícito.
                 .buttonStyle(EntrenarPressStyle())
+                .accessibilityLabel(Text(editingInventory
+                    ? String(localized: "plates.a11y.doneEditingInventory",
+                             defaultValue: "Listo con el inventario")
+                    : String(localized: "plates.a11y.editInventory",
+                             defaultValue: "Editar inventario")))
             }
             if editingInventory {
                 inventoryEditor
@@ -163,7 +164,7 @@ struct PlatesScreen: View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(PlatesStore.selectableKg, id: \.self) { kg in
                 pairRow(kg)
-                Rectangle().fill(theme.hairline).frame(height: 1)
+                Rectangle().fill(LiquidColor.tinta10).frame(height: 1)
             }
             barStepper
         }
@@ -171,46 +172,41 @@ struct PlatesScreen: View {
 
     private func pairRow(_ kg: Double) -> some View {
         let count = store.pairs(for: kg)
-        return HStack(spacing: 12) {
+        return HStack(spacing: LiquidSpace.s300) {
             Text("\(plate(kg)) kg")
-                .font(StrandFont.subhead)
-                .foregroundStyle(count > 0 ? theme.ink : theme.inkTertiary)
+                .font(LiquidType.cuerpoBanner)
+                .foregroundStyle(count > 0 ? LiquidColor.tinta900 : LiquidColor.tinta500)
             Spacer()
-            pairStepper(system: "minus") {
-                store.setPairs(count - 1, for: kg)
-            }
-            .disabled(count <= 0)
-            .opacity(count <= 0 ? 0.4 : 1)
-            Text("\(count)")
-                .font(StrandFont.subhead).monospacedDigit()
-                .foregroundStyle(theme.ink)
-                .frame(minWidth: 24, alignment: .center)
-            pairStepper(system: "plus") {
-                store.setPairs(count + 1, for: kg)
-            }
+            EntrenarStepper(
+                valor: "\(count)",
+                tono: .ambar,
+                talla: .fila,
+                puedeBajar: count > 0,
+                puedeSubir: true,
+                onBajar: { store.setPairs(count - 1, for: kg) },
+                onSubir: { store.setPairs(count + 1, for: kg) })
         }
-        .padding(.vertical, 10)
+        .padding(.vertical, LiquidSpace.s250)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text("\(plate(kg)) kg, \(count) pairs"))
     }
 
-    /// Circular − / + control (bordered circle, hairline stroke) — matches the session stepper vocabulary.
-    /// FER-89: era 34 pt (bajo el piso de 44, HIG) — `StepperButton` recorta su propio `contentShape`
-    /// al `size` que recibe, así que no hay forma de agrandar SOLO el toque sin tocar el paquete; se
-    /// sube el dibujo al piso.
-    private func pairStepper(system: String, _ action: @escaping () -> Void) -> some View {
-        StepperButton(system: system, size: EntrenarMetrics.row, shape: .circle,
-                      glyph: StrandFont.glyph(.inline, weight: .semibold), theme: theme, action: action)
-    }
-
     private var barStepper: some View {
-        HStack(spacing: 12) {
-            Text("Bar").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+        HStack(spacing: LiquidSpace.s300) {
+            Text("Bar").font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
             Spacer()
-            Text("\(kg(store.barKg)) kg").font(StrandFont.subhead).monospacedDigit().foregroundStyle(theme.ink)
-            Stepper("", value: $store.barKg, in: 5...25, step: 5).labelsHidden()
+            EntrenarStepper(
+                valor: "\(kg(store.barKg)) kg",
+                tono: .ambar,
+                talla: .fila,
+                puedeBajar: store.barKg > 5,
+                puedeSubir: store.barKg < 25,
+                onBajar: { store.barKg = max(5, store.barKg - 5) },
+                onSubir: { store.barKg = min(25, store.barKg + 5) })
         }
-        .padding(.vertical, 10)
+        .padding(.vertical, LiquidSpace.s250)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text("Bar \(kg(store.barKg)) kg"))
     }
 
     // MARK: Warm-up
@@ -218,23 +214,25 @@ struct PlatesScreen: View {
     private var warmupSection: some View {
         VStack(alignment: .leading, spacing: EntrenarMetrics.bandGap) {
             Text("Suggested warm-up up to \(kg(targetKg)) kg")
-                .groteskOverline().foregroundStyle(theme.inkTertiary)
+                .liquidKicker().foregroundStyle(LiquidColor.tinta500)
 
             if warmup.isEmpty {
                 Text("The work weight is light. No warm-up needed.")
-                    .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                    .font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
             } else {
                 VStack(spacing: 0) {
                     ForEach(Array(warmup.enumerated()), id: \.offset) { i, set in
-                        if i > 0 { Rectangle().fill(theme.hairline).frame(height: 1) }
+                        if i > 0 { Rectangle().fill(LiquidColor.tinta10).frame(height: 1) }
                         HStack {
-                            Text(warmupLabel(set)).font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                            Text(warmupLabel(set)).font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
                             Spacer()
                             Text("\(kg(set.weightKg)) kg")
-                                .font(InstrumentoType.groteskNumber(15)).monospacedDigit()
-                                .foregroundStyle(theme.ink)
+                                .font(LiquidType.datoMenor).monospacedDigit()
+                                .foregroundStyle(LiquidColor.tinta900)
                         }
-                        .padding(.vertical, 10)
+                        .padding(.vertical, LiquidSpace.s250)
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel(Text("\(warmupLabel(set)), \(kg(set.weightKg)) kg"))
                     }
                 }
                 // Handoff: la nota honesta del faltante vive pegada al CTA que la resuelve.
@@ -254,10 +252,11 @@ struct PlatesScreen: View {
     }
 
     private var insertButton: some View {
-        StrandCTAButton("Insert warm-up into the session") {
+        LiquidGlassButton("Insert warm-up into the session", variant: .primary, expands: true) {
             onInsertWarmup(warmup.map { (weightKg: $0.weightKg, reps: $0.reps) })
         }
-        .padding(.top, 6)
+        .padding(.top, LiquidSpace.s150)
+        .accessibilityLabel(Text("Insert warm-up into the session"))
     }
 
     // MARK: Formatting
@@ -289,7 +288,7 @@ struct PlateChips: View {
     var body: some View {
         // Canvas pass 2026-07-15 (owner): ONE row, never two — compact chips, Grotesk numerals
         // (handoff voice), sharing the width equally.
-        HStack(spacing: 6) {
+        HStack(spacing: LiquidSpace.s150) {
             ForEach(items) { chip in
                 chipView(chip)
             }
@@ -299,11 +298,11 @@ struct PlateChips: View {
     /// One inventory chip. Extracted + explicit types so `body` type-checks cheaply
     /// (ternaries Color/Color.clear and `[CGFloat]` dash arrays are the slow inference).
     private func chipView(_ chip: Chip) -> some View {
-        let labelColor: Color = chip.owned ? theme.ink : theme.inkTertiary
+        let labelColor: Color = chip.owned ? LiquidColor.tinta900 : LiquidColor.tinta500
         let chipHeight: CGFloat = 30
 
         return Text(chip.label)
-            .font(InstrumentoType.groteskNumber(13)).monospacedDigit()
+            .font(LiquidType.valorS).monospacedDigit()
             .foregroundStyle(labelColor)
             .lineLimit(1).minimumScaleFactor(0.7)
             .frame(maxWidth: .infinity)
@@ -315,6 +314,7 @@ struct PlateChips: View {
                     minHeight: chipHeight,
                     touchInset: .zero),
                 theme: theme)
+            .accessibilityLabel(Text(chip.label))
     }
 }
 #endif

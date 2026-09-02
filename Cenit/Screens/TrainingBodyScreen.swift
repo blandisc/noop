@@ -917,12 +917,15 @@ private struct MuscleDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: LiquidSpace.s300) {
-                Text(MuscleAtlas.name(muscle)).instrumentoOverlineProminent().foregroundStyle(LiquidColor.tinta700)
+                Text(MuscleAtlas.name(muscle))
+                    .font(LiquidType.tituloHoja)
+                    .foregroundStyle(LiquidColor.tinta900)
+                    .accessibilityAddTraits(.isHeader)
 
                 HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s200) {
                     Text(MuscleFatigueMap.formattedSets(weeklySets))
-                        .font(InstrumentoType.groteskHeroNumeral(52)).foregroundStyle(stateColor)
-                    Text("sets · 7 d").font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                        .font(LiquidType.numeralHoja).foregroundStyle(stateColor)
+                    Text("sets · 7 d").font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
                 }
 
                 volumeBand
@@ -942,7 +945,7 @@ private struct MuscleDetailView: View {
         }
         // FER-202 (Ola · anillo 3): fondo de vidrio El Eje. Sin `EntrenarHojaCabecera`: hoy no hay
         // control de salida propio (solo swipe-dismiss + detents) — agregar `.cerrar` añadiría un
-        // control (REGLA SUPREMA). Se conserva el overline del músculo y el sizing por contenido.
+        // control (REGLA SUPREMA). Se conserva el título del músculo y el sizing por contenido.
         .entrenarHojaFondo(tono: .neutro)
         .presentationDetents([.height(contentHeight), .large])
         .presentationDragIndicator(.visible)
@@ -962,12 +965,13 @@ private struct MuscleDetailView: View {
     private var volumeBand: some View {
         let lo = MuscleFatigueMap.weeklyBandLow, hi = MuscleFatigueMap.weeklyBandHigh
         let top = MuscleFatigueMap.weeklyVolumeRailTop
-        return VStack(alignment: .leading, spacing: 6) {
+        return VStack(alignment: .leading, spacing: LiquidSpace.s150) {
             GeometryReader { geo in
                 let w = geo.size.width
                 ZStack(alignment: .leading) {
                     RoundedRectangle(cornerRadius: 4).fill(LiquidColor.tinta10).frame(height: 8)  // token-exempt: geometría de dato
-                    Rectangle().fill(theme.hairlineStrong)
+                    // Banda 10–20: tinta un peldaño más presente que el riel (`tinta10`).
+                    Rectangle().fill(LiquidColor.celdaVaciaPip)
                         .frame(width: w * (hi - lo) / top, height: 8)
                         .offset(x: w * lo / top)
                     RoundedRectangle(cornerRadius: 1).fill(stateColor)  // token-exempt: geometría de dato
@@ -978,13 +982,13 @@ private struct MuscleDetailView: View {
             }
             .frame(height: 16)
             HStack {
-                Text("0").font(StrandFont.caption).foregroundStyle(LiquidColor.tinta500)
+                Text("0").font(LiquidType.filaConteo).foregroundStyle(LiquidColor.tinta500)
                 Spacer()
-                Text("band 10–20").font(StrandFont.caption).foregroundStyle(LiquidColor.tinta500)
+                Text("band 10–20").font(LiquidType.filaConteo).foregroundStyle(LiquidColor.tinta500)
                 Spacer()
-                Text("30+").font(StrandFont.caption).foregroundStyle(LiquidColor.tinta500)
+                Text("30+").font(LiquidType.filaConteo).foregroundStyle(LiquidColor.tinta500)
             }
-            Text(bandText).font(StrandFont.subhead).foregroundStyle(LiquidColor.tinta700)
+            Text(bandText).font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -998,7 +1002,7 @@ private struct MuscleDetailView: View {
     }
 
     private var statTiles: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: LiquidSpace.s250) {
             tile(title: "Last time", value: lastText)
             tile(title: "State", value: stateText, color: stateColor)
         }
@@ -1006,16 +1010,16 @@ private struct MuscleDetailView: View {
 
     private func tile(title: LocalizedStringKey, value: LocalizedStringKey, color: Color? = nil) -> some View {
         EntrenarTile(tono: .neutro) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(StrandFont.caption).foregroundStyle(LiquidColor.tinta500)
-                Text(value).font(InstrumentoType.groteskTileValue).foregroundStyle(color ?? LiquidColor.tinta900)
+            VStack(alignment: .leading, spacing: LiquidSpace.s050) {
+                Text(title).font(LiquidType.filaConteo).foregroundStyle(LiquidColor.tinta500)
+                Text(value).font(LiquidType.valorL).foregroundStyle(color ?? LiquidColor.tinta900)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
     private var lastText: LocalizedStringKey {
-        guard let d = load?.daysSinceLast else { return "—" }
+        guard let d = load?.daysSinceLast else { return "-" }
         return d == 0 ? "today" : d == 1 ? "yesterday" : "\(d) d ago"
     }
 
@@ -1028,7 +1032,7 @@ private struct MuscleDetailView: View {
     }
 
     private var trend: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s150) {
             Text("Trend · sets/week").liquidKicker().foregroundStyle(LiquidColor.tinta500)
             TrendLine(values: weeklyTrend, color: stateColor)
                 .frame(height: 48)
@@ -1041,10 +1045,10 @@ private struct MuscleDetailView: View {
                 .padding(.bottom, LiquidSpace.s200)
             ForEach(Array(hits.prefix(6)), id: \.exerciseId) { hit in
                 HStack {
-                    Text(hit.name).font(StrandFont.body).foregroundStyle(LiquidColor.tinta900)
+                    Text(hit.name).font(LiquidType.tituloGemela).foregroundStyle(LiquidColor.tinta900)
                     Spacer()
                     Text(hit.primary ? "primary" : "secondary")
-                        .font(StrandFont.caption).foregroundStyle(LiquidColor.tinta700)
+                        .font(LiquidType.filaConteo).foregroundStyle(LiquidColor.tinta700)
                 }
                 .padding(.vertical, 7)  // token-exempt(optico): pad vertical de la fila ejercicio-etiqueta, entre space2 (8) y rowVPad (10) — sin paso exacto
                 .overlay(alignment: .bottom) {
@@ -1063,7 +1067,7 @@ private struct MuscleDetailView: View {
         // `.padding(LiquidSpace.s400)` explícito para no duplicar aire.
         return EntrenarModulo(tono: .neutro) {
             Text(recommendationText(readiness))
-                .font(InstrumentoType.groteskTileValue).foregroundStyle(LiquidColor.tinta900)
+                .font(LiquidType.valorL).foregroundStyle(LiquidColor.tinta900)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
