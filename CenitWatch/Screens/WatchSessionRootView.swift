@@ -2,22 +2,20 @@ import SwiftUI
 import CenitDesign
 
 /// The watch face for a mirrored strength session (FER-741). One dominant focus per state, color only in
-/// the datum, hierarchy by space — «Instrumento diurno» translated to the wrist. It routes the coarse
-/// `WatchWorkoutManager.Phase` to a screen; the live face derives rest vs. pulse and the degraded
+/// the datum, hierarchy by space — Liquid sobre OLED (DECISIONS 2026-09-03, FER-309/312). It routes the
+/// coarse `WatchWorkoutManager.Phase` to a screen; the live face derives rest vs. pulse and the degraded
 /// overlays (no reading / no permission / no iPhone) from the finer published state.
 ///
-/// FER-96: the wrist paints `InstrumentoTheme.watch` — a true-black floor of its own, never
-/// `.base.paper` (the iPhone's warm paper, wrong on OLED). `.instrumentoTheme(.watch)` at the root also
-/// carries the theme to any `CenitDesign` component reading `@Environment(\.instrumentoTheme)`
-/// (`EntrenarHilo`, `OrbeVivo`) further down the tree, so nothing here re-specifies it per-view.
+/// El suelo es `LiquidOLED.fondo` (negro OLED). `.instrumentoTheme(.watch)` se conserva solo para
+/// `EntrenarHilo`/`OrbeVivo`, que todavía leen `\.instrumentoTheme` en el paquete (deuda de CenitDesign,
+/// fuera de este issue).
 struct WatchSessionRootView: View {
     @EnvironmentObject var manager: WatchWorkoutManager
-    private let t = InstrumentoTheme.watch
 
     var body: some View {
         content
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(t.paper.ignoresSafeArea())
+            .background(LiquidOLED.fondo.ignoresSafeArea())
             .instrumentoTheme(.watch)
     }
 
@@ -51,7 +49,6 @@ struct WatchIdleView: View {
     let couldNotConnect: Bool
     @EnvironmentObject var manager: WatchWorkoutManager
     @Environment(\.isLuminanceReduced) private var isLuminanceReduced
-    private let t = InstrumentoTheme.watch
 
     private var routineTitle: String {
         manager.idleContext.routineName ?? String(localized: "No session")
@@ -59,13 +56,13 @@ struct WatchIdleView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: CenitMetrics.space2) {
+            VStack(spacing: LiquidSpace.s200) {
                 // Grupo informativo (sin el CTA): un solo elemento VoiceOver con los textos visibles.
                 // `Group` no altera el layout; el botón «Empezar» sigue siendo foco aparte.
                 Group {
                     Text(routineTitle)
-                        .font(StrandFont.headline)
-                        .foregroundStyle(t.ink)
+                        .font(LiquidType.tituloHoja)
+                        .foregroundStyle(LiquidOLED.tinta)
                         .multilineTextAlignment(.center)
                     if let word = manager.idleContext.word {
                         EntrenarHilo(tone: manager.idleContext.tone, word: LocalizedStringKey(word),
@@ -76,8 +73,8 @@ struct WatchIdleView: View {
                             .environment(\.liquidAmbientPaused, isLuminanceReduced)
                     }
                     Text("Start a strength routine on your iPhone and the watch joins in.")
-                        .font(StrandFont.caption)
-                        .foregroundStyle(t.inkSecondary)
+                        .font(LiquidType.filaConteo)
+                        .foregroundStyle(LiquidOLED.tintaSecundaria)
                         .multilineTextAlignment(.center)
                 }
                 .accessibilityElement(children: .combine)
@@ -86,20 +83,20 @@ struct WatchIdleView: View {
                 if let routine = manager.idleContext.routineName { startButton(routine) }
                 if couldNotConnect {
                     Text("Couldn't connect to the session. Keep going on your iPhone.")
-                        .font(StrandFont.footnote)
-                        .foregroundStyle(t.inkTertiary)
+                        .font(LiquidType.pie)
+                        .foregroundStyle(LiquidOLED.tintaTerciaria)
                         .multilineTextAlignment(.center)
                 }
                 if manager.authorizationRequestFailed {
                     Text("Couldn't ask for Health access. Open Cénit on your iPhone.")
-                        .font(StrandFont.footnote)
-                        .foregroundStyle(t.critical)
+                        .font(LiquidType.pie)
+                        .foregroundStyle(LiquidColor.negativo)
                         .multilineTextAlignment(.center)
                 }
             }
             .frame(maxWidth: .infinity)
-            .padding(.horizontal, CenitMetrics.gap)
-            .padding(.vertical, CenitMetrics.space2)
+            .padding(.horizontal, LiquidSpace.s300)
+            .padding(.vertical, LiquidSpace.s200)
         }
     }
 
@@ -121,13 +118,14 @@ struct WatchIdleView: View {
             manager.startTodayFromWrist()
         } label: {
             Text("Start \(routine)")
-                .font(StrandFont.caption)
+                .font(LiquidType.filaConteo)
                 .lineLimit(2)
                 .minimumScaleFactor(0.8)
-                .frame(maxWidth: .infinity, minHeight: CenitMetrics.touchTarget)
+                .frame(maxWidth: .infinity, minHeight: LiquidControl.hitTarget)
         }
+        // token-exempt(sistema): control nativo watchOS
         .buttonStyle(.borderedProminent)
-        .tint(t.ink)
+        .tint(LiquidOLED.tinta)
     }
 }
 
@@ -136,17 +134,15 @@ struct WatchIdleView: View {
 /// State 2. A brief transition while the woken app spins up the session; falls to `WatchIdleView`
 /// (couldn't connect) after 15s, handled by the manager's watchdog.
 struct WatchConnectingView: View {
-    private let t = InstrumentoTheme.watch
-
     var body: some View {
-        VStack(spacing: CenitMetrics.space2) {
+        VStack(spacing: LiquidSpace.s200) {
             Text("Connecting")
-                .font(StrandFont.headline)
-                .foregroundStyle(t.inkSecondary)
+                .font(LiquidType.tituloHoja)
+                .foregroundStyle(LiquidOLED.tintaSecundaria)
             ProgressView()
-                .tint(t.inkTertiary)
+                .tint(LiquidOLED.tintaTerciaria)
         }
-        .padding(.horizontal, CenitMetrics.gap)
+        .padding(.horizontal, LiquidSpace.s300)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text("Connecting"))
     }
@@ -158,23 +154,22 @@ struct WatchConnectingView: View {
 /// it) threw — immediate and distinguishable from the generic 15s «couldn't connect» (`WatchIdleView`'s
 /// `couldNotConnect`, a dropped/silent wake with no known cause). This one says WHY: a Health problem.
 struct WatchHealthKitFailureView: View {
-    private let t = InstrumentoTheme.watch
-
     var body: some View {
-        VStack(spacing: CenitMetrics.space2) {
+        VStack(spacing: LiquidSpace.s200) {
+            // iconSF(36) ≈ 28 pt (factor 0.78), el rol de title1 en el Watch
             Image(systemName: "heart.text.square")
-                .font(StrandFont.title1)
-                .foregroundStyle(t.critical)
+                .font(LiquidType.iconSF(size: 36))
+                .foregroundStyle(LiquidColor.negativo)
             Text("Couldn't start the workout")
-                .font(StrandFont.headline)
-                .foregroundStyle(t.ink)
+                .font(LiquidType.tituloHoja)
+                .foregroundStyle(LiquidOLED.tinta)
                 .multilineTextAlignment(.center)
             Text("There's a problem with Health on your watch. Keep going on your iPhone.")
-                .font(StrandFont.caption)
-                .foregroundStyle(t.inkSecondary)
+                .font(LiquidType.filaConteo)
+                .foregroundStyle(LiquidOLED.tintaSecundaria)
                 .multilineTextAlignment(.center)
         }
-        .padding(.horizontal, CenitMetrics.gap)
+        .padding(.horizontal, LiquidSpace.s300)
         .accessibilityElement(children: .combine)
         .onAppear {
             AccessibilityNotification.Announcement(String(localized: "Couldn't start the workout")).post()
@@ -188,22 +183,21 @@ struct WatchHealthKitFailureView: View {
 /// primary signal; this confirms it at a glance and posts a VoiceOver announcement. Returns to the live
 /// face on its own.
 struct WatchRestEndedView: View {
-    private let t = InstrumentoTheme.watch
-
     var body: some View {
-        VStack(spacing: CenitMetrics.space2) {
+        VStack(spacing: LiquidSpace.s200) {
+            // iconSF(36) ≈ 28 pt (factor 0.78), el rol de title1 en el Watch
             Image(systemName: "checkmark")
-                .font(StrandFont.title1)
-                .foregroundStyle(t.verdict)
+                .font(LiquidType.iconSF(size: 36))
+                .foregroundStyle(LiquidOLED.verde)
             // FER-225 — reuses the «Ready» key (→ «Listo») instead of the retired «Rest over», so the
             // watch stops contradicting itself: `WatchLiveFaceView` already says «Listo» for the same
             // recovered instant in HR-mode rest.
             Text("Ready")
-                .font(StrandFont.headline)
-                .foregroundStyle(t.ink)
+                .font(LiquidType.tituloHoja)
+                .foregroundStyle(LiquidOLED.tinta)
                 .multilineTextAlignment(.center)
         }
-        .padding(.horizontal, CenitMetrics.gap)
+        .padding(.horizontal, LiquidSpace.s300)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("Ready"))
         .onAppear { AccessibilityNotification.Announcement(String(localized: "Ready")).post() }
@@ -226,7 +220,7 @@ struct WatchRestEndedView: View {
     WatchIdleView(couldNotConnect: false)
         .environmentObject(previewManager(idleContext: .init(
             word: "En rango", advice: "tu plan de hoy, tal cual", routineName: "Empuje", toneRaw: "clear")))
-        .background(InstrumentoTheme.watch.paper)
+        .background(LiquidOLED.fondo)
 }
 
 /// Freeze check for the criterion «cualquier pieza animada nueva se congela con `isLuminanceReduced`» —
@@ -236,26 +230,26 @@ struct WatchRestEndedView: View {
         .environmentObject(previewManager(idleContext: .init(
             word: "En rango", advice: "tu plan de hoy, tal cual", routineName: "Empuje", toneRaw: "clear")))
         .environment(\.isLuminanceReduced, true)
-        .background(InstrumentoTheme.watch.paper)
+        .background(LiquidOLED.fondo)
 }
 
 /// Sin lectura + fallo de autorización de HealthKit (Higiene, FER-96) a la vez — el estado más cargado.
 #Preview("Idle · sin lectura + fallo de Health") {
     WatchIdleView(couldNotConnect: true)
         .environmentObject(previewManager(authorizationRequestFailed: true))
-        .background(InstrumentoTheme.watch.paper)
+        .background(LiquidOLED.fondo)
 }
 
 #Preview("Idle · AX5") {
     WatchIdleView(couldNotConnect: false)
         .environmentObject(previewManager(idleContext: .init(
             word: "Recupera", advice: "suave hoy, o descansa", routineName: "Tirón", toneRaw: "ease")))
-        .background(InstrumentoTheme.watch.paper)
+        .background(LiquidOLED.fondo)
         .dynamicTypeSize(.accessibility5)
 }
 
 #Preview("Fallo de HealthKit al arrancar") {
     WatchHealthKitFailureView()
-        .background(InstrumentoTheme.watch.paper)
+        .background(LiquidOLED.fondo)
 }
 #endif

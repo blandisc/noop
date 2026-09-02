@@ -5,19 +5,21 @@ import CenitDesign
 /// average heart rate and active energy are secondary; a line confirms it reached Health (or warns it
 /// didn't). No series / volume / recovery — those live on the iPhone receipt. Dismissed with «Listo», or
 /// on its own after ~30s when saved; a failed save waits for the tap. Scrollable by the crown for AX.
+///
+/// Liquid sobre OLED (DECISIONS 2026-09-03, FER-309/312).
 struct WatchSummaryView: View {
     let summary: WatchSessionSummary
     @EnvironmentObject var manager: WatchWorkoutManager
-    private let t = InstrumentoTheme.watch
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: CenitMetrics.space2) {
-                Text("Session").instrumentoOverline().foregroundStyle(t.inkTertiary).accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+                Text("Session").liquidKicker().foregroundStyle(LiquidOLED.tintaTerciaria).accessibilityHidden(true)
 
+                // token-exempt(sistema): geometría watchOS — duración 40 tabular; displayM es 40 pero no tabular
                 Text(verbatim: durationText)
-                    .instrumentoHero(WatchMetrics.heroSummaryDuration)
-                    .foregroundStyle(t.dataStrain)
+                    .font(.system(size: WatchMetrics.heroSummaryDuration, weight: .bold).monospacedDigit())
+                    .foregroundStyle(LiquidOLED.ambar)
                     .minimumScaleFactor(0.5)
                     .lineLimit(1)
                     .accessibilityLabel(Text("Duration, \(summary.durationMinutes) minutes"))
@@ -33,50 +35,51 @@ struct WatchSummaryView: View {
                 // FER-810 — handoff to the rich receipt on the phone (volume, PRs, diet). The wrist summary
                 // stays minimal; this opens the saved workout's history detail on the iPhone.
                 Button { manager.openReceiptFromWrist() } label: {
-                    HStack(spacing: CenitMetrics.space1) {
+                    HStack(spacing: LiquidSpace.s100) {
                         Text("See receipt on iPhone")
-                        Image(systemName: "chevron.right").font(StrandFont.footnote).accessibilityHidden(true)
+                        Image(systemName: "chevron.right").font(LiquidType.pie).accessibilityHidden(true)
                     }
                     .frame(maxWidth: .infinity, minHeight: WatchMetrics.summarySecondaryHeight)
                 }
+                // token-exempt(sistema): control nativo watchOS
                 .buttonStyle(.bordered)
-                .tint(t.inkSecondary)
+                .tint(LiquidOLED.tintaSecundaria)
 
                 Button { manager.dismissSummary() } label: {
                     Text("Done").frame(maxWidth: .infinity, minHeight: WatchMetrics.summaryPrimaryHeight)
                 }
-                .tint(t.ink)
+                .tint(LiquidOLED.tinta)
             }
-            .padding(.horizontal, CenitMetrics.gap)
-            .padding(.vertical, CenitMetrics.space2)
+            .padding(.horizontal, LiquidSpace.s300)
+            .padding(.vertical, LiquidSpace.s200)
         }
     }
 
     private func stat(_ label: LocalizedStringKey, _ value: Text?) -> some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.space1) {
-            Text(label).font(StrandFont.footnote).foregroundStyle(t.inkTertiary)
+        VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+            Text(label).font(LiquidType.pie).foregroundStyle(LiquidOLED.tintaTerciaria)
             (value ?? Text(verbatim: "--"))
-                .font(StrandFont.bodyNumber)
-                .foregroundStyle(value == nil ? t.inkDim : t.ink)
+                .font(Font.system(.subheadline).monospacedDigit()) // bodyNumber → cuerpoLista tabular
+                .foregroundStyle(value == nil ? LiquidOLED.tintaTerciaria : LiquidOLED.tinta) // inkDim → tintaTerciaria
         }
     }
 
     @ViewBuilder private var saveLine: some View {
         switch summary.saveState {
         case .saved:
-            HStack(spacing: CenitMetrics.space1) {
+            HStack(spacing: LiquidSpace.s100) {
                 Image(systemName: "checkmark")
                 Text("Saved to Health")
             }
-            .font(StrandFont.caption)
-            .foregroundStyle(t.verdict)
+            .font(LiquidType.filaConteo)
+            .foregroundStyle(LiquidOLED.verde)
         case .failed:
-            HStack(spacing: CenitMetrics.space1) {
+            HStack(spacing: LiquidSpace.s100) {
                 Image(systemName: "exclamationmark.triangle")
                 Text("Couldn't save to Health")
             }
-            .font(StrandFont.caption)
-            .foregroundStyle(t.critical)
+            .font(LiquidType.filaConteo)
+            .foregroundStyle(LiquidColor.negativo)
             .lineLimit(nil)
         }
     }
