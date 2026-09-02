@@ -50,7 +50,7 @@ extension HojaSesionViva {
         for g in MuscleGroup.allCases where (tally[g] ?? 0) > bestCount {
             best = g; bestCount = tally[g] ?? 0
         }
-        return best?.tint(sheet.theme) ?? LiquidColor.tinta500
+        return best?.tint() ?? LiquidColor.tinta500
     }
 
     // MARK: - Pausa (misma decisión que la cabecera y el teclado se turnan — una sola, dos superficies)
@@ -702,7 +702,7 @@ extension HojaSesionViva {
                     Label("Change rest", systemImage: "pencil")
                         .font(LiquidType.caption)
                         .foregroundStyle(LiquidColor.tinta900)
-                        .outlineCapsule(.outline, size: .sm, theme: sheet.theme)
+                        .outlineCapsule(.outline, size: .sm)
                 }
                 .buttonStyle(.plain)
             }

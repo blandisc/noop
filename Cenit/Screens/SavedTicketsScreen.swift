@@ -10,7 +10,6 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 // FER-293: piel Liquid Glass · El Eje (cabecera de flujo, vacío alineado a la izquierda, LiquidAviso).
 
 struct SavedTicketsScreen: View {
-    @Environment(\.instrumentoTheme) private var theme
     @EnvironmentObject private var repo: Repository
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var system: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
@@ -80,7 +79,7 @@ struct SavedTicketsScreen: View {
         .entrenarHojaFondo(tono: .neutro)
         .task { await load() }
         .fullScreenCover(item: $receiptTarget) { target in
-            ReceiptPrinterScreen(theme: theme, summary: target.summary,
+            ReceiptPrinterScreen(summary: target.summary,
                                  sessionId: target.sessionId, onClose: { receiptTarget = nil })
         }
         .enableInjection()
@@ -94,7 +93,7 @@ struct SavedTicketsScreen: View {
     }
 
     private var segmentControl: some View {
-        SegmentedPillControl([Segment.all, .strength, .cardio], selection: $segment, theme: theme) { seg in
+        SegmentedPillControl([Segment.all, .strength, .cardio], selection: $segment) { seg in
             switch seg {
             case .all: return String(localized: "All")
             case .strength: return String(localized: "Strength")

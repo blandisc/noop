@@ -12,7 +12,7 @@ import Foundation
 // mudó al archivo de la carga —su usuario principal— en vez de irse con la pantalla.
 extension ReadinessEngine.Flag {
     /// El único mapeo bandera → color Liquid: bien → verde, neutro → tinta, vigilar → aviso, mal → negativo.
-    func color(_ theme: InstrumentoTheme) -> Color {
+    func color() -> Color {
         switch self {
         case .good:    return LiquidColor.verdePrimario
         case .neutral: return LiquidColor.tinta700
@@ -29,7 +29,6 @@ extension ReadinessEngine.Flag {
 /// intradía) y no participa del pull-to-refresh; solo el punto se reposiciona si el ratio cambió al sincronizar.
 struct TrainingLoadStrip: View {
     let model: TrainingLoadModel
-    var theme: InstrumentoTheme = .base
     let onTap: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -63,7 +62,7 @@ struct TrainingLoadStrip: View {
                     .font(LiquidType.captionNegrita)
                     .tracking(1.2)
                     .textCase(.uppercase)
-                    .foregroundStyle(band.flag.color(theme))
+                    .foregroundStyle(band.flag.color())
                 Text(String(format: "%.2f", acwr))
                     .font(LiquidType.caption)
                     .foregroundStyle(LiquidColor.tinta500)
@@ -93,7 +92,7 @@ struct TrainingLoadStrip: View {
                 HStack(spacing: LiquidSpace.s050) {
                     ForEach(LoadScale.bounds, id: \.lo) { seg in
                         Capsule()
-                            .fill(seg.band == band ? seg.band.flag.color(theme) : LiquidColor.tinta10)
+                            .fill(seg.band == band ? seg.band.flag.color() : LiquidColor.tinta10)
                             .frame(width: max(0, w * (seg.hi - seg.lo) / LoadScale.max - 2), height: 6)
                     }
                 }
@@ -118,9 +117,9 @@ struct TrainingLoadStrip: View {
 #if DEBUG
 #Preview("Franja") {
     VStack(spacing: LiquidSpace.s600) {
-        TrainingLoadStrip(model: TrainingLoadModel(acwr: 1.09, series: [], days: []), theme: .base, onTap: {})
-        TrainingLoadStrip(model: TrainingLoadModel(acwr: nil, series: [], days: []), theme: .base, onTap: {})
-        TrainingLoadStrip(model: TrainingLoadModel(acwr: 1.62, series: [], days: []), theme: .base, onTap: {})
+        TrainingLoadStrip(model: TrainingLoadModel(acwr: 1.09, series: [], days: []), onTap: {})
+        TrainingLoadStrip(model: TrainingLoadModel(acwr: nil, series: [], days: []), onTap: {})
+        TrainingLoadStrip(model: TrainingLoadModel(acwr: 1.62, series: [], days: []), onTap: {})
     }
     .padding(LiquidSpace.s600).background(LiquidColor.fondoAlto)
 }

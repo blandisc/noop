@@ -25,7 +25,7 @@ import StrandAnalytics
 //    `String(localized:)` sin duplicar claves. El viejo `LiquidSheetCopy` (que replicaba a mano
 //    las claves del catálogo) se borró.
 //
-// CERO `InstrumentoTheme` en este archivo.
+// Solo tokens Liquid en este archivo.
 
 struct LiquidMetricSheetView: View {
     let info: MetricInfo

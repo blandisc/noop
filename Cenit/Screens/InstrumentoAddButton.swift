@@ -24,7 +24,6 @@ import CenitDesign
 // · **El glifo es `add`.** ICONOGRAFIA §3 lo reserva para «agregar» — mismo verbo glífico que las
 //   píldoras de serie y el nodo del riel, de modo que toda la familia «agregar» se lea igual.
 struct InstrumentoAddButton: View {
-    let theme: InstrumentoTheme
     /// El texto ya resuelto (los dos sitios lo arman con conteos y plurales del catálogo).
     let label: String
     /// Salida de un flujo (relleno sólido) contra una acción más de la lista (contorno).
@@ -66,10 +65,10 @@ struct InstrumentoAddButton: View {
 #if DEBUG
 #Preview("InstrumentoAddButton") {
     VStack(spacing: LiquidSpace.s300) {
-        InstrumentoAddButton(theme: .base, label: "Nueva rutina") {}
-        InstrumentoAddButton(theme: .base, label: "Agregar 3 ejercicios") {}
-        InstrumentoAddButton(theme: .base, label: "Crear rutina con 3", prominent: true) {}
-        InstrumentoAddButton(theme: .base, label: "Elige al menos un ejercicio", disabled: true) {}
+        InstrumentoAddButton(label: "Nueva rutina") {}
+        InstrumentoAddButton(label: "Agregar 3 ejercicios") {}
+        InstrumentoAddButton(label: "Crear rutina con 3", prominent: true) {}
+        InstrumentoAddButton(label: "Elige al menos un ejercicio", disabled: true) {}
     }
     .padding(LiquidSpace.s600)
     .background(LiquidColor.fondoAlto)

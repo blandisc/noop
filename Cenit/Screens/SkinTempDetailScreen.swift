@@ -38,16 +38,12 @@ import Foundation
 // 90 días a propósito, como el papel: una retícula de intensidad sobre una desviación con
 // signo diría que «más frío» y «sin dato» se parecen.
 //
-// Se presenta vía `.sheet(item:)` desde Hoy y como capa desde Cuerpo, con el tema vivo pasado
-// EXPLÍCITO (FER-162 — la hoja Liquid ya no lo referencia; se conserva por compatibilidad de
-// firma con los call sites) y SIN `NavigationStack` anidado (FER-171).
+// Se presenta vía `.sheet(item:)` desde Hoy y como capa desde Cuerpo, SIN `NavigationStack`
+// anidado (FER-171).
 
 /// Detalle de Temperatura de la piel en vidrio Liquid. Se arma desde un `SkinTempDetailModel`
 /// (el caller inyecta el modelo para que la pantalla siga sin tocar la base de datos).
 struct SkinTempDetailScreen: View {
-    /// El tema vivo «Instrumento», retenido por compatibilidad con los call sites — la hoja
-    /// Liquid ya no lo referencia (mismo trato que `SleepDetailScreen`/`StrainDetailScreen`).
-    var theme: InstrumentoTheme = .base
     /// Everything the screen draws from the in-memory dashboard, derived ONCE by the caller (no DB here).
     let model: SkinTempDetailModel
     /// Loads the recent per-night distal warming magnitudes (°C) for the nocturnal thermal-stability read

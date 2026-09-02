@@ -233,7 +233,7 @@ struct HojaFoco: View {
                 }
             }
             if let bpm = vivo.sheet.model.watchBpm { zonaBadge(bpm).padding(.top, FocoMetrics.capcionTop) }
-            OutlineCapsule(theme: vivo.sheet.theme, size: .lg, estilo: .outline, action: {
+            OutlineCapsule(size: .lg, estilo: .outline, action: {
                 withAnimation(vivo.reduceMotion ? nil : LiquidMotion.suave) {
                     if running { vivo.registerFromFoco() } else { vivo.session.startSetTimer() }
                 }
@@ -275,7 +275,7 @@ struct HojaFoco: View {
             // Grok G5). `registerCurrentSet` ya detiene el cronómetro internamente al registrar
             // (`if timerStart != nil { stopSetTimer(...) }`), así que `registerFromFoco()` sola
             // captura lo corrido y cierra la serie, sin un `stopSetTimer()` aparte.
-            OutlineCapsule(theme: vivo.sheet.theme, size: .lg, estilo: .outline, action: {
+            OutlineCapsule(size: .lg, estilo: .outline, action: {
                 withAnimation(vivo.reduceMotion ? nil : LiquidMotion.suave) {
                     if running { vivo.registerFromFoco() } else { vivo.session.startSetTimer() }
                 }
@@ -381,8 +381,7 @@ struct HojaFoco: View {
 
     /// El toggle TIEMPO/FC — mismo lenguaje de pastilla de dos segmentos que `CompactTrendToggle`
     /// (CenitDesign), sin generalizar ese componente (está acoplado a `TrendMode`, un concepto
-    /// ajeno): misma receta (padding 3, cápsula, segmento activo en tinta), en `InstrumentoTheme`
-    /// (el ambiente de esta pantalla, igual que `RestBand`).
+    /// ajeno): misma receta (padding 3, cápsula, segmento activo en tinta), igual que `RestBand`.
     private var combustibleToggle: some View {
         HStack(spacing: LiquidSpace.s075) {
             combustibleSegmento(String(localized: "Time"), activo: forzarVistaTiempo) { forzarVistaTiempo = true }
@@ -499,7 +498,7 @@ struct HojaFoco: View {
         let zone = max(1, min(5, Int((pct * 5).rounded(.up))))
         return Text("ZONE \(zone) · \(bpm)")
             .font(LiquidType.captionNegrita).foregroundStyle(LiquidColor.tinta500)
-            .outlineCapsule(.outline, size: .sm, theme: vivo.sheet.theme)
+            .outlineCapsule(.outline, size: .sm)
     }
 
     // MARK: - Formato

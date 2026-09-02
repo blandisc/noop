@@ -14,7 +14,6 @@ import CenitDesign
 /// view is both the on-screen preview and the `ImageRenderer` source.
 struct ShareCardView: View {
     static let width: CGFloat = 340
-    let theme: InstrumentoTheme
     let summary: StrengthSummary
     let includeHR: Bool
     let includeKcal: Bool

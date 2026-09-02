@@ -20,6 +20,7 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- Pantallas de `Cenit/` y `CenitApp/` dejan de pasar `InstrumentoTheme`; las rampas de dato viven en `LiquidRampas` (FER-317).
 - Catálogo Liquid al día: `LiquidSpace.s175`/`s450`, y el generador enumera `LiquidOLED`, `LiquidControl`, radios `tile`/`chip` y la familia tipográfica nueva de `LiquidType` (FER-318).
 - CenitDesign: piezas Liquid/Entrenar dejan de pedir `InstrumentoTheme` (leen `LiquidColor`; `theme:` opcional/ignorado) (FER-316).
 - FER-316 r2: bordes `hairlineStrong` → `tinta10` (visibles sobre papel); `EntrenarHilo(sobreOLED:)` para Watch; lienzo de contraste unificado; matices warning/dataSun/originComputed.

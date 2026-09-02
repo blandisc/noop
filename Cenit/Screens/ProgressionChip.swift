@@ -6,7 +6,6 @@ import StrandTraining
 struct ProgressionChip: View {
     let re: RoutineExercise
     let system: UnitSystem
-    let theme: InstrumentoTheme
     /// El incremento que sale de TUS discos, para cuando el ejercicio no guarda uno a mano.
     let derivedIncrementKg: Double
     var disabled: Bool = false
@@ -17,9 +16,6 @@ struct ProgressionChip: View {
         // `arrow.up.right`, tono de avance positivo). Antes el icono (`CenitIcon.up`, «arrow.up»
         // liso) y el texto vivían en el hue de dato de recuperación — mal aplicado a un chip de
         // progresión (auditoría FER-89); la migración corrige el tono de paso.
-        // `theme` queda sin uso en el cuerpo (EntrenarChip lee el environment de tema
-        // solo), pero se conserva en la firma: el call site de `RoutineEditorScreen.swift:375` (E7,
-        // fuera de esta fase) sigue pasándolo tal cual.
         EntrenarChip(.progression, verbatim: Self.summary(re, system: system, derived: derivedIncrementKg),
                     action: action)
             .disabled(disabled)
@@ -54,7 +50,6 @@ struct ProgressionChip: View {
     ProgressionChip(
         re: re,
         system: .metric,
-        theme: .base,
         derivedIncrementKg: 2.5,
         action: {}
     )

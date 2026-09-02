@@ -22,7 +22,6 @@ struct ExerciseDetailScreen: View {
         _tab = State(initialValue: startOnProgress ? .progress : .guide)
     }
 
-    @Environment(\.instrumentoTheme) private var theme
     @Environment(\.openURL) private var openURL
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var repo: Repository
@@ -105,7 +104,7 @@ struct ExerciseDetailScreen: View {
                     // segmented control. FER-722/778 fill this same slot with the cached loop/thumb
                     // (auto-play + top-right play/pause) without shifting the layout.
                     heroSection
-                    SegmentedPillControl(DetailTab.allCases, selection: $tab, theme: theme,
+                    SegmentedPillControl(DetailTab.allCases, selection: $tab,
                                          squared: true) { $0.label }
                 }
                 switch tab {
@@ -184,7 +183,6 @@ struct ExerciseDetailScreen: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbarBackground(LiquidColor.papelTarjeta, for: .navigationBar)
             }
-            .instrumentoTheme(theme)
             .environmentObject(repo)
             .environmentObject(mediaCoordinator)
             .preferredColorScheme(.light)
@@ -262,9 +260,9 @@ struct ExerciseDetailScreen: View {
     /// The movement-family hue (push=ember · pull=teal · legs=indigo) — the same mapping the Library
     /// uses on its thumbnails, so the frame, the primary-muscle chips and the how-to numbers agree.
     private var familyTint: Color {
-        // r21: mapeo PROMOVIDO a CenitDesign (`movementFamilyTint`) — misma clasificación, una
+        // r21: mapeo PROMOVIDO a CenitDesign (`LiquidRampas.movementFamilyTint`) — misma clasificación, una
         // sola fuente de verdad (se conserva el «solo el primer músculo» de esta pantalla).
-        theme.movementFamilyTint(primaryMuscles: [exercise.primaryMuscles.first ?? ""])
+        LiquidRampas.movementFamilyTint([exercise.primaryMuscles.first ?? ""])
     }
 
     /// Discreet nudge shown only when the media download toggle is off — never when it's on and this
@@ -464,7 +462,7 @@ struct ExerciseDetailScreen: View {
                 })
                 Spacer(minLength: LiquidSpace.s200)
                 if hasTypeOverride {
-                    OutlineCapsule("Revert to default", theme: theme, size: .sm, action: revertType)
+                    OutlineCapsule("Revert to default", size: .sm, action: revertType)
                 }
             }
             .frame(minHeight: EntrenarMetrics.secondaryButton)
@@ -579,7 +577,7 @@ struct ExerciseDetailScreen: View {
     }
 
     private func variantChip(_ ex: Exercise) -> some View {
-        OutlineCapsule(theme: theme, size: .sm, action: { variant = ex }) {
+        OutlineCapsule(size: .sm, action: { variant = ex }) {
             Text(StrengthDisplay.name(ex))
                 .font(LiquidType.tituloFila)
                 .foregroundStyle(LiquidColor.tinta900)

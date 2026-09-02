@@ -118,7 +118,6 @@ enum MetricWindowMath {
 struct MetricTrendChart<Empty: View>: View {
     @Binding var range: ExploreRange
     let window: MetricWindow
-    var theme: InstrumentoTheme
     /// Whether to draw the `SegmentedPillControl` + auto-widen caption above the chart. `MetricDetailScreen`
     /// keeps its selector in a separate (divider-separated) block, so it passes `false` here.
     var showsSelector: Bool = true
@@ -176,7 +175,7 @@ struct MetricTrendChart<Empty: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s250) {
             if showsSelector {
-                SegmentedPillControl(ExploreRange.allCases, selection: $range, theme: theme) { $0.label }
+                SegmentedPillControl(ExploreRange.allCases, selection: $range) { $0.label }
                 if window.fellBack {
                     Text("Showing the last \(window.rows.count) days")
                         .font(LiquidType.unidad)

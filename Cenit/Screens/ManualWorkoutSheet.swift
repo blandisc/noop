@@ -15,9 +15,8 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 // `editing` is non-nil when editing an existing row (its values pre-fill the form and it is passed
 // as `replacing:` so a changed natural key deletes the old row). nil = a fresh add.
 //
-// Liquid Glass · El Eje tokens. The theme is passed EXPLICITLY (it doesn't propagate through `.sheet`, FER-162) by the two
-// callers (the workouts list's Add, the detail's Edit/Duplicate). The old fixed `frame(width: 420)`
-// (a macOS-era width) is gone — the form fills the sheet's width on iPhone.
+// Liquid Glass · El Eje tokens. The old fixed `frame(width: 420)` (a macOS-era width) is gone —
+// the form fills the sheet's width on iPhone.
 //
 // FER-202 (anillo 3, épico FER-195): el papel plano cede al cristal El Eje
 // (`.entrenarHojaFondo(tono: .neutro)` + `EntrenarHojaCabecera(.cancelar)`). Las DOS salidas se
@@ -29,8 +28,6 @@ struct ManualWorkoutSheet: View {
     let editing: WorkoutRow?
     /// Called with the validated row (and the original, when editing) once the user taps Save.
     let onSave: (_ row: WorkoutRow, _ replacing: WorkoutRow?) -> Void
-    /// The live «Instrumento» theme, passed explicitly (sheets start a fresh environment). (FER-162)
-    var theme: InstrumentoTheme = .base
 
     @Environment(\.dismiss) private var dismiss
 
@@ -41,10 +38,8 @@ struct ManualWorkoutSheet: View {
     @State private var kcalText: String
 
     init(editing: WorkoutRow? = nil,
-         theme: InstrumentoTheme = .base,
          onSave: @escaping (_ row: WorkoutRow, _ replacing: WorkoutRow?) -> Void) {
         self.editing = editing
-        self.theme = theme
         self.onSave = onSave
         // Pre-fill from the edited row (display "detected" as "Activity" so a re-label starts clean).
         let e = editing

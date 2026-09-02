@@ -63,7 +63,6 @@ struct EntrenarView: View {
                         openHistory: openHistory, openWeeklyPlan: openWeeklyPlan,
                         openRoutines: openRoutines,
                         openWorkoutSession: openWorkoutSession, openMuscleMap: openMuscleMap)
-            .instrumentoTheme(.base)
             .enableInjection()   // Inject: ver la nota en `inject` arriba (no-op en Release)
     }
 }
@@ -72,7 +71,6 @@ private struct EntrenarLanding: View {
     @EnvironmentObject var repo: Repository
     @Environment(AppModel.self) var model
     @EnvironmentObject var tabRouter: TabRouter
-    @Environment(\.instrumentoTheme) private var theme
 
     var openRoutine: (String) -> Void
     var openBreathe: () -> Void
@@ -274,7 +272,7 @@ private struct EntrenarLanding: View {
         // secciones que la muestran. `$split` es un binding: rotar un día en la hoja actualiza esta
         // misma landing al instante, sin esperar a que la hoja cierre.
         .sheet(isPresented: $showWeekEditorSheet) {
-            WeekEditorSheet(theme: theme, split: $split, routines: routines,
+            WeekEditorSheet(split: $split, routines: routines,
                             orderedWeekdays: orderedWeekdays, todayWeekday: todayWeekday,
                             doneWeekdays: Set(orderedWeekdays.filter { trainedThisWeek($0) != nil }),
                             dayLetter: weekdayLetter)
@@ -285,12 +283,12 @@ private struct EntrenarLanding: View {
             StarterTemplatesSheet(grupo: templatesGroup, onApplied: { showPlanAppliedToast = true }) {
                 await load()
             }
-            .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+            .environmentObject(repo).preferredColorScheme(.light)
         }
         // FER-952: the hub's Import chip opens the importer right here (same sheet as Tu Plan).
         .sheet(isPresented: $showHubImport) {
             WorkoutImportView { await load() }
-                .instrumentoTheme(theme).environmentObject(repo).preferredColorScheme(.light)
+                .environmentObject(repo).preferredColorScheme(.light)
         }
         // FER-251: «Desde cero» del primer uso — Biblioteca → crear (3×8), directo, sin menú previo.
         // «Tres caminos» (CrearPlanScreen) se archivó aquí mismo: la opción A del dueño dejó sus
@@ -303,7 +301,7 @@ private struct EntrenarLanding: View {
             WorkshopTricksScreen()
         }
         // «En vivo» from the expanded «Más formas» pill — the live-HR free workout, the same sheet
-        // «Otra forma» presents (theme passed explicitly; it doesn't cross `.sheet`).
+        // «Otra forma» presents (sheet boundary).
         // FER-950: disc said «Rápido»/«Movilidad» but AppModel only re-opens the live session — make
         // that resume path explicit (ConfirmCard), never clobber.
         .liquidConfirm(

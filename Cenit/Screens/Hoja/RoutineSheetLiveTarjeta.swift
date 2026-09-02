@@ -111,7 +111,7 @@ struct HojaTarjetaEjercicioSesion: View {
     /// «Subida esperando ▲» — la propuesta de la barra RETENIDA (mapa: intervención vigente, alcanzable
     /// aquí). El «por qué» expandible es F4 (deload/intervención); esta hoja solo ofrece tomarla.
     private var raisePill: some View {
-        OutlineCapsule(theme: vivo.sheet.theme, size: .sm, action: {
+        OutlineCapsule(size: .sm, action: {
             withAnimation(vivo.reduceMotion ? nil : .snappy) { _ = vivo.session.takeHeldRaise(at: ei) }
         }) {
             HStack(spacing: LiquidSpace.s150) {
@@ -202,7 +202,7 @@ struct HojaTarjetaEjercicioSesion: View {
     /// B6b: «Volver a {fromKg}» revierte la subida ya aplicada (celdas sin palomear); «Seguir en
     /// {toKg}» solo cierra la tarjeta — ni acierto ni fallo, la aritmética lo respeta (mapa B6b).
     private func raiseRevertCard(_ raise: ProgressionPlanner.Raise) -> some View {
-        NoteStrip(style: .info, theme: vivo.sheet.theme) {
+        NoteStrip(style: .info) {
             HStack(spacing: LiquidSpace.s400) {
                 Button {
                     withAnimation(vivo.reduceMotion ? nil : .snappy) { vivo.raiseRevertOpenRunId = nil }
@@ -321,7 +321,7 @@ struct HojaTarjetaEjercicioSesion: View {
                     Text("goal \(SessionClock.format(metaS))").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                 }
                 OutlineCapsule(running ? "Stop" : "Start",
-                               theme: vivo.sheet.theme, size: .sm, weight: .bold) {
+                               size: .sm, weight: .bold) {
                     if running {
                         withAnimation(vivo.reduceMotion ? nil : .snappy) { vivo.confirmOrToggleSet(ei: ei, si: si) }
                     } else {
@@ -341,7 +341,7 @@ struct HojaTarjetaEjercicioSesion: View {
         let zone = max(1, min(5, Int((pct * 5).rounded(.up))))
         return Text("ZONE \(zone) · \(bpm)")
             .font(LiquidType.filaConteo.weight(.bold)).foregroundStyle(LiquidColor.tinta700)
-            .outlineCapsule(.outline, size: .sm, theme: vivo.sheet.theme)
+            .outlineCapsule(.outline, size: .sm)
     }
 
     /// B11 (FER-169): el copy del mapa — «RÉCORD peso máx · antes 100.0» — bajo la fila que acaba de
@@ -383,7 +383,7 @@ struct HojaTarjetaEjercicioSesion: View {
     /// que lo disparó. `NoteStrip(.warning)` (mismo cristal que otros avisos del app), reversible: ERA
     /// corrige y vuelve a pasar por el guard; SÍ guarda tal cual.
     @ViewBuilder private func absurdCaptureBanner(_ target: AbsurdCaptureTarget) -> some View {
-        NoteStrip(style: .warning, theme: vivo.sheet.theme) {
+        NoteStrip(style: .warning) {
             VStack(alignment: .leading, spacing: LiquidSpace.s150) {
                 (Text("\(vivo.plateNumber(vivo.displayWeight(target.weightKg))) \(vivo.weightUnit().uppercased())?")
                     .font(LiquidType.filaConteo.weight(.bold))
@@ -391,7 +391,7 @@ struct HojaTarjetaEjercicioSesion: View {
                  + Text("is 8× your record").font(LiquidType.caption))
                     .foregroundStyle(LiquidColor.tinta900)
                 HStack(spacing: LiquidSpace.s250) {
-                    OutlineCapsule(theme: vivo.sheet.theme, size: .md, action: { vivo.correctAbsurdCapture() }) {
+                    OutlineCapsule(size: .md, action: { vivo.correctAbsurdCapture() }) {
                         Text("It was \(vivo.plateNumber(vivo.displayWeight(target.weightKg / 10)))")
                             .font(LiquidType.captionFuerte).foregroundStyle(LiquidColor.tinta900)
                     }
@@ -413,7 +413,7 @@ struct HojaTarjetaEjercicioSesion: View {
             if !allDone {
                 // Geometría congelada por el QA de FER-295 (.sm, sin toque expandido): NO usar
                 // `HojaCapsulaAccion` aquí — crece el dibujo a 44 pt y la fila de la tarjeta viva.
-                OutlineCapsule(theme: vivo.sheet.theme, size: .sm, estilo: .vidrio, action: {
+                OutlineCapsule(size: .sm, estilo: .vidrio, action: {
                     withAnimation(vivo.reduceMotion ? nil : .snappy) { vivo.session.addSet(exercise: ei) }
                 }) {
                     Text(verbatim: "＋ \(String(localized: "SET"))")

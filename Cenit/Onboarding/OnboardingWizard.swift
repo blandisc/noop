@@ -10,7 +10,7 @@ import StrandAnalytics
 //
 //   1. **Un solo suelo: `LiquidColor.fondoGradient`.** Es exactamente el papel de Hoy. El
 //      onboarding termina descubriendo la app, y con el papel cálido de «Instrumento» el
-//      aterrizaje saltaba de color en el último cuadro. Cero `InstrumentoTheme.base.paper` aquí.
+//      aterrizaje saltaba de color en el último cuadro. El suelo es `LiquidColor.fondoGradient`.
 //
 //   2. **El orbe se llena con TU evidencia, no con el reloj.** La densidad del lienzo la manda
 //      `OnboardingLanding.densidadHonesta`, nunca cuánto tiempo llevas mirando la pantalla (ver

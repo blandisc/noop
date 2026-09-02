@@ -17,8 +17,6 @@ import StrandAnalytics
 
 struct StressDayMapBlock: View {
     @ObservedObject var model: CalendarDayMap
-    /// Retenido por compatibilidad de firma — la capa Liquid ya no lo referencia. (FER-162)
-    var theme: InstrumentoTheme = .base
     /// El calor del nivel de hoy, pasado por la pantalla padre (la rampa de la escalera única).
     var tono: Color = LiquidColor.tinta500
     @State private var showPicker = false

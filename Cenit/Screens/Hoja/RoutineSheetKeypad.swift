@@ -154,7 +154,6 @@ extension RoutineSheet {
     @ViewBuilder var keypadInset: some View {
         if let cell = activeCell {
             SessionKeypad(
-                theme: theme,
                 stepLabel: cell.field == .weight ? (system == .imperial ? "±5" : "±2,5") : "±1",
                 canCopyPrevious: false,
                 platesEnabled: false,

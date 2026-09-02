@@ -73,9 +73,8 @@ extension MetricDetailScreen {
     /// engine's two bands, the stale index ramps painted SpO₂'s «low (< 95)» lane green (verdict) and
     /// «normal» amber — inverted — and Respiration's «elevated (≥ 20)» green. A band with no engine
     /// key (or an unmapped one) falls back to the metric's own hue, matching the old `default`.
-    /// Static (theme/fallback injected) so the key→colour map is pinned by `MetricInfoEscaleraUnicaTests`.
-    static func laneColor(metric: String, bandKey: String?,
-                          theme: InstrumentoTheme, fallback: Color) -> Color {
+    /// Static (fallback injected) so the key→colour map is pinned by `MetricInfoEscaleraUnicaTests`.
+    static func laneColor(metric: String, bandKey: String?, fallback: Color) -> Color {
         switch (metric, bandKey) {
         case ("spo2", "normal"):
             return LiquidColor.verdePrimario
@@ -104,9 +103,9 @@ extension MetricDetailScreen {
         }
     }
 
-    /// Instance sugar over `laneColor` with this screen's metric, theme and hue plugged in.
+    /// Instance sugar over `laneColor` with this screen's metric and hue plugged in.
     func bandLaneColor(key: String?) -> Color {
-        Self.laneColor(metric: spec.descriptor.key, bandKey: key, theme: theme, fallback: metricHue)
+        Self.laneColor(metric: spec.descriptor.key, bandKey: key, fallback: metricHue)
     }
 
     var unit: String { spec.info.unit ?? "" }

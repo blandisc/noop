@@ -31,9 +31,6 @@ import Foundation
 /// Detalle de Sueño en vidrio Liquid. Se arma UNA vez desde un `SleepDetailModel` (el caller
 /// inyecta el modelo para que la pantalla siga sin tocar la base de datos).
 struct SleepDetailScreen: View {
-    /// El tema vivo «Instrumento», pasado explícito (las hojas arrancan un environment nuevo).
-    /// Solo lo usa la hoja de etapas, que no está en el alcance de esta migración. (FER-162)
-    var theme: InstrumentoTheme = .base
     /// Todo lo que la pantalla dibuja, derivado UNA vez por el caller desde `repo`.
     let model: SleepDetailModel
     /// `true` cuando Apple Salud NO está autorizado. Sin esto, quien nunca dio permiso leía
@@ -128,7 +125,7 @@ struct SleepDetailScreen: View {
             LiquidMetricSheetView(info: info, trendLoader: trendLoader(for: info.id))
         }
         .sheet(isPresented: $showStages) {
-            SleepStagesInfoSheet(theme: theme)
+            SleepStagesInfoSheet()
         }
     }
 
@@ -1187,10 +1184,6 @@ struct SleepDetailScreen: View {
 /// un enlace dentro de una pantalla de vidrio y aterrizabas en el lenguaje anterior — la
 /// costura que esta migración existe para cerrar.
 struct SleepStagesInfoSheet: View {
-    /// Se conserva en la firma: los callers la presentan con el tema vivo y quitarla obligaría
-    /// a tocarlos. La hoja ya no lo usa.
-    var theme: InstrumentoTheme = .base
-
     private struct Etapa: Identifiable {
         let id = UUID()
         let etapa: LiquidHipnograma.Etapa
