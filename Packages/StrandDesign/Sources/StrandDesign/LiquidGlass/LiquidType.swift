@@ -106,6 +106,9 @@ public enum LiquidType {
 
     /// `título` — 15/700. Títulos de tarjeta.
     public static let titulo = InstrumentoType.grotesk(15, weight: .bold)
+    /// Tracking del reloj compacto de la sesión (15/400 tabular): paridad con
+    /// `InstrumentoType.groteskSessionClockCompactTracking` (FER-303 · QA D5).
+    public static let relojCompactoTracking: CGFloat = -0.2
 
     /// `título/fila` — 13/600. Título de ListRow.
     public static let tituloFila = InstrumentoType.grotesk(13, weight: .semibold)

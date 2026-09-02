@@ -133,6 +133,9 @@ public extension OutlineCapsule {
     enum Estilo: Sendable {
         /// Stroke `theme.hairlineStrong`, sin relleno (comportamiento `filled: false`).
         case outline
+        /// Stroke `theme.hairline` (canto suave), sin relleno: el estado DESHABILITADO de una
+        /// pill (teclado de sesión, FER-298 ítem 5) — misma geometría que `.outline`.
+        case outlineSuave
         /// Fondo `LiquidColor.papelTarjeta` + stroke `theme.hairlineStrong`
         /// (Terminar / Saltar descanso / Casi).
         case papel
@@ -221,6 +224,10 @@ private struct OutlineCapsuleChrome<CapsuleLabel: View>: ViewModifier {
                 view
                     .background(Color.clear, in: shape)
                     .overlay(shape.strokeBorder(theme.hairlineStrong, lineWidth: 1))
+            case .outlineSuave:
+                view
+                    .background(Color.clear, in: shape)
+                    .overlay(shape.strokeBorder(theme.hairline, lineWidth: 1))
             case .papel:
                 view
                     .background(LiquidColor.papelTarjeta, in: shape)

@@ -94,8 +94,7 @@ struct SessionKeypad: View {
             // restante del temporizador de intervalos): compartir esa clave habría pisado su copy
             // es-MX con «quedaban» (revisión ronda 3, hallazgo grave).
             Text("Reps left kicker").liquidKicker().foregroundStyle(LiquidColor.tinta700)
-            // `footnote` (11pt/`.caption2`) es el token existente más cercano al 11.5 SF del handoff —
-            // `.caption` (12pt) quedaba un escalón grande de más (revisión ronda 2, hallazgo menor).
+            // `LiquidType.caption` (10.5) es el token Liquid más cercano al 11.5 SF del handoff.
             Text("at check-off").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
             Spacer(minLength: LiquidSpace.s200)
             // Un solo gesto sobre TODA la píldora, no cinco `Button`s vecinos con `contentShape`
@@ -215,7 +214,7 @@ struct SessionKeypad: View {
             Text(text).font(LiquidType.caption)
                 .foregroundStyle(enabled ? LiquidColor.tinta900 : LiquidColor.tinta500)
                 .outlineCapsule(
-                    .outline,
+                    enabled ? .outline : .outlineSuave,
                     size: .aMedida(
                         insets: EntrenarMetrics.keypadPillInsets,
                         minHeight: EntrenarMetrics.keypadPill,

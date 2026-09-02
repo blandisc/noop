@@ -81,7 +81,7 @@ struct HojaFoco: View {
                     heroes(run: run, ei: ei)
                     if let ant = vivo.antPlayhead(run) {
                         Text(verbatim: ant)
-                            .font(LiquidType.orbita.weight(.bold))
+                            .font(LiquidType.captionLectura.weight(.bold))
                             .tracking(FocoMetrics.antTracking)
                             .foregroundStyle(LiquidColor.tinta500)
                             .padding(.top, FocoMetrics.antTop)
@@ -225,7 +225,7 @@ struct HojaFoco: View {
                 TimelineView(.periodic(from: Date(), by: 1)) { ctx in
                     let texto = Self.clock(vivo.session.timerElapsed(now: ctx.date))
                     Text(texto)
-                        .font(LiquidType.displayS)
+                        .font(LiquidType.displayS).monospacedDigit()
                         .tracking(LiquidType.displaySTracking)
                         .foregroundStyle(LiquidColor.tinta900)
                         .numeroVivo(value: texto)
@@ -264,7 +264,7 @@ struct HojaFoco: View {
                     Text(texto).numeroVivo(value: texto)
                 }
             }
-            .font(LiquidType.displayS)
+            .font(LiquidType.displayS).monospacedDigit()
             .tracking(LiquidType.displaySTracking)
             .foregroundStyle(LiquidColor.tinta900)
             .padding(.top, FocoMetrics.capcionTop)
@@ -511,15 +511,12 @@ private enum FocoMetrics {
     static var contentTop: CGFloat { 26 }
     static var heroGap: CGFloat { 16 }
     static var capcionTop: CGFloat { 6 }
-    static var antSize: CGFloat { 9 }
     static var antTracking: CGFloat { 0.4 }
     static var antTop: CGFloat { 14 }
     static var capsulasTop: CGFloat { 18 }
     static var raiseTop: CGFloat { 12 }
     static var ctaTop: CGFloat { 22 }
     static var prevNextTop: CGFloat { 18 }
-    static var runningClockSize: CGFloat { 22 }
-    static var doneTitleSize: CGFloat { 22 }
     static var doneTitleTop: CGFloat { 12 }
 }
 #endif

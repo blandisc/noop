@@ -34,7 +34,7 @@ enum HojaPlegada {
                         if !equal { Text(verbatim: "›") }
                     }
                     // R11 (QA D7): `relativeTo` — cero fuentes fixedSize en texto de lectura.
-                    .font(LiquidType.caption.weight(.bold))
+                    .font(LiquidType.filaConteo.weight(.bold))
                     .foregroundStyle(equal ? LiquidColor.tinta900 : LiquidColor.tinta700)
                     .lineLimit(1)
                 }

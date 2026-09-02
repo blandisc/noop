@@ -136,7 +136,7 @@ struct HojaTarjetaEjercicioSesion: View {
                 Spacer(minLength: LiquidSpace.s150)
                 Button { vivo.applyDeload(ei: ei, toKg: toKg) } label: {
                     Text("Drop to \(vivo.plateNumber(vivo.displayWeight(toKg)))")
-                        .font(LiquidType.caption.weight(.bold)).foregroundStyle(LiquidColor.verdeProfundo)
+                        .font(LiquidType.filaConteo.weight(.bold)).foregroundStyle(LiquidColor.verdeProfundo)
                 }
                 .buttonStyle(.plain)
                 Button { vivo.dismissDeload(ei: ei) } label: {
@@ -340,7 +340,7 @@ struct HojaTarjetaEjercicioSesion: View {
         let pct = maxHR > 0 ? Double(bpm) / maxHR : 0
         let zone = max(1, min(5, Int((pct * 5).rounded(.up))))
         return Text("ZONE \(zone) · \(bpm)")
-            .font(LiquidType.caption.weight(.bold)).foregroundStyle(LiquidColor.tinta700)
+            .font(LiquidType.filaConteo.weight(.bold)).foregroundStyle(LiquidColor.tinta700)
             .outlineCapsule(.outline, size: .sm, theme: vivo.sheet.theme)
     }
 
@@ -350,7 +350,7 @@ struct HojaTarjetaEjercicioSesion: View {
     /// mismas anotaciones `token-exempt` que ya usa el destello de arriba).
     @ViewBuilder private func prFlashBanner(_ flash: PRFlash) -> some View {
         HStack(spacing: LiquidSpace.s150) {
-            Text("RECORD").font(LiquidType.caption.weight(.bold)).foregroundStyle(LiquidColor.rosa)
+            Text("RECORD").font(LiquidType.filaConteo.weight(.bold)).foregroundStyle(LiquidColor.rosa)
             Text(recordMetricLabel(flash.metric)).font(LiquidType.caption).foregroundStyle(LiquidColor.tinta700)
             if let prior = flash.priorText {
                 Text(verbatim: "· ") + Text("before \(prior)")
@@ -386,7 +386,7 @@ struct HojaTarjetaEjercicioSesion: View {
         NoteStrip(style: .warning, theme: vivo.sheet.theme) {
             VStack(alignment: .leading, spacing: LiquidSpace.s150) {
                 (Text("\(vivo.plateNumber(vivo.displayWeight(target.weightKg))) \(vivo.weightUnit().uppercased())?")
-                    .font(LiquidType.caption.weight(.bold))
+                    .font(LiquidType.filaConteo.weight(.bold))
                  + Text(verbatim: " ")
                  + Text("is 8× your record").font(LiquidType.caption))
                     .foregroundStyle(LiquidColor.tinta900)
@@ -411,8 +411,14 @@ struct HojaTarjetaEjercicioSesion: View {
         let allDone = !workSets.isEmpty && workSets.allSatisfy(\.done)
         HStack {
             if !allDone {
-                HojaCapsulaAccion("＋ \(String(localized: "SET"))") {
+                // Geometría congelada por el QA de FER-295 (.sm, sin toque expandido): NO usar
+                // `HojaCapsulaAccion` aquí — crece el dibujo a 44 pt y la fila de la tarjeta viva.
+                OutlineCapsule(theme: vivo.sheet.theme, size: .sm, estilo: .vidrio, action: {
                     withAnimation(vivo.reduceMotion ? nil : .snappy) { vivo.session.addSet(exercise: ei) }
+                }) {
+                    Text(verbatim: "＋ \(String(localized: "SET"))")
+                        .font(LiquidType.captionLectura.weight(.bold)).tracking(1)
+                        .foregroundStyle(LiquidColor.tinta900)
                 }
                 .accessibilityLabel(Text("Add set"))
             } else if let next = vivo.session.activeExercises.first(where: { $0.index > ei }) {
@@ -491,7 +497,7 @@ struct HojaPlegadaSesion: View {
                     if allDone {
                         ZStack {
                             Circle().fill(LiquidColor.verdePrimario)
-                            Text(verbatim: "✓").font(LiquidType.caption.weight(.bold)).foregroundStyle(LiquidColor.papelTarjeta)
+                            Text(verbatim: "✓").font(LiquidType.filaConteo.weight(.bold)).foregroundStyle(LiquidColor.papelTarjeta)
                         }
                         .frame(width: HojaMetrics.marcaDiametro, height: HojaMetrics.marcaDiametro)
                     }
@@ -501,7 +507,7 @@ struct HojaPlegadaSesion: View {
                         Text("continues").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                     } else {
                         Text(vivo.recetaSummary(run))
-                            .font(LiquidType.caption.weight(.bold))
+                            .font(LiquidType.filaConteo.weight(.bold))
                             .foregroundStyle(LiquidColor.tinta500).lineLimit(1)
                     }
                 }

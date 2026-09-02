@@ -779,8 +779,8 @@ struct LiveStrengthSheet: View {
         TimelineView(.periodic(from: Date(), by: 1)) { ctx in
             let elapsed = session.elapsedSeconds(now: ctx.date)
             Text(Self.clock(elapsed))
-                .font(LiquidType.titulo)
-                .tracking(-0.2)
+                .font(LiquidType.titulo.weight(.regular)).monospacedDigit()   // dígitos tabulares: el reloj no salta
+                .tracking(LiquidType.relojCompactoTracking)
                 .foregroundStyle(session.paused ? LiquidColor.tinta500 : LiquidColor.tinta900)
                 // r22: los dígitos RUEDAN en vez de parpadear — misma voz que el descanso.
                 .contentTransition(.numericText())
