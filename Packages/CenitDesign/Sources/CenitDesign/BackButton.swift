@@ -8,6 +8,7 @@ import SwiftUI
 ///
 /// El rol importa y no es cosmético: `.back` vuelve a la pantalla anterior, `.close` descarta una
 /// hoja. Son gestos distintos y VoiceOver los anuncia distinto.
+/// Paints with `LiquidColor` (FER-320).
 public struct BackButton: View {
     public enum Role {
         /// Vuelve a la pantalla anterior de la pila. Chevron.
@@ -31,12 +32,13 @@ public struct BackButton: View {
 
     private let role: Role
     private let surface: Surface
-    private let theme: InstrumentoTheme
     private let action: () -> Void
 
+    /// - Parameter theme: ignored for painting (LiquidColor). Kept for call-site compatibility (FER-320).
     public init(role: Role = .back, surface: Surface = .paper,
-                theme: InstrumentoTheme, action: @escaping () -> Void) {
-        self.role = role; self.surface = surface; self.theme = theme; self.action = action
+                theme: InstrumentoTheme = .base, action: @escaping () -> Void) {
+        self.role = role; self.surface = surface; self.action = action
+        _ = theme
     }
 
     public var body: some View {
@@ -57,13 +59,13 @@ public struct BackButton: View {
     }
 
     private var glyphColor: Color {
-        surface == .accent ? theme.paper : theme.ink
+        surface == .accent ? LiquidColor.fondoAlto : LiquidColor.tinta900
     }
     private var fillColor: Color {
-        surface == .accent ? theme.paper.opacity(CenitOpacity.tintFillStrong) : theme.surface
+        surface == .accent ? LiquidColor.fondoAlto.opacity(CenitOpacity.tintFillStrong) : LiquidColor.papelTarjeta
     }
     private var strokeColor: Color {
-        surface == .accent ? theme.paper.opacity(CenitOpacity.strokeSoft) : theme.hairlineStrong
+        surface == .accent ? LiquidColor.fondoAlto.opacity(CenitOpacity.strokeSoft) : LiquidColor.tinta10
     }
 
     private static let disc: CGFloat = 40
@@ -72,24 +74,22 @@ public struct BackButton: View {
 
 #if DEBUG
 #Preview("BackButton") {
-    let t = InstrumentoTheme.base
     VStack(spacing: 0) {
         HStack(spacing: 20) {
-            BackButton(role: .back, theme: t, action: {})
-            BackButton(role: .close, theme: t, action: {})
+            BackButton(role: .back, action: {})
+            BackButton(role: .close, action: {})
         }
         .frame(maxWidth: .infinity)
         .padding(40)
-        .background(t.paper)
+        .background(LiquidColor.fondoAlto)
         // Sobre acento: el mismo botón, invertido — así se ve durante el descanso de la sesión.
         HStack(spacing: 20) {
-            BackButton(role: .back, surface: .accent, theme: t, action: {})
-            BackButton(role: .close, surface: .accent, theme: t, action: {})
+            BackButton(role: .back, surface: .accent, action: {})
+            BackButton(role: .close, surface: .accent, action: {})
         }
         .frame(maxWidth: .infinity)
         .padding(40)
-        .background(t.verdict)
+        .background(LiquidColor.verdePrimario)
     }
-    .instrumentoTheme(t)
 }
 #endif

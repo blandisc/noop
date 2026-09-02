@@ -559,7 +559,6 @@ private struct ActiveSessionPillHost: View {
                     detail: detail,
                     paused: session.paused,
                     hue: LiquidColor.indigo,
-                    theme: .base,
                     accessibilityLabel: pillLabel(session.routineName, elapsed, model.watchBpm),
                     accessibilityHint: Text("Returns to the session"),
                     action: { model.resumeStrengthSession() },

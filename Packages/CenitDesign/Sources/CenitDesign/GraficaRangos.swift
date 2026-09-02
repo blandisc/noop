@@ -18,6 +18,7 @@ import SwiftUI
 // periodo lo recalcula el caller (PeriodSelector externo) pasando `points` nuevos.
 //
 // Copy: todo llega localizado desde la app (el paquete no carga catálogo).
+// Paints with `LiquidColor` (FER-320).
 
 public struct GraficaRangos: View {
 
@@ -89,7 +90,6 @@ public struct GraficaRangos: View {
     private let labels: [String]
     /// Formato del valor en el chip del scrub (default: entero/2 decimales según magnitud).
     private let fmt: (Double) -> String
-    private let theme: InstrumentoTheme
 
     /// FER-983: la banda de cada punto y el conteo de cada carril, precomputados UNA vez en el `init`
     /// (mismo patrón que `OverlayChart.plots`, FER-319). Antes se recalculaban en CADA render, y el
@@ -114,7 +114,7 @@ public struct GraficaRangos: View {
                 anchorMedia: String? = nil, anchorRangos: String? = nil,
                 scrub: Bool = false, labels: [String] = [],
                 fmt: ((Double) -> String)? = nil,
-                theme: InstrumentoTheme) {
+                theme: InstrumentoTheme = .base) {
         self.points = points; self.bands = bands; self.ticks = ticks
         self.wash = wash; self.refLine = refLine
         self.hue = hue; self.ymin = ymin; self.ymax = ymax
@@ -127,7 +127,7 @@ public struct GraficaRangos: View {
         self.fmt = fmt ?? { v in
             v == v.rounded() ? "\(Int(v))" : String(format: "%.2f", v)
         }
-        self.theme = theme
+        _ = theme
         // Ver la nota de `bandIndices`/`laneCounts`: una pasada aquí en vez de N por render.
         self.bandIndices = points.map { v in bands.firstIndex { $0.contains(v) } }
         self.laneCounts = bands.map { b in points.filter { b.contains($0) }.count }
@@ -154,7 +154,7 @@ public struct GraficaRangos: View {
                 .accessibilityLabel(Text(verbatim: "\(mediaValue) \(mediaNote)"))
                 .accessibilityValue(Text(accessibilityValueText))
             if mode == .media, let anchorMedia {
-                BarraAncla(anchorMedia, color: hue, theme: theme)
+                BarraAncla(anchorMedia, color: hue)
             }
             if mode == .rangos {
                 lanes
@@ -175,14 +175,14 @@ public struct GraficaRangos: View {
                 .foregroundColor(hue)
              + Text(verbatim: " · \(mediaNote)")
                 .font(StrandFont.scaled(12))
-                .foregroundColor(theme.inkTertiary)
+                .foregroundColor(LiquidColor.tinta500)
              + Text(verbatim: mediaDelta.map { " \($0)" } ?? "")
                 .font(InstrumentoType.grotesk(12, weight: .semibold))
-                .foregroundColor(deltaColor ?? theme.inkSecondary))
+                .foregroundColor(deltaColor ?? LiquidColor.tinta700))
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
             Spacer(minLength: 8)
-            CompactTrendToggle(mode: $mode, theme: theme)
+            CompactTrendToggle(mode: $mode)
         }
     }
 
@@ -245,11 +245,11 @@ public struct GraficaRangos: View {
         let text = labels.indices.contains(i) ? "\(fmt(points[i])) · \(labels[i])" : fmt(points[i])
 
         Rectangle()
-            .fill(theme.ink.opacity(0.35))
+            .fill(LiquidColor.tinta900.opacity(0.35))
             .frame(width: 1, height: Self.floorY - 16)
             .offset(x: px - 0.5, y: 16)
         Circle()
-            .fill(theme.paper)
+            .fill(LiquidColor.fondoAlto)
             .overlay(Circle().strokeBorder(ringColor, lineWidth: 2.5))
             .frame(width: 10, height: 10)
             .offset(x: px - 5, y: py - 5)
@@ -262,12 +262,12 @@ public struct GraficaRangos: View {
         let chipY = aboveY >= 0 ? aboveY : Swift.min(Self.floorY - Self.scrubChipH, py + gap)
         Text(verbatim: text)
             .font(InstrumentoType.groteskNumber(9.5, weight: .semibold))
-            .foregroundStyle(theme.paper)
+            .foregroundStyle(LiquidColor.fondoAlto)
             .lineLimit(1)
             .minimumScaleFactor(0.8)
             .padding(.horizontal, 6)
             .frame(width: chipW, height: Self.scrubChipH)
-            .background(theme.ink, in: Capsule(style: .continuous))
+            .background(LiquidColor.tinta900, in: Capsule(style: .continuous))
             .offset(x: chipX, y: chipY)
             .accessibilityHidden(true)
     }
@@ -314,7 +314,7 @@ public struct GraficaRangos: View {
             if let label = wash.label {
                 Text(label)
                     .font(StrandFont.scaled(9))
-                    .foregroundStyle(theme.inkTertiary)
+                    .foregroundStyle(LiquidColor.tinta500)
                     .offset(x: Self.gutter + 4, y: top + 3)
             }
         }
@@ -325,23 +325,23 @@ public struct GraficaRangos: View {
         ZStack(alignment: .topLeading) {
             ForEach(Array(ticks.enumerated()), id: \.offset) { _, t in
                 Rectangle()
-                    .fill(theme.hairline)
+                    .fill(LiquidColor.tinta7)
                     .frame(width: Swift.max(0, w - Self.gutter), height: 1)
                     .offset(x: Self.gutter, y: y(t.v) - 0.5)
                 Text(t.label)
                     .font(InstrumentoType.grotesk(9))
                     .monospacedDigit()
-                    .foregroundStyle(theme.inkTertiary)
+                    .foregroundStyle(LiquidColor.tinta500)
                     .offset(x: 0, y: y(t.v) - 5)
             }
             if let ref = refLine {
                 Line(from: CGPoint(x: Self.gutter, y: y(ref.v)),
                      to: CGPoint(x: w, y: y(ref.v)))
-                    .stroke(theme.baseMark, style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                    .stroke(LiquidColor.tinta500, style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
                 if let label = ref.label {
                     Text(label)
                         .font(StrandFont.scaled(9))
-                        .foregroundStyle(theme.inkTertiary)
+                        .foregroundStyle(LiquidColor.tinta500)
                         .offset(x: Self.gutter + 4, y: y(ref.v) - 14)
                 }
             }
@@ -365,7 +365,7 @@ public struct GraficaRangos: View {
             line
                 .stroke(hue, style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
             Circle()
-                .fill(theme.paper)
+                .fill(LiquidColor.fondoAlto)
                 .overlay(Circle().strokeBorder(hue, lineWidth: 2))
                 .frame(width: 8, height: 8)
                 .offset(x: x(points.count - 1, w) - 4, y: y(points[points.count - 1]) - 4)
@@ -376,14 +376,14 @@ public struct GraficaRangos: View {
     @ViewBuilder private func rangosSeries(_ w: CGFloat) -> some View {
         if points.count > 1 {
             linePath(w)
-                .stroke(theme.baseMark.opacity(0.55),
+                .stroke(LiquidColor.tinta500.opacity(0.55),
                         style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
             ForEach(Array(points.enumerated()), id: \.offset) { i, v in
                 let bi = bandIndices[i]
                 let hot = activeLane == nil || activeLane == bi
                 let r: CGFloat = hot ? 3.5 : 2.5
                 Circle()
-                    .fill(bi.map { bands[$0].color } ?? theme.ink)
+                    .fill(bi.map { bands[$0].color } ?? LiquidColor.tinta900)
                     .opacity(hot ? 1 : 0.25)
                     .frame(width: r * 2, height: r * 2)
                     .offset(x: x(i, w) - r, y: y(v) - r)
@@ -397,12 +397,12 @@ public struct GraficaRangos: View {
     private func floorAndDates(_ w: CGFloat) -> some View {
         ZStack(alignment: .topLeading) {
             Rectangle()
-                .fill(theme.hairlineStrong)
+                .fill(LiquidColor.tinta10)
                 .frame(width: Swift.max(0, w - Self.gutter), height: 1.2)
                 .offset(x: Self.gutter, y: Self.floorY)
             Text(startLabel)
                 .font(InstrumentoType.grotesk(9))
-                .foregroundStyle(theme.inkTertiary)
+                .foregroundStyle(LiquidColor.tinta500)
                 .offset(x: Self.gutter, y: Self.floorY + 7)
             // Fechas intermedias: hasta 3 marcas interiores equiespaciadas, centradas en su punto y
             // clampeadas al plot (ancho estimado por caracteres, como el chip del scrub) para que no
@@ -412,14 +412,14 @@ public struct GraficaRangos: View {
                 let halfW = CGFloat(tick.text.count) * 2.7
                 Text(tick.text)
                     .font(InstrumentoType.grotesk(9))
-                    .foregroundStyle(theme.inkTertiary)
+                    .foregroundStyle(LiquidColor.tinta500)
                     .fixedSize()
                     .offset(x: Swift.max(Self.gutter, Swift.min(w - halfW * 2, cx - halfW)),
                             y: Self.floorY + 7)
             }
             Text(endLabel)
                 .font(InstrumentoType.grotesk(9))
-                .foregroundStyle(theme.inkTertiary)
+                .foregroundStyle(LiquidColor.tinta500)
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .offset(y: Self.floorY + 7)
         }
@@ -457,7 +457,7 @@ public struct GraficaRangos: View {
                 laneRow(i, b)
             }
             if let anchorRangos {
-                BarraAncla(anchorRangos, color: hue, theme: theme)
+                BarraAncla(anchorRangos, color: hue)
                     .padding(.top, 8)
             }
         }
@@ -477,19 +477,19 @@ public struct GraficaRangos: View {
                     .frame(width: 9, height: 9)
                 Text(b.label)
                     .font(StrandFont.scaled(14, weight: active ? .semibold : .regular))
-                    .foregroundStyle(active ? theme.ink : theme.inkSecondary)
+                    .foregroundStyle(active ? LiquidColor.tinta900 : LiquidColor.tinta700)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Text(b.range)
                     .font(InstrumentoType.groteskNumber(12, weight: .regular))
-                    .foregroundStyle(theme.inkTertiary)
+                    .foregroundStyle(LiquidColor.tinta500)
                 Text(verbatim: "\(count) \(countUnit)")
                     .font(InstrumentoType.groteskNumber(12, weight: .semibold))
-                    .foregroundStyle(active ? b.color : theme.inkSecondary)
+                    .foregroundStyle(active ? b.color : LiquidColor.tinta700)
                     .frame(width: 44, alignment: .trailing)
             }
             .padding(.vertical, 9)
             .padding(.horizontal, 8)
-            .background(active ? theme.ink.opacity(0.05) : Color.clear,
+            .background(active ? LiquidColor.tinta900.opacity(0.05) : Color.clear,
                         in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             .contentShape(Rectangle())
         }
@@ -513,30 +513,28 @@ private struct Line: Shape {
 
 #if DEBUG
 #Preview("GraficaRangos · recuperación") {
-    let t = InstrumentoTheme.base
     GraficaRangos(
         points: [62, 55, 48, 71, 80, 67, 73, 58, 84, 70, 66, 88, 74, 72, 78],
         bands: [
-            .init(label: "Pleno", lo: 88, hi: nil, color: t.verdictDeep, range: "≥ 88"),
-            .init(label: "A punto", lo: 70, hi: 88, color: t.verdict, range: "70–88"),
-            .init(label: "Moderado", lo: 50, hi: 70, color: t.warning, range: "50–70"),
-            .init(label: "Bajo", lo: 25, hi: 50, color: t.critical, range: "25–50"),
-            .init(label: "Agotado", lo: nil, hi: 25, color: t.criticalDeep, range: "< 25"),
+            .init(label: "Pleno", lo: 88, hi: nil, color: LiquidColor.verdeProfundo, range: "≥ 88"),
+            .init(label: "A punto", lo: 70, hi: 88, color: LiquidColor.verdePrimario, range: "70–88"),
+            .init(label: "Moderado", lo: 50, hi: 70, color: LiquidColor.atencionTexto, range: "50–70"),
+            .init(label: "Bajo", lo: 25, hi: 50, color: LiquidColor.negativo, range: "25–50"),
+            .init(label: "Agotado", lo: nil, hi: 25, color: LiquidColor.particulaRoja, range: "< 25"),
         ],
         ticks: [.init(v: 88, label: "88"), .init(v: 70, label: "70"),
                 .init(v: 50, label: "50"), .init(v: 25, label: "25")],
         wash: .init(lo: 70, hi: 88),
         refLine: .init(v: 72, label: "tu base · 72"),
-        hue: t.verdict, ymin: 20, ymax: 95,
+        hue: LiquidColor.verdePrimario, ymin: 20, ymax: 95,
         startLabel: "jun 6", endLabel: "jul 6",
         mediaValue: "A punto", mediaNote: "tu banda típica del mes", mediaDelta: "+4%",
-        deltaColor: t.verdictDeep,
+        deltaColor: LiquidColor.verdeProfundo,
         anchorRangos: "Cuántos días del periodo cayeron en cada banda. Toca una para ver sus días en la gráfica.",
         scrub: true,
         labels: ["10 jun", "12 jun", "14 jun", "16 jun", "18 jun", "20 jun", "22 jun", "24 jun",
-                 "26 jun", "28 jun", "30 jun", "2 jul", "4 jul", "6 jul", "8 jul"],
-        theme: t)
+                 "26 jun", "28 jun", "30 jun", "2 jul", "4 jul", "6 jul", "8 jul"])
         .padding(20)
-        .background(t.paper)
+        .background(LiquidColor.fondoAlto)
 }
 #endif

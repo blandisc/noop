@@ -108,7 +108,7 @@ struct WorkoutDetailScreen: View {
         .keepsSwipeBack()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                BackButton(role: .back, theme: .base) { dismiss() }
+                BackButton(role: .back) { dismiss() }
             }
             ToolbarItem(placement: .primaryAction) { actionMenu }
         }

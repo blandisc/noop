@@ -94,7 +94,7 @@ struct WorkoutImportView: View {
             // `.cerrar` de la familia) — no se unifica a `EntrenarHojaCabecera` aquí (ver nota
             // en `.entrenarHojaFondo` arriba).
             if phase == .mapping || phase == .done {
-                BackButton(role: .close, theme: .base, action: dismissImport)
+                BackButton(role: .close, action: dismissImport)
                     .padding(.trailing, LiquidSpace.s200).padding(.top, LiquidSpace.s200)
             }
         }

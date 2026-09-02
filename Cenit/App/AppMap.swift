@@ -572,7 +572,6 @@ private struct MapSessionPillHost: View {
                     detail: detail,
                     paused: session.paused,
                     hue: LiquidColor.ambar,
-                    theme: .base,
                     accessibilityLabel: Text(verbatim: session.routineName),
                     accessibilityHint: Text("Returns to the session"),
                     action: { model.resumeStrengthSession() },

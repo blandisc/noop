@@ -99,7 +99,7 @@ struct ReceiptPrinterScreen: View {
             Spacer(minLength: 0)
         }
         .overlay(alignment: .topTrailing) {
-            BackButton(role: .close, theme: .base, action: onClose)
+            BackButton(role: .close, action: onClose)
                 .padding(.trailing, LiquidSpace.s200)
         }
     }

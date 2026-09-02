@@ -18,6 +18,7 @@ import SwiftUI
 // Polarity is the one piece of domain knowledge the caller supplies: stress / resting
 // HR fall (lowerIsBetter), HRV / sleep / recovery rise (higherIsBetter), strain is
 // neutral. Color only ever lands on the chip (the measured change), never on chrome.
+// Paints with `LiquidColor` (FER-320).
 
 public struct TrendStatSummary: View {
 
@@ -42,7 +43,6 @@ public struct TrendStatSummary: View {
     private let period: ComparisonPeriod
     private let rangeLow: String
     private let rangeHigh: String
-    private let theme: InstrumentoTheme
 
     /// - Parameters:
     ///   - average: the period mean, already formatted to the metric's precision (no unit).
@@ -57,7 +57,7 @@ public struct TrendStatSummary: View {
     ///     / "vs last quarter" …). Defaults to `.month`. (FER-264)
     ///   - rangeLow / rangeHigh: the period min and max, already formatted (bake the unit into rangeHigh
     ///     when you want it shown, e.g. "62 ms").
-    ///   - theme: the active «Instrumento» theme (it does not propagate through `.sheet`, so pass it).
+    ///   - theme: ignored for painting (LiquidColor). Kept for call-site compatibility (FER-320).
     public init(average: String,
                 unit: String? = nil,
                 pctChange: Double?,
@@ -66,7 +66,7 @@ public struct TrendStatSummary: View {
                 period: ComparisonPeriod = .month,
                 rangeLow: String,
                 rangeHigh: String,
-                theme: InstrumentoTheme) {
+                theme: InstrumentoTheme = .base) {
         self.average = average
         self.unit = unit
         self.pctChange = pctChange
@@ -75,7 +75,7 @@ public struct TrendStatSummary: View {
         self.period = period
         self.rangeLow = rangeLow
         self.rangeHigh = rangeHigh
-        self.theme = theme
+        _ = theme
     }
 
     /// The signed change that drives the chip — the absolute delta when given, else the percentage.
@@ -91,11 +91,11 @@ public struct TrendStatSummary: View {
 
     /// Green when the change moves the good way, amber when the bad way; quiet ink when flat or neutral.
     private var changeColor: Color {
-        guard !isFlat, let v = changeValue else { return theme.inkSecondary }
+        guard !isFlat, let v = changeValue else { return LiquidColor.tinta700 }
         switch polarity {
-        case .neutral:        return theme.inkSecondary
-        case .higherIsBetter: return v > 0 ? theme.verdict : theme.warning
-        case .lowerIsBetter:  return v < 0 ? theme.verdict : theme.warning
+        case .neutral:        return LiquidColor.tinta700
+        case .higherIsBetter: return v > 0 ? LiquidColor.verdePrimario : LiquidColor.atencionTexto
+        case .lowerIsBetter:  return v < 0 ? LiquidColor.verdePrimario : LiquidColor.atencionTexto
         }
     }
 
@@ -135,17 +135,17 @@ public struct TrendStatSummary: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 9) {
-            Text("Your average").instrumentoOverline().foregroundStyle(theme.inkTertiary)
+            Text("Your average").instrumentoOverline().foregroundStyle(LiquidColor.tinta500)
             HStack(alignment: .center, spacing: 10) {
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
-                    Text(average).instrumentoHero(28).foregroundStyle(theme.ink)
+                    Text(average).instrumentoHero(28).foregroundStyle(LiquidColor.tinta900)
                     if let unit {
-                        Text(unit).font(StrandFont.unit).foregroundStyle(theme.inkTertiary)
+                        Text(unit).font(StrandFont.unit).foregroundStyle(LiquidColor.tinta500)
                     }
                 }
                 if changeValue != nil { chip }
             }
-            Text(rangeText).font(StrandFont.footnote).foregroundStyle(theme.inkSecondary)
+            Text(rangeText).font(StrandFont.footnote).foregroundStyle(LiquidColor.tinta700)
         }
         .accessibilityElement(children: .combine)
     }
@@ -167,28 +167,27 @@ public struct TrendStatSummary: View {
 
 #if DEBUG
 #Preview("Trend stat summary") {
-    let t = InstrumentoTheme.base
-    return VStack(alignment: .leading, spacing: 22) {
+    VStack(alignment: .leading, spacing: 22) {
         // Stress — lower is better, fell → green
         TrendStatSummary(average: "1.5", unit: nil, pctChange: -10,
-                         polarity: .lowerIsBetter, rangeLow: "0.1", rangeHigh: "2.9", theme: t)
+                         polarity: .lowerIsBetter, rangeLow: "0.1", rangeHigh: "2.9")
         // HRV — higher is better, rose → green
         TrendStatSummary(average: "48", unit: "ms", pctChange: 6,
-                         polarity: .higherIsBetter, rangeLow: "31", rangeHigh: "62 ms", theme: t)
+                         polarity: .higherIsBetter, rangeLow: "31", rangeHigh: "62 ms")
         // Resting HR — lower is better, rose → amber
         TrendStatSummary(average: "54", unit: "bpm", pctChange: 4,
-                         polarity: .lowerIsBetter, rangeLow: "48", rangeHigh: "61 bpm", theme: t)
+                         polarity: .lowerIsBetter, rangeLow: "48", rangeHigh: "61 bpm")
         // Strain — neutral, any change → quiet ink
         TrendStatSummary(average: "11.2", unit: nil, pctChange: 8,
-                         polarity: .neutral, rangeLow: "4.1", rangeHigh: "17.8", theme: t)
+                         polarity: .neutral, rangeLow: "4.1", rangeHigh: "17.8")
         // Flat month → "Stable this month"
         TrendStatSummary(average: "65", unit: nil, pctChange: 0.4,
-                         polarity: .higherIsBetter, rangeLow: "40", rangeHigh: "88", theme: t)
+                         polarity: .higherIsBetter, rangeLow: "40", rangeHigh: "88")
         // Skin-temp deviation — absolute-delta chip in °C (mean near zero, % would be misleading); neutral
         TrendStatSummary(average: "+0.1", unit: "°C", pctChange: nil, absoluteChange: 0.1,
-                         polarity: .neutral, rangeLow: "−0.4", rangeHigh: "+0.5 °C", theme: t)
+                         polarity: .neutral, rangeLow: "−0.4", rangeHigh: "+0.5 °C")
     }
     .padding(24)
-    .background(t.paper)
+    .background(LiquidColor.fondoAlto)
 }
 #endif
