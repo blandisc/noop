@@ -830,7 +830,7 @@ private struct MetricPickerSheet: View {
             Text(MetricCatalog.localizedCategory(category))
                 .font(LiquidType.franja).tracking(LiquidType.franjaTracking).textCase(.uppercase)
                 .foregroundStyle(LiquidColor.tinta500)
-            VStack(spacing: 0) {
+            VStack(spacing: .zero) {
                 ForEach(Array(metrics.enumerated()), id: \.element.id) { i, metric in
                     fila(metric, ultima: i == metrics.count - 1)
                 }

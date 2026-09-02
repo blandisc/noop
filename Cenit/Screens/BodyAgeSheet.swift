@@ -48,7 +48,7 @@ struct BodyAgeSheet: View {
 
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
+            LazyVStack(alignment: .leading, spacing: .zero) {
                 if let r = result {
                     withData(r)
                 } else {
@@ -199,7 +199,7 @@ struct BodyAgeSheet: View {
 
     private var emptyState: some View {
         let present = presentFactors
-        return VStack(alignment: .leading, spacing: 0) {
+        return VStack(alignment: .leading, spacing: .zero) {
             LiquidCampoMetrica(
                 tono: Self.tono,
                 titulo: String(localized: "Body age"),
@@ -213,7 +213,7 @@ struct BodyAgeSheet: View {
             seccion(String(localized: "What it's built from")) {
                 VStack(alignment: .leading, spacing: LiquidSpace.s250) {
                     // El checklist NUNCA oculta los que faltan: presente = check, ausente = motivo.
-                    VStack(alignment: .leading, spacing: 0) {
+                    VStack(alignment: .leading, spacing: .zero) {
                         ForEach(Array(Self.factorChecklist.enumerated()), id: \.offset) { _, f in
                             LiquidChecklistRow(etiqueta: f.label, presente: present.contains(f.key),
                                                motivo: f.reason, tono: Self.tono)

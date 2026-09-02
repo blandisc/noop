@@ -153,7 +153,7 @@ private struct AvisoDesconexion: View {
                 if let detalle = partes.detalle {
                     Text(detalle)
                         .font(LiquidType.cuerpo)
-                        .foregroundStyle(LiquidColor.rojoClaro.opacity(0.72))   // token-exempt: detalle a susurro
+                        .foregroundStyle(LiquidColor.rojoClaro.opacity(0.72))  // token-exempt(optico): detalle a susurro
                 }
             }
             Spacer(minLength: 0)
@@ -169,7 +169,7 @@ private struct AvisoDesconexion: View {
             Circle()
                 .fill(LiquidColor.rojoClaro)
                 .frame(width: 6, height: 6)
-                .opacity(0.55 + 0.45 * Self.fase(tl.date, quieto: quieto))   // token-exempt: latido del punto de aviso
+                .opacity(0.55 + 0.45 * Self.fase(tl.date, quieto: quieto))  // token-exempt(optico): latido del punto de aviso
         }
         .frame(width: 6, height: 6)
     }
@@ -187,11 +187,11 @@ private struct AvisoDesconexion: View {
                 // de despeje (tercera vuelta adversarial). El contorno concentra el brillo en el
                 // filo, que es donde un halo vive.
                 RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
-                    .strokeBorder(LiquidColor.rojoClaro.opacity(0.35 + 0.20 * fase),   // token-exempt: glow que respira
+                    .strokeBorder(LiquidColor.rojoClaro.opacity(0.35 + 0.20 * fase),  // token-exempt(optico): glow que respira
                                   lineWidth: 3)
                     .blur(radius: 6 + 3 * fase)
                 RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
-                    .fill(LiquidColor.rojoClaro.opacity(0.06 + 0.04 * fase))   // token-exempt: fondo del aviso
+                    .fill(LiquidColor.rojoClaro.opacity(0.06 + 0.04 * fase))  // token-exempt(falta-pieza): fondo del aviso
             }
         }
     }

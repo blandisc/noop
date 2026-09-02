@@ -26,7 +26,7 @@ struct HojaTarjetaEjercicioSesion: View {
 
     var body: some View {
         EntrenarModulo(tono: .indigo) {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: .zero) {
                 chead
                 notaF.padding(.top, LiquidSpace.s100)   // R11(b): ✎ Nota, adjudicado — misma hoja que F1
                 if vivo.session.canTakeHeldRaise(at: ei) { raisePill.padding(.top, LiquidSpace.s100) }
@@ -160,7 +160,7 @@ struct HojaTarjetaEjercicioSesion: View {
     }
 
     private var tabla: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             ForEach(run.sets, id: \.id) { set in
                 let si = run.sets.firstIndex { $0.id == set.id } ?? 0
                 if vivo.restSlotIndex(ei: ei) == si { vivo.restBand().padding(.vertical, LiquidSpace.s150) }
@@ -283,7 +283,7 @@ struct HojaTarjetaEjercicioSesion: View {
         .background {
             if vivo.prFlash?.setId == set.id {
                 RoundedRectangle(cornerRadius: HojaMetrics.activaRadius, style: .continuous)
-                    .fill(LiquidColor.rosa.opacity(0.16))   // token-exempt: destello breve R16, sin token de opacidad para «molde rosa» transitorio todavía
+                    .fill(LiquidColor.rosa.opacity(0.16))  // token-exempt(falta-pieza): destello breve R16, sin token de opacidad para «molde rosa» transitorio todavía
                     .transition(LiquidMotion.fadeOrIdentity(reduceMotion: vivo.reduceMotion))
             }
         }
@@ -360,12 +360,12 @@ struct HojaTarjetaEjercicioSesion: View {
         .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s200)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            LiquidColor.rosa.opacity(0.10),   // token-exempt: mismo molde rosa transitorio que el destello R16, arriba
+            LiquidColor.rosa.opacity(0.10),  // token-exempt(paridad): mismo molde rosa transitorio que el destello R16, arriba
             in: RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
         )
         .overlay(
             RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
-                .strokeBorder(LiquidColor.rosa.opacity(0.30), lineWidth: 0.5)   // token-exempt: mismo molde rosa transitorio que el destello R16, arriba
+                .strokeBorder(LiquidColor.rosa.opacity(0.30), lineWidth: 0.5)  // token-exempt(paridad): mismo molde rosa transitorio que el destello R16, arriba
         )
         .transition(LiquidMotion.fadeOrIdentity(reduceMotion: vivo.reduceMotion))
         .accessibilityElement(children: .combine)

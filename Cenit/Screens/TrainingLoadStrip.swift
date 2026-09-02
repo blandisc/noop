@@ -53,7 +53,7 @@ struct TrainingLoadStrip: View {
     }
 
     private var labelRow: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 0) {
+        HStack(alignment: .firstTextBaseline, spacing: .zero) {
             Text("Load")
                 .liquidKicker()
                 .foregroundStyle(LiquidColor.tinta500)
@@ -69,7 +69,7 @@ struct TrainingLoadStrip: View {
                     .foregroundStyle(LiquidColor.tinta500)
                     .padding(.leading, LiquidSpace.s150)
                 CenitIcon.disclosure.image
-                    .font(.system(size: 9, weight: .semibold)) // token-exempt: microtexto <10pt
+                    .font(.system(size: 9, weight: .semibold))  // token-exempt(falta-pieza): microtexto <10pt
                     .foregroundStyle(LiquidColor.tinta500)
                     .padding(.leading, LiquidSpace.s150)
             } else {

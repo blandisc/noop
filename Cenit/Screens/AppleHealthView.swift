@@ -203,7 +203,7 @@ struct AppleHealthView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s100) {
             // Ronda 2 #20: el overline decía «Apple Health» igual que el título justo debajo — un
             // overline es de ROL (Cuerpo: glifo + Tendencias + fecha), no el mismo nombre repetido.
             LiquidOverline(String(localized: "Source"))
@@ -215,7 +215,7 @@ struct AppleHealthView: View {
                     .font(LiquidType.cuerpo)
                     .foregroundStyle(LiquidColor.tinta500)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 2)
+                    .padding(.top, LiquidSpace.s050)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -596,7 +596,7 @@ struct AppleHealthView: View {
 
         VStack(alignment: .leading, spacing: LiquidSpace.s300) {
             HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: LiquidSpace.s050) {
                     Text(verbatim: title).font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
                     Text(verbatim: rangeNote(forKey: key)).font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
                 }

@@ -191,13 +191,13 @@ struct WeeklyPlanEditorView: View {
     // MARK: - The week (one row per day)
 
     private var weekSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             LiquidSectionHeader("The week") {
                 Text("tap a day to edit it")
                     .font(LiquidType.unidad)
                     .foregroundStyle(LiquidColor.tinta500)
             }
-            VStack(spacing: 0) {
+            VStack(spacing: .zero) {
                 ForEach(weekdays, id: \.self) { wd in
                     dayRow(wd)
                     if wd != weekdays.last { capillary }
@@ -303,7 +303,7 @@ struct WeeklyPlanEditorView: View {
     }
 
     private func dayLabelColumn(_ wd: Int) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s050) {
             Text(weekdayLabel(wd))
                 .font(LiquidType.tituloFila)
                 .foregroundStyle(wd == today ? LiquidColor.tinta900 : LiquidColor.tinta700)
@@ -361,7 +361,8 @@ struct WeeklyPlanEditorView: View {
         let maxV = vol.map(\.value).max() ?? 1
         HStack(spacing: LiquidSpace.s075) {
             ForEach(Array(vol.enumerated()), id: \.offset) { _, e in
-                Capsule().fill(e.key.tint(theme))
+                Capsule()
+                    .fill(e.key.tint(theme))
                     .frame(width: max(12, CGFloat(e.value) / CGFloat(maxV) * 34), height: 4)
             }
         }
@@ -378,13 +379,13 @@ struct WeeklyPlanEditorView: View {
     private var volumeFooter: some View {
         let vol = weeklyVolume
         let maxV = MuscleGroup.allCases.map { vol[$0] ?? 0 }.max() ?? 1
-        return VStack(alignment: .leading, spacing: 0) {
+        return VStack(alignment: .leading, spacing: .zero) {
             LiquidSectionHeader("Weekly volume by group")
             HStack(alignment: .bottom, spacing: LiquidSpace.handoff14) {
                 ForEach(Array(MuscleGroup.allCases.enumerated()), id: \.element) { i, g in
                     let v = vol[g] ?? 0
                     VStack(spacing: LiquidSpace.s125) {
-                        RoundedRectangle(cornerRadius: 4, style: .continuous)  // token-exempt: geometría de dato
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)  // token-exempt(dato): geometría de dato
                             .fill(v == 0 ? LiquidColor.tinta7 : g.tint(theme))
                             .frame(height: max(8, CGFloat(v) / CGFloat(max(1, maxV)) * 34))
                             .frame(maxWidth: .infinity)
@@ -423,7 +424,7 @@ struct WeeklyPlanEditorView: View {
     }
 
     private var routinesSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             LiquidSectionHeader("My routines") {
                 Button { showBuilder = true } label: {
                     (Text(verbatim: "＋ ") + Text("New"))
@@ -441,7 +442,7 @@ struct WeeklyPlanEditorView: View {
                     .padding(.top, LiquidSpace.seccionAire)
                     .padding(.bottom, LiquidSpace.s200)
             } else if folders.isEmpty {
-                VStack(spacing: 0) {
+                VStack(spacing: .zero) {
                     ForEach(routines) { r in
                         routineRow(r)
                         if r.id != routines.last?.id { capillary }
@@ -520,7 +521,7 @@ struct WeeklyPlanEditorView: View {
     }
 
     private func folderCard(folder: RoutineFolder, routines rs: [Routine]) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             folderBand(folder, count: rs.count)
             if !collapsedFolders.contains(folder.id) {
                 ForEach(Array(rs.enumerated()), id: \.element.id) { i, r in
@@ -540,7 +541,7 @@ struct WeeklyPlanEditorView: View {
     }
 
     private func unfiledCard(routines unfiled: [Routine]) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             sectionBand(String(localized: "Loose"), count: unfiled.count,
                         collapsed: collapsedFolders.contains(Self.unfiledSectionID),
                         toggle: { toggleCollapse(Self.unfiledSectionID) })
@@ -674,7 +675,7 @@ struct WeeklyPlanEditorView: View {
                             .background(LiquidColor.tinta7,
                                         in: RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous))
                             .accessibilityHidden(true)
-                        VStack(alignment: .leading, spacing: 2) {
+                        VStack(alignment: .leading, spacing: LiquidSpace.s050) {
                             Text(r.name)
                                 .font(LiquidType.tituloGemela)
                                 .foregroundStyle(LiquidColor.tinta900)

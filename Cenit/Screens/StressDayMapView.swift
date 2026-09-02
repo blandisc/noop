@@ -251,7 +251,7 @@ struct StressDayMapBlock: View {
     @ViewBuilder private func momentsList(_ m: StressMoments.DayMoments) -> some View {
         let rows: [StressMoments.Moment] = m.activated + (m.calmest.map { [$0] } ?? [])
         if !rows.isEmpty {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: .zero) {
                 ForEach(Array(rows.enumerated()), id: \.element.date) { i, mo in
                     if i > 0 {
                         LiquidCapilar(eje: .horizontal)
@@ -358,7 +358,7 @@ private struct CalendarPickerSheet: View {
                         .font(LiquidType.cuerpo)
                         .foregroundStyle(LiquidColor.tinta500)
                 } else {
-                    VStack(spacing: 0) {
+                    VStack(spacing: .zero) {
                         ForEach(model.calendars) { cal in
                             Button { toggle(cal.id) } label: {
                                 HStack(spacing: LiquidSpace.s250) {

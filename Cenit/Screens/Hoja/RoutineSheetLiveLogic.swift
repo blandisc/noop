@@ -689,7 +689,7 @@ extension HojaSesionViva {
                     Text("waits with you").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                 }
                 restBandCore(esRonda: esRonda, large: large, forzarTiempo: forzarTiempo)
-                    .opacity(0.45)   // token-exempt: atenuación transitoria B5 «congelado», sin token de opacidad propio todavía (mismo patrón que el destello R16)
+                    .opacity(0.45)  // token-exempt(falta-pieza): atenuación transitoria B5 «congelado», sin token de opacidad propio todavía (mismo patrón que el destello R16)
                     .allowsHitTesting(false)
             } else {
                 restBandCore(esRonda: esRonda, large: large, forzarTiempo: forzarTiempo)

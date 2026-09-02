@@ -417,8 +417,8 @@ struct DataSourcesView: View {
             Circle()
                 .fill(LiquidColor.verdePrimario)
                 .frame(width: 8, height: 8)
-                .padding(.top, 5)
-                .liquidShadow([.init(color: LiquidColor.verdePrimario.opacity(0.35), radius: 4, y: 0)],  // token-exempt: mismo glow que el punto de LiquidListRow (tone.opacity(0.35))
+                .padding(.top, LiquidSpace.s125)
+                .liquidShadow([.init(color: LiquidColor.verdePrimario.opacity(0.35), radius: 4, y: 0)],  // token-exempt(optico): mismo glow que el punto de LiquidListRow (tone.opacity(0.35))
                               silhouette: Circle())
             VStack(alignment: .leading, spacing: LiquidSpace.s050) {
                 Text(String(localized: "Importing Apple Health…"))
@@ -470,7 +470,7 @@ struct DataSourcesView: View {
     @ViewBuilder
     private var appleHealthMetricList: some View {
         let cov = health.coverage
-        VStack(spacing: 0) {
+        VStack(spacing: .zero) {
             ForEach(Self.metricKeys, id: \.self) { key in
                 let days = cov?.daysByMetric[key]
                 let has = days != nil
@@ -614,11 +614,11 @@ struct DataSourcesView: View {
                 ForEach(Array(days30.enumerated()), id: \.offset) { _, day in
                     Group {
                         if withData.contains(day) {
-                            RoundedRectangle(cornerRadius: 4).fill(LiquidColor.azul)  // token-exempt: geometría de dato
+                            RoundedRectangle(cornerRadius: 4).fill(LiquidColor.azul)  // token-exempt(dato): geometría de dato
                         } else {
-                            RoundedRectangle(cornerRadius: 4)  // token-exempt: geometría de dato
+                            RoundedRectangle(cornerRadius: 4)  // token-exempt(dato): geometría de dato
                                 .fill(LiquidColor.tinta7)
-                                .overlay(RoundedRectangle(cornerRadius: 4).stroke(LiquidColor.tinta10, lineWidth: 0.5))  // token-exempt: geometría de dato (filo de celda vacía, paridad LiquidCalendario90)
+                                .overlay(RoundedRectangle(cornerRadius: 4).stroke(LiquidColor.tinta10, lineWidth: 0.5))  // token-exempt(dato): geometría de dato (filo de celda vacía, paridad LiquidCalendario90)
                         }
                     }
                     .frame(height: 30)
@@ -653,7 +653,7 @@ struct DataSourcesView: View {
         HStack(spacing: LiquidSpace.s125) {
             // Swatch geometry: `LiquidCalendario90.radioSwatch`/`.swatchLado` aren't `public`, so this
             // matches their values (2 / s200) directly rather than reaching into the package internals.
-            RoundedRectangle(cornerRadius: 2, style: .continuous)  // token-exempt: paridad LiquidCalendario90.radioSwatch (no público)
+            RoundedRectangle(cornerRadius: 2, style: .continuous)  // token-exempt(dato): paridad LiquidCalendario90.radioSwatch (no público)
                 .fill(color)
                 .frame(width: LiquidSpace.s200, height: LiquidSpace.s200)
             Text(label).font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)

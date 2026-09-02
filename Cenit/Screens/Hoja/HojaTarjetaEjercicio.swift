@@ -20,7 +20,7 @@ struct HojaTarjetaEjercicio: View {
 
     var body: some View {
         EntrenarModulo(tono: .neutro) {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: .zero) {
                 chead
                 if item.re.progressionEnabled {
                     ProgressionChip(re: item.re, system: sheet.system, theme: sheet.theme,
@@ -117,7 +117,7 @@ struct HojaTarjetaEjercicio: View {
     // MARK: - Tabla
 
     private var tabla: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             ForEach(Array(item.re.sets.enumerated()), id: \.element.id) { si, set in
                 filaSerie(si: si, set: set)
             }
@@ -213,7 +213,7 @@ private struct HojaFilaSerieTapZones: View {
         HStack(spacing: HojaMetrics.filaGap) {
             Color.clear.frame(width: HojaMetrics.colNumero)
             zone(onPeso, active: activeField == .weight).frame(width: HojaMetrics.colPesoEdicion)
-            HStack(spacing: 0) {
+            HStack(spacing: .zero) {
                 zone(onRepsFloor, active: activeField == .repsFloor)
                 zone(onRepsTop, active: activeField == .repsTop)
             }

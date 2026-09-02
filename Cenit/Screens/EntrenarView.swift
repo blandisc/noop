@@ -202,7 +202,7 @@ private struct EntrenarLanding: View {
             // pueden llevar el aire literal del handoff sin heredar uno genérico encima. Los estados
             // fuera de alcance (sin plan, error de carga) conservan el `sectionGap` de antes como su
             // propio padding explícito, para no moverles ni un punto.
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: .zero) {
                 // FER-952 (owner): the «Train» wordmark + tab glyph row retired — the dock already
                 // names the tab.
                 // FER-130: la cabecera del hub — «Entrenar · {fecha}» a la izquierda, el «?» de los
@@ -661,7 +661,7 @@ private struct EntrenarLanding: View {
     private var heroSectionDescanso: some View {
         EntrenarModulo(tono: .neutro, intensidad: LiquidTonoMetrics.intensidadDefault,
                        insets: EntrenarHubMetrics.heroInsets) {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: .zero) {
                 // FER-132 ronda 2: kicker FIJO «Hoy» — copy literal del prototipo (`descansoLeve.hk: "Hoy"`,
                 // sin el día). `hoyOverline` interpola el día para los héroes con rutina; reusarlo aquí
                 // colaba «Hoy · Martes» en cualquier descanso que no fuera `.recover`.
@@ -962,7 +962,7 @@ private struct EntrenarLanding: View {
     /// fila entera del toggle (y, en el héroe, debajo de la fila CTA completa), nunca dentro de ella.
     @ViewBuilder private var otraFormaPliegue: some View {
         if otraFormaAbierta {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: .zero) {
                 filoDelPliegue
                 ForEach(Array(puertas.enumerated()), id: \.element.id) { i, puerta in
                     puertaRow(puerta)
@@ -991,7 +991,7 @@ private struct EntrenarLanding: View {
     /// `muscleSection` / `bitacoraSection`, no esta función — así un mismo nivel sirve como primero
     /// o como segundo.
     private func nivelHub<Nivel: View>(@ViewBuilder _ nivel: () -> Nivel) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             filoDelPliegue
             nivel().padding(.top, EntrenarMetrics.levelPadTop)
         }
@@ -1101,7 +1101,7 @@ private struct EntrenarLanding: View {
     private var silencioPrimeraSesion: some View {
         // Mismo filo superior que cualquier otro nivel (`nivelHub`): sin él el corte entre TU SEMANA y
         // este mensaje no se leía igual que el corte entre dos niveles cualesquiera.
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             filoDelPliegue
             Text("Loaded muscles and History appear after your first session. Until then, silence.")
                 .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta700)
@@ -1136,10 +1136,10 @@ private struct EntrenarLanding: View {
     // Bitácora — la nota de silencio los explica. `loadErrorState` gana sobre esta sección.
 
     private var primerUsoSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             EntrenarModulo(tono: .neutro, intensidad: LiquidTonoMetrics.intensidadDefault,
                            insets: EntrenarHubMetrics.heroInsets) {
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: .zero) {
                     Text("Let's start")
                         .entrenarCabeceraKicker().foregroundStyle(LiquidColor.tinta500)
                     Text("Build your week")
@@ -1221,7 +1221,7 @@ private struct EntrenarLanding: View {
         } label: {
             // 1 pt es el hairline entre nombre y conteo dentro del chip, más chico
             // que `LiquidSpace.s100` (4). El archivo ya tiene otros gaps sin token.
-            VStack(alignment: .leading, spacing: 1) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s025) {
                 Text(LocalizedStringKey(name)).font(LiquidType.tituloGemela).foregroundStyle(LiquidColor.tinta900)
                 Text(countText).font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
             }

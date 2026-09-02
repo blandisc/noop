@@ -41,7 +41,7 @@ struct HojaFoco: View {
     @State private var forzarVistaTiempo = false
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: .zero) {
             if let doneRunId = vivo.focusDoneRunId,
                let ei = vivo.session.runs.firstIndex(where: { $0.id == doneRunId }) {
                 d3Hecho(ei: ei)
@@ -77,7 +77,7 @@ struct HojaFoco: View {
                         onArrastrarCerrar: salir,
                         etiquetaCerrar: String(localized: "Close focus mode"))
             ScrollView {
-                VStack(spacing: 0) {
+                VStack(spacing: .zero) {
                     heroes(run: run, ei: ei)
                     if let ant = vivo.antPlayhead(run) {
                         Text(verbatim: ant)
@@ -152,7 +152,7 @@ struct HojaFoco: View {
     @ViewBuilder private func heroes(run: StrengthSessionModel.ExerciseRun, ei: Int) -> some View {
         switch run.type {
         case .weightReps:
-            VStack(spacing: 0) {
+            VStack(spacing: .zero) {
                 FocoHeroe(
                     valor: vivo.plateNumber(vivo.displayWeight(vivo.session.currentSet?.weightKg ?? 0)),
                     unidad: " " + vivo.weightUnit(),
@@ -175,7 +175,7 @@ struct HojaFoco: View {
                     .padding(.top, FocoMetrics.capcionTop)
                 }
             }
-            VStack(spacing: 0) {
+            VStack(spacing: .zero) {
                 FocoHeroe(
                     valor: "\(vivo.session.currentSet?.reps ?? 0)",
                     unidad: " " + String(localized: "Reps").lowercased(),
@@ -362,12 +362,12 @@ struct HojaFoco: View {
     /// caso nuevo en `RestBand` (F2), sin tocar su API pública.
     private var d2Descanso: some View {
         let esRonda = vivo.restOwnerExerciseIndex.map { vivo.session.isInSuperset($0) } ?? false
-        return VStack(spacing: 0) {
+        return VStack(spacing: .zero) {
             FocoCabecera(titulo: String(localized: "Rest"), onCerrar: salir,
                         onArrastrarCerrar: salir,
                         etiquetaCerrar: String(localized: "Close focus mode"))
             ScrollView {
-                VStack(spacing: 0) {
+                VStack(spacing: .zero) {
                     if vivo.puedeElegirCombustibleDescanso {
                         combustibleToggle.padding(.bottom, FocoMetrics.capsulasTop)
                     }
@@ -397,7 +397,12 @@ struct HojaFoco: View {
             .font(LiquidType.captionFuerte).tracking(0.6).textCase(.uppercase)
             .foregroundStyle(activo ? LiquidColor.papelTarjeta : LiquidColor.tinta500)
             .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s125).frame(minHeight: EntrenarMetrics.secondaryButton)
-            .background { if activo { Capsule().fill(LiquidColor.tinta900) } }
+            .background {
+                if activo {
+                    Capsule()
+                        .fill(LiquidColor.tinta900)
+                }
+            }
             .contentShape(Capsule())
             .onTapGesture { withAnimation(vivo.reduceMotion ? nil : LiquidMotion.toque) { action() } }
             .accessibilityAddTraits(activo ? [.isSelected, .isButton] : .isButton)
@@ -425,11 +430,11 @@ struct HojaFoco: View {
         }()
         let isLast = vivo.session.isComplete
         let nextRun = isLast ? nil : vivo.session.current
-        return VStack(spacing: 0) {
+        return VStack(spacing: .zero) {
             FocoCabecera(titulo: String(localized: "Done heading"), onCerrar: salir,
                         onArrastrarCerrar: salir,
                         etiquetaCerrar: String(localized: "Close focus mode"))
-            VStack(spacing: 0) {
+            VStack(spacing: .zero) {
                 Spacer(minLength: 0)
                 Circle().fill(LiquidColor.verdePrimario)
                     .frame(width: LiquidControl.hitTarget, height: LiquidControl.hitTarget)

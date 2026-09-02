@@ -594,10 +594,10 @@ struct LiquidMetricSheetView: View {
             .init(minutos: night.stages.deep, color: LiquidColor.indigo,
                   etiqueta: String(localized: "Deep"),
                   duracion: Self.sleepHM(night.stages.deep)),
-            .init(minutos: night.stages.rem, color: LiquidColor.indigo.opacity(0.78), // token-exempt: rampa graduada de etapas
+            .init(minutos: night.stages.rem, color: LiquidColor.indigo.opacity(0.78),  // token-exempt(dato): rampa graduada de etapas
                   etiqueta: String(localized: "REM"),
                   duracion: Self.sleepHM(night.stages.rem)),
-            .init(minutos: night.stages.light, color: LiquidColor.indigo.opacity(0.52), // token-exempt: rampa graduada de etapas
+            .init(minutos: night.stages.light, color: LiquidColor.indigo.opacity(0.52),  // token-exempt(dato): rampa graduada de etapas
                   etiqueta: String(localized: "Light"),
                   duracion: Self.sleepHM(night.stages.light)),
             // «Despierto» ya no es gris (pedido del dueño /inject): ORO — cálido y distinto de

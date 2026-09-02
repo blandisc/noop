@@ -209,7 +209,7 @@ private struct AjustesLanding: View {
 
     private var profileSection: some View {
         section(String(localized: "Profile")) {
-            VStack(spacing: 0) {
+            VStack(spacing: .zero) {
                 LiquidListRow(title: String(localized: "Age"), trailing: "\(profile.age)",
                               a11yHint: String(localized: "Opens a picker")) { profileWheel = .age }
                 sexRow
@@ -241,10 +241,10 @@ private struct AjustesLanding: View {
             .labelsHidden().pickerStyle(.menu).tint(LiquidColor.tinta700)
             .accessibilityLabel(String(localized: "Sex"))
         }
-        .padding(.vertical, 11)  // token-exempt: paridad fila LiquidListRow (padding interno no público)
+        .padding(.vertical, 11)  // token-exempt(paridad): paridad fila LiquidListRow (padding interno no público)
         .padding(.horizontal, LiquidSpace.s100)
         .overlay(alignment: .bottom) {
-            Rectangle().fill(LiquidColor.tinta10).frame(height: 0.5)  // token-exempt: paridad divisor LiquidListRow (no público)
+            Rectangle().fill(LiquidColor.tinta10).frame(height: 0.5)  // token-exempt(paridad): paridad divisor LiquidListRow (no público)
         }
     }
 
@@ -267,14 +267,14 @@ private struct AjustesLanding: View {
     private var moreSection: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s800) {
             section(String(localized: "App")) {
-                VStack(spacing: 0) {
+                VStack(spacing: .zero) {
                     LiquidListRow(title: String(localized: "Units & format"), subtitle: unitsSubtitle,
                                   divider: false) { showUnits = true }
                 }
                 .liquidTarjetaSeccion(padding: LiquidSpace.s300)
             }
             section(String(localized: "Data")) {
-                VStack(spacing: 0) {
+                VStack(spacing: .zero) {
                     LiquidListRow(title: String(localized: "Data Sources"),
                                   subtitle: String(localized: "Apple Health · backup")) { presentedSheet = .dataSources }
                     recalibrateRow
@@ -395,7 +395,7 @@ private struct AjustesLanding: View {
                     // FER-183: «Fase del ciclo» en su propia tarjeta de navegación — misma receta
                     // que «Units & format» — en vez de al final de la tarjeta de switches (padding
                     // distinto, chevron peleando con el cromo de toggle).
-                    VStack(spacing: 0) {
+                    VStack(spacing: .zero) {
                         LiquidListRow(
                             title: String(localized: "Cycle phase"),
                             subtitle: cyclePhaseOn
@@ -407,7 +407,7 @@ private struct AjustesLanding: View {
                 }
             }
             section(String(localized: "More")) {
-                VStack(spacing: 0) {
+                VStack(spacing: .zero) {
                     LiquidListRow(title: String(localized: "About & support"),
                                   subtitle: String(localized: "Version \(appVersion) · what Cénit is"),
                                   divider: false) { presentedSheet = .support }
@@ -497,7 +497,7 @@ private struct AjustesLanding: View {
             // The «Deshacer» state doesn't fit `LiquidListRow` (its trailing slot is a plain
             // String, not a button) — hand-built to the same row geometry.
             HStack(spacing: LiquidSpace.s300) {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: LiquidSpace.s050) {
                     Text(String(localized: "Recalibrate recovery"))
                         .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
                     Text(String(localized: "Recalibrated on \(recalibratedDateText)"))
@@ -508,7 +508,7 @@ private struct AjustesLanding: View {
                     .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.negativo)
                     .buttonStyle(.plain)
             }
-            .padding(.vertical, 11)  // token-exempt: paridad fila LiquidListRow (padding interno no público)
+            .padding(.vertical, 11)  // token-exempt(paridad): paridad fila LiquidListRow (padding interno no público)
             .padding(.horizontal, LiquidSpace.s100)
         } else {
             // Recalibrar es una ACCIÓN (abre un confirm), no navegación: fila a mano con el ícono
@@ -516,7 +516,7 @@ private struct AjustesLanding: View {
             // otra pantalla). Misma geometría de fila que la rama «Deshacer».
             Button { confirmRecalibrate = true } label: {
                 HStack(spacing: LiquidSpace.s300) {
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: LiquidSpace.s050) {
                         Text(String(localized: "Recalibrate recovery"))
                             .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
                         Text(String(localized: "Restarts your calibration from today if your baseline went wrong (an anomalous stretch)."))
@@ -527,7 +527,7 @@ private struct AjustesLanding: View {
                     Image(systemName: "arrow.clockwise")
                         .font(LiquidType.iconSF(size: 14)).foregroundStyle(LiquidColor.tinta700)
                 }
-                .padding(.vertical, 11)  // token-exempt: paridad fila LiquidListRow (padding interno no público)
+                .padding(.vertical, 11)  // token-exempt(paridad): paridad fila LiquidListRow (padding interno no público)
                 .padding(.horizontal, LiquidSpace.s100)
                 .contentShape(Rectangle())
             }

@@ -122,7 +122,7 @@ struct SavedTicketsScreen: View {
 
     private var emptyState: some View {
         // FER-293: misma receta del Detalle — alineado a la IZQUIERDA (única desviación de «solo piel»).
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             Rectangle().fill(LiquidColor.tinta10).frame(height: 0.5)
             VStack(alignment: .leading, spacing: LiquidSpace.s200) {
                 Image(systemName: "doc.plaintext")

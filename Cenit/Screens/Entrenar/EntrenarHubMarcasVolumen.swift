@@ -55,7 +55,7 @@ struct EntrenarHubMarcasVolumen: View {
 
     private func marcaTile(_ m: Marca) -> some View {
         EntrenarTile(tono: .rosa) {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: .zero) {
                 marcaRegla(m).liquidRegla().foregroundStyle(LiquidTono.rosa.rotulo)
                 HStack(alignment: .firstTextBaseline, spacing: EntrenarHubMetrics.numRowGap) {
                     Text(verbatim: m.valueText)
@@ -68,7 +68,7 @@ struct EntrenarHubMarcasVolumen: View {
                     EntrenarMiniBarras(alturas: [0.625, 1.0], tono: .rosa)
                 }
                 .padding(.top, EntrenarHubMetrics.numRowTop)
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: .zero) {
                     Text(verbatim: m.exerciseAndMetric).font(.system(size: marcasUltSize))
                         .foregroundStyle(LiquidColor.tinta700)
                     if let previousText = m.previousText {
@@ -92,7 +92,7 @@ struct EntrenarHubMarcasVolumen: View {
 
     private func volumenTile(_ v: Volumen) -> some View {
         EntrenarTile(tono: .ambar) {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: .zero) {
                 Text("Volume · 8 weeks").liquidRegla().foregroundStyle(LiquidTono.ambar.rotulo)
                 HStack(alignment: .firstTextBaseline, spacing: EntrenarHubMetrics.numRowGap) {
                     Text(verbatim: Self.oneDecimal(v.tons))

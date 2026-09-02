@@ -128,10 +128,10 @@ extension MetricDetailScreen {
     func zoneFill(_ i: Int) -> Color {
         switch i {
         case 0:  return LiquidColor.vidrioCanto
-        case 1:  return metricHue.opacity(0.35) // token-exempt: rampa de intensidad de zona (geometría de dato)
-        case 2:  return metricHue.opacity(0.5)  // token-exempt: rampa de intensidad de zona (geometría de dato)
-        case 3:  return metricHue.opacity(0.65) // token-exempt: rampa de intensidad de zona (geometría de dato)
-        case 4:  return metricHue.opacity(0.82) // token-exempt: rampa de intensidad de zona (geometría de dato)
+        case 1:  return metricHue.opacity(0.35)  // token-exempt(dato): rampa de intensidad de zona (geometría de dato)
+        case 2:  return metricHue.opacity(0.5)  // token-exempt(dato): rampa de intensidad de zona (geometría de dato)
+        case 3:  return metricHue.opacity(0.65)  // token-exempt(dato): rampa de intensidad de zona (geometría de dato)
+        case 4:  return metricHue.opacity(0.82)  // token-exempt(dato): rampa de intensidad de zona (geometría de dato)
         default: return metricHue
         }
     }

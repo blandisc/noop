@@ -59,7 +59,7 @@ struct FitnessAgeDetailView: View {
 
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
+            LazyVStack(alignment: .leading, spacing: .zero) {
                 if let result = snapshot.result {
                     readyBody(result)
                 } else {
@@ -189,7 +189,7 @@ struct FitnessAgeDetailView: View {
 
         seccion(String(localized: "What we need")) {
             VStack(alignment: .leading, spacing: LiquidSpace.s250) {
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: .zero) {
                     usingRow(profileStatus, label: String(localized: "Age and sex"),
                              motivo: String(localized: "Add your age and sex."))
                     // T3: mismo marco que el método (cobertura sobre 7, la del motor
@@ -219,7 +219,7 @@ struct FitnessAgeDetailView: View {
                          ocultar: String(localized: "Hide explanation")) {
                 // Transparency checklist (was «usingSection») — preserved inside the method.
                 Text(String(localized: "What we're using")).liquidLabel().foregroundStyle(LiquidColor.tinta500)
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: .zero) {
                     usingRow(profileStatus, label: String(localized: "Age and sex"),
                              motivo: String(localized: "Add your age and sex."))
                     // B6: motivo como oración completa con punto (paridad `LiquidChecklistRow`).

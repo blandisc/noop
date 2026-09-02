@@ -417,7 +417,7 @@ struct RestEditorScreen: View {
     // MARK: Scope + note + CTA
 
     private var scopeSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             LiquidSectionHeader("Scope")
             SegmentedPillControl([false, true], selection: $applyToAll, theme: theme, inkThumb: true) {
                 $0 ? String(localized: "All sets") : String(localized: "This set")

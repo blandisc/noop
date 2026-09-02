@@ -81,7 +81,7 @@ struct ProgressionSetupScreen: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: .zero) {
                 // FER-198 (Ola 2): cabecera El Eje. FER-293: el resto de la hoja pasa a Liquid.
                 EntrenarHojaCabecera(titulo: String(localized: "Raise with the plan"),
                                      subtitulo: String(localized: "Progression"),
@@ -104,7 +104,7 @@ struct ProgressionSetupScreen: View {
 
                 consequence.padding(.top, LiquidSpace.bloqueAjuste)
 
-                VStack(spacing: 0) {
+                VStack(spacing: .zero) {
                     fila(rotulo: String(localized: "Rep goal"),
                          nota: String(localized: "applies to all \(workSetCount) work sets")) {
                         SegmentedPillControl(Self.repOptions, selection: $targetReps, theme: theme) { "\($0)" }

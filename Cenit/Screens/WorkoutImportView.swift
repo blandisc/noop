@@ -266,7 +266,7 @@ struct WorkoutImportView: View {
                 .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta700)
                 .fixedSize(horizontal: false, vertical: true)
 
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: .zero) {
                 ForEach(Array(unmatched.enumerated()), id: \.offset) { index, name in
                     mappingRow(name)
                     if index < unmatched.count - 1 {
@@ -376,7 +376,8 @@ struct WorkoutImportView: View {
         Button(action: action) {
             Text(title).font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta700)
                 .padding(.horizontal, 13).padding(.vertical, LiquidSpace.s150)  // token-exempt(falta-pieza): chip handoff 13 sin token exacto
-                .overlay(Capsule().stroke(LiquidColor.vidrioBordeFuerte, lineWidth: 1))
+                .overlay(Capsule()
+                    .stroke(LiquidColor.vidrioBordeFuerte, lineWidth: 1))
         }
         .buttonStyle(.plain)
     }
@@ -397,7 +398,7 @@ struct WorkoutImportView: View {
                 subtitulo: confirmSummary(program),
                 tono: .neutro, salida: .cerrar, onSalir: dismissImport)
 
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: .zero) {
                 // Ronda 2 (menor): el kicker es UNA sola cadena con el separador «·», como pide el
                 // spec — antes vivía partido en dos `Text` (nombre + metadato a la derecha).
                 // `.textCase(.uppercase)` de `liquidKicker()` gritaría también el sufijo
@@ -514,7 +515,7 @@ struct WorkoutImportView: View {
     /// centra y respira. Un solo color (verdict verde), un solo gesto (el sello aparece con un pop
     /// suave). Sin confeti: la celebración a la «Liquid Glass» es espacio + un verde honesto.
     private var doneFlow: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: .zero) {
             stepper(current: .done)
             Spacer(minLength: LiquidSpace.s700)
 
@@ -522,7 +523,7 @@ struct WorkoutImportView: View {
                 ZStack {
                     Circle().fill(LiquidColor.verdePrimario.opacity(CenitOpacity.tintFill)).frame(width: 116, height: 116)
                     Image(systemName: "checkmark")
-                        .font(.system(size: 44, weight: .semibold)).foregroundStyle(LiquidColor.verdePrimario)  // token-exempt: glifo héroe del cierre (44pt, pareado al círculo de 116)
+                        .font(.system(size: 44, weight: .semibold)).foregroundStyle(LiquidColor.verdePrimario)  // token-exempt(falta-pieza): glifo héroe del cierre (44pt, pareado al círculo de 116)
                 }
                 .scaleEffect(celebrate ? 1 : 0.72)
                 .opacity(celebrate ? 1 : 0)

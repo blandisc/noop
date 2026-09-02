@@ -35,7 +35,7 @@ struct EntrenarHubDosis: View {
     var body: some View {
         if !rows.isEmpty {
             EntrenarModulo(tono: .cian) {
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: .zero) {
                     Text("Sets per muscle · 7 days").liquidRegla().foregroundStyle(LiquidTono.cian.rotulo)
                     ForEach(rows) { fila in
                         drow(fila).padding(.top, EntrenarHubMetrics.dosisRowTop)
@@ -56,7 +56,8 @@ struct EntrenarHubDosis: View {
                 .frame(width: EntrenarHubMetrics.dosisLabelWidth, alignment: .leading)
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Color.white.opacity(EntrenarHubMetrics.dosisTrackFondoAlfa))
+                    Capsule()
+                        .fill(LiquidColor.papelTarjeta.opacity(EntrenarHubMetrics.dosisTrackFondoAlfa))
                     Capsule()
                         .fill(fila.low ? LiquidColor.cian.opacity(EntrenarHubMetrics.dosisFillBajoAlfa) : LiquidColor.cian)
                         .frame(width: max(0, geo.size.width * min(1, fila.fraction)))

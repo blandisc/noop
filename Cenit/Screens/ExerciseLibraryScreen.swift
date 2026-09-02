@@ -211,7 +211,7 @@ struct ExerciseLibraryScreen: View {
     // tarjeta de vidrio con pad V `s050` / H 14.
 
     private var exerciseList: some View {
-        LazyVStack(alignment: .leading, spacing: 0) {
+        LazyVStack(alignment: .leading, spacing: .zero) {
             if loaded && filtered.isEmpty {
                 Text("No exercises match your filters.")
                     .font(LiquidType.cuerpoBanner)
@@ -249,9 +249,9 @@ struct ExerciseLibraryScreen: View {
 
     /// Papel opaco de una sección de filas (pad 2/14 · radio tarjeta vía la receta).
     private func sectionCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        VStack(spacing: 0) { content() }
+        VStack(spacing: .zero) { content() }
             .padding(.vertical, LiquidSpace.s050)
-            .padding(.horizontal, 14)
+            .padding(.horizontal, LiquidSpace.s350)
             .liquidGlass(.superficieSolida)
     }
 
@@ -339,7 +339,7 @@ struct ExerciseLibraryScreen: View {
         // con la barra de pestañas y el botón quedaba medio tapado. Sin banda de papel detrás — la lámina
         // casi-opaca se desbordaba por abajo y se veía como un borde suelto; ahora solo flota la cápsula,
         // y el inset ya reserva el alto para que la lista no se le meta debajo.
-        .padding(.bottom, 68)   // token-exempt: alto del dock + respiro
+        .padding(.bottom, 68)  // token-exempt(falta-pieza): alto del dock + respiro
     }
 
     // MARK: - Data
@@ -555,7 +555,7 @@ struct CreateExerciseSheet: View {
                 }
             }
             .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s250).contentShape(Rectangle())
-            .background(type == t ? LiquidColor.papelTarjeta : Color.clear, in: RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous))  // token-exempt: fondo condicional
+            .background(type == t ? LiquidColor.papelTarjeta : Color.clear, in: RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
                 .strokeBorder(type == t ? LiquidColor.tinta900 : LiquidColor.tinta10, lineWidth: type == t ? 1.5 : 1))
         }

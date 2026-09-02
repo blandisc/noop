@@ -53,7 +53,7 @@ struct ActivityRecoverySheet: View {
 
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
+            LazyVStack(alignment: .leading, spacing: .zero) {
                 if costs.isEmpty {
                     campoSinDato
                     if appleConnectHint {
@@ -200,7 +200,8 @@ struct ActivityRecoverySheet: View {
             .foregroundStyle(LiquidColor.tinta700)
             .padding(.horizontal, LiquidSpace.s225)
             .padding(.vertical, LiquidSpace.s075)
-            .overlay(Capsule().stroke(LiquidColor.tinta10,
+            .overlay(Capsule()
+                .stroke(LiquidColor.tinta10,
                                       style: StrokeStyle(lineWidth: 1.2, dash: [3, 3])))
             .accessibilityHidden(true)
     }

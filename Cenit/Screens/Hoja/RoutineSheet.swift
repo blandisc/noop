@@ -160,7 +160,7 @@ struct RoutineSheet: View {
     }
 
     private var editingBody: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: .zero) {
             HojaCabecera.header(sheet: self)
             if loaded, routine != nil {
                 editor
@@ -191,7 +191,7 @@ struct RoutineSheet: View {
             back()
             return false
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) { keypadInset }
+        .safeAreaInset(edge: .bottom, spacing: .zero) { keypadInset }
         .navigationDestination(item: $restTarget) { t in
             RestEditorScreen(
                 theme: theme,
@@ -424,7 +424,9 @@ struct RoutineSheet: View {
     private func compactBlock(_ block: ReorderBlock) -> some View {
         HStack(spacing: LiquidSpace.s250) {
             if block.isSuperset {
-                Capsule().fill(LiquidColor.cian).frame(width: 2.5)
+                Capsule()
+                    .fill(LiquidColor.cian)
+                    .frame(width: 2.5)
             }
             VStack(alignment: .leading, spacing: LiquidSpace.s200) {
                 if block.isSuperset { SupersetTag() }

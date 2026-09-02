@@ -74,7 +74,7 @@ struct SessionKeypad: View {
     static let rirLabels = ["0", "1", "2", "3", "4+"]
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: .zero) {
             if let onSelectRIR {
                 rirRow(onSelectRIR)
                 Rectangle().fill(LiquidColor.tinta10).frame(height: 1)
@@ -104,7 +104,7 @@ struct SessionKeypad: View {
             // iguales no tiene esa ambigüedad: cada toque cae en exactamente una franja.
             GeometryReader { geo in
                 let slice = geo.size.width / CGFloat(Self.rirLabels.count)
-                HStack(spacing: 0) {
+                HStack(spacing: .zero) {
                     ForEach(Array(Self.rirLabels.enumerated()), id: \.offset) { idx, label in
                         let selected = selectedRIR == idx
                         Text(label).font(LiquidType.captionFuerte)
@@ -195,7 +195,7 @@ struct SessionKeypad: View {
                 Button(action: onNext) {
                     Text("Next").font(LiquidType.cuerpoBanner).fontWeight(.semibold)
                         .foregroundStyle(LiquidColor.verdeProfundo)
-                        .padding(.horizontal, 12).frame(height: 34)
+                        .padding(.horizontal, LiquidSpace.s300).frame(height: 34)
                         // Revisión final (FER-140), hallazgo menor: 34pt de alto queda bajo el mínimo
                         // HIG en el eje vertical; se extiende el toque sin tocar el dibujo.
                         .contentShape(Rectangle().inset(by: -5))
@@ -245,7 +245,7 @@ struct SessionKeypad: View {
         }
         // Mismo inset que la fila QUEDABAN y la barra de accesorios: en el prototipo las tres viven
         // en el mismo contenedor (10 16 18), así que el borde de «1 · 4 · 7 · ,» se alinea con ellas.
-        .padding(.horizontal, LiquidSpace.s400).padding(.top, LiquidSpace.s200).padding(.bottom, 22)   // bottom respects the home indicator
+        .padding(.horizontal, LiquidSpace.s400).padding(.top, LiquidSpace.s200).padding(.bottom, LiquidSpace.s550)   // bottom respects the home indicator
     }
 
     private var keyRows: [[Key]] {
@@ -288,10 +288,10 @@ struct SessionKeypad: View {
                            action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(glyph)
-                .font(.system(size: size)).foregroundStyle(LiquidColor.tinta900) // token-exempt: numeral de tecla del keypad
+                .font(.system(size: size)).foregroundStyle(LiquidColor.tinta900)  // token-exempt(dato): numeral de tecla del keypad
                 .frame(maxWidth: .infinity).frame(height: EntrenarMetrics.keyCap)
                 .background(RoundedRectangle(cornerRadius: EntrenarMetrics.keyRadius, style: .continuous).fill(LiquidColor.papelTarjeta))
-                .shadow(color: LiquidColor.tinta900.opacity(0.08), radius: 0, x: 0, y: 1) // token-exempt: sombra sutil <0.10
+                .shadow(color: LiquidColor.tinta900.opacity(0.08), radius: 0, x: 0, y: 1)  // token-exempt(falta-pieza): sombra sutil <0.10
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

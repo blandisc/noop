@@ -614,21 +614,21 @@ struct OnbShell<Content: View, Pie: View>: View {
     var body: some View {
         GeometryReader { geo in
             ScrollView(.vertical, showsIndicators: indicadores) {
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: .zero) {
                     content()
                 }
                 .frame(maxWidth: .infinity, minHeight: geo.size.height, alignment: .topLeading)
                 .padding(.horizontal, LiquidSpace.s600)
                 .padding(.vertical, LiquidSpace.s400)
             }
-            .safeAreaInset(edge: .bottom, spacing: 0) { pieAnclado }
+            .safeAreaInset(edge: .bottom, spacing: .zero) { pieAnclado }
         }
     }
 
     @ViewBuilder
     private var pieAnclado: some View {
         if let pie {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: .zero) {
                 pie()
             }
             .padding(.horizontal, LiquidSpace.s600)
@@ -642,7 +642,7 @@ struct OnbShell<Content: View, Pie: View>: View {
     /// para que el texto que sigue scrolleando por debajo no se le encime al botón. No es vidrio
     /// a propósito (el flujo vive sobre papel, y el vidrio-sobre-papel se lava).
     private var velo: some View {
-        LinearGradient(colors: [LiquidColor.fondoBajo.opacity(0), LiquidColor.fondoBajo],  // token-exempt: el velo tiene que arrancar EN CERO
+        LinearGradient(colors: [LiquidColor.fondoBajo.opacity(0), LiquidColor.fondoBajo],  // token-exempt(falta-pieza): el velo tiene que arrancar EN CERO
                        startPoint: .top, endPoint: .bottom)
             .allowsHitTesting(false)
     }

@@ -119,7 +119,7 @@ struct StarterTemplatesSheet: View {
                             Text(groupName(group)).liquidKicker().foregroundStyle(LiquidColor.tinta500)
                         }
                         EntrenarModulo(tono: .neutro, intensidad: LiquidTonoMetrics.intensidadDefault, insets: EdgeInsets()) {
-                            VStack(alignment: .leading, spacing: 0) {
+                            VStack(alignment: .leading, spacing: .zero) {
                                 ForEach(templates) { t in
                                     templateRow(t)
                                     if t.id != templates.last?.id { divider }
@@ -187,7 +187,7 @@ struct StarterTemplatesSheet: View {
             }
 
             EntrenarModulo(tono: .neutro, intensidad: LiquidTonoMetrics.intensidadDefault, insets: EdgeInsets()) {
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: .zero) {
                     ForEach(Array(t.slots.enumerated()), id: \.offset) { index, slot in
                         slotRow(slot)
                         if index != t.slots.count - 1 { divider }

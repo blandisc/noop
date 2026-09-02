@@ -322,7 +322,7 @@ struct HojaSesionViva: View {
 
     /// Tres confirms en nodos distintos (cabecera / avance / bucle) — dos en el mismo nodo se rompen (FER-174).
     private var liveLoop: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: .zero) {
             HojaCabeceraSesion.header(vivo: self)
                 // Nancy · ronda 1: confirma antes de tirar un ejercicio que YA tiene series hechas.
                 .liquidConfirm(
@@ -372,7 +372,7 @@ struct HojaSesionViva: View {
                 }
             }
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+        .safeAreaInset(edge: .bottom, spacing: .zero) {
             // B16: sesión llena → el CTA sustituye a la consola (ya no hay nada que capturar).
             if session.isComplete { HojaCabeceraSesion.ctaTerminar(vivo: self) } else { keypadInset }
         }

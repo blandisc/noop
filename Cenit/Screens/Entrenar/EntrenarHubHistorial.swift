@@ -30,7 +30,7 @@ struct EntrenarHubHistorial: View {
 
     var body: some View {
         EntrenarModulo(tono: .neutro) {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: .zero) {
                 Button(action: onOpenHistory) {
                     HStack(alignment: .firstTextBaseline) {
                         Text("History").liquidRegla().foregroundStyle(LiquidColor.tinta500)
@@ -68,7 +68,7 @@ struct EntrenarHubHistorial: View {
                 Circle()
                     .fill(fila.family?.tono.base ?? LiquidColor.tinta500)
                     .frame(width: EntrenarMetrics.familyDot, height: EntrenarMetrics.familyDot)
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: LiquidSpace.s050) {
                     Text(verbatim: fila.title).font(.system(size: historialTituloSize, weight: .semibold))
                         .foregroundStyle(LiquidColor.tinta900)
                     Text(verbatim: fila.subtitle).font(.system(size: historialSubtituloSize))

@@ -47,7 +47,7 @@ struct EntrenarHubCuerpo: View {
             // Cabeza.
             context.fill(Path(ellipseIn: CGRect(x: 5.2, y: 0.3, width: 4.6, height: 4.6)), with: ink)
             // Torso.
-            let torso = Path(roundedRect: CGRect(x: 5.1, y: 5.6, width: 4.8, height: 7.7), cornerRadius: 2.4) // token-exempt: geometría del pictograma (mock SVG 15×23), no un radio del sistema
+            let torso = Path(roundedRect: CGRect(x: 5.1, y: 5.6, width: 4.8, height: 7.7), cornerRadius: 2.4)  // token-exempt(dato): geometría del pictograma (mock SVG 15×23), no un radio del sistema
             context.fill(torso, with: ink)
             // Brazos + piernas.
             var limbs = Path()
@@ -68,7 +68,7 @@ struct EntrenarHubCuerpo: View {
 
     /// Mapa zona→punto aproximado sobre el pictograma 15×23 (hombros/pecho arriba, espalda media,
     /// espalda baja/core centro, pierna abajo) — geometría de dato, no un token reusable en otro
-    /// sitio. token-exempt: coordenadas de un dibujo hecho a mano, no una medida del sistema.
+    /// sitio. token-exempt(dato): coordenadas de un dibujo hecho a mano, no una medida del sistema.
     private static func zonePoint(for muscle: String) -> CGPoint {
         switch muscle {
         case "shoulders", "chest", "neck", "traps":

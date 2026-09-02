@@ -56,7 +56,7 @@ struct EntrenarHubPar: View {
         // `Button` de verdad, mismo patrón que la píldora del héroe (`EntrenarHubHeroe.subPill`).
         Button(action: onOpenRaises) {
             EntrenarTile(tono: .verde) {
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: .zero) {
                     Text("Ready raises").liquidRegla().foregroundStyle(LiquidTono.verde.rotulo)
                     HStack(alignment: .firstTextBaseline, spacing: EntrenarHubMetrics.numRowGap) {
                         Text(verbatim: "\(raises.count)")
@@ -102,7 +102,7 @@ struct EntrenarHubPar: View {
 
     private var descansoTile: some View {
         EntrenarTile(tono: .neutro) {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: .zero) {
                 Text("Real rest").liquidRegla().foregroundStyle(LiquidColor.tinta500)
                 if let restReal {
                     Text(verbatim: Self.mmss(restReal.real))
@@ -128,8 +128,10 @@ struct EntrenarHubPar: View {
     private func restTrack(real: Int, planS: Int) -> some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                Capsule().fill(LiquidColor.tinta900.opacity(EntrenarHubMetrics.vbarsEmptyAlfa))
-                Capsule().fill(LiquidColor.cian.opacity(EntrenarHubMetrics.restFillAlfa))
+                Capsule()
+                    .fill(LiquidColor.tinta900.opacity(EntrenarHubMetrics.vbarsEmptyAlfa))
+                Capsule()
+                    .fill(LiquidColor.cian.opacity(EntrenarHubMetrics.restFillAlfa))
                     .frame(width: geo.size.width * min(1, planS > 0 ? Double(real) / Double(planS) : 1))
                 Rectangle().fill(LiquidColor.tinta900.opacity(EntrenarHubMetrics.restPlanTickAlfa))
                     .frame(width: EntrenarHubMetrics.restPlanTickWidth)

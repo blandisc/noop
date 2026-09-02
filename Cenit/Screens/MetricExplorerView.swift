@@ -130,7 +130,7 @@ struct MetricExplorerView: View {
                 Text(verbatim: "\(metrics.count)")
                     .font(LiquidType.filaConteo).foregroundStyle(LiquidColor.tinta500)
             }
-            VStack(spacing: 0) {
+            VStack(spacing: .zero) {
                 ForEach(Array(metrics.enumerated()), id: \.element.id) { idx, metric in
                     NavigationLink(value: metric) {
                         LiquidListRow(
@@ -282,7 +282,7 @@ struct MetricDetailView: View {
         // Compute the window ONCE per body eval and hand it to the blocks (the shared math, FER-269).
         let window = MetricWindowMath.make(parsed, selected: range)
         return ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: .zero) {
                 heroField
                 if infoOpen { whatWeMeasureCard }
                 fusionRow
@@ -512,7 +512,7 @@ struct MetricDetailView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .liquidTarjetaSeccion()
             } else {
-                VStack(spacing: 0) {
+                VStack(spacing: .zero) {
                     ForEach(Array(rows.enumerated()), id: \.element.id) { idx, row in
                         correlationRow(row)
                         if idx < rows.count - 1 {
@@ -594,7 +594,8 @@ struct MetricDetailView: View {
                 Rectangle().fill(LiquidColor.tinta10)
                     .frame(width: 1, height: 14)
                     .position(x: medio, y: cy)
-                Capsule().fill(tono)
+                Capsule()
+                    .fill(tono)
                     .frame(width: ancho, height: 6)
                     .position(x: r < 0 ? medio - ancho / 2 : medio + ancho / 2, y: cy)
             }

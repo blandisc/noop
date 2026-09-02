@@ -37,7 +37,7 @@ struct WeekEditorSheet: View {
     @State private var lockedToast = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             // FER-304: cabecera de familia El Eje — «Listo» sube a la salida `.guardar`
             // (antes kicker Instrumento + CTA abajo; misma acción `dismiss()`).
             EntrenarHojaCabecera(
@@ -46,7 +46,7 @@ struct WeekEditorSheet: View {
                 salida: .guardar(String(localized: "Ready")),
                 onSalir: { dismiss() }
             )
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: .zero) {
                 ForEach(orderedWeekdays, id: \.self) { wd in
                     dayRow(wd)
                     if wd != orderedWeekdays.last {

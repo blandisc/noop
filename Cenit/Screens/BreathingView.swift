@@ -230,7 +230,7 @@ struct BreathingView: View {
             .overlay(
                 shape.strokeBorder(
                     selected
-                        ? LiquidColor.azul.opacity(0.32) // token-exempt: borde de selección (preview)
+                        ? LiquidColor.azul.opacity(0.32)  // token-exempt(optico): borde de selección (preview)
                         : LiquidColor.vidrioCanto,
                     lineWidth: 1))
         }
@@ -314,15 +314,15 @@ struct BreathingView: View {
             ZStack {
                 // Static guide ring at the inhale extent.
                 Circle()
-                    .strokeBorder(LiquidColor.tinta900.opacity(0.14), lineWidth: 1) // token-exempt: guide ring
+                    .strokeBorder(LiquidColor.tinta900.opacity(0.14), lineWidth: 1)  // token-exempt(optico): guide ring
                     .frame(width: maxDiameter, height: maxDiameter)
 
                 // Outer breathing halo — soft physiological glow in breath identity hue.
                 Circle()
                     .fill(
                         RadialGradient(
-                            colors: [azul.opacity(0.18), // token-exempt: rampa decorativa (halo)
-                                     azul.opacity(0.0)], // token-exempt: rampa decorativa (halo)
+                            colors: [azul.opacity(0.18),  // token-exempt(dato): rampa decorativa (halo)
+                                     azul.opacity(0.0)],  // token-exempt(dato): rampa decorativa (halo)
                             center: .center,
                             startRadius: diameter * 0.20,
                             endRadius: diameter * 0.70
@@ -335,15 +335,15 @@ struct BreathingView: View {
                 Circle()
                     .fill(
                         RadialGradient(
-                            colors: [azul.opacity(0.32), // token-exempt: rampa decorativa (orbe)
-                                     azul.opacity(0.14)], // token-exempt: rampa decorativa (orbe)
+                            colors: [azul.opacity(0.32),  // token-exempt(dato): rampa decorativa (orbe)
+                                     azul.opacity(0.14)],  // token-exempt(dato): rampa decorativa (orbe)
                             center: .init(x: 0.4, y: 0.35),
                             startRadius: LiquidSpace.s050,
                             endRadius: diameter * 0.62
                         )
                     )
                     .overlay(
-                        Circle().strokeBorder(azul.opacity(0.45), lineWidth: 1) // token-exempt: anillo decorativo (orbe)
+                        Circle().strokeBorder(azul.opacity(0.45), lineWidth: 1)  // token-exempt(optico): anillo decorativo (orbe)
                     )
                     .frame(width: diameter, height: diameter)
             }
@@ -391,7 +391,7 @@ struct BreathingView: View {
 
     private func readoutTile(label: String, value: String, unit: String,
                              caption: String) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: .zero) {
             Text(verbatim: label)
                 .font(LiquidType.regla).tracking(LiquidType.reglaTracking)
                 .textCase(.uppercase)
