@@ -201,7 +201,7 @@ public struct MuscleLoadRow: View {
     private var rail: some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                Capsule().fill(theme.hairline)
+                Capsule().fill(LiquidColor.tinta10)
                 if !isFresh {
                     Capsule()
                         .fill(theme.dataStrain.opacity(0.35 + 0.65 * load))   // token-exempt: la opacidad ES el dato (recencia)

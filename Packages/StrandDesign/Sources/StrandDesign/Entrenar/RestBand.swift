@@ -58,7 +58,7 @@ struct RestPulseRail: View {
         GeometryReader { geo in
             let w = geo.size.width
             ZStack(alignment: .leading) {
-                Capsule().fill(theme.hairline)
+                Capsule().fill(LiquidColor.tinta10)
                 Capsule()
                     .fill(LinearGradient(colors: [theme.dataHeart, theme.dataRecovery],
                                          startPoint: .leading, endPoint: .trailing))
@@ -181,8 +181,8 @@ public struct RestBand<Next: View>: View {
         // esta banda de la fila vecina cuando vive en línea. La variante GRANDE de Foco no tiene
         // ninguna fila alrededor (es pantalla completa, sobre papel en blanco); ahí el prototipo no
         // dibuja ningún borde. `!large` evita dos reglas huérfanas flotando solas en Foco.
-        .overlay(alignment: .top) { if !large { Rectangle().fill(theme.hairline).frame(height: 1) } }
-        .overlay(alignment: .bottom) { if !large { Rectangle().fill(theme.hairline).frame(height: 1) } }
+        .overlay(alignment: .top) { if !large { Rectangle().fill(LiquidColor.tinta10).frame(height: 1) } }
+        .overlay(alignment: .bottom) { if !large { Rectangle().fill(LiquidColor.tinta10).frame(height: 1) } }
     }
 
     /// El tamaño del numeral: 40 pt en la lista en línea, 52 pt (`focusRestValue`) en la variante
@@ -282,7 +282,7 @@ public struct RestBand<Next: View>: View {
         GeometryReader { geo in
             let w = geo.size.width
             ZStack(alignment: .leading) {
-                Capsule().fill(theme.hairline)
+                Capsule().fill(LiquidColor.tinta10)
                 if let p = railProgress {
                     Circle()
                         .fill(isReady ? theme.positiveText : theme.dataHeart)
