@@ -191,7 +191,7 @@ struct HojaSesionViva: View {
             NavigationStack {
                 ExerciseDetailScreen(exercise: ex)
                     .toolbar { ToolbarItem(placement: .confirmationAction) {
-                        Button("Done") { detailExercise = nil }.foregroundStyle(sheet.theme.ink)
+                        Button("Done") { detailExercise = nil }.foregroundStyle(LiquidColor.tinta900)
                     } }
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
@@ -433,25 +433,25 @@ struct HojaSesionViva: View {
     private var saveErrorBanner: some View {
         HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s200) {
             Image(systemName: "exclamationmark.triangle")
-                .font(StrandFont.glyph(.chevron)).foregroundStyle(sheet.theme.critical)
+                .font(LiquidType.infoGlifoCompacto).foregroundStyle(LiquidColor.negativo)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: LiquidSpace.s025) {
                 Text("Couldn't save the workout. Try again.")
-                    .font(StrandFont.caption).fontWeight(.medium).foregroundStyle(sheet.theme.ink)
+                    .font(LiquidType.caption).fontWeight(.medium).foregroundStyle(LiquidColor.tinta900)
                 Text("Your sets are safe on this phone.")
-                    .font(StrandFont.caption).foregroundStyle(sheet.theme.inkSecondary)
+                    .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta700)
             }
             .accessibilityElement(children: .combine)
             Spacer(minLength: LiquidSpace.s200)
             Button { sheet.model.retryStrengthSave() } label: {
-                Text("Retry").font(StrandFont.caption).fontWeight(.medium).foregroundStyle(sheet.theme.ink)
+                Text("Retry").font(LiquidType.caption).fontWeight(.medium).foregroundStyle(LiquidColor.tinta900)
             }
             .buttonStyle(.plain)
         }
         .padding(.horizontal, LiquidSpace.s600)
         .padding(.vertical, CenitMetrics.rowVPad)
         .entrenarHojaBarraFondo(tono: .indigo)
-        .overlay(alignment: .bottom) { Rectangle().fill(sheet.theme.hairline).frame(height: 1) }
+        .overlay(alignment: .bottom) { Rectangle().fill(LiquidColor.tinta10).frame(height: 1) }
     }
 
     // MARK: - B15b — sesión zombie («quedó abierta ayer»; ver `isZombie` en el archivo de lógica)
@@ -461,11 +461,11 @@ struct HojaSesionViva: View {
             Spacer()
             (Text(verbatim: "✓ ").foregroundStyle(LiquidColor.verdeProfundo)
              + Text("You left a session open yesterday · \(session.routineName), \(serieSubtitle)"))
-                .font(StrandFont.subhead.weight(.semibold)).foregroundStyle(sheet.theme.ink)
+                .font(LiquidType.cuerpoBanner.weight(.semibold)).foregroundStyle(LiquidColor.tinta900)
                 .multilineTextAlignment(.center).padding(.horizontal, LiquidSpace.s600)
             HStack(spacing: LiquidSpace.s250) {
                 Button { archivarZombie() } label: {
-                    Text("Archive").font(StrandFont.subhead.weight(.semibold)).foregroundStyle(sheet.theme.ink)
+                    Text("Archive").font(LiquidType.cuerpoBanner.weight(.semibold)).foregroundStyle(LiquidColor.tinta900)
                         .outlineCapsule(
                             .outline,
                             size: .aMedida(
@@ -478,7 +478,7 @@ struct HojaSesionViva: View {
                 .buttonStyle(.plain)
                 Button { zombieAcknowledged = true } label: {
                     (Text("Keep training") + Text(verbatim: " ›"))
-                        .font(StrandFont.subhead.weight(.bold)).foregroundStyle(sheet.theme.paper)
+                        .font(LiquidType.cuerpoBanner.weight(.bold)).foregroundStyle(LiquidColor.papelTarjeta)
                         .padding(.horizontal, LiquidSpace.s400).padding(.vertical, CenitMetrics.rowVPad)
                         .background(LiquidColor.verdePrimario, in: Capsule())
                 }

@@ -261,7 +261,7 @@ struct RoutineSheet: View {
             NavigationStack {
                 ExerciseDetailScreen(exercise: ex)
                     .toolbar { ToolbarItem(placement: .confirmationAction) {
-                        Button("Done") { detailExercise = nil }.foregroundStyle(theme.ink)
+                        Button("Done") { detailExercise = nil }.foregroundStyle(LiquidColor.tinta900)
                     } }
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
@@ -288,7 +288,7 @@ struct RoutineSheet: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
-        .background(theme.paper)
+        .background(LiquidColor.fondoAlto)
         .environment(\.defaultMinListRowHeight, 1)
         .environment(\.editMode, .constant(reordering ? .active : .inactive))
         .safeAreaInset(edge: .bottom) { if startsSession { HojaCabecera.ctaBar(sheet: self) } }
@@ -322,11 +322,11 @@ struct RoutineSheet: View {
 
     private var emptyFallback: some View {
         VStack(spacing: LiquidSpace.s250) {
-            StrandIcon.sleep.image.font(StrandFont.glyph(.empty)).foregroundStyle(theme.inkTertiary)
-            Text(isPlanDay ? "Rest day" : "No routine").font(StrandFont.title2).foregroundStyle(theme.ink)
+            StrandIcon.sleep.image.font(LiquidType.iconSF(size: 34)).foregroundStyle(LiquidColor.tinta500)
+            Text(isPlanDay ? "Rest day" : "No routine").font(LiquidType.displayS).foregroundStyle(LiquidColor.tinta900)
             Text(isPlanDay ? "This day has no routine. Assign one from the weekly plan."
                            : "This routine could not be found.")
-                .font(StrandFont.subhead).foregroundStyle(theme.inkSecondary)
+                .font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
                 .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
             // R14 (QA D12): el fallback de descanso no es un callejón sin salida — la puerta
             // regresa a Tu Plan, de donde SIEMPRE se llega a un `.planDay` vacío, para asignar.
@@ -402,20 +402,20 @@ struct RoutineSheet: View {
                 .padding(.horizontal, LiquidSpace.s600)
                 .padding(.vertical, LiquidSpace.s125)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(theme.paper)
+                .liquidGlass(.superficieSolida)
                 .listRowInsets(EdgeInsets())
-                .listRowBackground(theme.paper)
+                .listRowBackground(LiquidColor.fondoAlto)
                 .listRowSeparator(.hidden)
         }
         .onMove(perform: moveBlocks)
         Button { withAnimation(.snappy) { reordering = false } } label: {
-            Text("Done reordering").font(StrandFont.subhead).foregroundStyle(theme.ink)
+            Text("Done reordering").font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta900)
                 .frame(maxWidth: .infinity, alignment: .center).frame(minHeight: LiquidControl.hitTarget).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .hojaRow(top: LiquidSpace.s300, bottom: 2)
         Text("Drop to place. The sets come back when you let go.")
-            .font(StrandFont.caption).foregroundStyle(theme.inkTertiary)
+            .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
             .frame(maxWidth: .infinity, alignment: .center)
             .hojaRow(top: 0, bottom: LiquidSpace.s600)
     }
@@ -423,7 +423,7 @@ struct RoutineSheet: View {
     private func compactBlock(_ block: ReorderBlock) -> some View {
         HStack(spacing: LiquidSpace.s250) {
             if block.isSuperset {
-                Capsule().fill(theme.dataHrv).frame(width: 2.5)
+                Capsule().fill(LiquidColor.cian).frame(width: 2.5)
             }
             VStack(alignment: .leading, spacing: LiquidSpace.s200) {
                 if block.isSuperset { SupersetTag() }
@@ -431,17 +431,16 @@ struct RoutineSheet: View {
                     HStack(spacing: LiquidSpace.s250) {
                         ExerciseThumbView(exercise: item.exercise, side: 28)
                         Text(StrengthDisplay.name(item.exercise))
-                            .font(StrandFont.subhead).foregroundStyle(theme.ink).lineLimit(1)
+                            .font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta900).lineLimit(1)
                         Spacer(minLength: LiquidSpace.s200)
                         Text(compactSummary(item.re))
-                            .font(InstrumentoType.groteskNumber(12, weight: .regular)).foregroundStyle(theme.inkTertiary)
+                            .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                     }
                 }
             }
         }
         .padding(.horizontal, LiquidSpace.s300).padding(.vertical, CenitMetrics.rowVPad)
-        .background(theme.paper, in: RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous).strokeBorder(theme.hairlineStrong))
+        .liquidGlass(.superficieSolida)
     }
 
     private func compactSummary(_ re: RoutineExercise) -> String {

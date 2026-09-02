@@ -50,7 +50,7 @@ extension HojaSesionViva {
         for g in MuscleGroup.allCases where (tally[g] ?? 0) > bestCount {
             best = g; bestCount = tally[g] ?? 0
         }
-        return best?.tint(sheet.theme) ?? sheet.theme.inkTertiary
+        return best?.tint(sheet.theme) ?? LiquidColor.tinta500
     }
 
     // MARK: - Pausa (misma decisión que la cabecera y el teclado se turnan — una sola, dos superficies)
@@ -684,9 +684,9 @@ extension HojaSesionViva {
                 // vez, con el mismo tiempo restante que ya estaba (`restBandCore` congela el número —
                 // aquí solo se apaga el color/kicker para que no MIENTA que sigue corriendo).
                 HStack(spacing: LiquidSpace.s200) {
-                    Text("REST · PAUSED").instrumentoOverline().foregroundStyle(sheet.theme.inkTertiary)
+                    Text("REST · PAUSED").liquidKicker().foregroundStyle(LiquidColor.tinta500)
                     Spacer(minLength: LiquidSpace.s150)
-                    Text("waits with you").font(StrandFont.caption).foregroundStyle(sheet.theme.inkTertiary)
+                    Text("waits with you").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                 }
                 restBandCore(esRonda: esRonda, large: large, forzarTiempo: forzarTiempo)
                     .opacity(0.45)   // token-exempt: atenuación transitoria B5 «congelado», sin token de opacidad propio todavía (mismo patrón que el destello R16)
@@ -699,9 +699,10 @@ extension HojaSesionViva {
             // pastilla propia bajo la banda.
             if let ei = restOwnerExerciseIndex, !session.paused {
                 Button { openRestEditor(ei: ei) } label: {
-                    Label("Change rest", systemImage: "pencil").font(StrandFont.caption).foregroundStyle(sheet.theme.ink)
-                        .padding(.horizontal, 13).padding(.vertical, LiquidSpace.s150)  // token-exempt: sin token exacto (horizontal/chip handoff)
-                        .overlay(Capsule().strokeBorder(sheet.theme.hairlineStrong, lineWidth: 1))
+                    Label("Change rest", systemImage: "pencil")
+                        .font(LiquidType.caption)
+                        .foregroundStyle(LiquidColor.tinta900)
+                        .outlineCapsule(.outline, size: .sm, theme: sheet.theme)
                 }
                 .buttonStyle(.plain)
             }
