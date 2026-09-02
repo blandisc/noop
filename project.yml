@@ -55,8 +55,8 @@ packages:
     path: Packages/StrandAnalytics
   StrandImport:
     path: Packages/StrandImport
-  StrandDesign:
-    path: Packages/StrandDesign
+  CenitDesign:
+    path: Packages/CenitDesign
   StrandTraining:
     path: Packages/StrandTraining
   # Inject — recarga en caliente (hot reload) para iterar la UI sin recompilar. Solo actúa en Debug,
@@ -174,7 +174,7 @@ targets:
       - package: CenitStore
       - package: StrandAnalytics
       - package: StrandImport
-      - package: StrandDesign
+      - package: CenitDesign
       - package: StrandTraining
       # Inject: recarga en caliente en Debug (dev-only, inerte en Release).
       - package: Inject
@@ -187,7 +187,7 @@ targets:
   # ---------------------------------------------------------------------------
   # FER-740: the watchOS companion (single-target watchOS 10 app). Runs the real HKWorkoutSession for a
   # guided strength session and mirrors it to the iPhone; no GRDB on the wrist. Depends only on
-  # StrandDesign (paints) plus the shared mirroring contract in CenitShared. Only builds/signs on a
+  # CenitDesign (paints) plus the shared mirroring contract in CenitShared. Only builds/signs on a
   # physical Apple Watch (personal team).
   CenitWatch:
     type: application
@@ -232,7 +232,7 @@ targets:
         TARGETED_DEVICE_FAMILY: "4"
         SWIFT_EMIT_LOC_STRINGS: NO
     dependencies:
-      - package: StrandDesign
+      - package: CenitDesign
 
   # ---------------------------------------------------------------------------
   # FER-721: the app's first app-extension target — a WidgetKit extension that hosts the guided
@@ -275,7 +275,7 @@ targets:
         SWIFT_EMIT_LOC_STRINGS: NO
         SKIP_INSTALL: YES
     dependencies:
-      - package: StrandDesign
+      - package: CenitDesign
 
   # ---------------------------------------------------------------------------
   # UI test bundle that drives the Cenit app in the simulator and captures

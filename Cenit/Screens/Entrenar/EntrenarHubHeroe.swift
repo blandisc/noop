@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 
 // MARK: - Entrenar · el héroe del hub v18 (FER-171 · Parte B)
 //
@@ -140,7 +140,7 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
                 Text("Other ways")
                     .font(EntrenarHubMetrics.heroOtraFormaTexto)
                     .foregroundStyle(LiquidColor.tinta700)
-                StrandIcon.down.image
+                CenitIcon.down.image
                     .font(LiquidType.iconSF(size: 12).weight(.semibold))
                     .foregroundStyle(LiquidColor.tinta700)
                     .rotationEffect(.degrees(otraFormaAbierta ? 180 : 0))

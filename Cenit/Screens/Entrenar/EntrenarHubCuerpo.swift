@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 
 // MARK: - Entrenar · CUERPO del hub v18 (FER-171 · Parte B)
 //

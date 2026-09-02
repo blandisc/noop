@@ -1,9 +1,9 @@
 # Catálogo Liquid Glass
 
-<!-- GENERADO por `swift run StrandDesignTokens` desde `Packages/StrandDesign/Sources/StrandDesignTokens/main.swift` — no editar a mano. `rol`/`simbolo`/valores salen del código; `archivo`/`cuándo usarlo`/`cuándo no` son la tabla curada `catalogEntries` de ese mismo archivo. -->
+<!-- GENERADO por `swift run CenitDesignTokens` desde `Packages/CenitDesign/Sources/CenitDesignTokens/main.swift` — no editar a mano. `rol`/`simbolo`/valores salen del código; `archivo`/`cuándo usarlo`/`cuándo no` son la tabla curada `catalogEntries` de ese mismo archivo. -->
 
 Diccionario + índice del sistema **Liquid Glass · El Eje** (FER-229), leído directo del API
-público de `StrandDesign` — mismo trato que `color.instrumento` en
+público de `CenitDesign` — mismo trato que `color.instrumento` en
 [`tokens/design-tokens.json`](tokens/design-tokens.json): el código gana, este archivo solo
 lo refleja.
 
@@ -114,7 +114,7 @@ lo refleja.
 ## Índice de componentes
 
 Rol → símbolo → archivo → cuándo usarlo → cuándo no. `archivo` es relativo a
-`Packages/StrandDesign/Sources/StrandDesign/`, salvo piezas de app (p. ej. `Cenit/Screens/…`)
+`Packages/CenitDesign/Sources/CenitDesign/`, salvo piezas de app (p. ej. `Cenit/Screens/…`)
 que se anotan desde la raíz del repo. Este índice **reemplaza** las listas de componentes
 a mano de `CLAUDE.md`/`CONTRIBUTING.md`/`DESIGN.md`/`LIBRARY.md` — si buscas un componente,
 empieza aquí.
@@ -137,8 +137,8 @@ empieza aquí.
 | Pie de hoja — método | `LiquidMetodo` | `LiquidGlass/LiquidSheetFoot.swift` | El bloque «cómo se calcula» al pie de una hoja de detalle. | No para el badge de procedencia del dato (usa `LiquidOrigenChip`, mismo archivo). |
 | Chip de procedencia | `LiquidOrigenChip` | `LiquidGlass/LiquidSheetFoot.swift` | Marcar de dónde vino un dato (banda/Apple Salud/computado) al pie de una hoja Liquid. | No como pastilla de estado genérica; en listas/detalle de entreno usa `LiquidOrigenBadge`. |
 | Badge de procedencia (Liquid) | `LiquidOrigenBadge` | `LiquidGlass/LiquidSheetFoot.swift` | Pastilla caps de procedencia en historial/detalle de entrenamiento (Apple/Manual/Medido). `tono: nil` = neutro. | No en pie de hoja con glifo (usa `LiquidOrigenChip`); no como pastilla de estado (`LiquidStatePill`). |
-| Botón pill Liquid | `LiquidGlassButton` | `LiquidGlass/LiquidGlassButton.swift` | Botones pill de pantalla Liquid (primary/glass/quiet/solida) con hit-target 44pt ya resuelto. | No para CTA de tinta a lo ancho en flujo Instrumento/Entrenar (usa `StrandCTAButton`); no `.plain` sin press. |
-| Botón pastilla sólida | `LiquidGlassButton(.solida)` | `LiquidGlass/LiquidGlassButton.swift` | Acción pill OPACA sobre hoja El Eje (p. ej. «Crear ejercicio» en Biblioteca) — papel sin vidrio-sobre-vidrio. | No cuando quieras vidrio translúcido (usa `.glass`); no CTA a lo ancho (usa `StrandCTAButton`); no acción destructiva (`.destructive`). |
+| Botón pill Liquid | `LiquidGlassButton` | `LiquidGlass/LiquidGlassButton.swift` | Botones pill de pantalla Liquid (primary/glass/quiet/solida) con hit-target 44pt ya resuelto. | No para CTA de tinta a lo ancho en flujo Instrumento/Entrenar (usa `CenitCTAButton`); no `.plain` sin press. |
+| Botón pastilla sólida | `LiquidGlassButton(.solida)` | `LiquidGlass/LiquidGlassButton.swift` | Acción pill OPACA sobre hoja El Eje (p. ej. «Crear ejercicio» en Biblioteca) — papel sin vidrio-sobre-vidrio. | No cuando quieras vidrio translúcido (usa `.glass`); no CTA a lo ancho (usa `CenitCTAButton`); no acción destructiva (`.destructive`). |
 | Campo de búsqueda Liquid | `LiquidCampoBusqueda` | `LiquidGlass/LiquidCampoBusqueda.swift` | Campo de búsqueda con lupa + limpiar sobre `.superficieSolida` (Biblioteca y listas Liquid). | No reinventar HStack+TextField a mano; no para campos de métrica teñidos (usa `LiquidCampoMetrica`). |
 | Fila de ejercicio (Biblioteca) | `EntrenarFilaEjercicio` | `Entrenar/EntrenarFilaEjercicio.swift` | Fila del catálogo de ejercicios: miniatura + nombre/meta + récord + chevron/Agregar (FER-289). | No para filas de historial de sesión (usa `EntrenarFilaFuerza`/`EntrenarFilaCardio`); no dibujar la fila a mano en la Biblioteca. |
 | Chip de herramienta (Entrenar) | `EntrenarChipHerramienta` | `Entrenar/EntrenarChipHerramienta.swift` | Puerta de herramienta ancha (Crear plan / Nueva sección) sobre `.pastillaSolida` — mismo contrato que el viejo `InstrumentoToolChip` (FER-292). | No para CTA pill de hoja (`LiquidGlassButton`); no para cápsula outline (`OutlineCapsule`); no reinventar HStack+SF a mano. |
@@ -146,7 +146,7 @@ empieza aquí.
 | Stepper de ajuste Entrenar | `EntrenarStepper` | `Entrenar/EntrenarStepper.swift` | Control − valor + de hoja-herramienta (incremento, reloj de descanso) — tallas `.fila`/`.hoja`. | No para steppers Instrumento de papel (`PaperStepper`/`StepperButton`); el caller formatea el valor. |
 | Toggle Liquid | `LiquidToggleStyle / .liquid` | `LiquidGlass/LiquidToggleStyle.swift` | Switch cromo El Eje (tinta900/tinta10/papelTarjeta) en hojas Liquid — `.toggleStyle(.liquid)`. | No en pantallas aún Instrumento (usa `.instrumento`); no teñir el track con el color del dato. |
 | Título de flujo Liquid | `LiquidFlowTitle` | `LiquidGlass/LiquidFlowTitle.swift` | Cabecera kicker + displayS de pantallas empujadas sin salida propia (Tickets). | No cuando ya hay `EntrenarHojaCabecera`; no en pantallas Instrumento (usa `InstrumentoFlowTitle`). |
-| CTA de tinta (barra) | `StrandCTAButton` | `StrandCTAButton.swift` | CTA sólido/outline a lo ancho (o compacto) en flujos Entrenar/Instrumento — una sola barra canónica. | No reinventar barra con radius/padding ad-hoc; en chrome Liquid de hoja preferir `LiquidGlassButton`. |
+| CTA de tinta (barra) | `CenitCTAButton` | `CenitCTAButton.swift` | CTA sólido/outline a lo ancho (o compacto) en flujos Entrenar/Instrumento — una sola barra canónica. | No reinventar barra con radius/padding ad-hoc; en chrome Liquid de hoja preferir `LiquidGlassButton`. |
 | Atrás / cerrar | `BackButton` | `BackButton.swift` | Disco de salir/atrás en hojas y pantallas Instrumento/Entrenar (`role: .back`/`.close`). | No para una acción con nombre en el header (usa `HeaderActionButton`); no SF Symbol suelto. |
 | Acción de header | `HeaderActionButton` | `HeaderActionButton.swift` | Cápsula con label (Guardar, Terminar) pareja de `BackButton` en la barra de encabezado. | No para salir/cerrar (usa `BackButton`); no botón `.bordered` ad-hoc en ese slot. |
 | Confirmación (tarjeta) | `ConfirmCard / .instrumentoConfirm` | `ConfirmCard.swift` | Reemplazo de `.confirmationDialog`: tarjeta de vidrio + scrim; API `.instrumentoConfirm`. | No usar `.confirmationDialog`/alert genérico para decisiones con consecuencia; cada acción nombra lo que hace. |
@@ -160,8 +160,8 @@ empieza aquí.
 | Hipnograma (Liquid) | `LiquidHipnograma` | `LiquidGlass/LiquidHipnograma.swift` | Bandas de etapa de sueño de una noche en hoja Liquid. | No usar el `Hypnogram` legado (0 call-sites APP); no para otras series categóricas. |
 | Calendario 90 días (Liquid) | `LiquidCalendario90` | `LiquidGlass/LiquidCalendario90.swift` | Mosaico de 90 días en hojas Liquid (Stress/Strain/Sleep). | No usar `Calendario90`/`YearHeatStrip` del índice viejo (0 call-sites APP). |
 | Encabezado de sección (Liquid) | `LiquidSectionHeader` | `LiquidGlass/LiquidSectionHeader.swift` | Abrir una sección en una pantalla Liquid Glass — kicker + aire, sin banda de fondo (FER-273; adopción en Ola 3). | No en pantallas «Instrumento diurno» aún sin migrar (usa `InstrumentoSectionBand`, que sí lleva banda de papel). |
-| Cápsula de acción (Hoja) | `HojaCapsulaAccion` | `Entrenar/HojaCapsulaAccion.swift` | Acción compacta sobre vidrio DENTRO de una hoja de Entrenar que no promete navegación — flecha opcional, apagada por default (FER-280·1c). | No para una puerta a otra pantalla/hoja (usa `EntrenarCapsulaPuerta`); no para un CTA de pantalla completa (usa `LiquidGlassButton`/`StrandCTAButton`). |
-| Cápsula outline de acción | `OutlineCapsule` | `OutlineCapsule.swift` | Acción secundaria en cápsula con `hairlineStrong` ± fill (raise, Start/Stop, filtro, Use, Match…) — sm/md + press. | No CTA de tinta a lo ancho (`StrandCTAButton`); no pill Liquid de hoja (`LiquidGlassButton`); no acción de header (`HeaderActionButton`). |
+| Cápsula de acción (Hoja) | `HojaCapsulaAccion` | `Entrenar/HojaCapsulaAccion.swift` | Acción compacta sobre vidrio DENTRO de una hoja de Entrenar que no promete navegación — flecha opcional, apagada por default (FER-280·1c). | No para una puerta a otra pantalla/hoja (usa `EntrenarCapsulaPuerta`); no para un CTA de pantalla completa (usa `LiquidGlassButton`/`CenitCTAButton`). |
+| Cápsula outline de acción | `OutlineCapsule` | `OutlineCapsule.swift` | Acción secundaria en cápsula con `hairlineStrong` ± fill (raise, Start/Stop, filtro, Use, Match…) — sm/md + press. | No CTA de tinta a lo ancho (`CenitCTAButton`); no pill Liquid de hoja (`LiquidGlassButton`); no acción de header (`HeaderActionButton`). |
 | Pastilla de estado Liquid | `LiquidStatePill` | `LiquidGlass/LiquidStatePill.swift` | Estado vivo/listo sobre cristal (`.pastillaSolida`) o chip de valencia Δ% — sustituye `statusPill` a mano y chips de signo. | No pastilla Instrumento de chrome (`StatePill`); no procedencia (`LiquidOrigenChip`/`LiquidOrigenBadge`); no filtro removible (`LiquidChipSeleccion`). |
 | Toast de deshacer | `UndoToast` | `LiquidGlass/UndoToast.swift` | Snack de tinta «X borrado · Deshacer» tras un delete reversible (rutina/carpeta/sesión) — receta de WeeklyPlanEditor. | No para error de escritura (usa `.saveErrorToast`); no aviso Liquid de lectura (usa `LiquidAviso`); no confirmación (usa `.instrumentoConfirm`). |
 | Aviso Liquid | `LiquidAviso` | `LiquidGlass/LiquidAviso.swift` | Heads-up / desconexión / nudge en pantalla Liquid — `LiquidPatternBlock` + `liquidTarjetaSeccion` (receta HealthAlertBanner); icono/CTA opcionales. | No snack de deshacer (`UndoToast`); no error de escritura (`.saveErrorToast`); no banner Instrumento de Hoy aún sin migrar (`TodayBanner`). |

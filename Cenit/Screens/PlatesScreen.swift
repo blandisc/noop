@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandAnalytics
 
 // MARK: - Plate calculator + warm-up (FER-720 · 3a · FER-302 Liquid Glass · El Eje)

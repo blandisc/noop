@@ -1,5 +1,5 @@
 import SwiftUI
-import StrandDesign
+import CenitDesign
 
 /// First-run acknowledgment gate (clickwrap). Shown over EVERYTHING — before onboarding, pairing, or
 /// any Bluetooth access — until the current `Terms.currentVersion` is accepted, and again if the

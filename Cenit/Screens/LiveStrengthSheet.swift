@@ -1,7 +1,7 @@
 #if os(iOS)
 import SwiftUI
 import UIKit
-import StrandDesign
+import CenitDesign
 import StrandTraining
 import StrandAnalytics
 import CenitStore
@@ -1059,7 +1059,7 @@ struct LiveStrengthSheet: View {
                 Button { showLibraryPicker = true } label: {
                     EntrenarModulo(tono: .neutro) {
                         HStack(spacing: LiquidSpace.s225) {
-                            StrandIcon.search.image.font(LiquidType.infoGlifo).foregroundStyle(LiquidColor.tinta500)
+                            CenitIcon.search.image.font(LiquidType.infoGlifo).foregroundStyle(LiquidColor.tinta500)
                             Text("Search the library…").font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta500)
                             Spacer(minLength: 0)
                         }
@@ -1139,7 +1139,7 @@ struct LiveStrengthSheet: View {
                             .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                     }
                     Spacer(minLength: LiquidSpace.s200)
-                    StrandIcon.add.image.font(LiquidType.infoGlifo.weight(.semibold))
+                    CenitIcon.add.image.font(LiquidType.infoGlifo.weight(.semibold))
                         .foregroundStyle(tono.rotulo)
                         .accessibilityHidden(true)
                 }
@@ -1381,7 +1381,7 @@ struct LiveStrengthSheet: View {
             Text("Your history stays clean: no sets were logged this session.")
                 .font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
                 .fixedSize(horizontal: false, vertical: true)
-            StrandCTAButton("Got it", tint: LiquidColor.tinta900) {
+            CenitCTAButton("Got it", tint: LiquidColor.tinta900) {
                 model.endStrengthSession(save: false)
             }
             .padding(.top, LiquidSpace.s100)
@@ -1445,7 +1445,7 @@ struct LiveStrengthSheet: View {
             .padding(.top, LiquidSpace.s150)
 
             // copy.md «Acta»: «Listo» va en verde (quisquilloso ronda 4) — mismo CTA, tint Liquid.
-            StrandCTAButton("Done", tint: LiquidColor.positivo) { model.closeStrengthSummary() }
+            CenitCTAButton("Done", tint: LiquidColor.positivo) { model.closeStrengthSummary() }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .onAppear { playReceiptCountUp() }
@@ -1819,7 +1819,7 @@ struct LiveStrengthSheet: View {
     @ViewBuilder private func exerciseTrendGlyph(_ trend: Int?) -> some View {
         switch trend {
         case .some(1):
-            StrandIcon.up.image.font(LiquidType.infoGlifoCompacto.weight(.semibold))
+            CenitIcon.up.image.font(LiquidType.infoGlifoCompacto.weight(.semibold))
                 .foregroundStyle(LiquidColor.positivo)
                 .accessibilityLabel(Text("Up vs last time"))
         case .some(-1):

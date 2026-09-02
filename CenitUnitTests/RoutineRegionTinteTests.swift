@@ -1,7 +1,7 @@
 import XCTest
 import SwiftUI
 import UIKit
-import StrandDesign
+import CenitDesign
 import StrandTraining
 @testable import Cenit
 

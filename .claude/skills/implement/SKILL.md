@@ -92,7 +92,7 @@ disparador pesado, súbelo a pesado.
      (técnica de FER-149; `xcrun simctl list devices available` da un id).
    - Recorre los criterios de aceptación y el Definition of Done **uno por uno**.
    - Si hubo pasada de UI: verifica los **criterios de UI** (solo tokens
-     StrandDesign, sin hex/spacing inline) y que **el render real coincida con el
+     CenitDesign, sin hex/spacing inline) y que **el render real coincida con el
      preview aprobado**.
    - Arregla lo que encuentres. En **carril ligero** esto es tu verificación final;
      en **carril pesado** es solo tu loop rápido — el gate real lo da el verificador
@@ -136,7 +136,7 @@ disparador pesado, súbelo a pesado.
      que **tú eres el gate**. Corre
      `python3 Tools/check-design-drift.py --rules no-adhoc-font,no-radius-literal,no-opacity-literal Cenit/Screens Cenit/Onboarding`
      (más `no-hex` sobre todos los roots si tu diff toca UI) y confirma que sale ✅.
-     Si sale rojo, **no mergees**: promueve el valor a un token de `StrandDesign` o
+     Si sale rojo, **no mergees**: promueve el valor a un token de `CenitDesign` o
      anota `// token-exempt: <razón>`, y re-corre hasta verde. Esto ataja la deriva
      que CI (solo `Packages/**`) no ve — es como se coló FER-857 (#872), arreglado
      en #874. Verifica además con `gh pr checks <N>` que el job `lint` quedó verde.

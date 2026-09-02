@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUI
 import StrandAnalytics
-import StrandDesign
+import CenitDesign
 
 // MARK: - LiquidHoyBuilder (FER-1045)
 //
@@ -2173,10 +2173,10 @@ enum LiquidHoyBuilder {
         // Pasos — más es mejor; estimado (FER-663) → «est.» + calculado.
         let stepsDelta = deltaLine(contexto(today: i.steps, history: i.historias.steps,
                                             betterHigher: true, deadband: 100,
-                                            format: { StrandFormat.groupedInt($0) }))
+                                            format: { CenitFormat.groupedInt($0) }))
         out.append(.init(
             id: "steps", label: String(localized: "Steps"),
-            value: i.steps.map { StrandFormat.groupedInt($0) } ?? "—",
+            value: i.steps.map { CenitFormat.groupedInt($0) } ?? "—",
             unit: i.stepsEstimated ? String(localized: "est.") : "",
             delta: stepsDelta.text, deltaTone: stepsDelta.tone,
             tone: i.steps == nil ? LiquidColor.tinta500 : LiquidColor.teal, icon: .pasos,

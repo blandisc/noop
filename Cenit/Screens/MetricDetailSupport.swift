@@ -1,7 +1,7 @@
 #if os(iOS)
 import SwiftUI
 import CenitStore
-import StrandDesign
+import CenitDesign
 import StrandAnalytics
 import Foundation
 

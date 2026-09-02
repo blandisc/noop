@@ -2,7 +2,7 @@
 import SwiftUI
 import UIKit             // UIApplication.openSettingsURLString (abrir Ajustes de iOS cuando negó un permiso)
 import UserNotifications // UNAuthorizationStatus, para releer el permiso real de enfermedad/descanso
-import StrandDesign
+import CenitDesign
 import StrandAnalytics
 import CenitStore
 

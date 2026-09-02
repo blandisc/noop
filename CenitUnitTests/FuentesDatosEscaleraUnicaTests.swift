@@ -1,6 +1,6 @@
 import XCTest
 import SwiftUI
-import StrandDesign
+import CenitDesign
 @testable import Cenit
 
 /// Guarda de los cimientos de la migración de «Fuentes de datos» + «Apple Health» a Liquid Glass

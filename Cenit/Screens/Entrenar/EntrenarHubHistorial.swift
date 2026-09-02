@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 
 // MARK: - Entrenar · HISTORIAL del hub v18 (FER-171 · Parte B)
 //
@@ -35,7 +35,7 @@ struct EntrenarHubHistorial: View {
                     HStack(alignment: .firstTextBaseline) {
                         Text("History").liquidRegla().foregroundStyle(LiquidColor.tinta500)
                         Spacer(minLength: LiquidSpace.s200)
-                        StrandIcon.disclosure.image
+                        CenitIcon.disclosure.image
                             .font(LiquidType.iconSF(size: 15).weight(.semibold))
                             .foregroundStyle(LiquidColor.tinta500)
                     }

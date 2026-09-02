@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 
 // MARK: - «Crear plan» (FER-88) — la puerta única que reemplaza el par duplicado
 //

@@ -20,7 +20,7 @@ import ActivityKit
 import AppIntents
 import SwiftUI
 import WidgetKit
-import StrandDesign
+import CenitDesign
 #if canImport(UIKit)
 import UIKit
 #endif

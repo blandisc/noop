@@ -16,12 +16,12 @@
 | `Tools/design-drift-baseline.json` | Deuda congelada (`no-legacy-api` = **161** hits / **54** archivos) |
 | `docs/design-system/AUDITORIA-SISTEMA.md` | Mapa de eras — no se re-litiga; se cruza |
 | Commit `93d3105d` (FER-273) | Qué piezas se acuñaron **sin** aplicar a call-sites |
-| Árbol vivo | `rg` sobre `Cenit/**`, `CenitApp`, `CenitWidgets`, `CenitWatch`, `Packages/StrandDesign/Sources` |
+| Árbol vivo | `rg` sobre `Cenit/**`, `CenitApp`, `CenitWidgets`, `CenitWatch`, `Packages/CenitDesign/Sources` |
 
 ## Método
 
 - **Eje 3:** lo que `RE_LEGACY_API` ve → símbolos/helpers/`theme.*` de Instrumento/papel **fuera** de esa lista → ¿baseline o ciego?
-- **Eje 4:** StrandDesign post-FER-273: piezas sin consumidor, duplicados de valor, huérfanos.
+- **Eje 4:** CenitDesign post-FER-273: piezas sin consumidor, duplicados de valor, huérfanos.
 - **Eje 5:** muestra de **20** `token-exempt`; motivo vs tokens que ya existen (FER-273/275).
 
 ---
@@ -39,7 +39,7 @@ InstrumentoTheme | InstrumentoFlowTitle | InstrumentoToolChip | InstrumentoTabHe
 ```
 
 Raíces: `Cenit/{Screens,Onboarding,System,App,Data,LiveActivity,Media}`.  
-**Fuera:** `Packages/StrandDesign` (definiciones), `CenitWidgets`/`CenitWatch` (carve-out), **`CenitApp`** (no está en las raíces).
+**Fuera:** `Packages/CenitDesign` (definiciones), `CenitWidgets`/`CenitWatch` (carve-out), **`CenitApp`** (no está en las raíces).
 
 Live vs baseline de esos símbolos: **161/161, 54/54 — sin contrabando *dentro* de la lista**. El riesgo está en lo que la lista no nombra.
 
@@ -90,8 +90,8 @@ Ejemplos call-site: `AppMap.swift:544` (`.instrumentoConfirm`), `LiveStrengthShe
 
 | | |
 |---|---|
-| **Evidencia** | `CenitApp/App/RootTabView.swift:209` — `.tint(StrandPalette.accent)` (**`CenitApp` no está en raíces `legacy`**). En raíces: `ProgressionSetupScreen.swift:140`, `SessionKeypad.swift:306` (`StrandPalette.disabledOpacity`) — sí gateados/congelados. `StrandOpacity.dim` es el token canónico equivalente (`Palette.swift:207`). |
-| **Propuesta** | (1) Añadir `CenitApp` a raíces `legacy`/`exempt` **o** aceptar carve-out documentado. (2) Lote de 2 call-sites: `StrandPalette.disabledOpacity` → `StrandOpacity.dim`. |
+| **Evidencia** | `CenitApp/App/RootTabView.swift:209` — `.tint(StrandPalette.accent)` (**`CenitApp` no está en raíces `legacy`**). En raíces: `ProgressionSetupScreen.swift:140`, `SessionKeypad.swift:306` (`StrandPalette.disabledOpacity`) — sí gateados/congelados. `CenitOpacity.dim` es el token canónico equivalente (`Palette.swift:207`). |
+| **Propuesta** | (1) Añadir `CenitApp` a raíces `legacy`/`exempt` **o** aceptar carve-out documentado. (2) Lote de 2 call-sites: `StrandPalette.disabledOpacity` → `CenitOpacity.dim`. |
 
 #### C3-6 · MEDIO — Tipografía Instrumento en pantallas ya «Liquid» (contrabando de generación, no solo deuda)
 
@@ -172,7 +172,7 @@ Capa z-index huérfana (archivo ya ausente del árbol), `StrandElevation` (casi 
 
 | Símbolo | Valor | Archivo |
 |---|---|---|
-| `StrandOpacity.dim` | 0.45 | `Palette.swift` (canónico) |
+| `CenitOpacity.dim` | 0.45 | `Palette.swift` (canónico) |
 | `StrandPalette.disabledOpacity` | 0.45 | `Palette.swift:43` (alias legacy) |
 | `PaperStepper.disabledOpacity` | **0.35** | `PaperStepper.swift:72` (privado) |
 | `CenitMetrics` N/A | — | — |
@@ -180,7 +180,7 @@ Capa z-index huérfana (archivo ya ausente del árbol), `StrandElevation` (casi 
 
 | | |
 |---|---|
-| **Propuesta** | Call-sites APP → `StrandOpacity.dim`. El 0.35 de PaperStepper es deuda local del componente legacy. |
+| **Propuesta** | Call-sites APP → `CenitOpacity.dim`. El 0.35 de PaperStepper es deuda local del componente legacy. |
 
 ---
 

@@ -1,7 +1,7 @@
 # CONTRATO.md — el contrato del sistema de diseño ejecutable
 
 > **Escrito a mano** (FER-265, épico FER-261). Este archivo es proceso, no tokens: DESIGN.md tiene
-> bloques que `StrandDesignTokens` regenera y por eso el contrato NO puede vivir ahí. La matriz de
+> bloques que `CenitDesignTokens` regenera y por eso el contrato NO puede vivir ahí. La matriz de
 > gates de abajo la valida `Tools/check-gate-parity.py` cada vez que `design-lint` corre (editar
 > cualquiera de las patas, el validador o este archivo dispara el workflow) y en `verify.sh quick`.
 > Límite honesto: el validador contrasta **texto**, no ejecución — para las patas de árbol compara
@@ -11,8 +11,8 @@
 
 ## Qué es qué
 
-- **Token**: un valor de diseño con nombre en `Packages/StrandDesign` (`LiquidColor`, `LiquidSpace`,
-  `LiquidRadius`, `CenitMetrics`, `StrandOpacity`…). La escala `LiquidSpace` (nombrada por valor:
+- **Token**: un valor de diseño con nombre en `Packages/CenitDesign` (`LiquidColor`, `LiquidSpace`,
+  `LiquidRadius`, `CenitMetrics`, `CenitOpacity`…). La escala `LiquidSpace` (nombrada por valor:
   `s400 = 16`) es el DNA canónico y **se queda**; los roles semánticos (`LiquidRadius.tarjeta`) se
   usan donde ya existen y para tokens nuevos. El diccionario vivo está en
   [CATALOGO.md](CATALOGO.md) (generado — el código gana).
@@ -26,7 +26,7 @@
 
 1. Verifica en [CATALOGO.md](CATALOGO.md) que no exista ya — reimplementar lo existente es la clase
    de defecto más cara medida en este repo (FER-119: 15 defectos).
-2. La pieza nueva nace en `StrandDesign` con `#Preview`, nombrada por rol, y se anota en el reporte
+2. La pieza nueva nace en `CenitDesign` con `#Preview`, nombrada por rol, y se anota en el reporte
    del censo ([CENSO.md](CENSO.md)). Aplica a **cualquier** primitivo (también pasos de escala y
    constantes de `LiquidLayout`). Prohibido mintear roles basura para esquivar `token ± n`
    (`space1plus2 = 6` no es un rol).
@@ -77,7 +77,7 @@ antes. No hay atajo en un solo PR, por diseño.
   cierre FER-219) — geometría fija de Dynamic Island / watch face; `InstrumentoTheme` es el tema
   **canónico** de la Live Activity. El carve-out vive en `check()` del linter, no solo en la
   invocación.
-- **CenitShared**: no importa `StrandDesign` a propósito (frontera de paquetes: Codable no puede
+- **CenitShared**: no importa `CenitDesign` a propósito (frontera de paquetes: Codable no puede
   depender del paquete de UI) — no hay nada que gatear ahí.
 - **Watch OLED**: la excepción viva del sistema oscuro; es su propio contexto de arbitraje, no
   deuda.
@@ -126,10 +126,10 @@ Tabla humana (resumen) — la verdad máquina-legible es el bloque JSON de abajo
 | no-adhoc-font / no-radius-literal / no-opacity-literal (trinquete) | árbol 5 raíces | árbol 5 raíces | árbol 5 raíces |
 | no-emdash-string | staged Screens+Onboarding | changed Screens+Onboarding | árbol Screens+Onboarding |
 | no-raw-shadow | staged Screens | changed Screens | árbol Screens |
-| no-sheet-glass | staged (todos)¹ | changed (todos)¹ | árbol StrandDesign+Cenit+CenitApp+CenitShared+CenitWidgets |
+| no-sheet-glass | staged (todos)¹ | changed (todos)¹ | árbol CenitDesign+Cenit+CenitApp+CenitShared+CenitWidgets |
 | no-spacing-literal (trinquete) | árbol 5 raíces | árbol 5 raíces | árbol 5 raíces |
 | no-legacy-api (trinquete) | árbol 8 raíces | árbol 8 raíces | árbol 8 raíces |
-| token-exempt (trinquete) | árbol 8 raíces + StrandDesign | árbol 8 raíces + StrandDesign | árbol 8 raíces + StrandDesign |
+| token-exempt (trinquete) | árbol 8 raíces + CenitDesign | árbol 8 raíces + CenitDesign | árbol 8 raíces + CenitDesign |
 | no-raw-color / no-edgeinsets-literal / no-token-arithmetic (trinquete, FER-276) | árbol 8 raíces | árbol 8 raíces | árbol 8 raíces |
 | no-motion-literal (trinquete, FER-269) | árbol 5 raíces | árbol 5 raíces | árbol 5 raíces |
 | no-dt-cap-adhoc (prohibición pura, FER-269) | árbol 10 raíces UI | árbol 10 raíces UI | árbol 10 raíces UI |
@@ -146,9 +146,9 @@ raíces explícitas donde vive el defecto (incluye el paquete, excluye CenitWatc
   "tree_roots": {
     "spacing": ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "CenitApp"],
     "legacy": ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "CenitApp"],
-    "exempt": ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "Packages/StrandDesign/Sources", "CenitApp"],
+    "exempt": ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "Packages/CenitDesign/Sources", "CenitApp"],
     "dtcap": ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "CenitWidgets", "CenitWatch", "CenitApp"],
-    "sheet_glass_ci": ["Packages/StrandDesign/Sources", "Cenit", "CenitApp", "CenitShared", "CenitWidgets"]
+    "sheet_glass_ci": ["Packages/CenitDesign/Sources", "Cenit", "CenitApp", "CenitShared", "CenitWidgets"]
   },
   "rules": {
     "no-hex":             {"pre-commit": "staged", "verify-quick": "changed", "design-lint": "tree-default"},

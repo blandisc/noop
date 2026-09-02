@@ -27,7 +27,7 @@ DEFAULT_FILES = [
 # El PAQUETE de diseño, entero y sin excepciones (FER-112).
 #
 # Aquí la deuda no es que una cadena en español sea difícil de traducir: es que **no se puede**.
-# `StrandDesign` no tiene catálogo, así que cualquier texto que nazca dentro se queda para
+# `CenitDesign` no tiene catálogo, así que cualquier texto que nazca dentro se queda para
 # siempre en el idioma en que se escribió. Así vivió el dock —la barra de TODAS las pantallas—
 # diciendo «Hoy · Tendencias · Entrenar · Ajustes» con el teléfono en inglés, con un TODO
 # abierto desde julio que nadie iba a ver.
@@ -36,7 +36,7 @@ DEFAULT_FILES = [
 # que aún no existen son justo los que hay que vigilar. Un componente que necesita texto lo
 # recibe del app (`LiquidTabRotulos`, `EcosistemaRotulos`, `ThermalReceipt`), nunca lo escribe.
 PAQUETES_SIN_CATALOGO = [
-    "Packages/StrandDesign/Sources/**/*.swift",
+    "Packages/CenitDesign/Sources/**/*.swift",
     "Packages/StrandTraining/Sources/**/*.swift",
 ]
 

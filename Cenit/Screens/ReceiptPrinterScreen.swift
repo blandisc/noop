@@ -1,7 +1,7 @@
 #if os(iOS)
 import SwiftUI
 import UIKit
-import StrandDesign
+import CenitDesign
 import StrandAnalytics
 import StrandTraining
 
@@ -122,7 +122,7 @@ struct ReceiptPrinterScreen: View {
             VStack(spacing: LiquidSpace.s400) {
                 ReceiptSavedSeal()
                     .environment(\.instrumentoTheme, theme)
-                StrandCTAButton("REIMPRIMIR", kind: .outline) { reprint() }
+                CenitCTAButton("REIMPRIMIR", kind: .outline) { reprint() }
                     .frame(maxWidth: 220)
             }
             .padding(.horizontal, LiquidSpace.s600)
@@ -271,20 +271,20 @@ struct ReceiptPrinterScreen: View {
 
     private var actionBar: some View {
         VStack(spacing: 10) {
-            StrandCTAButton("Ver en Apple Health") {
+            CenitCTAButton("Ver en Apple Health") {
                 if let url = URL(string: "x-apple-health://") {
                     UIApplication.shared.open(url)
                 }
             }
 
             HStack(spacing: 10) {
-                StrandCTAButton("Guardar", kind: .outline) {
+                CenitCTAButton("Guardar", kind: .outline) {
                     if let img = renderTicket() { FileExport.saveImageToPhotos(img) }
                 }
-                StrandCTAButton("Compartir", kind: .outline) {
+                CenitCTAButton("Compartir", kind: .outline) {
                     if let img = renderTicket() { FileExport.exportImage(img) }
                 }
-                StrandCTAButton(showClassic ? "Ver ticket" : "Vista clásica", kind: .outline) {
+                CenitCTAButton(showClassic ? "Ver ticket" : "Vista clásica", kind: .outline) {
                     withAnimation(.easeInOut(duration: 0.25)) { showClassic.toggle() }  // token-exempt(unico): coreografía del recibo térmico — toggle vista clásica (0.25 s)
                 }
             }

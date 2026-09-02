@@ -150,7 +150,7 @@ Etiquetado por: subagent-general-purpose-independent-labeler-2026-08-31 — decl
 
 ## 5. Deuda por generación visual, por target [MEDIDO por símbolo]
 
-Clasificado por qué símbolos importa cada archivo (`Liquid*` vs `Instrumento*`) — no por fecha ni autor. Un archivo sin ninguno de los dos símbolos queda `indeterminada` (probable candidato: no usa StrandDesign en absoluto, o usa solo tipos neutros como `Color`/`Font` del sistema).
+Clasificado por qué símbolos importa cada archivo (`Liquid*` vs `Instrumento*`) — no por fecha ni autor. Un archivo sin ninguno de los dos símbolos queda `indeterminada` (probable candidato: no usa CenitDesign en absoluto, o usa solo tipos neutros como `Color`/`Font` del sistema).
 
 | Target | Liquid (vigente) | Instrumento (absorbida, en migración) | Indeterminada |
 |---|---|---|---|
@@ -162,7 +162,7 @@ Clasificado por qué símbolos importa cada archivo (`Liquid*` vs `Instrumento*`
 
 ## 6. Iconografía — vocabulario de SF Symbols literales [MEDIDO]
 
-Usos de `Image(systemName: "…")` fuera de un token de icono — cada nombre distinto es un candidato a `StrandIcon` si se repite.
+Usos de `Image(systemName: "…")` fuera de un token de icono — cada nombre distinto es un candidato a `CenitIcon` si se repite.
 
 | Símbolo | usos |
 |---|---|

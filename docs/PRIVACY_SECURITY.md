@@ -48,7 +48,7 @@ including the entire biometric pipeline, produces no network traffic of any kind
 
 The biometric pipeline and the shipping packages
 (`BiometricStreams`, `CenitStore`, `StrandAnalytics`, `StrandTraining`, `StrandImport`,
-`StrandDesign`) contain **no** use of `URLSession`, `URLRequest`, `NWConnection`,
+`CenitDesign`) contain **no** use of `URLSession`, `URLRequest`, `NWConnection`,
 `dataTask`, or any other networking API. The **only** networking anywhere in the app is
 exercise media download (`Cenit/Media/MediaDownloadCoordinator.swift`, §1.1b). The package
 manifests reference dependency *download* URLs that Swift Package Manager resolves at build

@@ -2,7 +2,7 @@
 import SwiftUI
 import UIKit       // UIApplication.openSettingsURLString (abrir Ajustes de iOS cuando lo negaron ahí)
 import UserNotifications
-import StrandDesign
+import CenitDesign
 import CenitStore
 import StrandTraining
 

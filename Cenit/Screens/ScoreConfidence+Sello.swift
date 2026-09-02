@@ -1,12 +1,12 @@
 import SwiftUI
 import StrandAnalytics
-import StrandDesign
+import CenitDesign
 
 // MARK: - ScoreConfidence → sello (FER-676, app layer)
 //
 // The one place a ScoreConfidence tier turns into visible copy and a ready-to-place
 // ConfidenceSello. It lives in the app layer because the label/a11y strings resolve
-// against Cenit's String Catalog (StrandDesign stays copy-free). Every score — Esfuerzo,
+// against Cenit's String Catalog (CenitDesign stays copy-free). Every score — Esfuerzo,
 // Sueño, and future ones — builds its stamp here, so the tier→copy and tier→emphasis
 // rules exist ONCE instead of being re-derived per screen.
 extension ScoreConfidence {

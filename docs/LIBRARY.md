@@ -27,12 +27,12 @@ independently of the app itself.
 | **CenitStore** | GRDB/SQLite persistence: migrations, streams, raw outbox, metric caches | ✅ Pure (server-free) | none | GRDB |
 | **StrandAnalytics** | HRV / recovery / strain / sleep / correlation math | ✅ Pure, deterministic | none | (BiometricStreams, StrandModels types) |
 | **StrandImport** | Apple Health (`export.xml`, streaming) importers | ✅ Pure Foundation/XML | none | ZIPFoundation |
-| **StrandDesign** | SwiftUI design system (palette, components, charts) | SwiftUI only | SwiftUI | none |
+| **CenitDesign** | SwiftUI design system (palette, components, charts) | SwiftUI only | SwiftUI | none |
 
 These packages declare the same platforms — **iOS 16+ and macOS 13+** — and
 build with **swift-tools-version 5.9**. The non-UI packages are platform-pure:
 they never import `CoreBluetooth`, `UIKit`, or `AppKit`, so they run unchanged in
-CLI tools, tests, and on any platform. `StrandDesign` is the only SwiftUI package;
+CLI tools, tests, and on any platform. `CenitDesign` is the only SwiftUI package;
 it builds on both iOS and macOS, bridging through `UIColor`/`NSColor` only where
 unavoidable, guarded with `#if canImport(UIKit)` / `#if canImport(AppKit)`.
 
@@ -48,7 +48,7 @@ StrandAnalytics ◄───────────┘            (depends on B
 
 StrandImport   ──► CenitStore, StrandTraining   (+ ZIPFoundation)
 
-StrandDesign   (standalone — SwiftUI only, no internal deps)
+CenitDesign   (standalone — SwiftUI only, no internal deps)
 ```
 
 The app target (`Cenit/`, built by `Cenit`) is the integration layer: it owns
@@ -303,7 +303,7 @@ print("Apple daily rows:", daily.count)
 
 ---
 
-## StrandDesign
+## CenitDesign
 
 The SwiftUI design system — the only UI package. Palette, type scale, motion
 presets, and the signature data components (Hypnogram, trend/sparkline charts,
@@ -322,10 +322,10 @@ rol → símbolo → archivo index is generated into
 ```swift
 // Package.swift  (no internal Cénit deps — standalone)
 dependencies: [
-    .package(path: "../StrandDesign"),
+    .package(path: "../CenitDesign"),
 ],
 targets: [
-    .target(name: "MyAppUI", dependencies: ["StrandDesign"]),
+    .target(name: "MyAppUI", dependencies: ["CenitDesign"]),
 ]
 ```
 
@@ -363,7 +363,7 @@ Full index (rol → símbolo → archivo → cuándo usarlo → cuándo no): see
 
 ```swift
 import SwiftUI
-import StrandDesign
+import CenitDesign
 
 struct TodayHeader: View {
     let score: Double

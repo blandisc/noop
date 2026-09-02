@@ -1,5 +1,5 @@
 import Foundation
-import StrandDesign
+import CenitDesign
 import StrandAnalytics
 
 // MARK: - Range

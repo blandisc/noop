@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandAnalytics
 import StrandTraining
 import CenitStore
@@ -403,7 +403,7 @@ struct WorkoutDetailScreen: View {
     // MARK: - Formatting
 
     /// Thousands-grouped integer for the energy support (e.g. "1,240").
-    private func grouped(_ v: Double) -> String { StrandFormat.groupedInt(v) }
+    private func grouped(_ v: Double) -> String { CenitFormat.groupedInt(v) }
 
     // MARK: - HRR-60s (recuperación cardiaca post-esfuerzo, experimental — FER-852)
 

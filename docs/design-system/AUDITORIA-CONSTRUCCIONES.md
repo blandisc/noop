@@ -15,11 +15,11 @@ Onboarding) salieron **limpias**: el patrón de deuda vive en Entrenar/hojas de 
 
 ## Las 6 clases (kill-the-class, por palanca)
 
-### 1 · CTAs de tinta hechos a mano — duplicado de `StrandCTAButton` (≥9 sitios)
+### 1 · CTAs de tinta hechos a mano — duplicado de `CenitCTAButton` (≥9 sitios)
 `fill` + `RoundedRectangle(ctaRadius…)` + label grotesk: la anatomía exacta del catálogo.
 Sitios: `LiveStrengthSheets.swift:117` · `LiveStrengthSheet.swift:1380,1442,1454` ·
 `StarterTemplatesSheet.swift:221,245` · `PlatesScreen.swift:264` · `ManualWorkoutSheet.swift:144` ·
-`ExerciseLibraryScreen.swift:598`. **Acción:** reemplazo directo por `StrandCTAButton`/`LiquidGlassButton`.
+`ExerciseLibraryScreen.swift:598`. **Acción:** reemplazo directo por `CenitCTAButton`/`LiquidGlassButton`.
 
 ### 2 · Cápsulas outline de acción — pieza que FALTA (≥15 sitios, la clase más regada)
 `Capsule().strokeBorder(hairlineStrong)` ± fill como control tocable: «Use», raise pill, Start/Stop

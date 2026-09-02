@@ -8,7 +8,7 @@
 
 import SwiftUI
 import WidgetKit
-import StrandDesign
+import CenitDesign
 
 /// `TrainWidgetSnapshot.VerdictTone` → `EntrenarHilo.Tone`, so the widget can call the REAL
 /// `.word(theme)` — the same reading-tone Entrenar's own hilo shows — instead of re-deriving a color.

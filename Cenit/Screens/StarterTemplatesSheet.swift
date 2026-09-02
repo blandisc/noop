@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandTraining
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 
@@ -147,7 +147,7 @@ struct StarterTemplatesSheet: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: LiquidSpace.s200)
-                StrandIcon.disclosure.image
+                CenitIcon.disclosure.image
                     .font(LiquidType.iconSF(size: 15)).foregroundStyle(LiquidColor.tinta500)
             }
             .padding(.horizontal, LiquidSpace.s400).frame(minHeight: LiquidSpace.s1400).contentShape(Rectangle())
@@ -165,7 +165,7 @@ struct StarterTemplatesSheet: View {
             if !isGroupMode || (grupo.map { StarterTemplates.inGroup($0).count } ?? 0) > 1 {
                 Button { withAnimation(LiquidMotion.toque) { selected = nil } } label: {
                     HStack(spacing: LiquidSpace.s100) {
-                        StrandIcon.back.image.font(LiquidType.iconSF(size: 15))
+                        CenitIcon.back.image.font(LiquidType.iconSF(size: 15))
                         Text(isGroupMode ? groupName(t.group) : LocalizedStringKey("Templates"))
                             .font(LiquidType.cuerpo)
                     }
@@ -197,7 +197,7 @@ struct StarterTemplatesSheet: View {
 
             if !isGroupMode {
                 VStack(spacing: LiquidSpace.s250) {
-                    StrandCTAButton("Add to my routines") { add(t) }
+                    CenitCTAButton("Add to my routines") { add(t) }
                         .disabled(saving)
 
                     Text("It's copied into «My routines». You can edit it like any routine.")
@@ -213,7 +213,7 @@ struct StarterTemplatesSheet: View {
     /// CTA de modo grupo (FER-251): aplica el programa entero + agenda, no una sola rutina.
     private var useThisPlanFooter: some View {
         VStack(spacing: LiquidSpace.s250) {
-            StrandCTAButton("Use this plan") { applyTemplateGroup() }
+            CenitCTAButton("Use this plan") { applyTemplateGroup() }
                 .disabled(saving)
                 .accessibilityHint(Text("Choosing a template creates its routines and your week is set; you can always edit it later, day by day."))
 

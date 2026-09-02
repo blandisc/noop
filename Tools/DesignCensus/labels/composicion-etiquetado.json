@@ -464,7 +464,7 @@
   {
     "file": "Cenit/Screens/LiveStrengthSheets.swift",
     "line": 415,
-    "snippet": "HStack(spacing: 9) {             StrandIcon.search.image.font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTer...",
+    "snippet": "HStack(spacing: 9) {             CenitIcon.search.image.font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTer...",
     "isComposition": true,
     "labeler": "subagent-general-purpose-independent-labeler-2026-08-31"
   },

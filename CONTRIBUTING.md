@@ -34,7 +34,7 @@ cd Packages/StrandAnalytics && swift build && swift test
 The packages are `BiometricStreams` (neutral biometric row vocabulary),
 `StrandModels` (shared model types), `CenitStore` (SQLite persistence),
 `StrandAnalytics` (recovery / strain / HRV / sleep math), `StrandTraining`
-(strength domain), `StrandImport` (Apple Health importers), and `StrandDesign`
+(strength domain), `StrandImport` (Apple Health importers), and `CenitDesign`
 (the SwiftUI design system).
 
 ### iOS app
@@ -72,7 +72,7 @@ generated output (`Cenit.xcodeproj/`) or any secrets, keystores, or `local.prope
 1. One concern per PR where practical (keep schema and UI changes separate).
 2. Fill in the [PR template](.github/PULL_REQUEST_TEMPLATE.md).
 3. For analytics changes, add a test and cite the method.
-4. For UI changes, use `StrandDesign` tokens only — no hardcoded colors, fonts,
+4. For UI changes, use `CenitDesign` tokens only — no hardcoded colors, fonts,
    or spacing.
 
 By opening a pull request you agree your contribution is licensed under the same

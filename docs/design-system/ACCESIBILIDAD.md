@@ -24,7 +24,7 @@
 
 **Cómo se verifica (tres capas):**
 
-1. **Helper WCAG en el generador de tokens** — `StrandDesignTokens/main.swift` hace su propia
+1. **Helper WCAG en el generador de tokens** — `CenitDesignTokens/main.swift` hace su propia
    matemática sRGB→lineal→luminancia→ratio, la fórmula canónica `(L1+0.05)/(L2+0.05)`. La columna
    `ratio` de la tabla de color en `DESIGN.md` §8.2 (inventario Instrumento en migración) es ese
    contraste medido contra `paper`.
@@ -75,7 +75,7 @@ pegados a geometría **no**. La decisión está codificada y comentada en `Typog
 ## 3. VoiceOver
 
 **Regla:** todo lo que comunica significado tiene nombre hablado; lo decorativo se oculta. Uso real
-(conteos en `Cenit/` + `StrandDesign`): `accessibilityLabel` 251, `accessibilityElement` 177,
+(conteos en `Cenit/` + `CenitDesign`): `accessibilityLabel` 251, `accessibilityElement` 177,
 `accessibilityHidden` 87, `accessibilityValue` 44, `accessibilityHint` 41.
 
 **Patrones establecidos:**
@@ -146,7 +146,7 @@ let animating = animateEntrance && !reduceMotion
 ## 6. Checklist para una pantalla/componente nuevo
 
 - [ ] Cada par texto/fondo libra su piso AA (3:1 numeral ≥24pt, 4.5:1 texto). Si agregas un color,
-      corre `swift run StrandDesignTokens` y revisa el `ratio` en la tabla.
+      corre `swift run CenitDesignTokens` y revisa el `ratio` en la tabla.
 - [ ] El texto de lectura usa tokens de `StrandFont` que escalan; solo la geometría usa los fijos.
 - [ ] VoiceOver: labels en lo que significa, valores hablados en números clave, `accessibilityHidden`
       en lo decorativo.

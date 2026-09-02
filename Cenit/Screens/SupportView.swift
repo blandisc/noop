@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 
 // MARK: - «Acerca de y soporte» — Liquid Glass (FER-180)
 //

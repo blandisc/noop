@@ -1,6 +1,6 @@
 #if os(iOS)
 import Foundation
-import StrandDesign
+import CenitDesign
 import StrandAnalytics
 import StrandTraining
 import BiometricStreams

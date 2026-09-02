@@ -2,14 +2,14 @@
 //
 // Redraws the 7-day strip with the SAME pure semantics `WeeklySplit`/`WeekTokens` already define
 // (done/today/upcoming/rest — via `TrainWidgetSnapshot.WeekDayState`, already resolved by the app), but
-// as its own WidgetKit view: `WeekTokens` (StrandDesign) is a SwiftUI `View` built for the app's live
+// as its own WidgetKit view: `WeekTokens` (CenitDesign) is a SwiftUI `View` built for the app's live
 // theme environment, not something a widget extension can reuse verbatim. No family tint here (out of
 // scope — decisión #13 del épico, resuelta en otra rama): a filled token means «trained», not «which
 // routine».
 
 import SwiftUI
 import WidgetKit
-import StrandDesign
+import CenitDesign
 
 struct WeekEntry: TimelineEntry {
     let date: Date

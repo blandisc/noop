@@ -34,7 +34,7 @@ solapes entre partes de color distinto.
 ## Contrato de color
 
 Cada sello viste el token que `Instrumento.swift` le asigna a **su** métrica. Antes del handoff
-faltan por acuñar en `StrandDesign`:
+faltan por acuñar en `CenitDesign`:
 
 | Pendiente | Valor | Para |
 |---|---|---|

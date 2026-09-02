@@ -1,5 +1,5 @@
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandAnalytics
 
 // MARK: - Acto 6 · el perfil (FER-113)

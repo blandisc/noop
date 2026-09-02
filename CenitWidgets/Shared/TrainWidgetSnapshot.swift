@@ -55,7 +55,7 @@ public struct TrainWidgetSnapshot: Codable, Equatable, Sendable {
         }
     }
 
-    /// Mirrors `EntrenarHilo.Tone` (StrandDesign) case-for-case, but stays ITS OWN plain Codable enum
+    /// Mirrors `EntrenarHilo.Tone` (CenitDesign) case-for-case, but stays ITS OWN plain Codable enum
     /// rather than reusing `Tone` directly — the same reason `RestActivityBridge.Action` doesn't reuse
     /// a session-domain type: this file compiles into both the app and the extension, and a raw-string
     /// enum is the simplest thing that survives `JSONEncoder`/`JSONDecoder` across the process boundary.

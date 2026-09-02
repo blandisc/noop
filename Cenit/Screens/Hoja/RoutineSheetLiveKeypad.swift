@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandTraining
 
 // MARK: - HojaSesionViva — la consola contextual (FER-167 · F2, mock P3/P4)

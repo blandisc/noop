@@ -1,5 +1,5 @@
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandAnalytics
 
 // MARK: - OnboardingWizard  ·  el onboarding en siete actos (FER-109 · FER-113)

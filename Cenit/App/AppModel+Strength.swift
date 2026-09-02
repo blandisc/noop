@@ -1,5 +1,5 @@
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import Combine
 import Observation
 import BiometricStreams

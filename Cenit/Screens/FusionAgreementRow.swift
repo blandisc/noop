@@ -1,6 +1,6 @@
 import SwiftUI
 import StrandAnalytics
-import StrandDesign
+import CenitDesign
 
 /// FER-670 / FER-254: the quiet source-agreement read under a fused single-construct metric
 /// (steps / sleep total / active kcal). Shows each source's value VERBATIM plus whether they

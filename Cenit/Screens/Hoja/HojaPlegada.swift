@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandTraining
 
 // MARK: - HojaPlegada — la receta de una línea + «＋ Agregar ejercicio» (FER-166)
@@ -62,7 +62,7 @@ enum HojaPlegada {
             .contentShape(RoundedRectangle(cornerRadius: CenitMetrics.tileRadius, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: CenitMetrics.tileRadius, style: .continuous)
-                    .strokeBorder(LiquidColor.ambar.opacity(StrandOpacity.strokeSoft),
+                    .strokeBorder(LiquidColor.ambar.opacity(CenitOpacity.strokeSoft),
                                   style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
             )
         }

@@ -1,6 +1,6 @@
 import SwiftUI
 import Foundation
-import StrandDesign
+import CenitDesign
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 /// Haptic-paced breathing trainer — a timed breath pacer with a felt cue.

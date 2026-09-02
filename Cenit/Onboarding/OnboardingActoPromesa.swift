@@ -1,5 +1,5 @@
 import SwiftUI
-import StrandDesign
+import CenitDesign
 
 // MARK: - Actos 1 y 2 (+ la salida)  ·  FER-109
 //

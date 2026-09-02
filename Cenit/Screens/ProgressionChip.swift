@@ -1,5 +1,5 @@
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandTraining
 
 /// ↗ +2,5 kg cada 2 — active progression plan chip under an exercise name (RoutineEditor / Builder).
@@ -14,7 +14,7 @@ struct ProgressionChip: View {
 
     var body: some View {
         // FER-89: construido sobre `EntrenarChip` (E2) — encaja 1:1 con `.progression` (icono
-        // `arrow.up.right`, tono de avance positivo). Antes el icono (`StrandIcon.up`, «arrow.up»
+        // `arrow.up.right`, tono de avance positivo). Antes el icono (`CenitIcon.up`, «arrow.up»
         // liso) y el texto vivían en el hue de dato de recuperación — mal aplicado a un chip de
         // progresión (auditoría FER-89); la migración corrige el tono de paso.
         // `theme` queda sin uso en el cuerpo (EntrenarChip lee el environment de tema

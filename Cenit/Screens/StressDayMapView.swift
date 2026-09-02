@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandAnalytics
 
 // StressDayMapView.swift — the «mapa del día» block for the Detalle de Estrés (FER-377 · FER-860 ·
@@ -319,7 +319,7 @@ struct StressDayMapBlock: View {
     private func calendarsFooter(_ names: [String]) -> some View {
         Button { showPicker = true } label: {
             HStack(spacing: LiquidSpace.s150) {
-                StrandIcon.calendar.image
+                CenitIcon.calendar.image
                 Text("Calendars: \(names.isEmpty ? String(localized: "none") : names.joined(separator: ", "))")
                 Text("· change").underline()
             }

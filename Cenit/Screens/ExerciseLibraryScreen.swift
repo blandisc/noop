@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandTraining
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 
@@ -11,7 +11,7 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 // piel Liquid Glass · El Eje (`LiquidCampoBusqueda` · `EntrenarFilaEjercicio` · `.superficieSolida`).
 
 // MARK: - Touch target (FER-121)
-// The same principle as `PaperStepper.hitTarget` (FER-947, StrandDesign): padding + contentShape +
+// The same principle as `PaperStepper.hitTarget` (FER-947, CenitDesign): padding + contentShape +
 // negative padding cancel out in layout, so the visible control never changes size or pushes a
 // neighbor — only the area that answers a tap grows to 44pt (HIG).
 private extension View {
@@ -197,7 +197,7 @@ struct ExerciseLibraryScreen: View {
             }
         }
         // FER-121: el chip visible mide ~28pt de alto; el toque real crece a 44 (HIG) SOLO en
-        // vertical (mismo truco que `PaperStepper.hitTarget`, FER-947 en StrandDesign) para no
+        // vertical (mismo truco que `PaperStepper.hitTarget`, FER-947 en CenitDesign) para no
         // invadir al chip vecino del mismo renglón.
         .verticalHitTarget(visible: 28)
         .liquidMenu(isPresented: isPresented, items: rows)
@@ -326,9 +326,9 @@ struct ExerciseLibraryScreen: View {
     }
 
     private var addBar: some View {
-        // FER-289: `StrandCTAButton` sustituye a `InstrumentoAddButton`. `.solid` en creación
+        // FER-289: `CenitCTAButton` sustituye a `InstrumentoAddButton`. `.solid` en creación
         // (salida del flujo); `.outline` al agregar a rutina existente. Copy y disabled iguales.
-        StrandCTAButton(LocalizedStringKey(addBarLabel),
+        CenitCTAButton(LocalizedStringKey(addBarLabel),
                         kind: createFlow ? .solid : .outline) {
             onAdd?(exercises.filter { selected.contains($0.id) })
             dismiss()
@@ -525,7 +525,7 @@ struct CreateExerciseSheet: View {
                     Text(selection.wrappedValue.isEmpty ? placeholder : label(selection.wrappedValue))
                         .font(LiquidType.tituloGemela)
                         .foregroundStyle(selection.wrappedValue.isEmpty ? LiquidColor.tinta500 : LiquidColor.tinta700)
-                    StrandIcon.down.image.font(LiquidType.iconSF(size: 12)).foregroundStyle(LiquidColor.tinta500)
+                    CenitIcon.down.image.font(LiquidType.iconSF(size: 12)).foregroundStyle(LiquidColor.tinta500)
                 }
             }
             .buttonStyle(EntrenarPressStyle())
@@ -551,7 +551,7 @@ struct CreateExerciseSheet: View {
                 }
                 Spacer(minLength: LiquidSpace.s200)
                 if type == t {
-                    StrandIcon.confirm.image.font(LiquidType.iconSF(size: 15)).foregroundStyle(LiquidColor.tinta900)
+                    CenitIcon.confirm.image.font(LiquidType.iconSF(size: 15)).foregroundStyle(LiquidColor.tinta900)
                 }
             }
             .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s250).contentShape(Rectangle())

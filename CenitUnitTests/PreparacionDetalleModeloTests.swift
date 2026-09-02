@@ -1,7 +1,7 @@
 import XCTest
 import SwiftUI
 import StrandAnalytics
-import StrandDesign
+import CenitDesign
 @testable import Cenit
 
 /// El modelo de «Preparación · detalle»: la densificación de la rejilla y los estados.

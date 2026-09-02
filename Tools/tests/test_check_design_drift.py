@@ -82,7 +82,7 @@ class LegacyApiRule(unittest.TestCase):
 
     def test_design_package_definitions_are_not_hits(self):
         with tempfile.TemporaryDirectory() as tmp:
-            src = _swift(tmp, "Packages/StrandDesign/Sources/StrandDesign/Instrumento.swift",
+            src = _swift(tmp, "Packages/CenitDesign/Sources/CenitDesign/Instrumento.swift",
                          ["public struct InstrumentoTheme {}"])
             hits = drift.check([src], ["no-legacy-api"])
             self.assertEqual(hits, [])
@@ -235,10 +235,10 @@ class Fer271CommentGaps(unittest.TestCase):
             self.assertEqual(rules, ["no-spacing-literal", "token-exempt"], hits)
 
     def test_trailing_comment_legacy_symbol_is_not_a_hit(self):
-        # (c) `import StrandDesign // InstrumentoTheme` era falso positivo de no-legacy-api.
+        # (c) `import CenitDesign // InstrumentoTheme` era falso positivo de no-legacy-api.
         with tempfile.TemporaryDirectory() as tmp:
             src = _swift(tmp, "Cenit/System/RoutineDragAndDrop.swift",
-                         ["import StrandDesign   // InstrumentoTheme, CenitMetrics, StrandMotion"])
+                         ["import CenitDesign   // InstrumentoTheme, CenitMetrics, StrandMotion"])
             self.assertEqual(drift.check([src], ["no-legacy-api"]), [])
 
     def test_deprecated_metrics_es_prohibicion_y_respeta_carveouts(self):
@@ -294,7 +294,7 @@ class AntiEvasionRules(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             w = _swift(tmp, "CenitWidgets/X.swift", ["Color.white", "EdgeInsets(top: 1, leading: 2)",
                                                      "WidgetMetrics.hero + 2"])
-            pkg = _swift(tmp, "Packages/StrandDesign/Sources/StrandDesign/Y.swift",
+            pkg = _swift(tmp, "Packages/CenitDesign/Sources/CenitDesign/Y.swift",
                          ["Color(red: 0.1, green: 0.2, blue: 0.3)", "LiquidSpace.s400 + 8"])
             rules = ["no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic"]
             self.assertEqual(drift.check([w], rules), [], "Widgets/Watch: geometría de sistema")

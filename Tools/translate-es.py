@@ -1364,7 +1364,7 @@ ES: dict[str, str] = {
     "Not connected": "No conectado",
     "5-minute average · since midnight": "Promedio de 5 min · desde medianoche",
 
-    # Recovery ring state word (StrandDesign Palette.recoveryState).
+    # Recovery ring state word (CenitDesign Palette.recoveryState).
     "DEPLETED": "AGOTADO",
     "LOW": "BAJO",
     "MODERATE": "MODERADO",

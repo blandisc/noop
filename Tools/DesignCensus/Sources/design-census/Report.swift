@@ -184,7 +184,7 @@ struct CensusReport {
         md += "\n</details>\n\n"
 
         md += "## 5. Deuda por generación visual, por target [MEDIDO por símbolo]\n\n"
-        md += "Clasificado por qué símbolos importa cada archivo (`Liquid*` vs `Instrumento*`) — no por fecha ni autor. Un archivo sin ninguno de los dos símbolos queda `indeterminada` (probable candidato: no usa StrandDesign en absoluto, o usa solo tipos neutros como `Color`/`Font` del sistema).\n\n"
+        md += "Clasificado por qué símbolos importa cada archivo (`Liquid*` vs `Instrumento*`) — no por fecha ni autor. Un archivo sin ninguno de los dos símbolos queda `indeterminada` (probable candidato: no usa CenitDesign en absoluto, o usa solo tipos neutros como `Color`/`Font` del sistema).\n\n"
         md += "| Target | Liquid (vigente) | Instrumento (absorbida, en migración) | Indeterminada |\n|---|---|---|---|\n"
         for g in generationByTarget {
             md += "| \(g.target) | \(g.liquid) | \(g.instrumento) | \(g.indeterminada) |\n"
@@ -192,7 +192,7 @@ struct CensusReport {
         md += "\n"
 
         md += "## 6. Iconografía — vocabulario de SF Symbols literales [MEDIDO]\n\n"
-        md += "Usos de `Image(systemName: \"…\")` fuera de un token de icono — cada nombre distinto es un candidato a `StrandIcon` si se repite.\n\n"
+        md += "Usos de `Image(systemName: \"…\")` fuera de un token de icono — cada nombre distinto es un candidato a `CenitIcon` si se repite.\n\n"
         md += "| Símbolo | usos |\n|---|---|\n"
         for i in iconVocabulary.prefix(20) {
             md += "| `\(i.name)` | \(i.count) |\n"

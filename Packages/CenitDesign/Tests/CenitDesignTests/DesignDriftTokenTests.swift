@@ -1,0 +1,208 @@
+import XCTest
+import SwiftUI
+@testable import CenitDesign
+
+/// Auditoría jul-2026 (cierre de deriva del sistema de diseño). Ancla los tokens nuevos que absorben
+/// la deriva de las pantallas para que un cambio accidental de valor rompa CI en vez de derivar en
+/// silencio: la escala de glifos (H1) y la escala de opacidades (H4) (H3, los radios semánticos de
+/// tarjeta, se podó junto con `InstrumentoCard.swift`/`.instrumentoCard()`, FER-280·3c — 0 usos
+/// reales). No renderiza — son aserciones baratas y deterministas.
+final class DesignDriftTokenTests: XCTestCase {
+
+    // H1 — escala de glifos: cuatro escalones fijos, crecientes.
+    func test_glyphScaleIsFixedAndOrdered() {
+        XCTAssertEqual(StrandFont.GlyphSize.chevron.rawValue, 12)
+        XCTAssertEqual(StrandFont.GlyphSize.inline.rawValue, 15)
+        XCTAssertEqual(StrandFont.GlyphSize.lead.rawValue, 18)
+        XCTAssertEqual(StrandFont.GlyphSize.empty.rawValue, 34)
+        let sizes = [StrandFont.GlyphSize.chevron, .inline, .lead, .empty].map(\.rawValue)
+        XCTAssertEqual(sizes, sizes.sorted())
+    }
+
+    // H4 — escala de opacidades: valores sancionados, y `dim` == el precedente `disabledOpacity`.
+    func test_opacityScale() {
+        XCTAssertEqual(CenitOpacity.tintFill, 0.10)
+        XCTAssertEqual(CenitOpacity.tintFillStrong, 0.14)
+        XCTAssertEqual(CenitOpacity.strokeSoft, 0.30)
+        XCTAssertEqual(CenitOpacity.dim, 0.45)
+        XCTAssertEqual(CenitOpacity.muted, 0.60)
+        XCTAssertEqual(CenitOpacity.dim, StrandPalette.disabledOpacity,
+                       "`dim` debe seguir al precedente `disabledOpacity`")
+        let scale: [Double] = [CenitOpacity.tintFill, CenitOpacity.tintFillStrong,
+                               CenitOpacity.strokeSoft, CenitOpacity.dim, CenitOpacity.muted]
+        XCTAssertEqual(scale, scale.sorted())
+    }
+
+    // MARK: - FER-273 (Fase 1a, CONTRATO.md checklist Fase 1) — igualdad exacta de las 5 piezas
+    // token minteadas del censo (docs/design-system/CENSO.md §clusters). Ninguna se aplica a un
+    // call-site en este PR — estos tests solo anclan la CIFRA para que un cambio accidental
+    // rompa CI, igual que el resto de este archivo.
+
+    // (2) respiro horizontal de chip — CENSO «horizontal/chip handoff» (10 sitios, moda 9).
+    func test_chipHorizontalMatchesCensusMode() {
+        XCTAssertEqual(LiquidSpace.chipHorizontal, 9)
+    }
+
+    // (3) borde-de-tarjeta / respiro-de-fila — CENSO «edge ≠ rowVPad»: misma cifra (10) que
+    // `CenitMetrics.rowVPad`, dos roles nuevos y distintos entre sí, ninguno el legacy.
+    func test_seccionCantoAndFilaRespiroMatchCensusValueButNotRowVPadRole() {
+        XCTAssertEqual(LiquidSpace.seccionCanto, 10)
+        XCTAssertEqual(LiquidSpace.filaRespiro, 10)
+        XCTAssertEqual(LiquidSpace.seccionCanto, CenitMetrics.rowVPad,
+                        "misma CIFRA por diseño — el rol es lo que los distingue, no el número")
+    }
+
+    // (4) tipográfico cuerpo-de-banner 13pt — CENSO «cuerpo de banner (13pt, igual que el
+    // mensaje de ConfirmCard)»: comparte CIFRA con `LiquidType.clausulaCampo` (13), no familia.
+    func test_cuerpoBannerMatchesConfirmCardMessageSize() {
+        XCTAssertEqual(LiquidType.cuerpoBannerTamano, 13)
+    }
+
+    // (5) handoff 14 y handoff 44 (== mínimo táctil HIG, nombre propio) — CENSO «14 del
+    // handoff» / «44 del handoff».
+    func test_handoffSpacingTokens() {
+        XCTAssertEqual(LiquidSpace.handoff14, 14)
+        XCTAssertEqual(LiquidSpace.handoff44, 44)
+        XCTAssertEqual(LiquidSpace.handoff44, LiquidControl.hitTarget,
+                        "misma CIFRA que el mínimo táctil por diseño — el rol (gap de layout, no toque) es lo que los distingue")
+    }
+
+    // (6) chip compacto 11/5 — CENSO «chip 11/5 del handoff» (3 sitios, 2 exactos).
+    func test_chipCompactoMatchesCensusValue() {
+        XCTAssertEqual(LiquidChip.compactoHorizontal, 11)
+        XCTAssertEqual(LiquidChip.compactoVertical, 5)
+    }
+
+    // MARK: - FER-275 (Lote Uno, aprobación del dueño 2026-09-01) — igualdad exacta de las
+    // piezas minteadas en este lote.
+
+    func test_topeScrollMatchesCensusValue() {
+        XCTAssertEqual(LiquidSpace.topeScroll, 20)
+    }
+
+    func test_ctaVerticalMatchesCensusValue() {
+        XCTAssertEqual(LiquidSpace.ctaVertical, 15)
+    }
+
+    func test_liquidRadiusChipMatchesOwnerApprovedPixel() {
+        XCTAssertEqual(LiquidRadius.chip, 8)
+    }
+
+    func test_estadoVacioAireAndBloqueAjusteMatchCensusValueButAreDistinctRoles() {
+        XCTAssertEqual(LiquidSpace.estadoVacioAire, 14)
+        XCTAssertEqual(LiquidSpace.bloqueAjuste, 14)
+        XCTAssertEqual(LiquidSpace.estadoVacioAire, LiquidSpace.handoff14,
+                        "misma CIFRA por diseño — el rol (spacing de VStack, no padding de tarjeta) es lo que los distingue")
+    }
+
+    // MARK: - FER-269a (Fase 3, primera ola) — dimensión movimiento: 12 literal-curve-duration +
+    // 37 literal-transition del censo. Igualdad exacta de valor Y de curva/transición (por
+    // descripción — `Animation`/`AnyTransition` no son `Equatable`, pero dos valores construidos
+    // igual describen igual en este toolchain).
+
+    // Duraciones nuevas: cifras REALES más frecuentes del censo de movimiento (no inventadas).
+    func test_movimientoDuracionesMatchCensusValues() {
+        XCTAssertEqual(LiquidMotion.brief, 0.15)     // Watch check-toggle (2 sitios)
+        XCTAssertEqual(LiquidMotion.soft, 0.2)       // fase de respiración + reveal del héroe (3 sitios)
+        XCTAssertEqual(LiquidMotion.measured, 0.35)  // gates de arranque (2 sitios)
+    }
+
+    // Curvas nuevas: `settle` (easeOut) y `dismiss` (easeIn) deben producir EXACTAMENTE la misma
+    // animación que el literal crudo que envuelven — probado por descripción.
+    func test_movimientoCurvasMatchRawEquivalents() {
+        XCTAssertEqual(String(describing: LiquidMotion.settle(LiquidMotion.brief)),
+                       String(describing: Animation.easeOut(duration: 0.15)))
+        XCTAssertEqual(String(describing: LiquidMotion.dismiss(LiquidMotion.brief)),
+                       String(describing: Animation.easeIn(duration: 0.15)))
+        XCTAssertEqual(String(describing: LiquidMotion.settle(LiquidMotion.soft)),
+                       String(describing: Animation.easeOut(duration: 0.2)))
+        XCTAssertEqual(String(describing: LiquidMotion.ambient(LiquidMotion.soft)),
+                       String(describing: Animation.easeInOut(duration: 0.2)))
+        XCTAssertEqual(String(describing: LiquidMotion.ambient(LiquidMotion.measured)),
+                       String(describing: Animation.easeInOut(duration: 0.35)))
+    }
+
+    // FER-278a: springs nombrados por rol — mismos response/damping que el literal crudo (2+ sitios).
+    func test_movimientoSpringsMatchRawEquivalents() {
+        XCTAssertEqual(String(describing: LiquidMotion.filaDesliza),
+                       String(describing: Animation.spring(response: 0.32, dampingFraction: 0.86)))
+        XCTAssertEqual(String(describing: LiquidMotion.reciboRasga),
+                       String(describing: Animation.spring(response: 0.15, dampingFraction: 0.35)))
+    }
+
+    // FER-280·2e: puente valor-neutral StrandMotion → LiquidMotion (paridad congelada).
+    // Animation no es Equatable; igualdad por descripción del toolchain.
+    func test_strandMotionLiquidMotionParityFrozen() {
+        XCTAssertEqual(LiquidMotion.fundidoDuration, StrandMotion.durationStandard)
+        XCTAssertEqual(LiquidMotion.conteoDuration, 0.75)
+        XCTAssertEqual(String(describing: LiquidMotion.fundido),
+                       String(describing: StrandMotion.fade))
+        XCTAssertEqual(String(describing: LiquidMotion.suave),
+                       String(describing: StrandMotion.gentle))
+        XCTAssertEqual(String(describing: LiquidMotion.toque),
+                       String(describing: StrandMotion.interactive))
+        XCTAssertEqual(String(describing: LiquidMotion.heroe),
+                       String(describing: StrandMotion.hero))
+        XCTAssertEqual(String(describing: LiquidMotion.conteo),
+                       String(describing: StrandMotion.countUp))
+        XCTAssertNil(LiquidMotion.condicionado(.snappy, true))
+        XCTAssertNotNil(LiquidMotion.condicionado(.snappy, false))
+        XCTAssertNil(LiquidMotion.condicionado(nil, false))
+        XCTAssertEqual(
+            String(describing: LiquidMotion.condicionado(.snappy, false)!),
+            String(describing: StrandMotion.gated(.snappy, false)!)
+        )
+    }
+
+    // FER-280·3b: puente valor-neutral CenitMetrics → escala Liquid (paridad congelada).
+    // FER-287·1A: este test referencia a propósito los 8 símbolos deprecados de
+    // CenitMetrics (paridad congelada). El warning de deprecación es esperado;
+    // no silenciar — mismo patrón que test_strandMotionLiquidMotionParityFrozen.
+    func test_cenitMetricsLiquidScaleParityFrozen() {
+        XCTAssertEqual(CenitMetrics.space1, 4)
+        XCTAssertEqual(CenitMetrics.space2, 8)
+        XCTAssertEqual(CenitMetrics.gap, 12)
+        XCTAssertEqual(CenitMetrics.cardPadding, 16)
+        XCTAssertEqual(CenitMetrics.screenPadding, 24)
+        XCTAssertEqual(CenitMetrics.controlRadius, 12)
+        XCTAssertEqual(CenitMetrics.chipRadius, 8)
+        XCTAssertEqual(CenitMetrics.touchTarget, 44)
+    }
+
+    // Transiciones nuevas: cada receta debe describir EXACTAMENTE igual que el `AnyTransition`
+    // crudo que envuelve.
+    func test_movimientoTransicionesMatchRawEquivalents() {
+        XCTAssertEqual(String(describing: LiquidMotion.fadeTransition),
+                       String(describing: AnyTransition.opacity))
+        XCTAssertEqual(String(describing: LiquidMotion.risingFadeTransition),
+                       String(describing: AnyTransition.move(edge: .bottom).combined(with: .opacity)))
+        XCTAssertEqual(String(describing: LiquidMotion.fallingFadeTransition),
+                       String(describing: AnyTransition.move(edge: .top).combined(with: .opacity)))
+        XCTAssertEqual(String(describing: LiquidMotion.trailingTransition),
+                       String(describing: AnyTransition.move(edge: .trailing)))
+        XCTAssertEqual(String(describing: LiquidMotion.fadeOrIdentity(reduceMotion: false)),
+                       String(describing: AnyTransition.opacity))
+        XCTAssertEqual(String(describing: LiquidMotion.fadeOrIdentity(reduceMotion: true)),
+                       String(describing: AnyTransition.identity))
+    }
+}
+
+/// (1) `LiquidSectionHeader` — el componente Liquid que reemplaza `InstrumentoSectionBand`
+/// (sin banda de papel). Test barato de existencia/forma: el kicker reusa `LiquidType.kicker`
+/// y el `Trailing == EmptyView` sigue disponible cuando no hay acción — no renderiza, solo
+/// prueba que el API se construye con el mismo patrón que `InstrumentoSectionBand`.
+final class LiquidSectionHeaderTests: XCTestCase {
+    @MainActor func test_initWithAndWithoutTrailingCompiles() {
+        _ = LiquidSectionHeader("Título")
+        _ = LiquidSectionHeader("Título") { Text("acción") }
+    }
+}
+
+// FER-275 punto 3 (veredicto del dueño: los «20» son roles, no colisión — cero pixel):
+final class LiquidSpaceFase1Tests: XCTestCase {
+    func test_fase1_rolesVeinteSonValorNeutral() {
+        XCTAssertEqual(LiquidSpace.seccionAire, 20)
+        XCTAssertEqual(LiquidSpace.tarjetaAmplia, 20)
+        XCTAssertEqual(LiquidSpace.pastillaHorizontal, 20)
+    }
+}

@@ -9,7 +9,7 @@
 // The glyph is the «dial diurno»: a 24-hour ring, the daytime arc swept in warm
 // ember-orange over the top, the cénit notch at 12 o'clock (the highest point —
 // the name), and a green "now" dot riding the arc. No needle: the dot leads.
-// Colours come from `InstrumentoTheme.base` in StrandDesign (kept in sync by
+// Colours come from `InstrumentoTheme.base` in CenitDesign (kept in sync by
 // hand; this script has no package deps so it runs as a plain `swift` file).
 //
 // Run:  swift Tools/gen-icon.swift CenitApp/Resources/Assets.xcassets/AppIcon.appiconset
@@ -20,7 +20,7 @@ import CoreGraphics
 import ImageIO
 import UniformTypeIdentifiers
 
-// MARK: - Palette (InstrumentoTheme.base — Packages/StrandDesign/Sources/StrandDesign/Instrumento.swift)
+// MARK: - Palette (InstrumentoTheme.base — Packages/CenitDesign/Sources/CenitDesign/Instrumento.swift)
 
 struct RGBA { let r, g, b, a: CGFloat }
 func hex(_ s: String, alpha: CGFloat = 1) -> RGBA {

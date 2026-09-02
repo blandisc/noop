@@ -1,5 +1,5 @@
 import SwiftUI
-import StrandDesign
+import CenitDesign
 
 // MetricIdentity.swift — the ONE «catalog metric → Liquid identity» bridge (FER-104 / TND-29, foco 4).
 //

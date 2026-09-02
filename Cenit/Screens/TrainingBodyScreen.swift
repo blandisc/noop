@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandAnalytics
 import StrandTraining
 import Inject   // recarga en caliente (dev-only, inerte en Release)
@@ -35,7 +35,7 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 // (the atlas + the «most loaded» ranking); `MuscleVolumeScreen.swift` (the 30d/90d/6m/1y span picker
 // vs the Schoenfeld band) folded in as `volumeSection` below, inline — no more push to a child screen.
 // Three changes came with the fusion, each documented at its call site: (1) `ranking`/`peekCard`'s
-// hand-rolled rows became `MuscleLoadRow` (StrandDesign · E2), which also DROPPED the 3-way
+// hand-rolled rows became `MuscleLoadRow` (CenitDesign · E2), which also DROPPED the 3-way
 // fresh/moderate/loaded color word — that was a second, inconsistent color language for the same
 // «recency» concept `LiquidColor.verdePrimario` already owns for the day's bullet (see `loadRow` below); (2) the
 // volume section's own «ⓘ How this is measured» sheet was NOT carried over — its citation (Schoenfeld
@@ -233,8 +233,8 @@ struct TrainingBodyScreen: View {
     }
 
     /// «Sáb 15 ago» — el mismo helper compartido que usa la cabecera de la landing
-    /// (`StrandFormat.weekdayHeading`, quisquilloso ronda 4: antes dos copias a mano).
-    private var cabeceraFecha: String { StrandFormat.weekdayHeading(Date()) }
+    /// (`CenitFormat.weekdayHeading`, quisquilloso ronda 4: antes dos copias a mano).
+    private var cabeceraFecha: String { CenitFormat.weekdayHeading(Date()) }
 
     @ViewBuilder private var hiloDelVeredicto: some View {
         if let hilo = LiquidHoyBuilder.hiloEntrenar(
@@ -329,7 +329,7 @@ struct TrainingBodyScreen: View {
             Circle().fill(theme.muscleStateColor(m.relative))
                 .frame(width: 7, height: 7)
             Text(MuscleAtlas.name(m.muscle)).font(LiquidType.filaConteo).fontWeight(.semibold).foregroundStyle(LiquidColor.papelTarjeta)
-            Text(stateSuffix(m.state)).font(LiquidType.filaConteo).foregroundStyle(LiquidColor.papelTarjeta.opacity(StrandOpacity.muted))
+            Text(stateSuffix(m.state)).font(LiquidType.filaConteo).foregroundStyle(LiquidColor.papelTarjeta.opacity(CenitOpacity.muted))
         }
         .padding(.horizontal, LiquidChip.compactoHorizontal).padding(.vertical, LiquidChip.compactoVertical)
         .background(LiquidColor.tinta900, in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
@@ -337,7 +337,7 @@ struct TrainingBodyScreen: View {
     }
 
     /// One muscle's row, fed straight from the engine's two readings (recency load + 7-day sets) —
-    /// `MuscleLoadRow` (StrandDesign · E2), never a hand-rolled row. Shared by `ranking` and
+    /// `MuscleLoadRow` (CenitDesign · E2), never a hand-rolled row. Shared by `ranking` and
     /// `peekCard` (FER-91 · E10): before the fusion each had its own bespoke HStack, and `peekCard`
     /// additionally painted a 3-way fresh/moderate/loaded color word (`stateWord`/`stateColor`,
     /// retired with it) — a second color language for the same «how loaded is it» question the
@@ -457,7 +457,7 @@ struct TrainingBodyScreen: View {
             Text("Load").liquidLabel().frame(maxWidth: 120, alignment: .leading)
             Text(verbatim: "yesterday").font(LiquidType.filaConteo).fixedSize(horizontal: true, vertical: false).hidden()
             Text("Sets · 7 d").liquidLabel()
-            StrandIcon.disclosure.image.font(LiquidType.infoGlifoCompacto.weight(.semibold)).hidden()
+            CenitIcon.disclosure.image.font(LiquidType.infoGlifoCompacto.weight(.semibold)).hidden()
         }
         .foregroundStyle(LiquidColor.tinta500)
         .accessibilityHidden(true)
@@ -864,7 +864,7 @@ private struct BodyFiguresView: View {
                     let isTop = highlight == item.muscle
                     shape
                         .fill(color(for: item.muscle))
-                        .overlay(shape.stroke(isTop ? LiquidColor.tinta900 : LiquidColor.vidrioBordeFuerte.opacity(StrandOpacity.dim),
+                        .overlay(shape.stroke(isTop ? LiquidColor.tinta900 : LiquidColor.vidrioBordeFuerte.opacity(CenitOpacity.dim),
                                               lineWidth: isTop ? 2 : 0.6))
                         .contentShape(shape)
                         .onTapGesture { onSelect(item.muscle) }

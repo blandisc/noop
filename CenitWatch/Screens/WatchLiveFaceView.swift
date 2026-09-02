@@ -1,5 +1,5 @@
 import SwiftUI
-import StrandDesign
+import CenitDesign
 
 /// The live session face (states 3, 4, 7, 8, 9) plus the swipe-in control page. A single `TabView` page
 /// carries the metrics; a second page carries «Terminar». Exactly one hero at a time — the heart rate,

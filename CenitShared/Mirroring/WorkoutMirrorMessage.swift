@@ -84,9 +84,9 @@ public enum WorkoutMirrorMessage: Codable, Equatable {
     ///
     /// `toneRaw` is a plain `String` (one of `"clear"/"caution"/"ease"/"hollow"`), NOT
     /// `EntrenarHilo.Tone` embedded: that type is `Sendable, Hashable` but not `Codable`, and giving it
-    /// `Codable` would force `CenitShared` to import `StrandDesign`, which it deliberately does not
+    /// `Codable` would force `CenitShared` to import `CenitDesign`, which it deliberately does not
     /// (`RestActivitySnapshot`'s `phaseRaw`/`sessionPhaseRaw` set this exact precedent — a raw String for
-    /// an enum owned by another layer). `CenitWatch` — which already imports `StrandDesign` to paint —
+    /// an enum owned by another layer). `CenitWatch` — which already imports `CenitDesign` to paint —
     /// is the one that translates `toneRaw` back to `EntrenarHilo.Tone` on receipt, falling back to
     /// `.hollow` on anything unrecognized (never a crash).
     case idleContext(word: String?, toneRaw: String?, advice: String?, routineName: String?)

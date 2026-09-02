@@ -1,5 +1,5 @@
 import SwiftUI
-import StrandDesign
+import CenitDesign
 
 // MARK: - FER-61 · La hoja-manual «Tu contexto»
 //

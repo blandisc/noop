@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandTraining
 
 // MARK: - «Tu semana · editor» (FER-138)

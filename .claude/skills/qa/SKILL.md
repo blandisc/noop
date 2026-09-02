@@ -52,7 +52,7 @@ funcionar", **no está verificado.**
 | Que build esté verde y los tests del área pasen (re-ejecutados por ti) | Re-abrir el alcance o los criterios → eso es `/pm` |
 | Estados y casos límite (incl. vacío, sin permiso HealthKit, offline) | Elegir diseño o tokens → eso es `/ui` |
 | Que el cambio **se quedó en su alcance** (no metió cosas de "Fuera de alcance") | |
-| Trabajo de pantalla: que el render real coincida con el preview HTML aprobado y use solo tokens de StrandDesign (sin hex/spacing inline) | |
+| Trabajo de pantalla: que el render real coincida con el preview HTML aprobado y use solo tokens de CenitDesign (sin hex/spacing inline) | |
 | Reglas no negociables de NOOP que el cambio toque (ver abajo) | |
 
 ## Proceso
@@ -100,9 +100,9 @@ Recorre los criterios buscando el caso que NO se probó:
 
 ### 5. Trabajo de pantalla — verificación visual
 Si hubo pasada de UI con **preview HTML aprobado**: confirma que la pantalla
-implementada **coincide con ese preview** y que usa **solo tokens de StrandDesign**
+implementada **coincide con ese preview** y que usa **solo tokens de CenitDesign**
 — ningún hex, font size o spacing inline en el diff. Si el cambio es a un componente
-de StrandDesign con snapshot de regresión, re-ejecuta ese `swift test`. Si difiere
+de CenitDesign con snapshot de regresión, re-ejecuta ese `swift test`. Si difiere
 del preview aprobado o mete tokens inline, es FAIL.
 
 ### 6. Emite el veredicto (el gate)
@@ -168,7 +168,7 @@ permiso de HealthKit."]
   llamada de red, es FAIL inmediato.
 - **BLE seguro.** Nada destructivo; CRC-gate en cada frame; `crcOK == false` se
   rechaza. Cambio en bytes de salida = alto riesgo, exige verificación en hardware.
-- **Design system es ley.** Solo tokens de StrandDesign; sin hex/font/spacing inline.
+- **Design system es ley.** Solo tokens de CenitDesign; sin hex/font/spacing inline.
 - **Math transparente.** Aproximaciones documentadas, con test y método citado; sin
   claims clínicos.
 - **Migraciones append-only**, con su `MigrationTests`.

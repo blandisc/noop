@@ -1,5 +1,5 @@
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandAnalytics
 
 // MARK: - Acto 7 · El ciclo y la mañana (FER-109)

@@ -115,7 +115,7 @@ def lighten(hex_, dl):
 # ---------------------------------------------------------------- COLOR
 # Contrato: cada sello viste el token que el SSOT de la app (Instrumento.swift +
 # MetricGlyph.swift) le asigna a SU métrica. `T` = ya es token; `A` = hondo por acuñar
-# en StrandDesign (derivado del token base, documentado en el handoff).
+# en CenitDesign (derivado del token base, documentado en el handoff).
 C = dict(
     sueno=('#5D5A9E', '#3F3C78'),    # T dataSleep      / T dataSleepDeep
     reposo=('#B85068', '#8E3A50'),   # T dataHeart      / A (no emitido: talla en negativo)
@@ -353,7 +353,7 @@ assert n1 == 1 and n2 == 1, f'inyección fallida: FORGED={n1} DROP={n2}'
 open(page, 'w').write(src)
 print(f'forjados {len(OUT)} glifos · inyectados en {page}')
 
-# ---- emisión de Swift: los mismos paths, para StrandDesign (una sola fuente) ----
+# ---- emisión de Swift: los mismos paths, para CenitDesign (una sola fuente) ----
 CASO = {'sueno': 'sueno', 'reposo': 'reposo', 'guardian': 'guardian', 'piel': 'piel',
         'resp': 'respiracion', 'carga': 'carga', 'esfuerzo': 'esfuerzo', 'hrv': 'hrv',
         'estres': 'estres', 'pasos': 'pasos'}
@@ -389,8 +389,8 @@ for k in PARTS:
 swift += ['        }', '    }', '}', '']
 
 destino = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                       '..', '..', 'Packages', 'StrandDesign', 'Sources',
-                       'StrandDesign', 'LiquidGlass', 'SelloMetricaPaths.swift')
+                       '..', '..', 'Packages', 'CenitDesign', 'Sources',
+                       'CenitDesign', 'LiquidGlass', 'SelloMetricaPaths.swift')
 destino = os.path.normpath(destino)
 with open(destino, 'w') as f:
     f.write('\n'.join(swift))

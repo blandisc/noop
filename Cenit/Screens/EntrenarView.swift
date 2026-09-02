@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandTraining
 import StrandAnalytics
 import Inject   // recarga en caliente (dev-only, inerte en Release)
@@ -819,7 +819,7 @@ private struct EntrenarLanding: View {
     }
 
     // MARK: - ③ «LA SESIÓN DE HOY» (handoff v4b: the day's detail in its own band section)
-    // (The sunken section band itself is `LiquidFranjaSeccion` / `LiquidSectionHeader` in StrandDesign
+    // (The sunken section band itself is `LiquidFranjaSeccion` / `LiquidSectionHeader` in CenitDesign
     // — promoted in FER-940 when «Tu Plan» adopted the same header.)
     //
     // Big Grotesk numerals for the session's shape (min · exercises · sets), the earned raise as the
@@ -950,7 +950,7 @@ private struct EntrenarLanding: View {
             HStack(spacing: LiquidSpace.s100) {
                 Text("Other ways")
                     .font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
-                StrandIcon.down.image
+                CenitIcon.down.image
                     .font(LiquidType.iconSF(size: 12).weight(.semibold))
                     .foregroundStyle(LiquidColor.tinta500)
                     .rotationEffect(.degrees(otraFormaAbierta ? 180 : 0))
@@ -1047,7 +1047,7 @@ private struct EntrenarLanding: View {
                     .font(LiquidType.cuerpoBanner)
                     .foregroundStyle(LiquidColor.tinta700)
                 Spacer(minLength: LiquidSpace.s200)
-                StrandIcon.disclosure.image.font(LiquidType.iconSF(size: 15).weight(.semibold))
+                CenitIcon.disclosure.image.font(LiquidType.iconSF(size: 15).weight(.semibold))
                     .foregroundStyle(LiquidColor.tinta500)
                     .accessibilityHidden(true)
             }
@@ -1163,7 +1163,7 @@ private struct EntrenarLanding: View {
                     Button { showLibrary = true } label: {
                         HStack(spacing: LiquidSpace.s100) {
                             Text("From scratch").font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
-                            StrandIcon.disclosure.image
+                            CenitIcon.disclosure.image
                                 .font(LiquidType.iconSF(size: 12).weight(.semibold)).foregroundStyle(LiquidColor.tinta500)
                                 .accessibilityHidden(true)
                         }
@@ -1175,7 +1175,7 @@ private struct EntrenarLanding: View {
                     Button { showHubImport = true } label: {
                         HStack(spacing: LiquidSpace.s100) {
                             Text("Import your AI's plan").font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
-                            StrandIcon.disclosure.image
+                            CenitIcon.disclosure.image
                                 .font(LiquidType.iconSF(size: 12).weight(.semibold)).foregroundStyle(LiquidColor.tinta500)
                                 .accessibilityHidden(true)
                         }
@@ -1375,9 +1375,9 @@ private struct EntrenarLanding: View {
 
     /// La fecha de hoy en la plantilla localizada «EEE d MMM» («sáb 15 ago» / «Sat 15 Aug»), con la
     /// inicial en mayúscula — la plantilla de weekday corto sale toda en minúsculas en es-MX.
-    /// `StrandFormat.weekdayHeading` (StrandDesign): mismo helper compartido con la cabecera de «Tu
+    /// `CenitFormat.weekdayHeading` (CenitDesign): mismo helper compartido con la cabecera de «Tu
     /// cuerpo» (quisquilloso ronda 4: antes dos copias a mano).
-    private var cabeceraFecha: String { StrandFormat.weekdayHeading(Date()) }
+    private var cabeceraFecha: String { CenitFormat.weekdayHeading(Date()) }
 
     /// El hilo del veredicto: la misma pastilla que es la puerta de Hoy, construida por el MISMO
     /// constructor (`LiquidHoyBuilder.hiloEntrenar`) para que las dos pantallas no puedan divergir.

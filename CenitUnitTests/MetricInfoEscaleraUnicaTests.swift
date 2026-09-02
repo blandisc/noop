@@ -1,7 +1,7 @@
 import XCTest
 import SwiftUI
 import StrandAnalytics
-import StrandDesign
+import CenitDesign
 @testable import Cenit
 
 /// La guarda del contrato de TND-19 (FER-103): el catálogo tiene UNA sola escalera por métrica —

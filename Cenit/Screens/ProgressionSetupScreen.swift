@@ -1,5 +1,5 @@
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandTraining
 import StrandAnalytics
 
@@ -133,7 +133,7 @@ struct ProgressionSetupScreen: View {
                 }
                 .liquidGlass(.superficieSolida)
                 .disabled(!enabled)
-                .opacity(enabled ? 1 : StrandOpacity.dim)
+                .opacity(enabled ? 1 : CenitOpacity.dim)
                 .padding(.top, LiquidSpace.bloqueAjuste)
             }
             .padding(.horizontal, LiquidSpace.s600)

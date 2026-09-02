@@ -1,13 +1,13 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandTraining
 
 // MARK: - HojaTarjetaSuperserieCompuesta — la superserie compuesta con `HojaTarjetaSuperserie` (FER-166)
 //
 // Mock `hoja-pantallas.html` P1 `.ss2` / mapa C2: tarjeta única, nombre real («Zancadas ＋ Curl
 // femoral»), SIN letras A1/A2 — decisión vigente, el recorte A5 del mapa que sigue con letras está
-// stale. `HojaTarjetaSuperserie` (StrandDesign) trae el cristal cian + header + pie; esta vista
+// stale. `HojaTarjetaSuperserie` (CenitDesign) trae el cristal cian + header + pie; esta vista
 // arma sus filas y su «···».
 //
 // Decisión (documentada en el reporte): el mock dibuja UNA fila por MIEMBRO, no una por ronda —

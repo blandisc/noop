@@ -1,5 +1,5 @@
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import CenitStore
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 

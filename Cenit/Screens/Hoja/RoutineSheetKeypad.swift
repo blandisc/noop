@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandTraining
 
 // MARK: - RoutineSheet — captura con el keypad de la sesión (FER-166)

@@ -1,6 +1,6 @@
 import XCTest
 import SwiftUI
-import StrandDesign
+import CenitDesign
 @testable import Cenit
 
 /// Guarda de los cimientos de la migración del aterrizaje de Tendencias (CuerpoView) a Liquid Glass

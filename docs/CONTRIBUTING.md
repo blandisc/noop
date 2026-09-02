@@ -79,7 +79,7 @@ Cenit/
 │   ├── StrandAnalytics/        # HRV / recovery / strain / sleep / correlation math
 │   ├── StrandTraining/         # strength domain types, catalog, sets/reps rules (pure)
 │   ├── StrandImport/           # Apple Health importers
-│   └── StrandDesign/           # SwiftUI design system (palette, components, charts)
+│   └── CenitDesign/           # SwiftUI design system (palette, components, charts)
 └── Tools/                      # dev scripts (i18n, design lint, screenshots, icon, DerivedData prune)
 ```
 
@@ -91,7 +91,7 @@ Cenit/
 | Computing recovery / strain / HRV / sleep / correlations | `Packages/StrandAnalytics` | Pure, database-free analyzers. |
 | Strength domain types & rules (exercise catalog, sets/reps modeling, progression) | `Packages/StrandTraining` | Pure domain; live session state & persistence → app layer (`Cenit/`). |
 | Parsing Apple Health `export.xml` | `Packages/StrandImport` | Streaming SAX XML. |
-| Colors, fonts, motion, cards, charts | `Packages/StrandDesign` | No external UI deps; bridges AppKit/UIKit. |
+| Colors, fonts, motion, cards, charts | `Packages/CenitDesign` | No external UI deps; bridges AppKit/UIKit. |
 | HealthKit sync, import glue, repository | `CenitApp/Health`, `Cenit/Data` | App layer. |
 | A screen or navigation destination | `Cenit/Screens`, `Cenit/System` | App layer. |
 
@@ -145,7 +145,7 @@ the whole app and needs no HealthKit hardware:
 cd Packages/StrandAnalytics && swift build && swift test
 cd Packages/CenitStore     && swift build && swift test
 cd Packages/StrandImport   && swift build && swift test
-cd Packages/StrandDesign   && swift build && swift test
+cd Packages/CenitDesign   && swift build && swift test
 ```
 
 ### iOS app
@@ -200,13 +200,13 @@ simulator is booted and no test is executed. (FER-986)
 
 ## The design system is the law
 
-`StrandDesign` is the single source of visual truth. **Every screen composes only its tokens and
+`CenitDesign` is the single source of visual truth. **Every screen composes only its tokens and
 components.** Do not hardcode colors, sizes, fonts, or invent ad-hoc cards.
 
 ### Color — `StrandPalette` only
 
 Never write a raw hex value or a system color in a screen. Pull from
-`Packages/StrandDesign/Sources/StrandDesign/Palette.swift`:
+`Packages/CenitDesign/Sources/CenitDesign/Palette.swift`:
 
 ```swift
 // ✅ correct
@@ -255,7 +255,7 @@ Spacing and sizing come from `CenitMetrics` (`cardRadius`, `cardPadding`, `gap`,
 (`interactive`, `gentle`, `hero`, …). Do not introduce magic numbers for these.
 
 **If you find yourself writing a one-off card, gradient, font size, or animation in a screen, stop**
-— either it already exists in `StrandDesign`, or it should be added there (with a `#Preview`) and
+— either it already exists in `CenitDesign`, or it should be added there (with a `#Preview`) and
 then used. Screens stay thin; the system stays canonical.
 
 ### Copy — `LENGUAJE.md` is the voice
@@ -276,10 +276,10 @@ Both are honest about current gaps (e.g. plurals are used on 2 keys out of ~939 
 
 ### No drift — the two rules, enforced by a linter (auditoría jul-2026)
 
-1. **Any visual pattern that appears ≥3 times is promoted to `StrandDesign`** with a snapshot test —
+1. **Any visual pattern that appears ≥3 times is promoted to `CenitDesign`** with a snapshot test —
    never copy-pasted a fourth time. The card surface is `.instrumentoCard(_:)` (never a hand-rolled
    `.background(surface, in: RoundedRectangle) + .overlay(stroke)`); glyphs use `StrandFont.glyph(_:)`;
-   microtext uses `StrandFont.micro`; opacities use `StrandOpacity` (or the `theme.tint(_:)` helpers).
+   microtext uses `StrandFont.micro`; opacities use `CenitOpacity` (or the `theme.tint(_:)` helpers).
 2. **No new visual value enters as a literal** — first the token, then the use. A raw hex, a
    `.font(.system(size:))`, a literal `cornerRadius:`, or a magic `.opacity(0.NN)` in a screen is
    rejected by `Tools/check-design-drift.py` (run in `design-tokens.yml` CI and the pre-commit hook).
@@ -303,7 +303,7 @@ that debt *per file*: one literal more than a file already had fails CI, the pre
 `python3 Tools/check-design-drift.py --rules no-spacing-literal --write-baseline Tools/design-drift-baseline.json Cenit/Screens`
 — the number only goes down. It extends to `CenitWidgets`/`CenitWatch` when FER-219 closes. The token blocks in
 `docs/design-system/tokens/design-tokens.json` and the color tables in `DESIGN.md` are **generated**
-from the Swift by `swift run StrandDesignTokens` — never hand-edit them; run the generator and commit.
+from the Swift by `swift run CenitDesignTokens` — never hand-edit them; run the generator and commit.
 
 ---
 
@@ -365,7 +365,7 @@ to the Explore / Compare / tile UI. The catalog is the contract.
 
 ### Add a new screen
 
-1. **Build it from `StrandDesign`.** Compose from [`docs/design-system/CATALOGO.md`](design-system/CATALOGO.md)
+1. **Build it from `CenitDesign`.** Compose from [`docs/design-system/CATALOGO.md`](design-system/CATALOGO.md)
    (`liquidGlass(_:)`, `StatTile`, etc.); pull every color/font/size from `StrandPalette` /
    `StrandFont` / `CenitMetrics`. Use the shared `ScreenScaffold` for the standard screen chrome
    (see existing screens in `Cenit/Screens`).
@@ -456,7 +456,7 @@ Also note `app.tabBars` is **empty**: the native bar is hidden app-wide in favou
 - **One concern per PR.** Keep a schema migration and a UI change in separate commits/PRs where
   practical.
 - **Show your verification.** For analytics, cite the method and add a test. For UI, confirm it uses
-  only `StrandDesign` tokens.
+  only `CenitDesign` tokens.
 - **Anonymous, project-voice.** Documentation and comments are written in a neutral, third-person
   project voice. Keep dependency credits (`GRDB.swift`, `ZIPFoundation`) intact.
 - **No proprietary material.** Don't add third-party firmware, decompiled app code, logos, or

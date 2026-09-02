@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandTraining
 
 // MARK: - HojaFoco — el modo enfoque (FER-170 · F5, épico FER-165)
@@ -13,7 +13,7 @@ import StrandTraining
 // cuelga detrás de la tarjeta activa). FER-187: también el tap del cromo (thumb+nombre) de la
 // tarjeta activa, y el arrastre-hacia-abajo del grabber (`FocoCabecera.onArrastrarCerrar`) — el
 // DragGesture NO vive sobre el ScrollView. Este archivo es D1 (captura) · D2 (descanso) · D3 (HECHO),
-// compuestos con `FocoHeroe`/`FocoCabecera` (StrandDesign/Entrenar, F3) — NO se redibujan.
+// compuestos con `FocoHeroe`/`FocoCabecera` (CenitDesign/Entrenar, F3) — NO se redibujan.
 //
 // REGLA DURA: cero identidad por índice. `focusDoneRunId`/`pendingFocusDoneRunId` (en
 // `HojaSesionViva`) son `run.id`; ‹ › resuelve el vecino por identidad (`focoNeighbor`) y solo
@@ -380,7 +380,7 @@ struct HojaFoco: View {
     }
 
     /// El toggle TIEMPO/FC — mismo lenguaje de pastilla de dos segmentos que `CompactTrendToggle`
-    /// (StrandDesign), sin generalizar ese componente (está acoplado a `TrendMode`, un concepto
+    /// (CenitDesign), sin generalizar ese componente (está acoplado a `TrendMode`, un concepto
     /// ajeno): misma receta (padding 3, cápsula, segmento activo en tinta), en `InstrumentoTheme`
     /// (el ambiente de esta pantalla, igual que `RestBand`).
     private var combustibleToggle: some View {
@@ -506,7 +506,7 @@ struct HojaFoco: View {
 
 /// Constantes locales de `HojaFoco` (mock `hoja-pantallas.html` P6 / `hoja-mapa.html` D1-D3). No
 /// viven en `EntrenarTokens`: son geometría propia de ESTA composición, no un molde reusado en otra
-/// pantalla — mismo criterio que `FocoHeroeMetrics`/`FocoCabeceraMetrics` en StrandDesign.
+/// pantalla — mismo criterio que `FocoHeroeMetrics`/`FocoCabeceraMetrics` en CenitDesign.
 private enum FocoMetrics {
     static var contentTop: CGFloat { 26 }
     static var heroGap: CGFloat { 16 }

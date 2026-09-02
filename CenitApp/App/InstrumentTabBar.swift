@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 
 // MARK: - «Barra de instrumento» — the bottom tab bar (FER-163)
 //
