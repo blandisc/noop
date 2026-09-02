@@ -507,7 +507,7 @@ private struct GlyphButton<I: AppIntent>: View {
 // MARK: - Shared pieces
 
 /// Tint intentionally below the AA text floor for no-data / stale chrome on the lock-screen card.
-private var lockInkDim: Color { OKLab.mix(LiquidColor.tinta500, LiquidColor.fondoAlto, 0.5) }
+private var lockInkDim: Color { LiquidColor.tinta500 }   // tinta terciaria: el chrome sin dato usa el mismo token que en la app (OKLab.mix es interno al paquete)
 
 /// An uppercase tracking overline — «Descanso · 8/18 series», «Al volver», «Tope».
 private struct Overline: View {
