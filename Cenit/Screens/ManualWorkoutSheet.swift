@@ -140,27 +140,37 @@ struct ManualWorkoutSheet: View {
     /// surface otherwise (mirrors the disabled Save the form has always had, in the light language).
     private var saveButton: some View {
         let enabled = builtRow != nil
-        return Button { save() } label: {
-            Group {
-                if enabled {
-                    Text(editing == nil ? "Add" : "Save")
+        let title: LocalizedStringKey = editing == nil ? "Add" : "Save"
+        return Group {
+            if enabled {
+                OutlineCapsule(
+                    size: .aMedida(
+                        insets: EdgeInsets(top: LiquidSpace.s225, leading: LiquidSpace.pastillaHorizontal,
+                                           bottom: LiquidSpace.s225, trailing: LiquidSpace.pastillaHorizontal),
+                        minHeight: nil,
+                        touchInset: .zero),
+                    filled: true,
+                    fill: LiquidColor.verdePrimario,
+                    action: { save() }
+                ) {
+                    Text(title)
                         .font(LiquidType.boton)
                         .foregroundStyle(LiquidColor.papelTarjeta)
-                        .padding(.horizontal, LiquidSpace.pastillaHorizontal).padding(.vertical, LiquidSpace.s225)
-                        .background(LiquidColor.verdePrimario, in: Capsule(style: .continuous))
-                } else {
-                    // FER-220: la cápsula deshabilitada usa `.liquidGlass(.pastillaSolida)`
-                    // (recorte opaco compartido); el verde del CTA activo es color semántico.
-                    Text(editing == nil ? "Add" : "Save")
+                }
+            } else {
+                // FER-220: la cápsula deshabilitada usa `.liquidGlass(.pastillaSolida)`
+                // (recorte opaco compartido); el verde del CTA activo es color semántico.
+                Button { save() } label: {
+                    Text(title)
                         .font(LiquidType.boton)
                         .foregroundStyle(LiquidColor.tinta500)
                         .padding(.horizontal, LiquidSpace.pastillaHorizontal).padding(.vertical, LiquidSpace.s225)
                         .liquidGlass(.pastillaSolida)
                 }
+                .buttonStyle(.plain)
+                .disabled(true)
             }
         }
-        .buttonStyle(.plain)
-        .disabled(!enabled)
         .accessibilityLabel(editing == nil ? "Add workout" : "Save workout")
     }
 

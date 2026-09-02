@@ -631,6 +631,11 @@ public let catalogEntries: [CatalogEntry] = [
                  archivo: "LiquidGlass/LiquidAviso.swift",
                  cuandoUsarlo: "Heads-up / desconexión / nudge en pantalla Liquid — `LiquidPatternBlock` + `liquidTarjetaSeccion` (receta HealthAlertBanner); icono/CTA opcionales.",
                  cuandoNo: "No snack de deshacer (`UndoToast`); no error de escritura (`.saveErrorToast`); no banner Instrumento de Hoy aún sin migrar (`TodayBanner`)."),
+    // —— Rampas de dato (FER-317 / catálogo FER-319) ——
+    CatalogEntry(rol: "Rampas de dato Liquid", simbolo: "LiquidRampas",
+                 archivo: "LiquidGlass/LiquidRampas.swift",
+                 cuandoUsarlo: "Color de zona HR (`hrZone`), fatiga muscular 0…1 (`muscleLoad`) o tinte de familia de movimiento (`movementFamilyTint`) sin tocar `InstrumentoTheme` desde pantallas.",
+                 cuandoNo: "No inventar rampas locales; no leer `InstrumentoTheme.base.hrZoneRamp`/`muscleLoadColor`/`movementFamilyTint` desde `Cenit/`/`CenitApp/`."),
 ]
 
 func catalogoTable() -> String {

@@ -83,7 +83,7 @@ public struct ExerciseCard: View {
     }
 
     @ViewBuilder private var thumbnail: some View {
-        let shape = RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: LiquidRadius.insetTarjeta, style: .continuous)
         if let customThumb {
             // La vista propia (p.ej. `SessionRunThumb`) ya dibuja su placeholder — solo se enmarca
             // con el mismo aro de familia que el resto de las miniaturas, sin repetir su fondo.

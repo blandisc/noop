@@ -53,8 +53,8 @@ public struct CenitCTAButton: View {
                 .tracking(0.3)
                 .foregroundStyle(kind == .solid ? theme.paperHi : theme.ink)
                 .frame(maxWidth: fillsWidth ? .infinity : nil)
-                .padding(.horizontal, fillsWidth ? 0 : CenitMetrics.sectionGapCompact + LiquidSpace.s300)
-                .padding(.vertical, 15)
+                .padding(.horizontal, fillsWidth ? 0 : LiquidSpace.s700)
+                .padding(.vertical, LiquidSpace.ctaVertical)
                 .background {
                     let shape = RoundedRectangle(cornerRadius: CenitMetrics.ctaRadius, style: .continuous)
                     switch kind {

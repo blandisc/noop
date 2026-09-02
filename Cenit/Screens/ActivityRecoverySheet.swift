@@ -194,6 +194,7 @@ struct ActivityRecoverySheet: View {
             .foregroundStyle(LiquidColor.tinta700)
             .padding(.horizontal, LiquidSpace.s225)
             .padding(.vertical, LiquidSpace.s075)
+            // Chip punteado: OutlineCapsule no expone dash.
             .overlay(Capsule()
                 .stroke(LiquidColor.tinta10,
                                       style: StrokeStyle(lineWidth: 1.2, dash: [3, 3])))

@@ -66,6 +66,7 @@ struct WeekEditorSheet: View {
                 Text("Days already trained can't be edited")
                     .font(LiquidType.caption)
                     .foregroundStyle(LiquidColor.papelTarjeta)
+                    // Toast no-botón: OutlineCapsule modifier no expone filled.
                     .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s200)
                     .background(LiquidColor.tinta900, in: Capsule())
                     .padding(.bottom, LiquidSpace.s700)

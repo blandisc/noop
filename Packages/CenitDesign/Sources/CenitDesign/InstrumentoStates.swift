@@ -32,7 +32,7 @@ public struct ScreenScaffold<Content: View>: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: CenitMetrics.sectionGap) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s700) {
             if title != nil || overline != nil {
                 VStack(alignment: .leading, spacing: 4) {
                     if let overline {

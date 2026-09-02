@@ -398,6 +398,7 @@ struct HojaFoco: View {
             .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s125).frame(minHeight: EntrenarMetrics.secondaryButton)
             .background {
                 if activo {
+                    // Segmento activo del combustible: fill tinta, no OutlineCapsule (inactivo sin cromo).
                     Capsule()
                         .fill(LiquidColor.tinta900)
                 }
@@ -461,13 +462,22 @@ struct HojaFoco: View {
                         .font(LiquidType.caption).foregroundStyle(LiquidColor.verdeProfundo)
                         .padding(.top, FocoMetrics.capcionTop)
                 }
-                Button {
-                    withAnimation(vivo.reduceMotion ? nil : LiquidMotion.suave) { vivo.focusDoneRunId = nil }
-                    if isLast {
-                        withAnimation(vivo.reduceMotion ? nil : .snappy) { vivo.focusMode = false }
-                        vivo.requestFinish()
+                OutlineCapsule(
+                    size: .aMedida(
+                        insets: EdgeInsets(top: .zero, leading: LiquidSpace.s700,
+                                           bottom: .zero, trailing: LiquidSpace.s700),
+                        minHeight: EntrenarMetrics.primaryButton,
+                        touchInset: .zero),
+                    filled: true,
+                    fill: LiquidColor.verdePrimario,
+                    action: {
+                        withAnimation(vivo.reduceMotion ? nil : LiquidMotion.suave) { vivo.focusDoneRunId = nil }
+                        if isLast {
+                            withAnimation(vivo.reduceMotion ? nil : .snappy) { vivo.focusMode = false }
+                            vivo.requestFinish()
+                        }
                     }
-                } label: {
+                ) {
                     Group {
                         if let next = nextRun {
                             Text("Next") + Text(verbatim: ": \(next.name) ›")
@@ -475,12 +485,9 @@ struct HojaFoco: View {
                             Text("Finish") + Text(verbatim: " ›")
                         }
                     }
-                    .font(LiquidType.tituloGemela).foregroundStyle(LiquidColor.tintaSobreVerde)
-                    .padding(.horizontal, LiquidSpace.s700)
-                    .frame(height: EntrenarMetrics.primaryButton)
-                    .background(LiquidColor.verdePrimario, in: Capsule())
+                    .font(LiquidType.tituloGemela)
+                    .foregroundStyle(LiquidColor.tintaSobreVerde)
                 }
-                .buttonStyle(.plain)
                 .padding(.top, LiquidSpace.s700)
                 Spacer(minLength: 0)
             }

@@ -256,6 +256,7 @@ struct DeleteSetPill: View {
             .foregroundStyle(LiquidColor.negativo)
             .padding(.horizontal, LiquidSpace.s225).padding(.vertical, LiquidSpace.s125)
             .liquidGlass(.pastillaSolida)
+            // Destructive: canto negativo; OutlineCapsule no tiene estilo de peligro.
             .overlay(Capsule()
                 .strokeBorder(LiquidColor.negativo.opacity(CenitOpacity.dim), lineWidth: 1))
             .contentShape(Capsule())

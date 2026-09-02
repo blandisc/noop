@@ -375,8 +375,13 @@ struct WorkoutImportView: View {
         Button(action: action) {
             Text(title).font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta700)
                 .padding(.horizontal, 13).padding(.vertical, LiquidSpace.s150)  // token-exempt(falta-pieza): chip handoff 13 sin token exacto
-                .overlay(Capsule()
-                    .stroke(LiquidColor.vidrioBordeFuerte, lineWidth: 1))
+                .outlineCapsule(
+                    .outline,
+                    size: .aMedida(
+                        insets: EdgeInsets(top: .zero, leading: .zero,
+                                           bottom: .zero, trailing: .zero),
+                        minHeight: nil,
+                        touchInset: .zero))
         }
         .buttonStyle(.plain)
     }

@@ -283,7 +283,7 @@ struct TrainingBodyScreen: View {
                 }
                 if let p = peeked {
                     peekCard(p).padding(.top, LiquidSpace.s100)
-                    resetRow.padding(.top, 7)  // token-exempt(optico): aire entre peekCard y resetRow, entre space1 (4) y space2 (8) — afinado a ojo, sin paso exacto
+                    resetRow.padding(.top, LiquidSpace.s175)
                 } else {
                     legend.padding(.top, LiquidSpace.s150)
                     Text("Tap a muscle to see its load")
@@ -319,7 +319,7 @@ struct TrainingBodyScreen: View {
     }
 
     private func floatingLabel(_ m: MuscleFatigueMap.MuscleLoad) -> some View {
-        HStack(spacing: 7) {
+        HStack(spacing: LiquidSpace.s175) {
             Circle().fill(muscleStateColor(m.relative))
                 .frame(width: 7, height: 7)
             Text(MuscleAtlas.name(m.muscle)).font(LiquidType.filaConteo).fontWeight(.semibold).foregroundStyle(LiquidColor.papelTarjeta)
@@ -778,7 +778,7 @@ struct TrainingBodyScreen: View {
     }
 
     private var volumeInsightLine: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 7) {
+        HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s175) {
             Circle().fill(belowBand.isEmpty ? LiquidColor.positivo : LiquidColor.atencionTexto)
                 .frame(width: 8, height: 8)
                 .alignmentGuide(.firstTextBaseline) { d in d[.bottom] - 1 }
@@ -1041,7 +1041,7 @@ private struct MuscleDetailView: View {
                     Text(hit.primary ? "primary" : "secondary")
                         .font(LiquidType.filaConteo).foregroundStyle(LiquidColor.tinta700)
                 }
-                .padding(.vertical, 7)  // token-exempt(optico): pad vertical de la fila ejercicio-etiqueta, entre space2 (8) y rowVPad (10) — sin paso exacto
+                .padding(.vertical, LiquidSpace.s175)
                 .overlay(alignment: .bottom) {
                     if hit.exerciseId != hits.prefix(6).last?.exerciseId {
                         Rectangle().fill(LiquidColor.tinta10).frame(height: 0.5)

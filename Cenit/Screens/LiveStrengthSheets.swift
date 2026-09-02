@@ -176,7 +176,7 @@ struct NoteSheet: View {
     /// Inject: los hooks van en la vista NO privada más externa del archivo (ver `EntrenarView`).
     @ObserveInjection private var inject
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s450) {
             header
             // r9 (owner): las notas son POR EJERCICIO — el alcance por-serie se retira del UI (el
             // modelo lo conserva por si vuelve).

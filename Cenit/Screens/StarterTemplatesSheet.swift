@@ -235,7 +235,7 @@ struct StarterTemplatesSheet: View {
             Text(schemeText(slot)).font(LiquidType.cuerpo).monospacedDigit().foregroundStyle(LiquidColor.tinta700)
             Text(restChipText(slot.restSeconds))
                 .font(LiquidType.caption).monospacedDigit().foregroundStyle(LiquidColor.tinta500)
-                .padding(.horizontal, 7).padding(.vertical, LiquidSpace.s050)
+                .padding(.horizontal, LiquidSpace.s175).padding(.vertical, LiquidSpace.s050)
                 .background(LiquidColor.papelTarjeta, in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous)
                     .strokeBorder(LiquidColor.tinta10, lineWidth: 1))

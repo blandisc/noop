@@ -1398,7 +1398,7 @@ struct LiveStrengthSheet: View {
 
     @ViewBuilder
     private func summaryPhase(_ s: StrengthSummary) -> some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s450) {
             receiptHeader(s)
             if s.watchRecorded { receiptWatchOrigin }
             receiptHeadline(s)

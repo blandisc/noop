@@ -477,13 +477,20 @@ struct HojaSesionViva: View {
                                 touchInset: .zero))
                 }
                 .buttonStyle(.plain)
-                Button { zombieAcknowledged = true } label: {
+                OutlineCapsule(
+                    size: .aMedida(
+                        insets: EdgeInsets(top: LiquidSpace.s250, leading: LiquidSpace.s400,
+                                           bottom: LiquidSpace.s250, trailing: LiquidSpace.s400),
+                        minHeight: nil,
+                        touchInset: .zero),
+                    filled: true,
+                    fill: LiquidColor.verdePrimario,
+                    action: { zombieAcknowledged = true }
+                ) {
                     (Text("Keep training") + Text(verbatim: " ›"))
-                        .font(LiquidType.cuerpoBanner.weight(.bold)).foregroundStyle(LiquidColor.papelTarjeta)
-                        .padding(.horizontal, LiquidSpace.s400).padding(.vertical, LiquidSpace.s250)
-                        .background(LiquidColor.verdePrimario, in: Capsule())
+                        .font(LiquidType.cuerpoBanner.weight(.bold))
+                        .foregroundStyle(LiquidColor.papelTarjeta)
                 }
-                .buttonStyle(.plain)
             }
             Spacer()
         }

@@ -45,7 +45,7 @@ private struct AppMapCell: View {
                                                    noopDeviceId: "map"))
                 .preferredColorScheme(.light)
                 .frame(width: 393, height: 852)
-                // Marco de dispositivo (radio de iPhone en el canvas) — 42 es dato, no hoja(28).
+                // Marco de iPhone del mapa de pantallas (42; ya en baseline no-radius-literal).
                 .clipShape(RoundedRectangle(cornerRadius: 42, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 42, style: .continuous)
                     .stroke(LiquidColor.tinta900.opacity(CenitOpacity.tintFill), lineWidth: 1))

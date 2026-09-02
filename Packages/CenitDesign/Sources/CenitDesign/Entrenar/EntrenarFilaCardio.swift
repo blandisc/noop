@@ -113,7 +113,7 @@ public struct EntrenarFilaCardio: View {
             .foregroundStyle(LiquidColor.tinta700)
             .frame(width: Metrics.chip, height: Metrics.chip)
             .background(LiquidColor.tinta7,
-                        in: RoundedRectangle(cornerRadius: CenitMetrics.insetRadius, style: .continuous))
+                        in: RoundedRectangle(cornerRadius: LiquidRadius.insetTarjeta, style: .continuous))
             .accessibilityHidden(true)
     }
 
