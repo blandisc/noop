@@ -96,7 +96,7 @@ enum ComponentGallery {
         Entry(name: "EntrenarTile", family: "Tiles") {
             AnyView(HStack(spacing: 12) {
                 EntrenarTile(tono: .ambar) {
-                    Text(verbatim: "TILE").font(.system(size: 11, weight: .semibold))
+                    Text(verbatim: "TILE").font(LiquidType.micro)
                         .foregroundStyle(LiquidTono.ambar.rotulo)
                 }
                 EntrenarTile(tono: .cian) {
@@ -108,12 +108,12 @@ enum ComponentGallery {
             AnyView(VStack(alignment: .leading, spacing: 8) {
                 EntrenarModulo(tono: .indigo) {
                     Text(verbatim: "MÓDULO · indigo")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(LiquidType.micro)
                         .foregroundStyle(LiquidTono.indigo.rotulo)
                 }
                 EntrenarModulo(tono: .neutro) {
                     Text(verbatim: "MÓDULO · neutro")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(LiquidType.micro)
                         .foregroundStyle(LiquidTono.neutro.rotulo)
                 }
             })
