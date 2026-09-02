@@ -151,7 +151,7 @@ enum ComponentGallery {
             })
         },
         Entry(name: "LiquidChecklistRow", family: "Filas") {
-            AnyView(VStack(alignment: .leading, spacing: 0) {   // token-exempt(unico): filas de checklist se pegan sin gap (demo DEBUG)
+            AnyView(VStack(alignment: .leading, spacing: LiquidSpace.s025) {
                 LiquidChecklistRow(etiqueta: "Frecuencia cardiaca en reposo", presente: true)
                 LiquidChecklistRow(etiqueta: "VO₂ máx estimado", presente: true)
                 LiquidChecklistRow(etiqueta: "Sueño", presente: false,
