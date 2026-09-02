@@ -291,7 +291,8 @@ struct TrainingBodyScreen: View {
                     legend.padding(.top, LiquidSpace.s150)
                     Text("Tap a muscle to see its load")
                         .font(LiquidType.filaConteo).foregroundStyle(LiquidColor.tinta500)
-                        .padding(.top, LiquidSpace.s250)if !loads.isEmpty {
+                        .padding(.top, LiquidSpace.s250)
+                    if !loads.isEmpty {
                         markRecoveredButton.padding(.top, LiquidSpace.s300)
                     }
                 }
@@ -433,7 +434,8 @@ struct TrainingBodyScreen: View {
         VStack(alignment: .leading, spacing: .zero) {
             Text("Loaded muscles · last 7 days").liquidKicker().foregroundStyle(LiquidColor.tinta700)
                 .padding(.bottom, LiquidSpace.s200)
-            muscleColumnHeader.padding(.bottom, LiquidSpace.s050)ForEach(Array(rankingLoads.enumerated()), id: \.element.muscle) { i, m in
+            muscleColumnHeader.padding(.bottom, LiquidSpace.s050)
+            ForEach(Array(rankingLoads.enumerated()), id: \.element.muscle) { i, m in
                 if i > 0 { Divider().overlay(LiquidColor.tinta10) }
                 loadRow(m.muscle)
             }

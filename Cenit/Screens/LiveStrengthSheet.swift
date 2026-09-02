@@ -1786,7 +1786,8 @@ struct LiveStrengthSheet: View {
     private func receiptExercises(_ lines: [StrengthSummary.ExerciseLine]) -> some View {
         VStack(alignment: .leading, spacing: .zero) {
             Text("By exercise").liquidKicker().foregroundStyle(LiquidColor.tinta700)
-                .padding(.bottom, LiquidSpace.s050)ForEach(Array(lines.enumerated()), id: \.element.id) { i, line in
+                .padding(.bottom, LiquidSpace.s050)
+                ForEach(Array(lines.enumerated()), id: \.element.id) { i, line in
                 HStack(spacing: LiquidSpace.s300) {
                     Text(line.name).font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta900)
                         .lineLimit(1).minimumScaleFactor(0.8)
