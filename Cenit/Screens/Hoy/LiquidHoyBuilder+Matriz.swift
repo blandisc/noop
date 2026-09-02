@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUI
 import StrandAnalytics
-import StrandDesign
+import CenitDesign
 import CenitStore
 
 // MARK: - LiquidHoyBuilder · Cara Matriz (FER-51 · F1 · Lane B)
@@ -611,7 +611,7 @@ extension LiquidHoyBuilder {
 
         // sentByDay: reservado para los aros históricos del guardián — la API de línea serena
         // solo pinta alertaHoy hoy; la historia fuera se cubre en tests del modelo (deuda §7,
-        // hallazgo adversarial Grok #3, difería StrandDesign per-punto).
+        // hallazgo adversarial Grok #3, difería CenitDesign per-punto).
         _ = sentByDay
 
         return MatrizHoyModel(

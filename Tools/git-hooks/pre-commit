@@ -52,11 +52,11 @@ if [ -n "$swift_staged" ] && [ -f "$root/Tools/check-design-drift.py" ]; then
     (cd "$root" && python3 Tools/check-design-drift.py --rules no-deprecated-metrics,no-instrumento-theme \
       --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media CenitApp) || fail=1
     (cd "$root" && python3 Tools/check-design-drift.py --rules token-exempt \
-      --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media Packages/StrandDesign/Sources CenitApp) || fail=1
+      --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media Packages/CenitDesign/Sources CenitApp) || fail=1
   fi
   if [ "$fail" -ne 0 ]; then
     echo ""
-    echo "✋ Commit bloqueado: deriva del sistema de diseño (usa un token de StrandDesign,"
+    echo "✋ Commit bloqueado: deriva del sistema de diseño (usa un token de CenitDesign,"
     echo "   o anota la línea con « // token-exempt(<categoria>): <motivo> » — ver docs/design-system/CONTRATO.md)."
     exit 1
   fi

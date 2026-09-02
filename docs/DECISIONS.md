@@ -84,7 +84,7 @@ el mismo PR** que la implementa (una línea basta: fecha, decisión, por qué).
 - **2026-08-31 · Dos agentes nuevos + retro que aprende sin frenar.** (a) `criterio` —
   subagente-espejo del dueño (lee DECISIONS.md + CLAUDE.md + memoria) que el loop consulta para
   dudas de gusto reversibles en vez de adivinar o frenar; marca 🚩 lo que sí requiere al dueño.
-  (b) `componente` — subagente-autor del sistema de diseño: crea la pieza nueva en `StrandDesign`
+  (b) `componente` — subagente-autor del sistema de diseño: crea la pieza nueva en `CenitDesign`
   (verifica CATÁLOGO, preview + OK, `#Preview`, regenera CATÁLOGO/CENSO) en vez de inventarla
   inline. (c) `retro` — Fase 5 de `/orquesta`, **post-entrega y en background, NUNCA gate**: el
   código se entrega y se anuncia hecho ANTES de retro. Destila aprendizajes con **vara alta**
@@ -145,4 +145,15 @@ Cuatro decisiones del dueño para cerrar la re-auditoría del sistema de diseño
 1. **(1A) Las 8 escalas puenteadas de `CenitMetrics` se deprecan de golpe**, no por lotes — la presión de warnings del compilador es la palanca para que los ~566 call-sites migren, en vez de una migración incremental sin urgencia.
 2. **(2A) `OutlineCapsule` gana una variante decorativa/overlay** para absorber las 28 cápsulas hechas a mano en el código, dentro del épico de Entrenar (no como trabajo aparte).
 3. **(3A) Entrenar migra al vidrio de afuera hacia adentro**: Biblioteca → Detalle → Editor semanal → Progresión/Descanso/Tickets → Historial → Sesión en vivo.
-4. **(4A) El renombre `StrandDesign` → `CenitDesign`** (incluye `StrandIcon`/`StrandCTAButton`/`StrandOpacity`/`StrandFormat`) **va al final**, después de cerrar Entrenar. `StrandFont`/`StrandPalette`/`StrandMotion` NO se rebautizan — se retiran en su momento, no se renombran.
+4. **(4A) El renombre `StrandDesign` → `CenitDesign`** (incluye `CenitIcon`/`CenitCTAButton`/`CenitOpacity`/`CenitFormat`) **va al final**, después de cerrar Entrenar. `StrandFont`/`StrandPalette`/`StrandMotion` NO se rebautizan — se retiran en su momento, no se renombran.
+
+## 2026-09-03 · Corrida nocturna FER-299 — decisiones tomadas por el director (dueño ausente)
+
+El dueño delegó todas las decisiones de la corrida («tú toma todas las decisiones y llévalo hasta el final»). Quedan aquí para que sean reversibles explícitamente:
+
+1. **El renombre es `CenitDesign`, no «Zenit Design».** El dueño lo dictó por voz como «Zenit»; la marca es Cénit y la decisión 4A (FER-287) ya fijaba `CenitDesign`. Ejecutado en FER-290: paquete, módulo, carpetas, ejecutable de tokens, tests, y los 4 símbolos `CenitIcon`/`CenitCTAButton`/`CenitOpacity`/`CenitFormat`. `StrandFont`/`StrandPalette`/`StrandMotion` conservan su nombre (mueren, no se renombran).
+2. **No existe un `LiquidColor.papel` cálido.** Grok lo inventó (#F4F1E8, el papel Instrumento) para sustituir `theme.paper`; se rechazó: el lienzo Liquid es `fondoAlto`. Ningún token Liquid reproduce el papel cálido de la generación anterior.
+3. **La geometría congelada por el QA de FER-295 manda sobre la adopción de piezas.** «＋ SET» sigue en `OutlineCapsule .sm .vidrio` (no `HojaCapsulaAccion`, que sube el dibujo a 44 pt). «Change rest» pasa de 13 a 10 pt de padding horizontal porque el catálogo declara que `rowVPad`/`s250` absorbe 9/10/11/13.
+4. **El peso de una fuente grotesk se pide por token, nunca con `.weight(...)`.** `Font.weight` no cambia la cara de una fuente `.custom` nombrada por PostScript; `LiquidType` gana `captionRegular/Fuerte/Negrita`, `captionLecturaNegrita`, `relojCompacto` y las sucesoras de `StrandFont` (`pie`, `cuerpoLista`, `subtituloFila`, `filaConteoNumero`).
+5. **Las dos reglas nuevas del gate nacen como prohibición pura.** `no-deprecated-metrics` y `no-instrumento-theme` tienen deuda cero en iOS tras L1–L7; el Watch y los Widgets conservan el carve-out FER-219.
+6. **`SetActionPills` es vista muerta**: se migró de paso pero nadie la consume; va a backlog para borrarla, no se rediseña.

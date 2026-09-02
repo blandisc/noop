@@ -1,7 +1,7 @@
 #if os(iOS)
 import SwiftUI
 import UIKit
-import StrandDesign
+import CenitDesign
 import StrandTraining
 import StrandAnalytics
 import CenitStore
@@ -226,12 +226,12 @@ struct ExerciseDetailScreen: View {
                 Button { isLoopPlaying.toggle() } label: {
                     Image(systemName: isLoopPlaying ? "pause.fill" : "play.fill")
                         .font(LiquidType.infoGlifoCompacto.weight(.semibold)).foregroundStyle(.white)
-                        .padding(LiquidSpace.s200).background(.black.opacity(StrandOpacity.strokeSoft), in: Circle())
+                        .padding(LiquidSpace.s200).background(.black.opacity(CenitOpacity.strokeSoft), in: Circle())
                 }
                 .buttonStyle(EntrenarPressStyle())
                 // FER-121: círculo visible ≈28pt; el toque real crece a 44 (HIG) sin mover el
                 // círculo — padding + contentShape + padding negativo se cancelan en layout (mismo
-                // principio que `PaperStepper.hitTarget`, FER-947, StrandDesign).
+                // principio que `PaperStepper.hitTarget`, FER-947, CenitDesign).
                 .padding(8).contentShape(Rectangle()).padding(-8)  // token-exempt: hit slop pair (±8)
                 .padding(LiquidSpace.filaRespiro)
                 .accessibilityLabel(Text(isLoopPlaying ? "Pause preview" : "Play preview"))
@@ -262,7 +262,7 @@ struct ExerciseDetailScreen: View {
     /// The movement-family hue (push=ember · pull=teal · legs=indigo) — the same mapping the Library
     /// uses on its thumbnails, so the frame, the primary-muscle chips and the how-to numbers agree.
     private var familyTint: Color {
-        // r21: mapeo PROMOVIDO a StrandDesign (`movementFamilyTint`) — misma clasificación, una
+        // r21: mapeo PROMOVIDO a CenitDesign (`movementFamilyTint`) — misma clasificación, una
         // sola fuente de verdad (se conserva el «solo el primer músculo» de esta pantalla).
         theme.movementFamilyTint(primaryMuscles: [exercise.primaryMuscles.first ?? ""])
     }
@@ -453,7 +453,7 @@ struct ExerciseDetailScreen: View {
                     HStack(spacing: LiquidSpace.s150) {
                         Text(StrengthDisplay.typeLabel(effectiveType))
                             .font(LiquidType.tituloGemela).foregroundStyle(LiquidColor.tinta900)
-                        StrandIcon.down.image.font(LiquidType.iconSF(size: 12))
+                        CenitIcon.down.image.font(LiquidType.iconSF(size: 12))
                             .foregroundStyle(LiquidColor.tinta500)
                     }
                 }
@@ -554,7 +554,7 @@ struct ExerciseDetailScreen: View {
         let familyTint: Color
         func body(content: Content) -> some View {
             if primary {
-                content.background(familyTint.opacity(StrandOpacity.tintFill),
+                content.background(familyTint.opacity(CenitOpacity.tintFill),
                                    in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
             } else {
                 content.liquidGlass(.pastillaSolida)
@@ -658,7 +658,7 @@ struct ExerciseDetailScreen: View {
                             .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
                     }
                     Spacer(minLength: LiquidSpace.s200)
-                    StrandIcon.disclosure.image.font(LiquidType.iconSF(size: 12))
+                    CenitIcon.disclosure.image.font(LiquidType.iconSF(size: 12))
                         .foregroundStyle(LiquidColor.tinta500)
                 }
                 .padding(.top, LiquidSpace.s300)
@@ -972,13 +972,13 @@ private struct TrendAxisChart: View {
                         p.addLine(to: CGPoint(x: last.x, y: h))
                         p.closeSubpath()
                     }
-                    .fill(accent.opacity(0.10))  // token-exempt: área 10% del handoff — LiquidChart.gridAlfa no es public fuera de StrandDesign
+                    .fill(accent.opacity(0.10))  // token-exempt: área 10% del handoff — LiquidChart.gridAlfa no es public fuera de CenitDesign
                     Path { (p: inout Path) in
                         guard let first = points.first else { return }
                         p.move(to: first)
                         points.dropFirst().forEach { (pt: CGPoint) in p.addLine(to: pt) }
                     }
-                    .stroke(accent, style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))  // token-exempt: linea 2.2 del handoff — LiquidChart.lineaAncho no es public fuera de StrandDesign
+                    .stroke(accent, style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))  // token-exempt: linea 2.2 del handoff — LiquidChart.lineaAncho no es public fuera de CenitDesign
                     if let last = points.last, scrubIndex == nil {
                         Circle().fill(accent.opacity(0.18)).frame(width: 16, height: 16).position(last)  // token-exempt: halo del handoff
                         Circle().fill(accent).frame(width: 9, height: 9).position(last)

@@ -3,7 +3,7 @@ import StrandModels
 
 // MARK: - Sleep window as clock hours (FER-154)
 //
-// The DiurnalDial (StrandDesign, FER-134) draws the night's sleep band from a
+// The DiurnalDial (CenitDesign, FER-134) draws the night's sleep band from a
 // `SleepWindow { bedtime, wake }` in CLOCK HOURS (0...24). The store only keeps sleep
 // sessions as epoch timestamps (`CachedSleepSession.startTs/endTs`); this converts the
 // most recent night to LOCAL clock hours so TodayView (FER-135) can map it to a

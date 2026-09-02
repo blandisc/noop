@@ -76,9 +76,9 @@ run_lint() {
       python3 Tools/check-design-drift.py --rules no-deprecated-metrics,no-instrumento-theme \
         --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media CenitApp || ok=1
       python3 Tools/check-design-drift.py --rules token-exempt \
-        --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media Packages/StrandDesign/Sources CenitApp || ok=1
+        --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media Packages/CenitDesign/Sources CenitApp || ok=1
     fi
-    [ "$ok" -ne 0 ] && fail "deriva del sistema de diseño (token de StrandDesign o « // token-exempt(<categoria>): <motivo> »)."
+    [ "$ok" -ne 0 ] && fail "deriva del sistema de diseño (token de CenitDesign o « // token-exempt(<categoria>): <motivo> »)."
   fi
   # FER-265: la matriz de CONTRATO.md y las tres patas no pueden divergir (verde local = verde CI).
   # Sin guard de existencia a propósito: si el validador desaparece, esto FALLA en vez de callar

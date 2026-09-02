@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUI
 import StrandAnalytics
-import StrandDesign
+import CenitDesign
 
 // MARK: - MetricLevelsHostModel (épico hoja Liquid, F3a)
 //

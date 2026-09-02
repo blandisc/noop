@@ -1,5 +1,5 @@
 import SwiftUI
-import StrandDesign
+import CenitDesign
 
 // MARK: - Custom numeric keypad for the strength session (FER-716)
 //

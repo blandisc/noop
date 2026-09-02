@@ -3,7 +3,7 @@
 > **Solo reporte.** Cero cambios de producción. Inventario auditado de los **65** hits
 > `dimension: iconografia` / `rule: literal-systemName` en [`CENSO.json`](CENSO.json).
 > Agrupa por **concepto** (lo que el usuario entiende), no por string SF. Compañero de
-> [`ICONOGRAFIA.md`](ICONOGRAFIA.md) y del catálogo `StrandIcon`.
+> [`ICONOGRAFIA.md`](ICONOGRAFIA.md) y del catálogo `CenitIcon`.
 
 ## Totales
 
@@ -21,7 +21,7 @@ Cada uno de los 65 hits aparece en exactamente una sección.
 ## 1 · Colisiones
 
 Criterio: **2+ símbolos SF distintos** para el **mismo** concepto de usuario. Propuesta = símbolo
-dominante en el árbol, salvo razón fuerte (`StrandIcon` / HIG). Una línea de razón.
+dominante en el árbol, salvo razón fuerte (`CenitIcon` / HIG). Una línea de razón.
 
 ### 1.1 Agregar
 
@@ -30,7 +30,7 @@ dominante en el árbol, salvo razón fuerte (`StrandIcon` / HIG). Una línea de 
 | **Concepto** | Añadir un ítem (ejercicio, métrica) |
 | **Símbolos en uso** | `plus` · `plus.circle.fill` |
 | **Canónico propuesto** | **`plus`** |
-| **Razón** | Coincide con `StrandIcon.add`; HIG trata el plus desnudo como la acción «Add» genérica. |
+| **Razón** | Coincide con `CenitIcon.add`; HIG trata el plus desnudo como la acción «Add» genérica. |
 | **Sitios a cambiar** | `Cenit/Screens/CompareView.swift:358` (`plus.circle.fill` → `plus`) |
 
 | Símbolo | Archivo:línea | Contexto |
@@ -49,7 +49,7 @@ Hits: **2**.
 | **Concepto** | Abrir el menú de acciones secundarias («···») |
 | **Símbolos en uso** | `ellipsis` · `ellipsis.circle` |
 | **Canónico propuesto** | **`ellipsis`** |
-| **Razón** | Empate 2/2, pero `StrandIcon.more` ya fija `ellipsis`. Unificar evita glifos distintos para la misma puerta (banda vs toolbar). Si se prefiere la forma de toolbar HIG (`ellipsis.circle`), promover el catálogo y migrar los inline — no dejar ambos. |
+| **Razón** | Empate 2/2, pero `CenitIcon.more` ya fija `ellipsis`. Unificar evita glifos distintos para la misma puerta (banda vs toolbar). Si se prefiere la forma de toolbar HIG (`ellipsis.circle`), promover el catálogo y migrar los inline — no dejar ambos. |
 | **Sitios a cambiar** | `Cenit/Screens/WorkoutDetailScreen.swift:335`, `Cenit/Screens/WorkoutHistoryScreen.swift:1625` (`ellipsis.circle` → `ellipsis`) |
 
 | Símbolo | Archivo:línea | Contexto |
@@ -70,7 +70,7 @@ Hits: **4**.
 | **Concepto** | El entrenamiento quedó reflejado / guardado en Apple Health |
 | **Símbolos en uso** | `checkmark` · `checkmark.seal.fill` |
 | **Canónico propuesto** | **`checkmark`** |
-| **Razón** | Alineado a `StrandIcon.confirm`; HIG reserva `checkmark.seal` para contenido verificado/autenticado, no para un mirror de persistencia. |
+| **Razón** | Alineado a `CenitIcon.confirm`; HIG reserva `checkmark.seal` para contenido verificado/autenticado, no para un mirror de persistencia. |
 | **Sitios a cambiar** | `Cenit/Screens/LiveStrengthSheet.swift:1685` (`checkmark.seal.fill` → `checkmark`) |
 
 | Símbolo | Archivo:línea | Contexto |
@@ -125,8 +125,8 @@ Un solo símbolo SF por concepto entre los hits restantes (**52**).
 
 | Concepto | Símbolo | Archivo:línea | Notas |
 |---|---|---|---|
-| Info / revelar (onboarding) | `info.circle` | `Cenit/Onboarding/OnboardingActoEncendido.swift:235` | `StrandIcon.info` |
-| Volver / atrás | `chevron.left` | `Cenit/Onboarding/OnboardingPiezas.swift:787`, `Cenit/Screens/CuerpoView.swift:124` | `StrandIcon.back` |
+| Info / revelar (onboarding) | `info.circle` | `Cenit/Onboarding/OnboardingActoEncendido.swift:235` | `CenitIcon.info` |
+| Volver / atrás | `chevron.left` | `Cenit/Onboarding/OnboardingPiezas.swift:787`, `Cenit/Screens/CuerpoView.swift:124` | `CenitIcon.back` |
 | Abrir app Salud (externa) | `arrow.up.forward.app` | `Cenit/Screens/AjustesHistorialFA.swift:135` | Handoff a otra app |
 | Recalibrar recuperación | `arrow.clockwise` | `Cenit/Screens/AjustesView.swift:525` | Refresh de baseline |
 | Negación («qué no hace») | `xmark` | `Cenit/Screens/CyclePhaseView.swift:188` | Bullet de «no» — ver §4 sobrecarga |
@@ -136,17 +136,17 @@ Un solo símbolo SF por concepto entre los hits restantes (**52**).
 | Ayuda / trucos | `questionmark.circle` | `Cenit/Screens/EntrenarView.swift:1360` | Distinto de `info.circle` |
 | Video / media de ejercicio | `play.rectangle` | `Cenit/Screens/ExerciseDetailScreen.swift:278`, `:657` | Hint descarga + YouTube |
 | Historial vacío (tiempo) | `clock.arrow.circlepath` | `Cenit/Screens/ExerciseDetailScreen.swift:893`, `Cenit/Screens/WorkoutHistoryScreen.swift:1186` | Empty de marcas / workouts |
-| Error / advertencia | `exclamationmark.triangle` | `Cenit/Screens/Hoja/RoutineSheetLive.swift:435`, `Cenit/Screens/LiveStrengthSheet.swift:973`, `Cenit/Screens/WorkoutEditSheet.swift:361`, `Cenit/Screens/WorkoutImportView.swift:264`, `CenitWatch/Screens/WatchSummaryView.swift:75` | 5/5 outline; drift vs `StrandIcon.warning` (`.fill`) — ver §4 |
+| Error / advertencia | `exclamationmark.triangle` | `Cenit/Screens/Hoja/RoutineSheetLive.swift:435`, `Cenit/Screens/LiveStrengthSheet.swift:973`, `Cenit/Screens/WorkoutEditSheet.swift:361`, `Cenit/Screens/WorkoutImportView.swift:264`, `CenitWatch/Screens/WatchSummaryView.swift:75` | 5/5 outline; drift vs `CenitIcon.warning` (`.fill`) — ver §4 |
 | Entrar a modo Foco | `arrow.up.left.and.arrow.down.right` | `Cenit/Screens/Hoja/RoutineSheetLiveCabecera.swift:68`, `Cenit/Screens/Hoja/RoutineSheetLiveTarjeta.swift:58` | Expand / focus |
-| Descartar aviso (deload) | `xmark` | `Cenit/Screens/Hoja/RoutineSheetLiveTarjeta.swift:155` | `StrandIcon.close`; a11y «Dismiss» |
+| Descartar aviso (deload) | `xmark` | `Cenit/Screens/Hoja/RoutineSheetLiveTarjeta.swift:155` | `CenitIcon.close`; a11y «Dismiss» |
 | Hecho (ejercicio en Foco) | `checkmark` | `Cenit/Screens/Hoja/RoutineSheetLiveFoco.swift:440` | Overlay en círculo verde |
-| Frecuencia cardíaca / pulso | `heart.fill` | `Cenit/Screens/LiveStrengthSheet.swift:769`; `CenitWidgets/RestLiveActivity.swift:268`, `:576`, `:618`, `:634`, `:670`, `:694` | `StrandIcon.heart` · 7 hits |
+| Frecuencia cardíaca / pulso | `heart.fill` | `Cenit/Screens/LiveStrengthSheet.swift:769`; `CenitWidgets/RestLiveActivity.swift:268`, `:576`, `:618`, `:634`, `:670`, `:694` | `CenitIcon.heart` · 7 hits |
 | Origen Apple Watch | `applewatch` | `Cenit/Screens/LiveStrengthSheet.swift:1489` | Procedencia en recibo |
 | Récord personal | `star` | `Cenit/Screens/LiveStrengthSheet.swift:1765` | Cabecera de PRs |
-| Tendencia a la baja | `arrow.down` | `Cenit/Screens/LiveStrengthSheet.swift:1835` | Pareado con `StrandIcon.up` (`arrow.up`); **no** `StrandIcon.down` (`chevron.down` = colapsar) |
+| Tendencia a la baja | `arrow.down` | `Cenit/Screens/LiveStrengthSheet.swift:1835` | Pareado con `CenitIcon.up` (`arrow.up`); **no** `CenitIcon.down` (`chevron.down` = colapsar) |
 | Eliminar | `trash` | `Cenit/Screens/RoutineSetEditing.swift:260`, `Cenit/Screens/WeeklyPlanEditorView.swift:1061` | |
 | Tickets / recibos | `doc.plaintext` | `Cenit/Screens/SavedTicketsScreen.swift:126`, `Cenit/Screens/WorkoutHistoryScreen.swift:1076` | Empty + fila nav |
-| Ocultar teclado | `chevron.down` | `Cenit/Screens/SessionKeypad.swift:169` | `StrandIcon.down` |
+| Ocultar teclado | `chevron.down` | `Cenit/Screens/SessionKeypad.swift:169` | `CenitIcon.down` |
 | Invitar calendario | `calendar.badge.clock` | `Cenit/Screens/StressDayMapView.swift:57` | Empty/permiso estrés×calendario |
 | Deseleccionar (peek) | `arrow.uturn.backward` | `Cenit/Screens/TrainingBodyScreen.swift:377` | Undo de selección, no «volver» |
 | Marcar todo recuperado | `arrow.counterclockwise` | `Cenit/Screens/TrainingBodyScreen.swift:392` | Reset del mapa (≠ recalibrar) |
@@ -157,7 +157,7 @@ Un solo símbolo SF por concepto entre los hits restantes (**52**).
 | Confirmar log de serie (Watch) | `checkmark` | `CenitWatch/Screens/WatchLiveFaceView.swift:87` | Flash post-log |
 | Listo / descanso terminado | `checkmark` | `CenitWatch/Screens/WatchSessionRootView.swift:195` | «Ready» |
 | Fallo de HealthKit (Watch) | `heart.text.square` | `CenitWatch/Screens/WatchSessionRootView.swift:165` | Error de Health, no pulso |
-| Ver recibo en iPhone | `chevron.right` | `CenitWatch/Screens/WatchSummaryView.swift:38` | `StrandIcon.disclosure` |
+| Ver recibo en iPhone | `chevron.right` | `CenitWatch/Screens/WatchSummaryView.swift:38` | `CenitIcon.disclosure` |
 | Pausado (Live Activity) | `pause.fill` | `CenitWidgets/RestLiveActivity.swift:615`, `:646` | Fase `.paused` |
 | Temporizador de descanso | `timer` | `CenitWidgets/RestLiveActivity.swift:679` | Rest por reloj (no HR) |
 
@@ -169,27 +169,27 @@ Hits en §3: **52** (verificación: 8 + 5 + 52 = 65).
 
 No son colisiones «mismo concepto / símbolos distintos», pero el censo las deja a la vista:
 
-1. **Sobrecarga de `xmark`.** Mismo glifo para (a) descartar aviso (`RoutineSheetLiveTarjeta.swift:155`, concepto *cerrar*) y (b) bullet de negación (`CyclePhaseView.swift:188`, concepto *«no hace»*). Invertido del defecto buscado: un símbolo, dos conceptos. Fase 4: reservar `xmark` a `StrandIcon.close` y usar otro glifo (p. ej. guión / texto) para la lista de límites.
-2. **Drift `StrandIcon.warning`.** Catálogo = `exclamationmark.triangle.fill`; los 5 literales del censo usan outline. Elegir uno y alinear catálogo ↔ árbol.
-3. **`StrandIcon.down` vs tendencia.** El catálogo mapea `down` → `chevron.down` (colapsar). La tendencia a la baja ya usa bien `arrow.down`. No mezclar; si se necesita tendencia en el catálogo, añadir un caso distinto (`trendDown`).
+1. **Sobrecarga de `xmark`.** Mismo glifo para (a) descartar aviso (`RoutineSheetLiveTarjeta.swift:155`, concepto *cerrar*) y (b) bullet de negación (`CyclePhaseView.swift:188`, concepto *«no hace»*). Invertido del defecto buscado: un símbolo, dos conceptos. Fase 4: reservar `xmark` a `CenitIcon.close` y usar otro glifo (p. ej. guión / texto) para la lista de límites.
+2. **Drift `CenitIcon.warning`.** Catálogo = `exclamationmark.triangle.fill`; los 5 literales del censo usan outline. Elegir uno y alinear catálogo ↔ árbol.
+3. **`CenitIcon.down` vs tendencia.** El catálogo mapea `down` → `chevron.down` (colapsar). La tendencia a la baja ya usa bien `arrow.down`. No mezclar; si se necesita tendencia en el catálogo, añadir un caso distinto (`trendDown`).
 
 ---
 
 ## 5 · Vocabulario canónico propuesto (resumen)
 
-Acciones de alta frecuencia alineadas a `StrandIcon` + hallazgos de este censo:
+Acciones de alta frecuencia alineadas a `CenitIcon` + hallazgos de este censo:
 
 | Concepto | Canónico | Origen |
 |---|---|---|
-| Agregar | `plus` | `StrandIcon.add` + §1.1 |
-| Más acciones | `ellipsis` | `StrandIcon.more` + §1.2 |
-| Confirmar / hecho / guardado Salud | `checkmark` | `StrandIcon.confirm` + §1.3 |
-| Cerrar / descartar | `xmark` | `StrandIcon.close` |
-| Volver | `chevron.left` | `StrandIcon.back` |
-| Disclosure / entrar | `chevron.right` | `StrandIcon.disclosure` |
-| Info | `info.circle` | `StrandIcon.info` |
+| Agregar | `plus` | `CenitIcon.add` + §1.1 |
+| Más acciones | `ellipsis` | `CenitIcon.more` + §1.2 |
+| Confirmar / hecho / guardado Salud | `checkmark` | `CenitIcon.confirm` + §1.3 |
+| Cerrar / descartar | `xmark` | `CenitIcon.close` |
+| Volver | `chevron.left` | `CenitIcon.back` |
+| Disclosure / entrar | `chevron.right` | `CenitIcon.disclosure` |
+| Info | `info.circle` | `CenitIcon.info` |
 | Advertencia | `exclamationmark.triangle` *(outline, de facto del árbol)* o `.fill` *(catálogo)* — resolver §4.2 | |
-| FC / pulso | `heart.fill` | `StrandIcon.heart` |
+| FC / pulso | `heart.fill` | `CenitIcon.heart` |
 | Eliminar | `trash` | de facto |
 | Seleccionado (lista) | `checkmark.circle.fill` | patrón §2.1 |
 | Foco / expandir | `arrow.up.left.and.arrow.down.right` | de facto |

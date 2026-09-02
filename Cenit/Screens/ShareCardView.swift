@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 
 // MARK: - ShareCardView — la tarjeta compartible del recibo de fuerza
 //

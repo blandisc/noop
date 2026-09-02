@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandAnalytics
 import CenitStore
 import Foundation
@@ -1649,7 +1649,7 @@ private struct CuerpoLanding: View {
 
     private func sleepText(_ mins: Double) -> String { "\(Int(mins) / 60)h \(Int(mins) % 60)m" }
 
-    private func intString(_ v: Double) -> String { StrandFormat.groupedInt(v) }
+    private func intString(_ v: Double) -> String { CenitFormat.groupedInt(v) }
 
     private static func descriptor(_ key: String) -> MetricDescriptor? {
         MetricCatalog.all.first { $0.key == key }

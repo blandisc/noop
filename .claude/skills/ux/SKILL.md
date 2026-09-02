@@ -55,7 +55,7 @@ Lee el campo **`Carril`** del issue (lo fija `/pm`); el mismo concepto que `/imp
 | Decides tú (UX) | NO decides (lo hace…) |
 |---|---|
 | Flujo, pasos, puntos de decisión, salidas | Color, tipografía, spacing exacto → `/ui` |
-| Estados y qué muestra/permite cada uno | Qué token de StrandDesign usar → `/ui` |
+| Estados y qué muestra/permite cada uno | Qué token de CenitDesign usar → `/ui` |
 | Arquitectura de info: qué es primario/secundario | El código → `/implement` |
 | Copy exacto (es-MX) y tono | El requerimiento y su scope → `/pm` |
 | Accesibilidad (Dynamic Type, VoiceOver, tap targets) | |

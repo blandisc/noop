@@ -1,6 +1,6 @@
 import XCTest
 import StrandAnalytics
-import StrandDesign
+import CenitDesign
 import CenitStore
 @testable import Cenit
 

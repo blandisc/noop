@@ -6,7 +6,7 @@ import StrandAnalytics
 // El vocabulario PURO compartido por las caras de Hoy (Cosmos abierta y Matriz): mapeos p del
 // medidor lunar (§6 del REQ), la tabla de severidad transversal (§8), la máquina de estados del
 // chip del guardián (§7 / criterio 10) y el formateo de valores. Solo datos — NADA de SwiftUI,
-// NADA de colores: las vistas mapean estos resultados a tokens de StrandDesign.
+// NADA de colores: las vistas mapean estos resultados a tokens de CenitDesign.
 //
 // Regla dura (heredada de `dominoGuardian` y extendida a las caras): esta capa JAMÁS re-deriva
 // cortes del motor. Todo umbral viene de `Preparedness.Config` / `ReadinessEngine` públicos, y

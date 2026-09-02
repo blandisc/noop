@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandAnalytics
 import CenitStore   // FER-202: `WorkoutRow` — destino de detalle de actividad en el trainStack (fusión de historiales)
 import Inject   // recarga en caliente (dev-only, inerte en Release)
@@ -227,7 +227,7 @@ struct RootTabView: View {
             // /inject 2026-07-22 (decisión del dueño): el dock global pasa al lente Liquid
             // Glass — vidrio flotante con los 4 glifos del sistema y el punto verde activo.
             // Los rótulos salen del catálogo del APP (FER-112): vivían hardcodeados en español
-            // dentro de StrandDesign, que no tiene catálogo, así que la barra de TODAS las
+            // dentro de CenitDesign, que no tiene catálogo, así que la barra de TODAS las
             // pantallas se veía en español con el teléfono en inglés.
             LiquidTabBar(active: liquidTab(for: selection),
                          rotulos: .cenit) { selection = appTab(for: $0) }
@@ -267,7 +267,7 @@ struct RootTabView: View {
         // Handoff V10 (FER-139): título + mensaje alineados al prototipo, con el conteo REAL de
         // series de hoy y su plural correcto. Los rótulos de acción se quedan en «Seguir
         // entrenando»/«Descartar sesión» — no «Cancelar»/«Descartar» a secas — porque `ConfirmCard`
-        // (StrandDesign, FER-836) documenta como ley que esos dos genéricos no existen en este
+        // (CenitDesign, FER-836) documenta como ley que esos dos genéricos no existen en este
         // sistema; cada acción nombra lo que hace.
         .liquidConfirm(
             isPresented: $confirmDiscardSession,
@@ -576,7 +576,7 @@ private struct ActiveSessionPillHost: View {
         }
     }
 
-    /// VoiceOver label for the pill — localized here because the StrandDesign package has no catalog.
+    /// VoiceOver label for the pill — localized here because the CenitDesign package has no catalog.
     private func pillLabel(_ name: String, _ elapsed: String, _ bpm: Int?) -> Text {
         if let bpm { return Text("Active session: \(name), \(elapsed), heart rate \(bpm)") }
         return Text("Active session: \(name), \(elapsed)")

@@ -1,6 +1,6 @@
 #if os(iOS)
 import Foundation
-import StrandDesign
+import CenitDesign
 import StrandTraining
 
 // TicketMapping.swift — pure StrengthSession → MiniTicket mapper for the thermal-receipt grid.

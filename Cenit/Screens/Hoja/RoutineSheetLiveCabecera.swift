@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandTraining
 
 // MARK: - HojaCabeceraSesion — cabecera + avance + CTA de «La Hoja viva» (FER-167 · F2, ronda 2)
@@ -21,7 +21,7 @@ enum HojaCabeceraSesion {
             Button {
                 vivo.sheet.model.strengthSheetPresented = false   // B17: minimizar, nunca termina
             } label: {
-                StrandIcon.back.image
+                CenitIcon.back.image
                     .font(LiquidType.infoGlifoCompacto.weight(.semibold))
                     .foregroundStyle(LiquidColor.tinta700)
                     .frame(width: EntrenarMetrics.row, height: EntrenarMetrics.row)   // 44 pt de toque
@@ -108,7 +108,7 @@ enum HojaCabeceraSesion {
     @ViewBuilder private static func heartRate(vivo: HojaSesionViva) -> some View {
         if let bpm = vivo.sheet.model.watchBpm {
             HStack(spacing: LiquidSpace.s100) {
-                StrandIcon.heart.image.font(LiquidType.infoGlifoCompacto)
+                CenitIcon.heart.image.font(LiquidType.infoGlifoCompacto)
                 Text("\(bpm)").font(LiquidType.cuerpoBanner.weight(.semibold))
             }
             .foregroundStyle(LiquidTono.rosa.rotulo)

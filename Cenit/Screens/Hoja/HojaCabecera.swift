@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandTraining
 
 // MARK: - HojaCabecera — cabecera + título + CTA de «La Hoja» (FER-166)
@@ -94,7 +94,7 @@ enum HojaCabecera {
     /// .planDay «···»: cambiar rutina / marcar descanso (A6/A7).
     private static func dayMenu(sheet: RoutineSheet) -> some View {
         Button { sheet.showDayMenu = true } label: {
-            StrandIcon.more.image.font(LiquidType.infoGlifo.weight(.semibold))
+            CenitIcon.more.image.font(LiquidType.infoGlifo.weight(.semibold))
                 .foregroundStyle(LiquidColor.tinta500).frame(width: LiquidControl.hitTarget, height: LiquidControl.hitTarget).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -105,7 +105,7 @@ enum HojaCabecera {
                   children: sheet.allRoutines.map { r in
                       LiquidMenuItem(r.name, systemImage: r.id == sheet.routine?.id ? "checkmark" : nil) { sheet.changeRoutine(to: r) }
                   }),
-            .init(String(localized: "Mark as rest day"), systemImage: StrandIcon.sleep.systemName, isDestructive: true) { sheet.markRest() }
+            .init(String(localized: "Mark as rest day"), systemImage: CenitIcon.sleep.systemName, isDestructive: true) { sheet.markRest() }
         ])
     }
 

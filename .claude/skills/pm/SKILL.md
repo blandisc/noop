@@ -169,7 +169,7 @@ para reproducir + Entorno (plataforma, strap, fuente de datos).]
 
 ## Alcance técnico (pistas para el agente de coding)
 - Dónde vive: [package/carpeta — ver tabla "Dónde vive la lógica"]
-- Convenciones que aplican: [tokens StrandDesign / test + cita de método /
+- Convenciones que aplican: [tokens CenitDesign / test + cita de método /
   safety BLE / migración versionada / etc.]
 - Archivos probables: [si los confirmaste leyendo el repo]
 
@@ -183,7 +183,7 @@ para reproducir + Entorno (plataforma, strap, fuente de datos).]
 ## Definition of Done (cómo se verifica)
 - [ ] [test/comando concreto, ej. `swift test` pasa en Packages/StrandAnalytics]
 - [ ] [qué probar a mano / en simulador, por estado]
-- [ ] Cumple el checklist del PR template (solo tokens StrandDesign, sin
+- [ ] Cumple el checklist del PR template (solo tokens CenitDesign, sin
       warnings nuevos, no se commitea Strand.xcodeproj/)
 ```
 
@@ -201,12 +201,12 @@ alcance** — dilo si surge.
 | Persistir datos, migraciones, caches | `Packages/WhoopStore` (GRDB/SQLite) |
 | Recovery / strain / HRV / sleep / correlaciones | `Packages/StrandAnalytics` (puro, sin DB) |
 | Parsear WHOOP CSV o Apple Health | `Packages/StrandImport` |
-| Colores, fonts, cards, charts | `Packages/StrandDesign` |
+| Colores, fonts, cards, charts | `Packages/CenitDesign` |
 | CoreBluetooth, bonding, offload | `Strand/BLE`, `Strand/Collect` (capa de app) |
 | Una pantalla, navegación, menú | `Strand/Screens`, `Strand/App` |
 
 **Reglas no negociables** (recuérdalas en el requerimiento cuando apliquen):
-- **UI:** solo tokens de `StrandDesign` (`StrandPalette`, `StrandFont`,
+- **UI:** solo tokens de `CenitDesign` (`StrandPalette`, `StrandFont`,
   `NoopMetrics`, componentes como `NoopCard`). Cero hex/font/spacing
   hardcodeado. Pantalla nueva → registrar en `RootView` (`NavItem`).
 - **Analytics:** lógica pura en `StrandAnalytics`, **test obligatorio** y

@@ -300,7 +300,7 @@
     {
       "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
       "line" : 563,
-      "snippet" : "content.background(familyTint.opacity(StrandOpacity.tintFill),                                    in: RoundedRectangl..."
+      "snippet" : "content.background(familyTint.opacity(CenitOpacity.tintFill),                                    in: RoundedRectangl..."
     },
     {
       "file" : "Cenit\/Screens\/ExerciseDetailScreen.swift",
@@ -365,7 +365,7 @@
     {
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
       "line" : 388,
-      "snippet" : "HStack(spacing: CenitMetrics.space2) {                     StrandIcon.add.image.font(StrandFont.glyph(.inline, weight..."
+      "snippet" : "HStack(spacing: CenitMetrics.space2) {                     CenitIcon.add.image.font(StrandFont.glyph(.inline, weight..."
     },
     {
       "file" : "Cenit\/Screens\/ExerciseLibraryScreen.swift",
@@ -835,7 +835,7 @@
     {
       "file" : "Cenit\/Screens\/LiveStrengthSheets.swift",
       "line" : 415,
-      "snippet" : "HStack(spacing: 9) {             StrandIcon.search.image.font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTer..."
+      "snippet" : "HStack(spacing: 9) {             CenitIcon.search.image.font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTer..."
     },
     {
       "file" : "Cenit\/Screens\/LiveStrengthSheets.swift",
@@ -7230,7 +7230,7 @@
       "file" : "Cenit\/Screens\/LiveStrengthSheets.swift",
       "line" : 415,
       "rule" : "literal-padding",
-      "snippet" : "HStack(spacing: 9) {             StrandIcon.search.image.font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTer...",
+      "snippet" : "HStack(spacing: 9) {             CenitIcon.search.image.font(StrandFont.glyph(.inline)).foregroundStyle(theme.inkTer...",
       "value" : 13
     },
     {
@@ -7742,7 +7742,7 @@
       "file" : "Cenit\/Screens\/PlatesScreen.swift",
       "line" : 257,
       "rule" : "literal-padding",
-      "snippet" : "StrandCTAButton(\"Insert warm-up into the session\") {             onInsertWarmup(warmup.map { (weightKg: $0.weightKg, ...",
+      "snippet" : "CenitCTAButton(\"Insert warm-up into the session\") {             onInsertWarmup(warmup.map { (weightKg: $0.weightKg, ...",
       "value" : 6
     },
     {
@@ -8122,7 +8122,7 @@
       "file" : "Cenit\/Screens\/RestEditorScreen.swift",
       "line" : 418,
       "rule" : "literal-padding",
-      "snippet" : "StrandCTAButton(\"Apply\") {             let config = RestEditorMapping.buildConfig(                 mode: mode, hrRef:...",
+      "snippet" : "CenitCTAButton(\"Apply\") {             let config = RestEditorMapping.buildConfig(                 mode: mode, hrRef:...",
       "value" : 4
     },
     {
@@ -8754,7 +8754,7 @@
       "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
       "line" : 200,
       "rule" : "literal-padding",
-      "snippet" : "VStack(spacing: 10) {                     StrandCTAButton(\"Add to my routines\") { add(t) }                         .d...",
+      "snippet" : "VStack(spacing: 10) {                     CenitCTAButton(\"Add to my routines\") { add(t) }                         .d...",
       "value" : 2
     },
     {
@@ -8770,7 +8770,7 @@
       "file" : "Cenit\/Screens\/StarterTemplatesSheet.swift",
       "line" : 216,
       "rule" : "literal-padding",
-      "snippet" : "VStack(spacing: 10) {             StrandCTAButton(\"Use this plan\") { applyTemplateGroup() }                 .disabled...",
+      "snippet" : "VStack(spacing: 10) {             CenitCTAButton(\"Use this plan\") { applyTemplateGroup() }                 .disabled...",
       "value" : 2
     },
     {
@@ -9497,7 +9497,7 @@
       "file" : "Cenit\/Screens\/TrainingLoadStrip.swift",
       "line" : 74,
       "rule" : "literal-padding",
-      "snippet" : "StrandIcon.disclosure.image                     .font(.system(size: 9, weight: .semibold)) \/\/ token-exempt: microtext...",
+      "snippet" : "CenitIcon.disclosure.image                     .font(.system(size: 9, weight: .semibold)) \/\/ token-exempt: microtext...",
       "value" : 6
     },
     {
@@ -10293,7 +10293,7 @@
       "file" : "Cenit\/Screens\/WorkoutEditSheet.swift",
       "line" : 292,
       "rule" : "literal-padding",
-      "snippet" : "HStack(spacing: 6) {                 StrandIcon.add.image.font(StrandFont.glyph(.chevron, weight: .semibold))        ...",
+      "snippet" : "HStack(spacing: 6) {                 CenitIcon.add.image.font(StrandFont.glyph(.chevron, weight: .semibold))        ...",
       "value" : 6
     },
     {

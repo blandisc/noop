@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandTraining
 import StrandAnalytics
 
@@ -81,7 +81,7 @@ struct HojaTarjetaEjercicio: View {
 
     private var menuButton: some View {
         Button { sheet.menuExerciseIndex = idx } label: {
-            StrandIcon.more.image.font(LiquidType.infoGlifo.weight(.semibold))
+            CenitIcon.more.image.font(LiquidType.infoGlifo.weight(.semibold))
                 .foregroundStyle(LiquidColor.tinta500).frame(width: 30, height: LiquidControl.hitTarget).contentShape(Rectangle())
         }
         .buttonStyle(.plain)

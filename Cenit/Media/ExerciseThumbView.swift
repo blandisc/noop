@@ -1,12 +1,12 @@
 #if os(iOS)
 import SwiftUI
 import UIKit
-import StrandDesign
+import CenitDesign
 import StrandTraining
 
 // MARK: - ExerciseThumbView — the row thumbnail, filled with the cached GIF's still (FER-790)
 //
-// `ExerciseThumbnail` (StrandDesign) reserves the slot and draws the paper placeholder; this wraps it
+// `ExerciseThumbnail` (CenitDesign) reserves the slot and draws the paper placeholder; this wraps it
 // and, when the exercise's GIF is ALREADY cached, fills it with the GIF's first frame. It never
 // downloads (rows scroll through ~1500 exercises — a per-row GET is out of the question): it asks the
 // coordinator for a cached path only, decodes the still off the main thread, and memoizes it in a

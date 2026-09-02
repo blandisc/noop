@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 
 // MARK: - El botón de «agregar algo a una lista» — una sola anatomía
 //
@@ -45,7 +45,7 @@ struct InstrumentoAddButton: View {
         Button(action: action) {
             HStack(spacing: LiquidSpace.s200) {
                 if !disabled {
-                    StrandIcon.add.image.font(LiquidType.iconSF(size: 15))
+                    CenitIcon.add.image.font(LiquidType.iconSF(size: 15))
                 }
                 Text(verbatim: label)
                     .font(LiquidType.boton)

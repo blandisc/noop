@@ -1,7 +1,7 @@
 #if os(iOS)
 import SwiftUI
 import UniformTypeIdentifiers
-import StrandDesign
+import CenitDesign
 import StrandImport
 import StrandTraining
 import Inject   // recarga en caliente (dev-only, inerte en Release)
@@ -234,7 +234,7 @@ struct WorkoutImportView: View {
         Button { showFileImporter = true } label: {
             HStack(spacing: LiquidSpace.s150) {
                 Text("Open file").font(LiquidType.cuerpo.weight(.medium)).foregroundStyle(LiquidColor.tinta700)
-                StrandIcon.disclosure.image
+                CenitIcon.disclosure.image
                     .font(LiquidType.iconSF(size: 12).weight(.semibold)).foregroundStyle(LiquidColor.tinta500)
                     .accessibilityHidden(true)
             }
@@ -318,7 +318,7 @@ struct WorkoutImportView: View {
                     }
                     .foregroundStyle(LiquidColor.verdePrimario)
                     .padding(.horizontal, LiquidSpace.s225).padding(.vertical, LiquidSpace.s075)  // chip handoff 9/3 → s225/s075
-                    .background(LiquidColor.verdePrimario.opacity(StrandOpacity.tintFill), in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
+                    .background(LiquidColor.verdePrimario.opacity(CenitOpacity.tintFill), in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
                     .accessibilityElement(children: .combine)
                     Spacer(minLength: LiquidSpace.s200)
                     undoLink { resolution[key] = nil; autoMatched.remove(key) }
@@ -414,7 +414,7 @@ struct WorkoutImportView: View {
             HStack(spacing: LiquidSpace.s300) {
                 Spacer(minLength: 0)
                 fixLink
-                StrandCTAButton(createRoutinesTitle(program.routines.count), tint: LiquidColor.verdeProfundo, fillsWidth: false) {
+                CenitCTAButton(createRoutinesTitle(program.routines.count), tint: LiquidColor.verdeProfundo, fillsWidth: false) {
                     save(program)
                 }
             }
@@ -425,7 +425,7 @@ struct WorkoutImportView: View {
         Button { phase = .mapping } label: {
             HStack(spacing: LiquidSpace.s150) {
                 Text("Fix").font(LiquidType.cuerpo.weight(.medium)).foregroundStyle(LiquidColor.tinta700)
-                StrandIcon.disclosure.image
+                CenitIcon.disclosure.image
                     .font(LiquidType.iconSF(size: 12).weight(.semibold)).foregroundStyle(LiquidColor.tinta500)
                     .accessibilityHidden(true)
             }
@@ -486,7 +486,7 @@ struct WorkoutImportView: View {
                 Text(mapped == 1 ? "1 mapped" : "\(mapped) mapped")
                     .font(LiquidType.caption.weight(.semibold)).foregroundStyle(LiquidColor.verdePrimario)
                     .padding(.horizontal, LiquidSpace.s225).padding(.vertical, LiquidSpace.s075)  // chip handoff 9/3 → s225/s075
-                    .background(LiquidColor.verdePrimario.opacity(StrandOpacity.tintFill),
+                    .background(LiquidColor.verdePrimario.opacity(CenitOpacity.tintFill),
                                 in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
             }
         }
@@ -516,7 +516,7 @@ struct WorkoutImportView: View {
 
             VStack(spacing: CenitMetrics.sectionGap) {
                 ZStack {
-                    Circle().fill(LiquidColor.verdePrimario.opacity(StrandOpacity.tintFill)).frame(width: 116, height: 116)
+                    Circle().fill(LiquidColor.verdePrimario.opacity(CenitOpacity.tintFill)).frame(width: 116, height: 116)
                     Image(systemName: "checkmark")
                         .font(.system(size: 44, weight: .semibold)).foregroundStyle(LiquidColor.verdePrimario)  // token-exempt: glifo héroe del cierre (44pt, pareado al círculo de 116)
                 }
@@ -537,7 +537,7 @@ struct WorkoutImportView: View {
             }
 
             Spacer(minLength: CenitMetrics.sectionGap)
-            StrandCTAButton("Done") { Task { await onComplete(); dismiss() } }
+            CenitCTAButton("Done") { Task { await onComplete(); dismiss() } }
         }
         .frame(maxWidth: .infinity)
         .frame(minHeight: 520)

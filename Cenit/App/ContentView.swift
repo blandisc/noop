@@ -1,5 +1,5 @@
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 /// Marca de proceso de la entrada (FER-41): la coreografía de arranque corre UNA sola vez por

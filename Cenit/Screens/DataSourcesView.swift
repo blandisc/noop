@@ -1,6 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
-import StrandDesign
+import CenitDesign
 import CenitStore
 import StrandAnalytics
 import StrandTraining

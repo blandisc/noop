@@ -8,7 +8,7 @@
 # Formato: una línea por rol, `dimension.rol: valor  # contexto`. `contexto` es uno de
 # mosaico | sobrio | watch_oled | global (global = aplica a los tres). Sin contexto → global.
 #
-# Fuente de los valores: Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/LiquidLayout.swift
+# Fuente de los valores: Packages/CenitDesign/Sources/CenitDesign/LiquidGlass/LiquidLayout.swift
 # (LiquidRadius, LiquidSpace) — el DNA vigente. Mantenerlo a mano cuando el DNA cambie: el AST no
 # puede inferir "esto es un rol" de un `public static let`, solo que existe.
 

@@ -1,7 +1,7 @@
 #if os(iOS)
 import SwiftUI
 import UniformTypeIdentifiers
-import StrandDesign   // LiquidColor, LiquidMotion, LiquidRadius
+import CenitDesign   // LiquidColor, LiquidMotion, LiquidRadius
 
 // MARK: - Arrastrar una rutina a otra sección
 //

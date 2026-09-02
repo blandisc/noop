@@ -175,7 +175,7 @@ cual sin decidir qué pasa aquí (§dudas abiertas, D1).
 y que `ZoneMeter.Segment.label` hoy). Sin loaders, sin `InstrumentoTheme`, sin acceso a repo.
 Los closures de formato síncronos y puros (p. ej. formatear el punto bajo el dedo en el scrub)
 SÍ se permiten — son función, no loader. Los componentes viven en
-`Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/`.
+`Packages/CenitDesign/Sources/CenitDesign/LiquidGlass/`.
 
 ### F1 — cascarón
 
@@ -387,8 +387,8 @@ tal cual.
 
 | Pieza | Acople real | Decisión | Justificación (una línea) |
 |---|---|---|---|
-| `ZoneMeter` (`Packages/StrandDesign/Sources/StrandDesign/ZoneMeter.swift:17-102`) | `theme.ink` (tick), `theme.inkTertiary` (labels), `InstrumentoType.grotesk(8)` | **Variante Liquid nueva** (`LiquidZoneMeter`, rebuild ligero copiando la geometría de pesos `:56-61`) | La geometría son ~30 líneas triviales; parametrizar el tema ensuciaría el componente de papel (generación Instrumento aún en migración). |
-| `SleepStageBar` (`Packages/StrandDesign/Sources/StrandDesign/SleepStageBar.swift:14-82`) | `theme` en init, `InstrumentoType.grotesk(9)` en la leyenda | **Variante Liquid nueva** (`LiquidStageBar`) | Misma razón; además la variante Liquid absorbe overline + ventana horaria (hoy montadas fuera, `MetricInfoSheet.swift:563-575`) y recibe duraciones ya formateadas. |
+| `ZoneMeter` (`Packages/CenitDesign/Sources/CenitDesign/ZoneMeter.swift:17-102`) | `theme.ink` (tick), `theme.inkTertiary` (labels), `InstrumentoType.grotesk(8)` | **Variante Liquid nueva** (`LiquidZoneMeter`, rebuild ligero copiando la geometría de pesos `:56-61`) | La geometría son ~30 líneas triviales; parametrizar el tema ensuciaría el componente de papel (generación Instrumento aún en migración). |
+| `SleepStageBar` (`Packages/CenitDesign/Sources/CenitDesign/SleepStageBar.swift:14-82`) | `theme` en init, `InstrumentoType.grotesk(9)` en la leyenda | **Variante Liquid nueva** (`LiquidStageBar`) | Misma razón; además la variante Liquid absorbe overline + ventana horaria (hoy montadas fuera, `MetricInfoSheet.swift:563-575`) y recibe duraciones ya formateadas. |
 | Chart del explorador (`TrendChart.swift:147-762` vía `MetricTrendChart` vía `MetricLevelsExplorer.swift:129-153`) | Fuentes `StrandFont` hardcodeadas en ejes/tooltip; colores inyectables pero tooltip/haptics de la generación Instrumento | **Re-vestir, no rediseñar ni rebuild total**: `LiquidGraficaNiveles` nueva en el DS que REUSA las piezas de interacción ya públicas — `scrubGesture` (`TrendChart.swift:642`), `CrosshairRule` (`ChartScrub.swift:172`, con alfa `LiquidChart.scrubReglaAlfa`) y el anillo del punto (paridad `HighlightDot` flat, `ChartScrub.swift:201`) — y pinta con `LiquidChart.*` | La interacción es la parte cara y los invariantes I1-I3 la congelan; `TrendChart` no puede re-skinearse in place porque lo comparten N pantallas de papel aún en migración. |
 
 **Invariantes del dueño, mapeados a código y a tokens ya acuñados:**
@@ -452,12 +452,12 @@ y el alto del skeleton de F5.
 ## 6 · Criterios de aceptación por fase
 
 **Gates transversales (aplican a TODA fase):**
-- [ ] `cd Packages/StrandDesign && swift build && swift test` verde.
+- [ ] `cd Packages/CenitDesign && swift build && swift test` verde.
 - [ ] C4: el flag `liquidSheet` nace `false` y NO se voltea en ningún PR antes de F6 (mismo
   patrón que `liquidDemo`, `TodayView.swift:936` — que hoy está en `true` por la sesión
   /inject viva: el cutover de F6 debe verificar AMBOS flags).
 - [ ] C5: cada variante/estado nuevo se agrega a `LiquidSheetEstadosRenderTests`
-  (`Packages/StrandDesign/Tests/StrandDesignTests/`, mismo patrón que
+  (`Packages/CenitDesign/Tests/CenitDesignTests/`, mismo patrón que
   `LiquidHoyEstadosRenderTests`: macOS `ImageRenderer`, `\.liquidMotionDisabled = true`,
   PNG por estado a `/tmp/noop-liquid/`, `swift test --filter LiquidSheetEstadosRenderTests`).
 - [ ] design-lint verde; ningún hex/fuente/espaciado inline nuevo fuera de tokens.

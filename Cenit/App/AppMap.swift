@@ -2,7 +2,7 @@
 import SwiftUI
 import CenitStore
 import StrandTraining
-import StrandDesign
+import CenitDesign
 
 /// **Canvas del mapa de estados** — todas las variantes de una pantalla, lado a lado, dentro del
 /// `#Preview` de Xcode. Cada celda construye un `AppModel`, lo siembra con el MISMO `ScreenshotFixtures`
@@ -48,7 +48,7 @@ private struct AppMapCell: View {
                 // Marco de dispositivo (radio de iPhone en el canvas) — 42 es dato, no hoja(28).
                 .clipShape(RoundedRectangle(cornerRadius: 42, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 42, style: .continuous)
-                    .stroke(LiquidColor.tinta900.opacity(StrandOpacity.tintFill), lineWidth: 1))
+                    .stroke(LiquidColor.tinta900.opacity(CenitOpacity.tintFill), lineWidth: 1))
                 .scaleEffect(scale)
                 .frame(width: 393 * scale, height: 852 * scale)
 

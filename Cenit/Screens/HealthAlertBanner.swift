@@ -1,5 +1,5 @@
 import SwiftUI
-import StrandDesign
+import CenitDesign
 
 /// Strain/illness early-warning banner. Observes AppModel in isolation so the ~1 Hz HR stream
 /// re-renders only this small view, not the whole screen. Renders nothing when there's no alert.

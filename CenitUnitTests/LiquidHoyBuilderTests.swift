@@ -1,7 +1,7 @@
 import XCTest
 import SwiftUI
 import StrandAnalytics
-import StrandDesign
+import CenitDesign
 @testable import Cenit
 
 // LiquidHoyBuilderTests.swift — FER-1045 «Hoy Liquid».

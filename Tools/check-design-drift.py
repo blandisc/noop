@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """Guard against design-system drift in the screens (auditoría jul-2026).
 
-`Packages/StrandDesign` is the single source of visual truth. A screen must not re-introduce a raw
+`Packages/CenitDesign` is the single source of visual truth. A screen must not re-introduce a raw
 hex, an ad-hoc `.font(.system(size:))`, a literal corner radius, or a magic opacity — each is a token
-in the package (see `CenitMetrics`, `StrandFont.glyph`/`.micro`, `InstrumentoCardRadius`, `StrandOpacity`).
+in the package (see `CenitMetrics`, `StrandFont.glyph`/`.micro`, `InstrumentoCardRadius`, `CenitOpacity`).
 This linter fails with concrete `file:line: rule — snippet` lines when it finds one.
 
 Rules (each activated in the PR that finishes its migration — pass `--rules` to opt in incrementally):
 
-    no-hex             `Color(hex:` outside Packages/StrandDesign            (already clean — on by default)
+    no-hex             `Color(hex:` outside Packages/CenitDesign            (already clean — on by default)
     no-adhoc-font      `.font(.system(size:`                                 (after task 02)
     no-radius-literal  `cornerRadius: <number>` not using a CenitMetrics token (after task 01)
-    no-opacity-literal `.opacity(<number>)` not using StrandOpacity/helpers   (after task 03)
+    no-opacity-literal `.opacity(<number>)` not using CenitOpacity/helpers   (after task 03)
     no-emdash-string   em-dash (—) inside a Swift string literal (copy rule)   (FER-878/879; on for Screens+Onboarding)
     no-spacing-literal `.padding(<n>)`, `spacing: <n>`, `lineWidth: <n>`       (FER-258; ratchet over Cenit/Screens…App)
     no-legacy-api      call-site of a retired-generation symbol (Instrumento*/Paper*/…) (FER-263; ratchet)
@@ -48,7 +48,7 @@ DEFAULT_ROOTS = [
     "Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App",
     "CenitApp", "CenitWidgets", "CenitWatch",
 ]
-DESIGN_PKG = "Packages/StrandDesign"
+DESIGN_PKG = "Packages/CenitDesign"
 EXEMPT = re.compile(r"//\s*token-exempt\b")
 
 ALL_RULES = ["no-hex", "no-adhoc-font", "no-radius-literal", "no-opacity-literal", "no-emdash-string", "no-raw-shadow", "no-sheet-glass", "no-spacing-literal", "no-legacy-api", "token-exempt", "no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic", "no-motion-literal", "no-dt-cap-adhoc", "no-deprecated-metrics", "no-instrumento-theme"]
@@ -61,8 +61,8 @@ _ROOTS_ANTI_EVASION = ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cen
 _ROOTS_SPACING_MOTION = ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "CenitApp"]
 _ROOTS_DT = ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "CenitWidgets", "CenitWatch", "CenitApp"]
 _ROOTS_LEGACY = ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "CenitApp"]
-_ROOTS_TOKEN_EXEMPT = ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "Packages/StrandDesign/Sources", "CenitApp"]
-_ROOTS_SHEET_GLASS = ["Packages/StrandDesign/Sources", "Cenit", "CenitApp", "CenitShared", "CenitWidgets"]
+_ROOTS_TOKEN_EXEMPT = ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "Packages/CenitDesign/Sources", "CenitApp"]
+_ROOTS_SHEET_GLASS = ["Packages/CenitDesign/Sources", "Cenit", "CenitApp", "CenitShared", "CenitWidgets"]
 
 DEFAULT_ROOTS_BY_RULE = {
     "no-hex": list(DEFAULT_ROOTS),
@@ -108,7 +108,7 @@ RE_FONT = re.compile(r"\.font\(\.system\(size:\s*[0-9]")
 # no-radius-literal: cornerRadius: followed by a bare number (a token ref like CenitMetrics.cardRadius,
 # radius.value, or M.foo is a name, not a digit, so it's allowed).
 RE_RADIUS = re.compile(r"cornerRadius:\s*[0-9]")
-# no-opacity-literal: .opacity( followed by a bare number. `.opacity(StrandOpacity.x)`,
+# no-opacity-literal: .opacity( followed by a bare number. `.opacity(CenitOpacity.x)`,
 # `.opacity(theme.tint(...))`, `.opacity(someVar)` all start with a non-digit and pass.
 RE_OPACITY = re.compile(r"\.opacity\(\s*[0-9.]")
 # no-raw-shadow: an inline `.shadow(` in a screen. Elevation is a token now (`.strandElevation(_:ink:)`);
@@ -136,10 +136,10 @@ RE_SPACING = re.compile(
 
 # no-legacy-api: a NEW call-site of a retired visual generation (FER-263, épico FER-261). The symbols
 # are the papel-cálido / dark-legacy surface still consumed by the app; each one that reaches 0 in the
-# gated roots leaves this list and becomes a plain prohibition. Definitions inside Packages/StrandDesign
+# gated roots leaves this list and becomes a plain prohibition. Definitions inside Packages/CenitDesign
 # are exempt (same guard as no-hex): the package still IS the implementation while the debt drains.
 # CenitWidgets/CenitWatch are NOT gated roots for this rule (FER-219: `InstrumentoTheme` is the
-# canonical Live-Activity/watch theme there); CenitShared never imports StrandDesign.
+# canonical Live-Activity/watch theme there); CenitShared never imports CenitDesign.
 RE_LEGACY_API = re.compile(
     r"\b(InstrumentoTheme|InstrumentoFlowTitle|InstrumentoToolChip|InstrumentoTabHeader"
     r"|PaperStepper|SectionBand|InstrumentoSectionBand|StrandPalette)\b"
@@ -434,7 +434,7 @@ def main(argv):
         rules_hit = {r for _p, _i, r, _s in hits}
         print("❌ design-system drift:")
         if rules_hit - {"no-legacy-api", "token-exempt"}:
-            print("   → promote the value to a StrandDesign token, "
+            print("   → promote the value to a CenitDesign token, "
                   "or annotate the line with `// token-exempt(<categoria>): <reason>`")
         if "no-legacy-api" in rules_hit:
             print("   → no-legacy-api: API de una generación retirada — "

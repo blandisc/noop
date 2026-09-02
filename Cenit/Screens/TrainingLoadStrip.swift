@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandAnalytics
 import Foundation
 
@@ -68,7 +68,7 @@ struct TrainingLoadStrip: View {
                     .font(LiquidType.caption)
                     .foregroundStyle(LiquidColor.tinta500)
                     .padding(.leading, LiquidSpace.s150)
-                StrandIcon.disclosure.image
+                CenitIcon.disclosure.image
                     .font(.system(size: 9, weight: .semibold)) // token-exempt: microtexto <10pt
                     .foregroundStyle(LiquidColor.tinta500)
                     .padding(.leading, LiquidSpace.s150)

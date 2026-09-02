@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandTraining
 import CenitStore   // store.routineExercises(routineId:) — clasificación de familia (Alcance punto 5, FER-90)
 import Inject   // recarga en caliente (dev-only, inerte en Release)
@@ -286,7 +286,7 @@ struct WorkoutEditSheet: View {
                 Text(exerciseName(groups[gi].exerciseId))
                     .font(LiquidType.titulo)
                     .foregroundStyle(LiquidColor.tinta900)
-                StrandIcon.disclosure.image
+                CenitIcon.disclosure.image
                     .font(LiquidType.iconSF(size: 12))
                     .foregroundStyle(LiquidColor.tinta500)
                 Spacer(minLength: 0)
@@ -303,7 +303,7 @@ struct WorkoutEditSheet: View {
     private func addSetRow(_ gi: Int) -> some View {
         Button { addSet(gi) } label: {
             HStack(spacing: 6) {
-                StrandIcon.add.image.font(LiquidType.iconSF(size: 12))
+                CenitIcon.add.image.font(LiquidType.iconSF(size: 12))
                 Text("Add set").font(LiquidType.tituloFila)
             }
             .foregroundStyle(LiquidColor.tinta700)

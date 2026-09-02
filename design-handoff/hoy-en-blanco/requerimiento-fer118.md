@@ -125,13 +125,13 @@ Lo que **desaparece**: `LiquidAmbientBackground.hoy` en Hoy (aurora + 3 orbes dr
 
 ### 5.1 El fondo: `LiquidAtmosfera` (blanco + polvo Metal, fijo, con parallax)
 
-**Qué es.** Una vista de StrandDesign, `public struct LiquidAtmosfera: View`, que pinta (a) el
+**Qué es.** Una vista de CenitDesign, `public struct LiquidAtmosfera: View`, que pinta (a) el
 blanco `LiquidColor.papelTarjeta` a pantalla completa y (b) encima un campo de N partículas de
 polvo, cada una un disco suave, que derivan lentamente hacia arriba, respiran en alfa, toman el color
 del veredicto y se desplazan con el scroll a un 22 %. Va **detrás** del `ScrollView` de Hoy como
 `.background`, `.ignoresSafeArea()`, `.allowsHitTesting(false)`.
 
-**API (Swift, StrandDesign):** (nota: es el PRIMER uso de `@Observable`/`import Observation` dentro
+**API (Swift, CenitDesign):** (nota: es el PRIMER uso de `@Observable`/`import Observation` dentro
 del paquete —hoy todo es `ObservableObject`—; compila bajo `StrictConcurrency` con iOS 17/macOS 14
 como mínimos del paquete, y el `swift build` + el build iOS del PR B son quienes lo certifican).
 ```swift
@@ -152,7 +152,7 @@ public struct LiquidAtmosfera: View {
 que Hoy ya calcula (`TodayView.liquidAmbiente`, `LiquidHoyBuilder.ambiente(prep:)`).
 
 **La física del polvo — `PolvoSimulacion` (pura, Foundation-only, ES LA SPEC; el shader la
-espeja).** Nuevo archivo `Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/PolvoSimulacion.swift`:
+espeja).** Nuevo archivo `Packages/CenitDesign/Sources/CenitDesign/LiquidGlass/PolvoSimulacion.swift`:
 
 ```swift
 public enum PolvoSimulacion {
@@ -366,7 +366,7 @@ contrato es `.superficieAtmosfera` — y este mismo cambio crea dos mentiras má
 «4 recetas cerradas» (→ «recetas cerradas», igual que el encabezado de la sección) y §10 documenta
 `vidrioCanto` = `tinta900 · 6 %` cuando A lo sube a 8 %: corregir las **seis** cosas; un token del DS
 mal documentado es tan grave como un hex inline).
-`swift run StrandDesignTokens` NO cubre `LiquidColor`/`LiquidGlassRecipe` (solo `InstrumentoTheme`
+`swift run CenitDesignTokens` NO cubre `LiquidColor`/`LiquidGlassRecipe` (solo `InstrumentoTheme`
 → `design-tokens.json` + `DESIGN.md` §8.2): correrlo igual para confirmar «sin diff», pero el gate
 real de estos tokens es la revisión de `LIQUID-GLASS.md` a mano.
 
@@ -553,7 +553,7 @@ frío/lento = abajo, apretado al 22 % como hoy). Así:
   **nudo**: línea punteada (`hilosNudoDash` [2, 2.5], `hilosNudoTrazo` 1.5, `atencion`) que une los
   dos puntos (solo si esa noche trae las dos lecturas). `atencion` entra a la lista de hues del test
   de contraste (4.08:1 sobre blanco). Todos los números de esta gráfica son tokens de `MatrizTokens` (§8, fila C): la CI de
-  design-lint NO corre `no-opacity-literal`/`no-radius-literal` sobre `Packages/StrandDesign`, así que
+  design-lint NO corre `no-opacity-literal`/`no-radius-literal` sobre `Packages/CenitDesign`, así que
   el gate aquí es la revisión, no la máquina.
 - **HOY (índice N−1)** cuando no hay scrub activo: sus dos puntos llevan un **anillo** (radio
   `hilosAnillo` 5.2, trazo `hilosAnilloTrazo` 1.6, su hue) que **late** con la frecuencia del sello
@@ -719,7 +719,7 @@ Idiomas: es y en (todas las claves nuevas con `en` + `es`).
 
 | Archivo | Cambio | PR |
 |---|---|---|
-| `Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/LiquidColor.swift` | + `vidrioAtmosfera` (.white .30), `vidrioCanto` .06 → .08 (token FER-28 sin consumidor, reusado como el canto de tinta), + `vidrioAtmosferaSolida` (.white .45, plan B) | A |
+| `Packages/CenitDesign/Sources/CenitDesign/LiquidGlass/LiquidColor.swift` | + `vidrioAtmosfera` (.white .30), `vidrioCanto` .06 → .08 (token FER-28 sin consumidor, reusado como el canto de tinta), + `vidrioAtmosferaSolida` (.white .45, plan B) | A |
 | `…/LiquidGlass/LiquidType.swift` | + `valorTileL` (30, `.title`), + `valorTileM` (26, `.title2`), + `valorTileTracking = -1` | A |
 | `…/LiquidGlass/LiquidGlassRecipes.swift` | + `case superficieAtmosfera` + `LiquidGlassLayer.bordeSobreNativo` (opt-in; solo esta receta) + `#Preview` sobre blanco con polvo estático | A |
 | `…/LiquidGlass/MatrizTokens.swift` (**PR C**, con su consumidor — en A romperían el paquete porque `costuraAlertaAlfa`/`alturaCostura` aún tienen lector en `MatrizCostura.swift`) | + `alturaHilos 96`, `hilosBaseTemp 28`, `hilosBaseResp 68`, `hilosAmplitud 16`, `hilosBaseAlfa 0.30`, `hilosFillAlfa` (renombra `costuraFillAlfa`, 0.10), `hilosAlertaAlfa` (renombra `costuraAlertaAlfa`, 0.22), `hilosPuntoDentro 3`, `hilosPuntoFuera 4`, `hilosPuntoLeido 5`, `hilosPuntoDentroAlfa 0.45`, `hilosAnillo 5.2`, `hilosAnilloTrazo 1.6`, `hilosAnilloLatido 2`, `hilosLatidoW 1.15` (misma frecuencia que el sello vivo en calma), `hilosHuecoRadio 1.4`, `hilosHuecoAlfa 0.35`, `hilosNudoTrazo 1.5`, `hilosNudoDash [2, 2.5]`, `hilosColumnaFactor 1.2`; − `alturaCostura` | C |
@@ -729,15 +729,15 @@ Idiomas: es y en (todas las claves nuevas con `en` + `es`).
 | `…/Resources/EcosistemaShaders.msl` | + `PolvoU` + `vsPolvo` | B |
 | `…/LiquidGlass/EcosistemaMetal.swift` | + `EcosistemaPolvoU`, `Recursos.polvo`, `EcosistemaPolvoRenderer`, `AtmosferaMetalLienzo` | B |
 | `…/LiquidGlass/LiquidAtmosfera.swift` (**nuevo**) | `AtmosferaEstado`, `LiquidAtmosfera` (Metal + Canvas), `#Preview`s (4 climas + RM) | B |
-| `Packages/StrandDesign/Tests/StrandDesignTests/PolvoSimulacionTests.swift` (**nuevo**), `EcosistemaPlanTests.testLayoutDeLosUniformes` (+ stride 192 y OFFSETS clave de `EcosistemaPolvoU`, no solo el total) + `testLaFisicaDelPolvoSaleDeLosTokens`, `EcosistemaMetalRenderTests` (+ 7 tests de polvo: compila y pinta, determinista, vive, quieto ignora t/parallax, parallax mueve, neutro más tenue, crossfade interpola) | tests | B (+ los offsets de los 6 colores, 0/16/32/48/64/80, en F `63b2fe53`) |
+| `Packages/CenitDesign/Tests/CenitDesignTests/PolvoSimulacionTests.swift` (**nuevo**), `EcosistemaPlanTests.testLayoutDeLosUniformes` (+ stride 192 y OFFSETS clave de `EcosistemaPolvoU`, no solo el total) + `testLaFisicaDelPolvoSaleDeLosTokens`, `EcosistemaMetalRenderTests` (+ 7 tests de polvo: compila y pinta, determinista, vive, quieto ignora t/parallax, parallax mueve, neutro más tenue, crossfade interpola) | tests | B (+ los offsets de los 6 colores, 0/16/32/48/64/80, en F `63b2fe53`) |
 | `docs/ARCHITECTURE.md` | Hoy: capa de fondo Metal fija + parallax por `AtmosferaEstado`; el héroe scrollea | B (y D) |
 | `…/LiquidGlass/MatrizHilos.swift` (**nuevo**) · `MatrizCostura.swift` (→ enum namespace, + `filoBanda`) · `MatrizHoyFace.chartView/chartAltura/chartInset` | la gráfica nueva | C |
-| `…/Tests/StrandDesignTests/MatrizContrasteTests.swift` | + `testHuesDeModulosPasanSobreElVidrioDeLaAtmosfera` (fondo `papelTarjeta`, en A) y `testHuesDeModulosAguantanElPeorPixelDeLaAtmosfera` (piso de regresión, peso rojo 0.217, `atencion` en la lista — llegó en E, se lista aquí por archivo) | A/E |
-| `…/Tests/StrandDesignTests/MatrizHilosTests.swift` (**nuevo**, geometría pura) · `MatrizChartSnapshotTests.swift` (+ `test_hilos`, los 6 estados a PNG) | tests | C |
+| `…/Tests/CenitDesignTests/MatrizContrasteTests.swift` | + `testHuesDeModulosPasanSobreElVidrioDeLaAtmosfera` (fondo `papelTarjeta`, en A) y `testHuesDeModulosAguantanElPeorPixelDeLaAtmosfera` (piso de regresión, peso rojo 0.217, `atencion` en la lista — llegó en E, se lista aquí por archivo) | A/E |
+| `…/Tests/CenitDesignTests/MatrizHilosTests.swift` (**nuevo**, geometría pura) · `MatrizChartSnapshotTests.swift` (+ `test_hilos`, los 6 estados a PNG) | tests | C |
 | `Cenit/Screens/TodayView.swift` | fondo → `LiquidAtmosfera`; `AtmosferaEstado`; parallax en `todayScroll`; `LiquidVeil(tone: nil)`; `visible` on/offAppear | D |
 | `…/LiquidGlass/LiquidPatterns.swift` | − `LiquidHoyAmbient`, − `hoy(_:)`, − `hoyOrbs` (huérfanos) — y sus dos `#Preview` (l. ~419, 430-433) pasan a `LiquidAtmosfera` o se borran, o el paquete no compila | D |
 | `…/LiquidGlass/LiquidHoyScreen.swift` | fondo de la referencia → `LiquidAtmosfera` + `LiquidVeil(tone: nil)` (§13.14) | D |
-| `…/Tests/StrandDesignTests/LiquidHoyEstadosRenderTests.swift` | el arnés de 14 estados arma su propia escena con `.tablero` → `LiquidAtmosfera` (Canvas estático) | D |
+| `…/Tests/CenitDesignTests/LiquidHoyEstadosRenderTests.swift` | el arnés de 14 estados arma su propia escena con `.tablero` → `LiquidAtmosfera` (Canvas estático) | D |
 | `…/LiquidGlass/MatrizHoyFace.swift` | − campo `MatrizSeccion.vota` + la rama que pintaba la cápsula (§5.6.3) — el builder deja de pasar el argumento en este mismo PR | D |
 | `…/LiquidGlass/LiquidPlasta.swift` | el comentario de `.tablero` deja de citar a `.hoy(_:)` (retirado) | D |
 | `Cenit/Screens/Hoy/LiquidHoyBuilder+Matriz.swift` | §5.6.1–3 (bandas · scrub par · vota) | D |
@@ -746,7 +746,7 @@ Idiomas: es y en (todas las claves nuevas con `en` + `es`).
 | `CenitUnitTests/HoyMatrizBuilderTests.swift` | bandas (8, sin bitácora), scrub par, sin `vota` | D |
 | `…/LiquidGlass/MatrizHoyFace.swift` | composición en estantes/módulos (§5.3), hint, sin filos/chevron/vota/`chipEnSublinea`/`terciaria`; los tokens de la anatomía vieja que queden sin lector (`bandaV`, `colGap`, `filoAlfa`, `encabezadoMinH`) se retiran | E |
 | `Cenit/Screens/Hoy/HoyModosHost.swift` | margen de la franja vs. margen de la cara; `mostrarHintScrub` + `onScrubCompletado` con `@AppStorage("today.scrubHints")` | E |
-| `…/Tests/StrandDesignTests/MatrizHoyFaceSnapshotTests.swift` | sus fixtures YA traen 4 `.nivel` (incl. `"Logbook"`, l. 124) → quitar Bitácora, dar `manualID` a los tres estantes, quitar `terciaria:`; el `render` pasa a rendir SOBRE `LiquidAtmosfera` (estático, `liquidMotionDisabled`) con marco 390×1040; `test_orden_a11y…` intacto | E |
+| `…/Tests/CenitDesignTests/MatrizHoyFaceSnapshotTests.swift` | sus fixtures YA traen 4 `.nivel` (incl. `"Logbook"`, l. 124) → quitar Bitácora, dar `manualID` a los tres estantes, quitar `terciaria:`; el `render` pasa a rendir SOBRE `LiquidAtmosfera` (estático, `liquidMotionDisabled`) con marco 390×1040; `test_orden_a11y…` intacto | E |
 | `MatrizHoyFacePreviewData` (en `MatrizHoyFace.swift`) | hoy NO tiene ningún `.nivel` (lista plana de `.full`/`.split`): las previews del DS se dejan como están (siguen compilando y muestran módulos sin cabeceras); no es fixture de nada — opcional añadirles estantes | E |
 | `CenitUITests/CenitScreenshotTests.swift` + `docs/fixtures/today*.png` | `acceptedTermsVersion` 2.0 + espera de 5 s también en vacío; regenerar las capturas de Hoy (8 estados = 32 PNG) | F |
 | `docs/appmap/index.html` + `docs/appmap/shots/hoy-*.png` | muro regenerado desde las fixtures nuevas (`sync_shots` + `build_served`); Entrenar no se toca | F |
@@ -785,7 +785,7 @@ aceptable, ya visto por el dueño en el prototipo «Hoy en blanco»). Cada PR:
 
 | PR | Contenido | Carril de gate | Criterios de cierre propios |
 |---|---|---|---|
-| **A** `vidrio+tokens` | §5.2 + tokens de §8 (A) + docs DS | ligero (paquete) | `swift test` StrandDesign verde; `#Preview` de la receta; `MatrizContrasteTests` extendido en DOS fondos: (a) `papelTarjeta` (el vidrio al 30 % sobre blanco, el caso medio: las motas cubren ~3 % del área) y (b) el **peor pixel realista**: `particulaRoja` al alfa máximo de mota (0.31) bajo blanco al 30 % (`0.783·blanco + 0.217·rojo`). En (a) —criterio de A—: los 9 hues que pintan numerales (indigo, rosa, doradoTemp, azul, verdeCarga, ambar, cian, teal, verdePrimario) ≥ 3:1 (AA-large) y `tinta700`/`tinta500` ≥ 4.5:1. (b) es criterio del **PR E** (§8) y ahí la lista suma `atencion` (el ámbar del par): en (b) NO se afirma AA — medido: ámbar 2.85, teal 2.75, verdePrimario 2.86, `atencion` 2.85, `tinta500` 3.86 — y no hace falta (WCAG G18 mide los píxeles ADYACENTES a la letra; una mota de ≤ 4.6 pt cada ~234 pt² no es el fondo de un numeral de 30 pt): (b) es un **piso de regresión** con la holgura medida (numerales ≥ 2.7, grises ≥ 3.8) que dispara si sube el alfa del polvo, se oscurece `particulaRoja` o se aclara un hue (§13.29); design-tokens sin diff |
+| **A** `vidrio+tokens` | §5.2 + tokens de §8 (A) + docs DS | ligero (paquete) | `swift test` CenitDesign verde; `#Preview` de la receta; `MatrizContrasteTests` extendido en DOS fondos: (a) `papelTarjeta` (el vidrio al 30 % sobre blanco, el caso medio: las motas cubren ~3 % del área) y (b) el **peor pixel realista**: `particulaRoja` al alfa máximo de mota (0.31) bajo blanco al 30 % (`0.783·blanco + 0.217·rojo`). En (a) —criterio de A—: los 9 hues que pintan numerales (indigo, rosa, doradoTemp, azul, verdeCarga, ambar, cian, teal, verdePrimario) ≥ 3:1 (AA-large) y `tinta700`/`tinta500` ≥ 4.5:1. (b) es criterio del **PR E** (§8) y ahí la lista suma `atencion` (el ámbar del par): en (b) NO se afirma AA — medido: ámbar 2.85, teal 2.75, verdePrimario 2.86, `atencion` 2.85, `tinta500` 3.86 — y no hace falta (WCAG G18 mide los píxeles ADYACENTES a la letra; una mota de ≤ 4.6 pt cada ~234 pt² no es el fondo de un numeral de 30 pt): (b) es un **piso de regresión** con la holgura medida (numerales ≥ 2.7, grises ≥ 3.8) que dispara si sube el alfa del polvo, se oscurece `particulaRoja` o se aclara un hue (§13.29); design-tokens sin diff |
 | **B** `atmósfera` | §5.1 completo (spec, shader, renderer, vista, previews, tests); NO se monta aún en la app | pesado (Metal + concurrencia) | `PolvoSimulacionTests` (abajo); `testLayoutDeLosUniformes` con `EcosistemaPolvoU`; render offscreen: compila y pinta algo, es determinista con `t` fijo, distinto entre `t=0` y `t=3` (vivo), y `still` ignora `t`; previews de 4 climas + RM; ARCHITECTURE.md |
 | **C** `hilos` | §5.4 (vista + namespace + tests) | pesado (gráfica con invariantes de honestidad) | `MatrizHilosTests` 1–6 (geometría pura); `MatrizCosturaMapeoTests` + `CosturaGuardianTests` intactos y verdes; snapshot del guardián en 6 estados (calma con HOY / una fuera / par ámbar / sin base de respiración / leyendo / sin datos) como `MatrizChartSnapshotTests.test_hilos` (macOS, `ImageRenderer`, PNG `matriz_hilos.png` en `/tmp/noop-fer51/`, con `liquidMotionDisabled`); CHANGELOG |
 | **D** `fondo de Hoy` | §5.1 montaje + §5.6 + xcstrings + `LiquidHoyScreen` + borrar huérfanos | pesado (app + Metal) · `ci-app` | build app; `HoyMatrizBuilderTests` (bandas sin bitácora, scrub par, sin vota); en simulador: fondo blanco, polvo vivo, parallax al scrollear (visible), pausa con hoja abierta (verificable con un `print` temporal o Instruments), color cambia con crossfade entre `primed`/`strained`; RM estático; `LiquidHoyEstadosRenderTests` verde; CHANGELOG |
@@ -844,13 +844,13 @@ y sin parallax; parallax mueve `y` −0.22·desplazamiento (envuelto).
 
 ```bash
 # Paquete (rápido) — por PR A/B/C/D
-cd Packages/StrandDesign && swift build && swift test
+cd Packages/CenitDesign && swift build && swift test
 swift test --filter PolvoSimulacionTests
 swift test --filter EcosistemaMetalRenderTests        # se salta sin GPU; en el Mac del dueño corre
 swift test --filter MatrizHilosTests
 swift test --filter MatrizHoyFaceSnapshotTests        # PNGs a /tmp/noop-fer51/
 swift test --filter LiquidHoyEstadosRenderTests       # PNGs a /tmp/noop-liquid/estado_*.png (14 estados)
-swift run StrandDesignTokens                          # docs de tokens sin diff (CI design-tokens)
+swift run CenitDesignTokens                          # docs de tokens sin diff (CI design-tokens)
 
 # App — por PR D/E/F (un build a la vez; esperar idle)
 while pgrep -q swift-frontend; do sleep 30; done

@@ -1,4 +1,4 @@
-import StrandDesign
+import CenitDesign
 
 /// The resting-face context the iPhone resolves and pushes over `updateApplicationContext` (FER-96),
 /// OUTSIDE any active session: today's routine name and the SAME daily verdict word/tone/advice
@@ -12,7 +12,7 @@ struct WatchIdleContext: Equatable {
     var routineName: String?
     /// The wire form of the verdict's tone — one of `"clear"/"caution"/"ease"/"hollow"`, or nil.
     /// `CenitShared` carries this as a plain `String` (not `EntrenarHilo.Tone`) so it stays free of
-    /// `StrandDesign` (Alcance §4 of FER-96) — see `tone` below for the one translation point.
+    /// `CenitDesign` (Alcance §4 of FER-96) — see `tone` below for the one translation point.
     var toneRaw: String?
 
     /// `toneRaw` → `EntrenarHilo.Tone` — the ONE place the wrist turns the wire string back into the

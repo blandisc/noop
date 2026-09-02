@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandAnalytics
 import StrandTraining
 import CenitStore   // WorkoutRow — the journal join that carries zones / max HR (FER-952)
@@ -160,7 +160,7 @@ struct WorkoutHistoryScreen: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button { onClose() } label: {
                         HStack(spacing: LiquidSpace.s100) {
-                            StrandIcon.back.image.font(LiquidType.iconSF(size: 15))
+                            CenitIcon.back.image.font(LiquidType.iconSF(size: 15))
                             Text("Tendencias").font(LiquidType.tituloGemela)
                         }
                     }
@@ -420,7 +420,7 @@ struct WorkoutHistoryScreen: View {
             }
         }
         let hours = seconds > 0 ? String(format: "%.1f h", Double(seconds) / 3600) : "—"
-        let kcalStr = hasKcal ? "\(StrandFormat.groupedInt(kcal)) kcal" : "—"
+        let kcalStr = hasKcal ? "\(CenitFormat.groupedInt(kcal)) kcal" : "—"
         return (hours, kcalStr)
     }
 
@@ -698,7 +698,7 @@ struct WorkoutHistoryScreen: View {
         let m: MonthAggregate = monthAggregate
         let sessionsValue: String = "\(m.count)"
         let hoursValue: String = m.hours > 0 ? String(format: "%.1f", m.hours) : "—"
-        let energyValue: String = m.energyKcal.map(StrandFormat.groupedInt) ?? "—"
+        let energyValue: String = m.energyKcal.map(CenitFormat.groupedInt) ?? "—"
         let energyUnit: LocalizedStringKey? = m.energyKcal != nil ? "kcal" : nil
         HStack(spacing: LiquidSpace.s200) {
             monthTile("Sessions", sessionsValue, caption: "this month")
@@ -794,7 +794,7 @@ struct WorkoutHistoryScreen: View {
 
     /// The movement-family tint for a muscle key (push=ember · pull=teal · legs=indigo; else ink-ish).
     private func muscleTint(_ muscle: String) -> Color {
-        // r21: mapeo PROMOVIDO a StrandDesign (`movementFamilyTint`) — una sola fuente de verdad.
+        // r21: mapeo PROMOVIDO a CenitDesign (`movementFamilyTint`) — una sola fuente de verdad.
         theme.movementFamilyTint(primaryMuscles: [muscle])
     }
 
@@ -817,7 +817,7 @@ struct WorkoutHistoryScreen: View {
                         switch row.kind {
                         case .raised(let kg):
                             HStack(spacing: LiquidSpace.s100) {
-                                StrandIcon.up.image
+                                CenitIcon.up.image
                                 Text(StrengthDisplay.weight(kg, system: system))
                             }
                             .font(LiquidType.filaConteo)
@@ -1560,9 +1560,9 @@ struct WorkoutSessionDetailScreen: View {
 
     private var actions: some View {
         VStack(spacing: LiquidSpace.s250) {
-            StrandCTAButton("Repeat today") { repeatToday() }
+            CenitCTAButton("Repeat today") { repeatToday() }
                 .disabled(groups.isEmpty)
-            StrandCTAButton("Duplicate as routine", kind: .outline) { duplicateAsRoutine() }
+            CenitCTAButton("Duplicate as routine", kind: .outline) { duplicateAsRoutine() }
                 .disabled(groups.isEmpty)
         }
     }
@@ -1756,7 +1756,7 @@ struct WorkoutSessionDetailScreen: View {
             }
             // Avg HR lives in its own FC block (handoff «Progreso C») — not repeated here. Energy only
             // when the session carries it (FER-715/718): pre-v26 → omitted, never a fabricated 0.
-            if let k = dispEnergyKcal { supportCell("Energy", StrandFormat.groupedInt(k)) }
+            if let k = dispEnergyKcal { supportCell("Energy", CenitFormat.groupedInt(k)) }
         }
     }
 

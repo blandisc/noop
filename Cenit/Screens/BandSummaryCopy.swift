@@ -1,5 +1,5 @@
 import SwiftUI
-import StrandDesign
+import CenitDesign
 
 /// Plain-language helpers for the "days in range" readouts — the per-band counts in the ranges table and
 /// the standardized «{band} · X of the last N days/nights in this range» line. Nocturnal metrics read

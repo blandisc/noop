@@ -156,7 +156,7 @@ final class CensusVisitor: SyntaxVisitor {
             }
         }
 
-        // Image(systemName: "…") — vocabulario de iconografía y candidato a StrandIcon.
+        // Image(systemName: "…") — vocabulario de iconografía y candidato a CenitIcon.
         if callee == "Image" {
             for arg in node.arguments where arg.label?.text == "systemName" {
                 if let str = arg.expression.as(StringLiteralExprSyntax.self) {
@@ -178,7 +178,7 @@ final class CensusVisitor: SyntaxVisitor {
             }
         }
 
-        // Háptica: generadores UIKit crudos fuera de un helper de StrandDesign (p.ej. EntrenarHaptics).
+        // Háptica: generadores UIKit crudos fuera de un helper de CenitDesign (p.ej. EntrenarHaptics).
         if callee.contains("UIImpactFeedbackGenerator") || callee.contains("UINotificationFeedbackGenerator") || callee.contains("UISelectionFeedbackGenerator") {
             record(.interaction, rule: "evasion:UIFeedbackGenerator-crudo", node: node)
         }

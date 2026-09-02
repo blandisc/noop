@@ -42,7 +42,7 @@ off-device. The app is **Apple-only** (FER-1003): it no longer pairs with or rea
                           │                      └───────┬────────┘                   │
                           │                              ▼                            │
                           │               StrandAnalytics ──▶ SwiftUI screens         │
-                          │               (HRV/recovery/      (StrandDesign)          │
+                          │               (HRV/recovery/      (CenitDesign)          │
                           │                strain/sleep)                              │
                           └─────────────────────────────────────────────────────────┘
 ```
@@ -76,13 +76,13 @@ Cenit/                         App-layer (Data/Screens/System/…) compiled by t
 └── System/                     app-layer helpers (ProjectInfo, Platform)
 
 Packages/                       Cross-platform Swift packages (base `.iOS(.v16)` / `.macOS(.v13)`;
-│                               StrandDesign is `.iOS(.v17)` / `.macOS(.v14)` + `.watchOS(.v10)`)
+│                               CenitDesign is `.iOS(.v17)` / `.macOS(.v14)` + `.watchOS(.v10)`)
 ├── BiometricStreams/           neutral vocabulary of decoded rows (`Streams`, `ParsedValue`) — no deps; still linked into the app (CenitStore/StrandAnalytics depend on it)
 ├── CenitStore/                 GRDB/SQLite persistence (actor)
 ├── StrandTraining/             strength domain types + bundled exercise catalog (free-exercise-db, FER-923; pure, no DB)
 ├── StrandAnalytics/            HRV/recovery/strain/sleep/correlation math
 ├── StrandImport/               Apple Health importer (export.xml, streaming)
-└── StrandDesign/               SwiftUI design system (palette, components, charts)
+└── CenitDesign/               SwiftUI design system (palette, components, charts)
 
 CenitApp/                       iOS SwiftUI app shell (App/Health/System/Widgets/Resources)
 CenitShared/                    code shared between the iOS app, its widgets, and (FER-740) the watch —
@@ -90,20 +90,20 @@ CenitShared/                    code shared between the iOS app, its widgets, an
 CenitWidgets/                   iOS home / lock-screen widgets
 CenitWatch/                     watchOS 10 companion app (single target, FER-740). Runs the real
                                 HKWorkoutSession and mirrors it to the iPhone; no GRDB on the wrist.
-                                Depends only on StrandDesign (project.yml + `import StrandDesign` only).
+                                Depends only on CenitDesign (project.yml + `import CenitDesign` only).
 ```
 
 The app target is **`Cenit`** (Swift module `Cenit`, product `Cenit.app`): its shell (scene, HealthKit,
 widgets, intents) lives in **`CenitApp/`**, and it compiles the app-layer under **`Cenit/`** (screens,
 data, media). Its linked packages (`project.yml`) are `BiometricStreams`, `CenitStore`,
-`StrandAnalytics`, `StrandImport`, `StrandDesign`, `StrandTraining`, and `Inject`. The user-visible name
+`StrandAnalytics`, `StrandImport`, `CenitDesign`, `StrandTraining`, and `Inject`. The user-visible name
 stays **Cénit** (`CFBundleDisplayName`); the visible rebrand to "Cénit" is tracked separately. The macOS
 app and its `Strand`/`StrandTests` targets were retired (FER-143) and the dead `#if os(macOS)`/`AppKit`
 branches removed (FER-144); the app-layer unit tests run as **`CenitUnitTests`** in the simulator. The
 packages keep their `Strand*` names. The core/data/analytics packages declare `.iOS(.v16)`/`.macOS(.v13)`,
 guarding UI-framework calls behind `#if canImport(UIKit)` / `#if canImport(AppKit)`. **`StrandTraining`**
 keeps that base (`.iOS(.v16)`/`.macOS(.v13)`) and also declares **`.watchOS(.v10)`** (FER-740).
-**`StrandDesign` is higher:** `.iOS(.v17)` / `.macOS(.v14)` / `.watchOS(.v10)` so the watch app can paint
+**`CenitDesign` is higher:** `.iOS(.v17)` / `.macOS(.v14)` / `.watchOS(.v10)` so the watch app can paint
 with the design tokens — both are pure (Foundation-only / SwiftUI behind `#if canImport(UIKit|AppKit)`,
 with `#if os(iOS)` guards on the two haptic/hover-scrub spots). `CenitStore`/`StrandAnalytics`/
 `StrandImport` are **not** watchOS-bound: no DB or analytics runs on the wrist.
@@ -140,7 +140,7 @@ Each package has a narrow contract. The dependency graph is acyclic and the leaf
 **platform-pure** (no CoreBluetooth, no UIKit/AppKit) so they run in CLI tools and tests:
 
 ```
-StrandDesign        (no deps — pure SwiftUI)
+CenitDesign        (no deps — pure SwiftUI)
 StrandTraining      (no deps — pure domain types + bundled exercise catalog)
 StrandModels        (no deps — shared daily-metric value types: DailyMetric, CachedSleepSession, DietMealStatus)
 
@@ -170,7 +170,7 @@ StrandImport ───────▶ CenitStore + StrandTraining + ZIPFoundatio
 | **CenitStore** | Durable on-device persistence built on GRDB/SQLite. Migrations, decoded streams, metric caches, generic metric series, raw outbox, cursors. | `actor CenitStore`, `makeMigrator()`, `insert(_:deviceId:)`, `dailyMetrics`, `sleepSessions`, `metricSeries`, `pruneRaw`, `ClockRef`, `RawBatchMeta` | An **`actor`** — all writes/reads run off the main thread on its serial executor. |
 | **StrandAnalytics** | All physiological math, as pure functions over inputs. HRV, recovery, strain, sleep staging, workout detection, baselines, HR zones, correlation/comparison. | `AnalyticsEngine.analyzeDay(...)` → `DayResult`, `HRVAnalyzer`, `RecoveryScorer`, `StrainScorer`, `SleepStager`, `WorkoutDetector`, `Baselines`, `CorrelationEngine`, `Preparedness` (the «Preparación» morning verdict by axis-consensus over the user's Apple baselines — composed in `Repository.performRefresh`, published as `DashboardData.preparedness`, read by the Today hero; FER-1030), `WeeklySplit` (split → today's routine / day states / consistency streak, FER-531) | **Pure — never touches the database (literal):** depends on `BiometricStreams` + `StrandModels` only; no GRDB/CenitStore link (L3-C1b). Produces `DailyMetric`/`CachedSleepSession` shapes for the store. |
 | **StrandImport** | Parse Apple Health exports the user already owns (`export.xml`, streaming). | `ImportCoordinator.detectAndImport`, `AppleHealthImporter`, `AppleHealthAggregator`, `SleepHKEncoder`/`SleepHKDecoder` | **Parsing only** — returns normalized model arrays; the app maps them into the store. |
-| **StrandDesign** | The SwiftUI design system: palette, typography, motion, charts, components. | `StrandPalette`, `liquidGlass(_:)`, `RecoveryZoneGauge`, `Hypnogram`, `TrendChart`, `Sparkline`, `YearHeatStrip` (full index: [CATALOGO.md](design-system/CATALOGO.md)) | No data or protocol deps — pure presentation. |
+| **CenitDesign** | The SwiftUI design system: palette, typography, motion, charts, components. | `StrandPalette`, `liquidGlass(_:)`, `RecoveryZoneGauge`, `Hypnogram`, `TrendChart`, `Sparkline`, `YearHeatStrip` (full index: [CATALOGO.md](design-system/CATALOGO.md)) | No data or protocol deps — pure presentation. |
 | **StrandTraining** | Strength-tracker domain types + the bundled, read-only exercise catalog (**free-exercise-db**, 873 exercises with native slug ids; FER-923, was ExerciseDB OSS in FER-779). The value models CenitStore persists and StrandAnalytics computes over. | `Exercise`, `ExerciseType`, `ExerciseCatalog`, `Routine`, `RoutineExercise` (with `supersetGroup` FER-346; optional fixed note seeded into each session and never copied to the session's acta, FER-166, v39), `RoutineSet` (per-set prescription, FER-492; optional per-set `RestConfig` override with exercise fallback, FER-715; optional `repsRangeTop` for a "floor-top" rep range, FER-94, migration v38), `RoutineSchedule` (the weekly split, FER-531), `StrengthSession` (with persisted `energyKcal`/`EnergySource`, FER-715), `SetEntry` (with `rpe` v34; `restTakenS` — the real rest that FOLLOWED the set, pause-excluded, captured by the live session, FER-167, v40), `PersonalRecord` | **Pure** — Foundation only (no GRDB/UIKit). GRDB conformance lives in CenitStore by extension. (FER-345) |
 
 > **Exercise type override (FER-541).** The user can override an exercise's `ExerciseType` — including a catalog entry's (e.g. mark a "Plank" as time-based). The override is *user data*, so it lives in CenitStore (`exerciseTypeOverride`, migration v24), **not** in the read-only bundled catalog. Precedence (user override > custom > catalog) is decided by the pure `ExerciseTypeResolver` and applied at a single resolver in `Cenit/Data/Repository+Strength.swift` (`resolvedExercise` / `allExercises`), which materializes the effective type into `Exercise.type`. Every downstream reader (guided session, builder, detail) sees the resolved type without bespoke logic; the catalog JSON is never mutated, so reverting is a plain delete.
@@ -623,7 +623,7 @@ backfilled streams, or imported data interchangeably. **All derived values are a
 
 ---
 
-## 10. Presentation (the app + StrandDesign)
+## 10. Presentation (the app + CenitDesign)
 
 The `Cenit` app shell (under `CenitApp/App/`) builds a single `AppModel`, injects it (`.environment`)
 plus `Repository`, `ProfileStore`, `BehaviorStore`, `GoalStore` (the Bucle's goal — a single
@@ -684,7 +684,7 @@ inputs snapshotted contiguously on the main actor before the hop (FER-177/519); 
 itself stays a thin `@MainActor` wrapper (guards → snapshot → hop → publish). The daily motion
 derivatives it persists (`motion_intensity`, `act_hNN`) are described in §7 "Generic metric series".
 
-Screens render with `StrandDesign` components — `RecoveryZoneGauge`, `Hypnogram`,
+Screens render with `CenitDesign` components — `RecoveryZoneGauge`, `Hypnogram`,
 `TrendChart`, `TrajectoryChart` (the goal simulator's two-path + confidence-band plot), `Sparkline`,
 `YearHeatStrip` — over the `StrandPalette` tokens. `AppModel` also hosts
 the opt-in, on-device behaviours (HR smoothing, illness/strain early-warning, stress nudges, HR-zone
@@ -714,7 +714,7 @@ is hermetic in CI):
 
 ### The «Instrumento diurno» theme (single warm day paper)
 
-`StrandDesign` carries a second, light-mode visual language («Instrumento diurno», warm paper) whose
+`CenitDesign` carries a second, light-mode visual language («Instrumento diurno», warm paper) whose
 `InstrumentoTheme` role struct is injected through the `\.instrumentoTheme` Environment key. Screens
 anchor it to the single day paper, `InstrumentoTheme.base`, via `.instrumentoTheme(.base)` (which also
 sets `\.instrumentoFlat`, so shared chart components drop the legacy dark-system glow on paper). The
@@ -736,7 +736,7 @@ tint), and the pure **OKLab** colour math (Ottosson 2020) backs the paper gradie
 `positiveText`/`negativeText` (the base anchor's hues clear WCAG AA on its paper; pinned in
 `InstrumentoThemeEngineTests` / `FitnessAgeContrastTests`). **Package purity:** sunrise/sunset
 (`StrandAnalytics.SolarClock`, FER-133) is consumed by **injection** of a plain `SolarWindow` value,
-never imported — `StrandDesign` remains the dependency-free leaf of the package graph, 100% offline
+never imported — `CenitDesign` remains the dependency-free leaf of the package graph, 100% offline
 (`Date`/`Calendar` only).
 
 **The Today hero renders on two backends (FER-10 Phase A → FER-13 Phase B).** «El Ecosistema» is the
@@ -837,7 +837,7 @@ scroll (parallax). The hero is **not** part of the background: it scrolls with t
 
 ### Design-system enforcement (gates, baseline, censo) — épico FER-261
 
-`StrandDesign` is the source of visual truth **in fact, not just on paper**, because a tooling layer
+`CenitDesign` is the source of visual truth **in fact, not just on paper**, because a tooling layer
 stops the gated debt classes from growing (a PR that sabotages the tooling itself is caught by its
 own diff in review, not by the tooling — no text-level check can guard its own executor):
 
@@ -859,9 +859,9 @@ own diff in review, not by the tooling — no text-level check can guard its own
   pointing away from the canonical JSON. The contract doc (hand-written; DESIGN.md is generated) also
   defines the exemption taxonomy, the ×3 rule, the collision-arbitration policy and the legal-raise path.
 - **Census and catalog.** `Tools/DesignCensus/` is an ISOLATED swift-syntax executable (never a
-  dependency of `StrandDesign`, never in CI's hot path) that regenerates
+  dependency of `CenitDesign`, never in CI's hot path) that regenerates
   `docs/design-system/CENSO.md`+`.json` — 8 dimensions, evasion sieve, exemption taxonomy, collision
-  candidates — re-run before each quarterly batch. `StrandDesignTokens` additionally emits the Liquid
+  candidates — re-run before each quarterly batch. `CenitDesignTokens` additionally emits the Liquid
   dictionary and the component index `docs/design-system/CATALOGO.md`, guarded by `design-tokens.yml`.
   `DesignDriftTokenTests` is the value oracle (token == wrapped literal); the `ImageRenderer`
   harnesses stay harnesses, never pixel assertions.

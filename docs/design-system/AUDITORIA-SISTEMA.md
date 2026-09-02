@@ -1,18 +1,18 @@
-# Auditoría C — El sistema por dentro (StrandDesign)
+# Auditoría C — El sistema por dentro (CenitDesign)
 
 > **Solo reporte.** Cero cambios a Swift/CI/linter/docs existentes.  
 > **Issue:** FER-279 · **rama:** `grok/fer-279c-sistema-1788281605-68973-8231`  
 > **Fecha del censo:** 2026-09-01 · **worktree** de esta corrida.  
-> **Alcance:** `StrandDesign` como sistema (tokens, recetas, API pública), no pantallas.
+> **Alcance:** `CenitDesign` como sistema (tokens, recetas, API pública), no pantallas.
 
 ## Método (greps corridos)
 
 Árbol **APP** = `Cenit/` + `CenitApp/` + `CenitWidgets/` + `CenitWatch/`.  
-Árbol **PKG** = `Packages/StrandDesign/Sources/StrandDesign/`.
+Árbol **PKG** = `Packages/CenitDesign/Sources/CenitDesign/`.
 
 Conteos con `rg --glob '*.swift'` (hits / archivos distintos). Formato reportado: `N hits / F files`.
 
-Familias censadas: `LiquidColor.`, `StrandPalette.`, `InstrumentoTheme`, `theme.(paper|ink|…)`, `CenitColor.`, `LiquidSpace.`, `CenitMetrics.`, `LiquidRadius.`, `LiquidChip.`, `LiquidControl.`, `LiquidElevation.`, `liquidShadow(`, `StrandElevation.`, `strandElevation(`, `LiquidType.`, `StrandFont.`, `InstrumentoType.`, `LiquidMotion.`, `StrandMotion.`, `LiquidHaptica`, `EntrenarHaptic`, `ChartHaptics`, `StrandOpacity.`, `WidgetMetrics.`, `HomeWidgetMetrics.`, `WatchMetrics.`, más ~110 componentes/APIs (`liquidGlass(`, `LiquidMenu`, `StatTile`, …) y miembros sueltos de `LiquidSpace` / `CenitMetrics` / `StrandMotion` / `LiquidMotion` / `LiquidElevation`.
+Familias censadas: `LiquidColor.`, `StrandPalette.`, `InstrumentoTheme`, `theme.(paper|ink|…)`, `CenitColor.`, `LiquidSpace.`, `CenitMetrics.`, `LiquidRadius.`, `LiquidChip.`, `LiquidControl.`, `LiquidElevation.`, `liquidShadow(`, `StrandElevation.`, `strandElevation(`, `LiquidType.`, `StrandFont.`, `InstrumentoType.`, `LiquidMotion.`, `StrandMotion.`, `LiquidHaptica`, `EntrenarHaptic`, `ChartHaptics`, `CenitOpacity.`, `WidgetMetrics.`, `HomeWidgetMetrics.`, `WatchMetrics.`, más ~110 componentes/APIs (`liquidGlass(`, `LiquidMenu`, `StatTile`, …) y miembros sueltos de `LiquidSpace` / `CenitMetrics` / `StrandMotion` / `LiquidMotion` / `LiquidElevation`.
 
 **Tamaño del paquete:** 207 archivos `.swift` · ~48.8k LOC · ~338 tipos `public` (enum/struct/class/…) en 196 archivos.
 
@@ -33,7 +33,7 @@ Leyenda de **ruta**: **fusionar** (alias → un nombre) · **renombrar** · **de
 | **Sombra** | `LiquidElevation` + `liquidShadow` (`LiquidLayout.swift:231`, `:290`) | `StrandElevation` + `strandElevation` (`Elevation.swift:6`, `:44`) | `LiquidElevation` **3/1**; `liquidShadow(` **4/3** | `StrandElevation` / `strandElevation(` **0/0** APP | **Liquid gana.** `StrandElevation` es cadáver (solo PKG definición + 3–4 previews). Dejar morir. `LiquidElevation.tarjeta` **decidido** (`DECISIONS.md:120`). |
 | **Motion** | `LiquidMotion` (`LiquidMotion.swift:21`) + recetas press/entrada/sheet | `StrandMotion` (`Motion.swift:18`) + keyframes `rec*` en el mismo archivo | `LiquidMotion` **82/36** | `StrandMotion` **59/25** | **Liquid gana** para features nuevas (gate `no-motion-literal` ya empuja tokens). Fusionar springs/duraciones solapadas vía typealias; `StrandMotion.interactive/gentle/fade` aún calientes en APP — migrar call-sites luego borrar. Ambientales (`drift`/`flow`) solo PKG: OK. |
 | **Hápticos** | `LiquidHaptica` (`LiquidHaptica.swift:20`) | `EntrenarHaptic` (sesión); `ChartHaptics` (scrub) | `LiquidHaptica` **8/4** | `EntrenarHaptic` **11/5**; `ChartHaptics` **1/1** APP (+ **12/9** PKG) | **Tres catálogos con rol distinto — decidido en comentarios del propio código** (`LiquidHaptica.swift:14–16`). No fusionar; sí documentar el mapa en CATALOGO. |
-| **Opacidad** | (vidrio en `LiquidColor.vidrio*`) | `StrandOpacity` (`Palette.swift:200`) — compartido | — | `StrandOpacity` **15/9** APP / **19/9** PKG | Neutral compartido útil. Se queda. Corregir docs que hablan de `opacity.disabled` → el token real es `StrandOpacity.dim` (`:208`). |
+| **Opacidad** | (vidrio en `LiquidColor.vidrio*`) | `CenitOpacity` (`Palette.swift:200`) — compartido | — | `CenitOpacity` **15/9** APP / **19/9** PKG | Neutral compartido útil. Se queda. Corregir docs que hablan de `opacity.disabled` → el token real es `CenitOpacity.dim` (`:208`). |
 | **Z-index** | — | *(capa z-index huérfana — archivo ya ausente del árbol)* | **0/0** | **0/0** | **Ya muerto** — no reintroducir. |
 | **Widgets / Watch** | — | `WidgetMetrics`, `HomeWidgetMetrics`, `WatchMetrics` (`Components.swift:66+`) | `WidgetMetrics` vía typealias en Live Activity; `HomeWidgetMetrics` vía `typealias M` en home widgets; `WatchMetrics` **13/2** | carve-out CONTRATO | **Decidido:** fuera de varios gates. No mezclar con `LiquidSpace`. |
 | **Superficie** | `liquidGlass(_:)` / `liquidGlass(tono:regimen:)` (`LiquidGlassRecipes.swift:18`, `:132`) | `.instrumentoCard` (`InstrumentoCard.swift:68`); Paper* residual | `liquidGlass(` **33/17** APP (+ **61/40** PKG) | `instrumentoCard(` **0** APP (solo PKG); `LiquidMenu` reemplaza a `PaperMenu` (FER-283) | Vidrio Liquid gana. `InstrumentoTheme` en `/migracion`. `instrumentoCard` ya sin consumidor APP → candidato a borrar tras quitar previews. |
@@ -222,9 +222,9 @@ Al censo, `no-legacy-api` incluía `PaperMenu` y APP tenía **26/10**. FER-281 e
 
 1. **Mapa «¿qué token uso?»** Liquid vs CenitMetrics para la misma cifra.  
 2. **Régimen mosaico/sobrio** como decisión de pantalla, no solo de Hoy/Entrenar.  
-3. **`StrandOpacity`** como escala sancionada (DESIGN habla de `opacity.disabled` genérico).  
+3. **`CenitOpacity`** como escala sancionada (DESIGN habla de `opacity.disabled` genérico).  
 4. **Hápticos:** `LiquidHaptica` / `EntrenarHaptic` / `ChartHaptics`.  
-5. **Roles FER-275** (`topeScroll`, `ctaVertical`, …) — en código con comentarios ricos; CATALOGO generado puede atrasarse si no re-corre `StrandDesignTokens`.  
+5. **Roles FER-275** (`topeScroll`, `ctaVertical`, …) — en código con comentarios ricos; CATALOGO generado puede atrasarse si no re-corre `CenitDesignTokens`.  
 6. **Huérfanos públicos** siguen en el índice mental (CATALOGO aún presenta `StatTile`, `Hypnogram`, … como opciones).  
 7. Que `InstrumentoTheme` siga siendo el carrier de color de media app **no** implica que el DNA sea Instrumento — el doc de apertura lo dice; el §8 y los entry points lo contradicen.
 
@@ -282,7 +282,7 @@ Cada una es un issue proponible. **Sin implementar aquí.**
 **Criterios:**
 
 1. Lista §3.1 + subset acordado de §3.2 eliminados del target.  
-2. `swift test` del paquete StrandDesign verde.  
+2. `swift test` del paquete CenitDesign verde.  
 3. CATALOGO ya no indexa los borrados.  
 4. No borrar §3.3 (pipeline Liquid).  
 5. `HeroInvertido`/`PieMetodo` quitados también de DESIGN prosa.
@@ -321,7 +321,7 @@ Cada una es un issue proponible. **Sin implementar aquí.**
 | `InstrumentoSectionBand` | 15/4 | 9/2 |
 | `LiquidElevation.` | 3/1 | 12/6 |
 | `StrandElevation.` / `strandElevation(` | 0/0 | 1/1 · 4/3 |
-| `StrandOpacity.` | 15/9 | 19/9 |
+| `CenitOpacity.` | 15/9 | 19/9 |
 | `.instrumentoTheme` | 76 inyecciones | — |
 | `liquidEntrada` / `liquidPress` | 39/12 · 31/17 | 7/5 · 33/21 |
 

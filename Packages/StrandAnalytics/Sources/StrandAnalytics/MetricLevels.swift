@@ -16,10 +16,10 @@ import Foundation
 ///
 /// Pure and database-free: no `import` of UIKit / SwiftUI / CoreBluetooth, no device clock, no I/O.
 /// It defines keys, thresholds and counts — plus `name(for:)`, the ONE stable English key→label map
-/// (FER-731) — but **never** colours; F6b/F6c (`StrandDesign` / `Cenit`) own colour and the es-MX
+/// (FER-731) — but **never** colours; F6b/F6c (`CenitDesign` / `Cenit`) own colour and the es-MX
 /// localisation of those names. These thresholds are the NEW canonical set the
 /// redesigned metric detail adopts (the F6 README numbers); they are not the same as the shipped
-/// `MetricInfo.Band` (Cenit) / `TrendBands` (StrandDesign), which several screens still render and
+/// `MetricInfo.Band` (Cenit) / `TrendBands` (CenitDesign), which several screens still render and
 /// which this phase deliberately leaves untouched. F6b/F6c migrate those consumers onto this engine,
 /// at which point it becomes the single source of truth; until then the two sets coexist by design.
 ///

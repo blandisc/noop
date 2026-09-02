@@ -28,7 +28,7 @@ jobs:
   test:
     # Linux-safe packages run on ubuntu (1× billing / faster queue). The rest need macOS
     # because of Apple-only frameworks unavailable on Linux:
-    #   - StrandDesign: SwiftUI / Charts / UIKit / AppKit
+    #   - CenitDesign: SwiftUI / Charts / UIKit / AppKit
     #   - CenitStore:   Compression (RawOutbox.swift) — and StrandImport inherits it
     #     (depends on CenitStore, so fails to build on Linux transitively).
     #   - StrandTraining: Compression (Exercise.swift — zlib-inflated catalog, FER-875).
@@ -50,7 +50,7 @@ jobs:
             os: macos-15
           - package: StrandImport
             os: macos-15
-          - package: StrandDesign
+          - package: CenitDesign
             # macos-26 ships Xcode 26+ (iOS 26 SDK, needed for glassEffect) — same reasoning as ios-app.yml.
             os: macos-26
     steps:

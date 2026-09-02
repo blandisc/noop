@@ -1,6 +1,6 @@
 import XCTest
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandModels
 @testable import Cenit
 

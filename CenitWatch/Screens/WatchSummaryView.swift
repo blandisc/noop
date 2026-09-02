@@ -1,5 +1,5 @@
 import SwiftUI
-import StrandDesign
+import CenitDesign
 
 /// State 6 — the minimal end-of-session summary. Duration is the hero (ember, as the session's output);
 /// average heart rate and active energy are secondary; a line confirms it reached Health (or warns it

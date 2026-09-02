@@ -152,7 +152,7 @@ Packages/
   StrandAnalytics/      HRV / preparedness / strain / sleep math (pure, DB-free)
   StrandTraining/       strength domain (catalog, sets/reps, routines)
   StrandImport/         Apple Health importers
-  StrandDesign/         SwiftUI design system
+  CenitDesign/         SwiftUI design system
   StrandModels/         shared models
 Tools/                  developer scripts (localization, screen captures, design lint)
 ```
@@ -193,7 +193,7 @@ what the production tabs show.
   (`XMLParser`) for `export.xml` (which can exceed 1 GB), with correlation-dedupe,
   unit normalization (e.g. SpO₂ fraction → %), and sleep-stage mapping.
 
-### `StrandDesign` — the SwiftUI design system
+### `CenitDesign` — the SwiftUI design system
 
 Palette, typography, motion, and reusable components/charts — no external UI
 dependencies.

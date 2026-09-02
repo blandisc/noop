@@ -22,7 +22,7 @@
 > hifi de las 7 recetas de forma; este doc es el mapa canónico del sistema unificado
 > (recetas + vidrio teñido El Eje).
 
-- **Código canónico:** `Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/` (+
+- **Código canónico:** `Packages/CenitDesign/Sources/CenitDesign/LiquidGlass/` (+
   `Entrenar/` para `LiquidTono` / contenedores mosaico)
 - **Entry points:** `LiquidColor` · `LiquidType` · `LiquidSpace` / `LiquidRadius` ·
   `LiquidElevation` · `LiquidMotion` · `LiquidHaptica` · `liquidGlass(_:)` (7 recetas de
@@ -365,7 +365,7 @@ Las 9 hojas de detalle de Hoy (Sueño, VFC, FC en reposo, Esfuerzo, Pasos, Tempe
 Respiración, Estrés, Carga) se reconstruyen sobre **una sola familia**: plantilla + componentes
 compartidos + 6 contratos de datos. Principio rector: se cambia la familia, nunca por pantalla;
 lo «distinto» (Sueño) se resuelve con componentes en un slot opcional del mismo shell, jamás
-forkeando. Código canónico: `Packages/StrandDesign/.../LiquidGlass/` (shell y piezas) +
+forkeando. Código canónico: `Packages/CenitDesign/.../LiquidGlass/` (shell y piezas) +
 `Packages/StrandAnalytics` (niveles, formato, frase) + el cableado en `Cenit/Screens/Hoy/`.
 
 ### 11.1 Papel opaco en tarjetas internas

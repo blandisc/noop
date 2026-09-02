@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 
 // MARK: - «＋ Serie» / «Calentamiento» — el par que cierra la tarjeta de un ejercicio
 //
@@ -53,7 +53,7 @@ struct SetActionPills: View {
                 action: addSet
             ) {
                 HStack(spacing: LiquidSpace.s150) {
-                    StrandIcon.add.image.font(LiquidType.infoGlifoCompacto.weight(.semibold))
+                    CenitIcon.add.image.font(LiquidType.infoGlifoCompacto.weight(.semibold))
                     Text("Set")
                 }
                 .font(LiquidType.tituloGemela)
@@ -71,7 +71,7 @@ struct SetActionPills: View {
                     action: addWarmup
                 ) {
                     HStack(spacing: LiquidSpace.s150) {
-                        StrandIcon.add.image.font(LiquidType.infoGlifoCompacto.weight(.semibold))
+                        CenitIcon.add.image.font(LiquidType.infoGlifoCompacto.weight(.semibold))
                         Text("Warm-up")
                     }
                     .font(LiquidType.tituloGemela)

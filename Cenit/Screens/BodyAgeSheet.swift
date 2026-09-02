@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandAnalytics
 
 // MARK: - BodyAgeSheet — «Edad corporal» en vidrio Liquid (FER-145 · FER-105 · TND-33)

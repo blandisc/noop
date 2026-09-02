@@ -1,6 +1,6 @@
 import SwiftUI
 import Foundation
-import StrandDesign
+import CenitDesign
 import StrandAnalytics
 import CenitStore
 

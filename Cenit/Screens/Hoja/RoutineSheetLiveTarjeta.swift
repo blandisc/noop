@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandTraining
 import StrandAnalytics
 
@@ -63,7 +63,7 @@ struct HojaTarjetaEjercicioSesion: View {
                 .accessibilityHidden(true)   // la acción vive en `.accessibilityAction` del cuerpo — sin botón duplicado en el rotor
             }
             Button { vivo.menuExerciseIndex = ei } label: {
-                StrandIcon.more.image.font(LiquidType.infoGlifo.weight(.semibold))
+                CenitIcon.more.image.font(LiquidType.infoGlifo.weight(.semibold))
                     .foregroundStyle(LiquidColor.tinta500).frame(width: 30, height: LiquidControl.hitTarget).contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -532,7 +532,7 @@ struct HojaPlegadaSesion: View {
 /// La superserie en sesión (mapa C1/mock P5 `.ss2`): tarjeta única con RONDAS INTERCALADAS — un
 /// divisor «Ronda K de M» (`HojaRondaDivisor`) antes de cada grupo, una fila por MIEMBRO por ronda
 /// (round-robin real del motor, `registerCurrentSet`), sin letras A1/A2. Reusa `HojaTarjetaSuperserie`
-/// (StrandDesign) — el mismo cristal cian + header + pastilla + «···» que ya monta C2/edición — en
+/// (CenitDesign) — el mismo cristal cian + header + pastilla + «···» que ya monta C2/edición — en
 /// vez de un cristal propio: la única pieza nueva de este archivo es CÓMO se arman las filas.
 ///
 /// N3: las rondas son series de TRABAJO — un calentamiento no cuenta ni se intercala; si un miembro

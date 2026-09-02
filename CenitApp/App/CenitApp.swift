@@ -1,7 +1,7 @@
 #if os(iOS)
 import SwiftUI
 import UIKit
-import StrandDesign
+import CenitDesign
 
 /// iOS entry point. A single `WindowGroup`; the glanceable role is filled by the Home/Lock-Screen
 /// widget.

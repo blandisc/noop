@@ -1,6 +1,6 @@
 #if os(iOS)
 import XCTest
-import StrandDesign
+import CenitDesign
 import StrandAnalytics
 @testable import Cenit
 

@@ -1,5 +1,5 @@
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandAnalytics
 import CenitStore
 import Foundation
@@ -455,7 +455,7 @@ struct AppleHealthView: View {
             }
         }
         // Glyph is non-optional on LiquidMetricTile; body-comp / VO₂ keys still lack a family
-        // identity — `.carga` matches the quiet preview in StrandDesign (PESO).
+        // identity — `.carga` matches the quiet preview in CenitDesign (PESO).
         return LiquidMetricTile(label: metricLabel(key), value: value, unit: unit, delta: nil,
                                 tone: values.isEmpty ? LiquidColor.tinta500 : identity.hue,
                                 icon: identity.glyph ?? .carga,
@@ -738,7 +738,7 @@ struct AppleHealthView: View {
         return (lo - span * pad)...(hi + span * pad)
     }
 
-    private func intString(_ v: Double) -> String { StrandFormat.groupedInt(v) }
+    private func intString(_ v: Double) -> String { CenitFormat.groupedInt(v) }
 
     private func durationString(_ minutes: Double) -> String {
         let total = Int(minutes.rounded())

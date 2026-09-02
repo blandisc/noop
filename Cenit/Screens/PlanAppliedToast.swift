@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 
 // MARK: - «Plantilla aplicada» — el aviso de éxito que confirma la escritura silenciosa
 //

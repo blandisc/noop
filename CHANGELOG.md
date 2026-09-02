@@ -20,6 +20,8 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- El sistema de diseño se llama `CenitDesign` (antes `StrandDesign`): paquete, módulo, carpetas, generador de tokens y tests renombrados; `StrandIcon`, `StrandCTAButton`, `StrandOpacity` y `StrandFormat` pasan a `CenitIcon`, `CenitCTAButton`, `CenitOpacity` y `CenitFormat` (FER-290, decisión 4A).
+
 - Gate de diseño: dos reglas nuevas, `no-deprecated-metrics` (los 8 miembros retirados de `CenitMetrics`) y `no-instrumento-theme` (acceso `theme.ink/paper/…` y `StrandFont.*` fuera del carve-out Watch/Widgets), ambas prohibición pura porque la deuda ya es cero; y los últimos residuos Instrumento de Tu cuerpo, Edad corporal, Estrés y el plan semanal pasan a tokens Liquid (FER-306).
 
 - Las hojas hijas de sesión (RPE, Nota, Cambiar ejercicio, Discos, Crear ejercicio y el detalle de músculo) pasan al vidrio El Eje: tipografía y tinta Liquid, cabecera de hoja y controles del catálogo (FER-302).

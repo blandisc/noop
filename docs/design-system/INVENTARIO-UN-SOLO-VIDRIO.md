@@ -13,7 +13,7 @@ Cada fila de vidrio y cada pantalla de papel lleva **destino**. Donde el dueño/
 
 ### 1.1 Recetas `liquidGlass(_:)` — `LiquidGlassRecipe`
 
-Archivo: `Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/LiquidGlassRecipes.swift`
+Archivo: `Packages/CenitDesign/Sources/CenitDesign/LiquidGlass/LiquidGlassRecipes.swift`
 
 | Receta | Definición | Destino propuesto |
 |---|---|---|
@@ -29,7 +29,7 @@ Puerta pública: `func liquidGlass(_ recipe: LiquidGlassRecipe)` en `:49`.
 
 ### 1.2 `EntrenarVidrioReceta` (hub teñido)
 
-Archivo: `Packages/StrandDesign/Sources/StrandDesign/Entrenar/EntrenarVidrio.swift`
+Archivo: `Packages/CenitDesign/Sources/CenitDesign/Entrenar/EntrenarVidrio.swift`
 
 | Pieza | Ruta:línea | Destino propuesto |
 |---|---|---|
@@ -42,7 +42,7 @@ Archivo: `Packages/StrandDesign/Sources/StrandDesign/Entrenar/EntrenarVidrio.swi
 
 ### 1.3 `.entrenarHojaFondo(tono:)`
 
-Archivo: `Packages/StrandDesign/Sources/StrandDesign/Entrenar/EntrenarHojaFondo.swift`  
+Archivo: `Packages/CenitDesign/Sources/CenitDesign/Entrenar/EntrenarHojaFondo.swift`  
 API: `:55` · cristal edge-to-edge: `:83`–`:87` (`glassEffect` en `Rectangle`).
 
 **Destino propuesto:** **Funde** como régimen de *fondo de hoja* teñido (no tarjeta flotante) de la API unificada — misma intensidad que módulos (`EntrenarVidrioMetrics.intensidadDefault`, citado en `:97`–`:100`). Alternativa si la forma edge-to-edge no cabe en `liquidGlass`: **conserva como caso** de presentación. «(a decidir por arquitecto/dueño)» el nombre del parámetro (`regimen: .hoja` vs API aparte).
@@ -75,20 +75,20 @@ API: `:55` · cristal edge-to-edge: `:83`–`:87` (`glassEffect` en `Rectangle`)
 | `WeeklyPlanEditorView` | `Cenit/Screens/WeeklyPlanEditorView.swift:118` | `.neutro` |
 | `TrainingBodyScreen` (+ hoja) | `Cenit/Screens/TrainingBodyScreen.swift:190`, `:944` | `.neutro` |
 | `WorkoutEditSheet` | `Cenit/Screens/WorkoutEditSheet.swift:102` | `.neutro` |
-| Previews DS (`EntrenarFila*`, `EntrenarNotaCampo`, `EntrenarStepperSegundos`, `EntrenarHojaFondo`) | `Packages/StrandDesign/.../Entrenar/*.swift` | varios |
+| Previews DS (`EntrenarFila*`, `EntrenarNotaCampo`, `EntrenarStepperSegundos`, `EntrenarHojaFondo`) | `Packages/CenitDesign/.../Entrenar/*.swift` | varios |
 
 El menú documental de 11 superficies de la Ola 2 vive en el comentario de cabecera `EntrenarHojaFondo.swift:25`–`:39` (Progression, Rest, RPE, Note, Plates, ChangeExercise, ExerciseDetail, Library, CreateExercise, summaryPhase, emptyAdHoc).
 
 ### 1.4 `LiquidModulo`
 
-Archivo: `Packages/StrandDesign/Sources/StrandDesign/LiquidGlass/LiquidModulo.swift`  
+Archivo: `Packages/CenitDesign/Sources/CenitDesign/LiquidGlass/LiquidModulo.swift`  
 Struct `:18` · vidrio `:65`–`:69` (densidad por `index` + aurora en filo).
 
 **Destino propuesto:** **Conserva como caso** del régimen sobrio de Hoy (aurora de datos + densidad progresiva). No es un `.liquidGlass` suelto a propósito (`:15`–`:16`). Fusearlo a la API genérica perdería índice/aurora — solo fundir si la API unificada modela esos parámetros. «(a decidir por arquitecto/dueño)» si se expresa como `liquidGlass(.modulo(index:aurora:))` o queda componente.
 
 ### 1.5 `ConfirmCard.cardGlassFill`
 
-Archivo: `Packages/StrandDesign/Sources/StrandDesign/ConfirmCard.swift`  
+Archivo: `Packages/CenitDesign/Sources/CenitDesign/ConfirmCard.swift`  
 `cardGlassFill` `:189`–`:193` · forma `UnevenRoundedRectangle` solo arriba `:169`–`:170`.
 
 **Destino propuesto:** **Conserva como caso** — `.liquidGlass(_:)` no expone esquinas parciales (comentario `:173`–`:174`). Fusear cuando la API acepte `shape:`/hoja anclada; hasta entonces no romper ConfirmCard.
@@ -165,21 +165,21 @@ rg -n 'EntrenarTono|EntrenarVidrio|EntrenarVidrioReceta|EntrenarVidrioMetrics|En
 rg -n '#136A78|#514E86|#0A6B4A|#93445A|#A0500F' Packages Cenit --glob '*.swift'
 ```
 
-### 3.1 Definición y puente (StrandDesign)
+### 3.1 Definición y puente (CenitDesign)
 
 | Archivo | Símbolos / líneas |
 |---|---|
-| `Packages/StrandDesign/.../Entrenar/EntrenarVidrio.swift` | `EntrenarTono` `:22`; `rotulo` hex `:47`–`:50`, `:63`; `EntrenarFamily.tono` `:77`; `EntrenarVidrioMetrics` `:91`; `EntrenarVidrioReceta` `:145`; `EntrenarModulo` `:224`; `EntrenarTile` `:258` |
-| `Packages/StrandDesign/.../Entrenar/EntrenarHojaFondo.swift` | `entrenarHojaFondo(tono:)` `:55`; usa `EntrenarTono` + `EntrenarVidrioMetrics` `:100` |
-| `Packages/StrandDesign/.../Entrenar/EntrenarHojaCabecera.swift` | `tono: EntrenarTono` `:29`, `:45` |
-| `Packages/StrandDesign/.../Entrenar/EntrenarFilaDiscos.swift` | `tono: EntrenarTono` `:32`, `:40` |
-| `Packages/StrandDesign/.../Entrenar/EntrenarFilaEsfuerzo.swift` | `tono: EntrenarTono` `:14`, `:21` |
-| `Packages/StrandDesign/.../Entrenar/EntrenarNotaCampo.swift` | `tono: EntrenarTono` `:13`, `:15` |
-| `Packages/StrandDesign/.../Entrenar/EntrenarStepperSegundos.swift` | `tono: EntrenarTono` `:12`, `:18` |
-| `Packages/StrandDesign/.../Entrenar/EntrenarMiniBarras.swift` | `tono: EntrenarTono` `:32`, `:38` |
-| `Packages/StrandDesign/.../Entrenar/EntrenarHistorialLista.swift` | `EntrenarModulo(tono: .neutro)` `:29` |
-| `Packages/StrandDesign/.../Entrenar/EntrenarHubMetrics.swift` | docs/refs a `EntrenarVidrio` / `EntrenarModulo` `:5`, `:146`–`:150` |
-| `Packages/StrandDesign/.../Entrenar/EntrenarFilaHerramienta.swift` | previews con `tono:` / `.entrenarHojaFondo` `:64`, `:69`, `:85` |
+| `Packages/CenitDesign/.../Entrenar/EntrenarVidrio.swift` | `EntrenarTono` `:22`; `rotulo` hex `:47`–`:50`, `:63`; `EntrenarFamily.tono` `:77`; `EntrenarVidrioMetrics` `:91`; `EntrenarVidrioReceta` `:145`; `EntrenarModulo` `:224`; `EntrenarTile` `:258` |
+| `Packages/CenitDesign/.../Entrenar/EntrenarHojaFondo.swift` | `entrenarHojaFondo(tono:)` `:55`; usa `EntrenarTono` + `EntrenarVidrioMetrics` `:100` |
+| `Packages/CenitDesign/.../Entrenar/EntrenarHojaCabecera.swift` | `tono: EntrenarTono` `:29`, `:45` |
+| `Packages/CenitDesign/.../Entrenar/EntrenarFilaDiscos.swift` | `tono: EntrenarTono` `:32`, `:40` |
+| `Packages/CenitDesign/.../Entrenar/EntrenarFilaEsfuerzo.swift` | `tono: EntrenarTono` `:14`, `:21` |
+| `Packages/CenitDesign/.../Entrenar/EntrenarNotaCampo.swift` | `tono: EntrenarTono` `:13`, `:15` |
+| `Packages/CenitDesign/.../Entrenar/EntrenarStepperSegundos.swift` | `tono: EntrenarTono` `:12`, `:18` |
+| `Packages/CenitDesign/.../Entrenar/EntrenarMiniBarras.swift` | `tono: EntrenarTono` `:32`, `:38` |
+| `Packages/CenitDesign/.../Entrenar/EntrenarHistorialLista.swift` | `EntrenarModulo(tono: .neutro)` `:29` |
+| `Packages/CenitDesign/.../Entrenar/EntrenarHubMetrics.swift` | docs/refs a `EntrenarVidrio` / `EntrenarModulo` `:5`, `:146`–`:150` |
+| `Packages/CenitDesign/.../Entrenar/EntrenarFilaHerramienta.swift` | previews con `tono:` / `.entrenarHojaFondo` `:64`, `:69`, `:85` |
 
 ### 3.2 Hex duplicados de tono (no pasan por el enum)
 

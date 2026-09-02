@@ -1,7 +1,7 @@
 #if os(iOS)
 import SwiftUI
 import UIKit
-import StrandDesign
+import CenitDesign
 import StrandTraining
 import StrandAnalytics
 import BiometricStreams

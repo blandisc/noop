@@ -2,7 +2,7 @@
 
 > Compañero de [`DESIGN.md`](DESIGN.md) (**Liquid Glass · El Eje** — marco canónico; «Instrumento
 > diurno» = generación anterior absorbida · en migración). Define cómo se eligen, nombran y usan
-> los iconos en Cénit: el catálogo `StrandIcon`, los glifos dibujados a mano, el tamaño ligado a
+> los iconos en Cénit: el catálogo `CenitIcon`, los glifos dibujados a mano, el tamaño ligado a
 > la rejilla, la accesibilidad y qué reservar. Aterrizado en el uso real (76 nombres SF distintos,
 > `chevron.right` solo = 52 usos).
 
@@ -14,10 +14,10 @@ Un icono se nombra por **lo que hace**, no por cómo se ve (misma regla que el c
 [`LENGUAJE.md §4`](LENGUAJE.md)). El triángulo de reproducir es `play`, no `triangle`. Esto evita que
 dos pantallas usen iconos distintos para la misma acción, o el mismo icono para cosas distintas.
 
-## 2. Catálogo `StrandIcon`
+## 2. Catálogo `CenitIcon`
 
-El set de alta frecuencia + semántico vive en `StrandIcon` (`Packages/StrandDesign/Sources/StrandDesign/StrandIcon.swift`).
-Úsalo con `StrandIcon.disclosure.image` en vez de `Image(systemName: "chevron.right")`.
+El set de alta frecuencia + semántico vive en `CenitIcon` (`Packages/CenitDesign/Sources/CenitDesign/CenitIcon.swift`).
+Úsalo con `CenitIcon.disclosure.image` en vez de `Image(systemName: "chevron.right")`.
 
 | Caso | SF Symbol | Propósito |
 |---|---|---|
@@ -51,7 +51,7 @@ Estos representan acciones comunes y **no deben usarse para otra cosa**:
 ## 4. Glifos dibujados a mano (custom)
 
 Cuando ningún SF Symbol dice lo que necesitamos, dibujamos el glifo (CoreGraphics/Path) en
-`StrandDesign`. Los que existen:
+`CenitDesign`. Los que existen:
 
 | Glifo | Uso |
 |---|---|
@@ -102,7 +102,7 @@ segura, y que ningún rasgo caiga bajo el pixel a 20 pt. `SelloMetricaTests` anc
 
 | Regla | Estado |
 |---|---|
-| Set frecuente en `StrandIcon`, nombrado por propósito | **Token** (este release) |
+| Set frecuente en `CenitIcon`, nombrado por propósito | **Token** (este release) |
 | Nombrar por propósito, reservados, custom vs SF | **Convención** (este doc) |
 | Sin `Image(systemName:)` crudo en pantallas | **Fase 2** (posible regla de lint incremental, como las actuales) |
 

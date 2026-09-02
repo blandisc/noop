@@ -1,8 +1,8 @@
-import StrandDesign
+import CenitDesign
 
 // MARK: - Los rótulos del dock, traducidos (FER-112)
 //
-// `StrandDesign` no tiene catálogo de cadenas, así que los títulos del dock vivían hardcodeados
+// `CenitDesign` no tiene catálogo de cadenas, así que los títulos del dock vivían hardcodeados
 // en español dentro del paquete: la barra que acompaña TODAS las pantallas se veía en español
 // aunque el teléfono estuviera en inglés. Aquí es donde sí hay catálogo, y de aquí salen.
 //

@@ -1,5 +1,5 @@
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandTraining
 import StrandAnalytics
 import Inject   // recarga en caliente (dev-only, inerte en Release)
@@ -433,7 +433,7 @@ struct RestEditorScreen: View {
     }
 
     private var cta: some View {
-        StrandCTAButton("Apply") {
+        CenitCTAButton("Apply") {
             let config = RestEditorMapping.buildConfig(
                 mode: mode, hrRef: hrRef, seconds: seconds, margin: margin, reserve: reserve,
                 peakDropFraction: peakDropFraction, fixedTargetBpm: fixedTargetBpm)

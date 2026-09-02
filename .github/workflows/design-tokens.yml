@@ -1,7 +1,7 @@
 # Design-token drift guard (FER-131 handoff · 01).
 #
 # `Instrumento.swift` is the single source of truth for the «Instrumento diurno» tokens. This job
-# re-runs the generator (`swift run StrandDesignTokens`) and fails if the committed doc artifacts
+# re-runs the generator (`swift run CenitDesignTokens`) and fails if the committed doc artifacts
 # (docs/design-system/DESIGN.md token table + tokens/design-tokens.json) differ from what the code
 # produces — i.e. someone changed a token without regenerating, or hand-edited the generated blocks.
 # Self-contained: plain SwiftPM on macOS, no Xcode, no signing, no secrets.
@@ -17,7 +17,7 @@ on:
   pull_request:
     branches: [iOS, main]
     paths:
-      - 'Packages/StrandDesign/**'
+      - 'Packages/CenitDesign/**'
       - 'docs/design-system/DESIGN.md'
       - 'docs/design-system/CATALOGO.md'
       - 'docs/design-system/tokens/design-tokens.json'
@@ -41,17 +41,17 @@ jobs:
         with:
           xcode-version: 'latest-stable'
 
-      - name: StrandDesign tests (snapshots + contrast + token anchors)
+      - name: CenitDesign tests (snapshots + contrast + token anchors)
         run: swift test
-        working-directory: Packages/StrandDesign
+        working-directory: Packages/CenitDesign
 
       - name: Regenerate tokens from Instrumento.swift
-        run: swift run StrandDesignTokens
-        working-directory: Packages/StrandDesign
+        run: swift run CenitDesignTokens
+        working-directory: Packages/CenitDesign
 
       - name: Fail if docs drift from code
         run: |
           if ! git diff --exit-code -- docs/design-system/DESIGN.md docs/design-system/CATALOGO.md docs/design-system/tokens/design-tokens.json; then
-            echo "::error::Design tokens are out of date. Run 'swift run StrandDesignTokens' in Packages/StrandDesign and commit the result."
+            echo "::error::Design tokens are out of date. Run 'swift run CenitDesignTokens' in Packages/CenitDesign and commit the result."
             exit 1
           fi

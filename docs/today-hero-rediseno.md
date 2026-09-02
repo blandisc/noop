@@ -320,10 +320,10 @@ si algún día se diera veredicto desde Apple Health, el estado §7-6 cambiaría
   (`emptyHero`, `importedBaselineHero`, `CalibrationProgressCard`, `verdictSection`,
   `heroSection`, `readinessColor`).
 - **Componentes del rediseño (ya en `iOS`):**
-  [`DiurnalDial`](../Packages/StrandDesign/Sources/StrandDesign/DiurnalDial.swift)
-  (dial 24h, FER-134), [`Instrumento`](../Packages/StrandDesign/Sources/StrandDesign/Instrumento.swift)
+  [`DiurnalDial`](../Packages/CenitDesign/Sources/CenitDesign/DiurnalDial.swift)
+  (dial 24h, FER-134), [`Instrumento`](../Packages/CenitDesign/Sources/CenitDesign/Instrumento.swift)
   (`InstrumentoTheme` + tipo, FER-131/147),
-  [`InstrumentoThemeEngine`](../Packages/StrandDesign/Sources/StrandDesign/InstrumentoThemeEngine.swift)
+  [`InstrumentoThemeEngine`](../Packages/CenitDesign/Sources/CenitDesign/InstrumentoThemeEngine.swift)
   (tema por hora, FER-132), `Sparkline`/`ReferenceRange` (banda 14d, FER-155).
 - **Motor (solo lectura):** `Packages/StrandAnalytics` — `ReadinessEngine.Level`,
   `RecoveryScorer.calibrationNights`, `Baselines.minNightsSeed/minNightsTrust`,

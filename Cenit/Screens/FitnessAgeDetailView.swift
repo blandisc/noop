@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandAnalytics
 
 // MARK: - Fitness Age detail — «Edad física» en vidrio Liquid (FER-141 · FER-105 · TND-33)

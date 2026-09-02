@@ -1,5 +1,5 @@
 import SwiftUI
-import StrandDesign
+import CenitDesign
 
 // MARK: - Piezas del onboarding en siete actos (FER-109 · FER-113)
 //

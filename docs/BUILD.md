@@ -36,7 +36,7 @@ Cenit/
 │   ├── StrandAnalytics/        # HRV / recovery / strain / sleep / correlation math
 │   ├── StrandTraining/         # strength domain
 │   ├── StrandImport/           # Apple Health importers
-│   └── StrandDesign/           # SwiftUI design system (palette, components, charts)
+│   └── CenitDesign/           # SwiftUI design system (palette, components, charts)
 └── Tools/                      # dev scripts (i18n, design lint, screenshots, icon, DerivedData prune)
 ```
 
@@ -45,7 +45,7 @@ Cenit/
 Every package declares **both** `.iOS(.v16)` and `.macOS(.v13)`, so the storage, analytics, import,
 and design layers compile and run unmodified on iOS (and stay portable to other platforms). Any
 framework-specific code is guarded with `#if canImport(AppKit) / #elseif canImport(UIKit)`
-(for example the color bridging in `Packages/StrandDesign/Sources/StrandDesign/Palette.swift`).
+(for example the color bridging in `Packages/CenitDesign/Sources/CenitDesign/Palette.swift`).
 
 | Package          | Platforms                | Key dependencies                          | Responsibility |
 |------------------|--------------------------|-------------------------------------------|----------------|
@@ -54,7 +54,7 @@ framework-specific code is guarded with `#if canImport(AppKit) / #elseif canImpo
 | `CenitStore`     | iOS 16+, macOS 13+       | `BiometricStreams`, `StrandModels`, `StrandTraining`, `GRDB.swift` (≥ 6.0.0) | SQLite persistence, migrations, streams, metric caches |
 | `StrandAnalytics`| macOS 13+, iOS 16+       | `BiometricStreams`, `StrandModels`        | HRV / recovery / strain / sleep / correlation math |
 | `StrandImport`   | macOS 13+, iOS 16+       | `CenitStore`, `StrandTraining`, `ZIPFoundation` (≥ 0.9.0) | Apple Health (`export.xml`, streaming) importers |
-| `StrandDesign`   | macOS 13+, iOS 16+       | none                                      | SwiftUI design system: palette, components, charts |
+| `CenitDesign`   | macOS 13+, iOS 16+       | none                                      | SwiftUI design system: palette, components, charts |
 
 All third-party dependencies are resolved through **Swift Package Manager**; nothing is vendored
 as a binary.
@@ -211,7 +211,7 @@ work is a Windows UI re-implementation that matches the shared packages' behavio
 cd Packages/StrandAnalytics && swift test
 cd Packages/CenitStore    && swift test
 cd Packages/StrandImport  && swift test
-cd Packages/StrandDesign  && swift test
+cd Packages/CenitDesign  && swift test
 
 # App + integration tests via Xcode:
 xcodegen generate

@@ -20,15 +20,15 @@
 > sistema oscuro sigue retirado (FER-430); Watch OLED es la única excepción viva. El inventario aún
 > en migración vive en **[§8](#8-instrumento-diurno--generación-anterior-absorbida--en-migración)**.
 
-- **Source of truth:** the `StrandDesign` Swift package — `Packages/StrandDesign/Sources/StrandDesign/`
-- **Package version:** `0.1.0` (`StrandDesign.version`)
+- **Source of truth:** the `CenitDesign` Swift package — `Packages/CenitDesign/Sources/CenitDesign/`
+- **Package version:** `0.1.0` (`CenitDesign.version`)
 - **Token entry points (canónicos — Liquid Glass · El Eje):** `LiquidColor` · `LiquidType` · `LiquidSpace` / `LiquidRadius` · `LiquidElevation` · `LiquidMotion` · `LiquidHaptica` · `liquidGlass(_:)` / `liquidGlass(tono:regimen:)` — mapa completo en [`LIQUID-GLASS.md`](LIQUID-GLASS.md); índice de componentes en [`CATALOGO.md`](CATALOGO.md)
-- **Legado en migración (no usar en pantallas nuevas):** `StrandPalette` · `StrandFont` · `StrandMotion` · `CenitMetrics` · `StrandElevation` (retirado — sin consumidores de pantalla activos; solo su definición en `Elevation.swift`) · `InstrumentoTheme` / `theme.*` — inventario aún en tránsito en **[§8](#8-instrumento-diurno--generación-anterior-absorbida--en-migración)**; `StrandIcon` sigue vivo para glifos (ver [`ICONOGRAFIA.md`](ICONOGRAFIA.md))
+- **Legado en migración (no usar en pantallas nuevas):** `StrandPalette` · `StrandFont` · `StrandMotion` · `CenitMetrics` · `StrandElevation` (retirado — sin consumidores de pantalla activos; solo su definición en `Elevation.swift`) · `InstrumentoTheme` / `theme.*` — inventario aún en tránsito en **[§8](#8-instrumento-diurno--generación-anterior-absorbida--en-migración)**; `CenitIcon` sigue vivo para glifos (ver [`ICONOGRAFIA.md`](ICONOGRAFIA.md))
 - **Machine-readable tokens:** [`tokens/design-tokens.json`](tokens/design-tokens.json) (W3C Design Tokens format)
 - **Assets:** [`assets/`](assets/) — app icons + brand marks
 - **Voz y contenido:** [`LENGUAJE.md`](LENGUAJE.md) — cómo suena el sistema: tono, escritura es-MX, microcopy y glosario canónico (compañero de este doc)
 - **«Liquid Glass · El Eje» (marco canónico):** [`LIQUID-GLASS.md`](LIQUID-GLASS.md) — tokens `Liquid*`, recetas de vidrio, regímenes mosaico/sobrio, motion y hápticos; pantalla de referencia `LiquidHoyScreen` (sobrio) · hub Entrenar (`EntrenarModulo` / `EntrenarTile`, mosaico)
-- **Guías compañeras:** [`ACCESIBILIDAD.md`](ACCESIBILIDAD.md) (contraste, Dynamic Type, VoiceOver, reduce-motion, 44pt) · [`I18N.md`](I18N.md) (locales, plurales, formato) · [`ICONOGRAFIA.md`](ICONOGRAFIA.md) (catálogo `StrandIcon`, glifos, naming)
+- **Guías compañeras:** [`ACCESIBILIDAD.md`](ACCESIBILIDAD.md) (contraste, Dynamic Type, VoiceOver, reduce-motion, 44pt) · [`I18N.md`](I18N.md) (locales, plurales, formato) · [`ICONOGRAFIA.md`](ICONOGRAFIA.md) (catálogo `CenitIcon`, glifos, naming)
 
 > ⚠️ This document is **generated from code**. The Swift package is canonical — if a
 > value here disagrees with `Palette.swift` / `Typography.swift` / `Motion.swift` /
@@ -42,7 +42,7 @@
 
 Surfaces and text still carry the **«Instrumento diurno»** roles while paper screens migrate — see **[§8](#8-instrumento-diurno--generación-anterior-absorbida--en-migración)** for `paper`, `surface`, `hairline`, `hairlineStrong`, `ink`, `inkSecondary`, `inkTertiary`. The dark `surface.*` / `text.*` / `glow` tokens were **retired in FER-430**. The canonical frame is Liquid Glass · El Eje (manifiesto de apertura).
 
-`StrandOpacity.dim = 0.45` — shared dim value for disabled sections (don't invent your own; the old name `opacity.disabled` / `StrandPalette.disabledOpacity` is legado).
+`CenitOpacity.dim = 0.45` — shared dim value for disabled sections (don't invent your own; the old name `opacity.disabled` / `StrandPalette.disabledOpacity` is legado).
 
 ### 1.3 Color — accent (chrome, **not** data)
 
@@ -263,7 +263,7 @@ See [`assets/`](assets/) (and its [README](assets/README.md)):
 - **Numerics are tabular.** Any live value uses a `*Number` font — en Liquid, `LiquidType.valor*` / helpers; en legado Instrumento, `StrandFont.number(...)` — so digits don't shift.
 - **Compose from the locked set (retired).** This dark-legacy set was retired in FER-444; new cards
   use `liquidGlass(_:)` — see [CATALOGO.md](CATALOGO.md) for the current index.
-- **Regenerating tokens:** this doc and [`tokens/design-tokens.json`](tokens/design-tokens.json) are derived from the Swift package; re-derive them when `Palette` / `Typography` / `Motion` / `Components` change. The «Instrumento» color blocks (§8.2 + `color.instrumento`) are emitted from `Instrumento.swift` by `swift run StrandDesignTokens` (run it in `Packages/StrandDesign`); CI fails if they drift (FER-131 handoff · 01).
+- **Regenerating tokens:** this doc and [`tokens/design-tokens.json`](tokens/design-tokens.json) are derived from the Swift package; re-derive them when `Palette` / `Typography` / `Motion` / `Components` change. The «Instrumento» color blocks (§8.2 + `color.instrumento`) are emitted from `Instrumento.swift` by `swift run CenitDesignTokens` (run it in `Packages/CenitDesign`); CI fails if they drift (FER-131 handoff · 01).
 
 ---
 
@@ -293,7 +293,7 @@ paralelo. Origen: FER-131; retiro del marco: épico FER-229.
 > (p. ej. `TendenciasDetalle` / `GraficaRangos`). No reinventar papel en pantallas nuevas.
 
 > **Source of truth:** `Instrumento.swift` (theme + type) and `InstrumentoStates.swift`
-> (scaffold + states) in the `StrandDesign` package. Renderable proof of every state:
+> (scaffold + states) in the `CenitDesign` package. Renderable proof of every state:
 > `InstrumentoSnapshotTests` (`swift test --filter InstrumentoSnapshotTests` → `/tmp/noop-fer131/`).
 
 ### 8.1 Why a `struct`, not static tokens
@@ -313,7 +313,7 @@ delta on **<24pt** text uses `positiveText` / `negativeText` instead (FER-131 ·
 column is the WCAG contrast against `paper`. The by-the-hour engine (FER-132) re-derives every data
 hue against the live paper so this 3:1 floor holds at every hour (FER-131 handoff · 08).
 
-> ⚠️ The table below is **generated from `Instrumento.swift`** by `swift run StrandDesignTokens`
+> ⚠️ The table below is **generated from `Instrumento.swift`** by `swift run CenitDesignTokens`
 > (FER-131 handoff · 01). Do not edit it by hand — change the token in code and re-run the generator;
 > CI fails if the committed table or `tokens/design-tokens.json` drifts from code.
 
@@ -447,7 +447,7 @@ El rediseño integral de «Hoy» (épico FER-707, decisiones del dueño 2026-07-
 voz del lenguaje diurno. **Canónica para pantallas nuevas o rediseñadas**; las pantallas aún
 no migradas conservan la voz de §8.3 hasta que les toque.
 
-- **Space Grotesk** (400/500/600/700, OFL, empaquetada en `StrandDesign/Resources`, registrada
+- **Space Grotesk** (400/500/600/700, OFL, empaquetada en `CenitDesign/Resources`, registrada
   vía CoreText) toma numerales, títulos de hoja, overlines, labels de carril, pestañas y
   botones. El cuerpo de texto y el microcopy siguen en SF. Numerales SIEMPRE tabulares.
   Tokens: `InstrumentoType.grotesk*` (`groteskHero` 124/700/ls −6 · `groteskSheetNumeral`

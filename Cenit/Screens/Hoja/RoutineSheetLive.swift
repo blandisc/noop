@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandTraining
 import StrandAnalytics
 import Inject
@@ -504,7 +504,7 @@ struct HojaSesionViva: View {
 
 /// B11 (FER-169): la serie que acaba de batir un récord y qué copy le corresponde — «RÉCORD {metric}
 /// · antes {priorText}» (mapa). `priorText` ya viene formateado (unidad del sistema del usuario,
-/// StrandDesign no formatea); `nil` cuando el ejercicio no tenía PR previo de ese tipo («primera vez»).
+/// CenitDesign no formatea); `nil` cuando el ejercicio no tenía PR previo de ese tipo («primera vez»).
 struct PRFlash: Equatable {
     let setId: String
     let metric: PRMetric

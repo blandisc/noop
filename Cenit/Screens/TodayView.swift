@@ -1,5 +1,5 @@
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandAnalytics
 import StrandTraining
 import CenitStore
@@ -917,7 +917,7 @@ struct TodayView: View {
 
 
     /// Ventana solar (amanecer/atardecer) para HOY, en horas reloj, derivada de `SolarClock` para la
-    /// zona horaria actual SIN GPS ni permisos. Mapeada al `SolarWindow` de StrandDesign que consume
+    /// zona horaria actual SIN GPS ni permisos. Mapeada al `SolarWindow` de CenitDesign que consume
     /// el `DiurnalDial` para su arco solar. `nil` en los casos polares (sin cruce de horizonte).
     private var solarWindow: SolarWindow? {
         guard let w = SolarClock.sunWindow(on: Date(), in: .current) else { return nil }
@@ -959,7 +959,7 @@ struct TodayView: View {
 
     // MARK: - Banners de estado (handoff «Hoy · Estados» · FER-711)
     //
-    // La tarjeta estándar reutilizable (`StrandDesign.TodayBanner`) montada bajo el header, sobre el
+    // La tarjeta estándar reutilizable (`CenitDesign.TodayBanner`) montada bajo el header, sobre el
     // día normal. Se dibuja SOLO el banner de mayor prioridad activo, y SOLO desde señales que la app
     // YA tiene (batería del strap, enlace BLE, antigüedad del último sync + reloj) — sin inventar
     // detección nueva (regla del issue). Los banners que exigen detección/matemática nueva —siesta

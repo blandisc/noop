@@ -1,5 +1,5 @@
 import SwiftUI
-import StrandDesign
+import CenitDesign
 
 // MARK: - FER-54 · La hoja-manual «¿Qué decide tu día?»
 //

@@ -1,6 +1,6 @@
 {
   "$schema": "https://design-tokens.github.io/community-group/format/",
-  "$description": "Strand / Cénit design tokens. The app speaks one visual language — «Instrumento diurno» (FER-131): light warm paper, color only on the datum — under color.instrumento. The dark legacy system was retired in FER-430. Besides instrumento, what remains are the shared data scales (recovery / strain / sleep / hrZone / status / metric) and the chrome accent. Extracted from the StrandDesign Swift package. Hex values are exact; do not substitute.",
+  "$description": "Strand / Cénit design tokens. The app speaks one visual language — «Instrumento diurno» (FER-131): light warm paper, color only on the datum — under color.instrumento. The dark legacy system was retired in FER-430. Besides instrumento, what remains are the shared data scales (recovery / strain / sleep / hrZone / status / metric) and the chrome accent. Extracted from the CenitDesign Swift package. Hex values are exact; do not substitute.",
   "color": {
     "$type": "color",
     "accent": {
@@ -47,7 +47,7 @@
       "s100": { "$value": "#C13AC1", "$description": "1.00 — magenta" }
     },
     "instrumento": {
-      "$description": "«Instrumento diurno» (FER-131) — the light, warm-paper language; .base daytime anchor (the by-the-hour engine FER-132 varies these roles). GENERATED from Instrumento.swift by `swift run StrandDesignTokens` — do not edit by hand.",
+      "$description": "«Instrumento diurno» (FER-131) — the light, warm-paper language; .base daytime anchor (the by-the-hour engine FER-132 varies these roles). GENERATED from Instrumento.swift by `swift run CenitDesignTokens` — do not edit by hand.",
       "paper":           { "$value": "#F4F1E8", "$description": "canvas — warm bone paper (never pure white)" },
       "surface":         { "$value": "#FBF9F2", "$description": "a sparingly-used raised surface; never nested" },
       "hairline":        { "$value": "#E6E0D2", "$description": "faint warm 1px rule" },
@@ -163,7 +163,7 @@
   },
   "opacity": {
     "$type": "number",
-    "disabled":       { "$value": 0.45, "$description": "dimmed/disabled sections (= StrandOpacity.dim)" },
+    "disabled":       { "$value": 0.45, "$description": "dimmed/disabled sections (= CenitOpacity.dim)" },
     "tintFill":       { "$value": 0.1, "$description": "chip/badge tint fill (absorbs 0.10–0.12)" },
     "tintFillStrong": { "$value": 0.14, "$description": "emphasized tint (absorbs 0.14–0.18)" },
     "strokeSoft":     { "$value": 0.3, "$description": "soft tinted stroke (absorbs 0.28–0.40)" },

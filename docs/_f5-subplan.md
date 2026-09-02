@@ -2,14 +2,14 @@
 
 > Arquitecto. Rama `claude/demolicion-banda-nunca-existio`. Fuente maestra: `docs/_demolicion-banda-plan.md`.
 > F5 es UNA fase compile-válida (un commit verde). Este doc es el contrato que `/implement` ejecuta.
-> Baseline verificado 2026-07-21: `StrandAnalytics` y `StrandDesign` compilan; con los 3 motores + sus
+> Baseline verificado 2026-07-21: `StrandAnalytics` y `CenitDesign` compilan; con los 3 motores + sus
 > 3 tests movidos fuera, `StrandAnalytics` **build y test-target compilan verde** (nada más los referencia).
 
 ## Resumen
 
 F5 retira la **maquinaria de descomposición de la recuperación estilo WHOOP** — los motores
 `RecoveryImpact` / `RecoveryRules` / `RecoveryChange` (StrandAnalytics), los componentes de dibujo
-`ImpactRows` / `FiveRules` (StrandDesign) y los bloques de UI que los renderizan («Hoy, vs tu normal» y
+`ImpactRows` / `FiveRules` (CenitDesign) y los bloques de UI que los renderizan («Hoy, vs tu normal» y
 «Qué cambió vs ayer» en RecoveryDetailScreen y MetricInfoSheet). **No toca** `RecoveryScorer`, el campo
 `DailyMetric.recovery`, el héroe de recuperación, ni el read-model `SourceLens`/`keep:.band` (F6).
 
@@ -21,7 +21,7 @@ que los consume está detrás de `if let impact = …, !impact.signals.isEmpty` 
 **F5 es una demolición de código muerto-en-prod con CERO cambio visible** para el usuario Apple-only. No es
 un rediseño: el reemplazo del héroe de recuperación es **FER-1030** (veredicto por ejes), fuera de F5.
 
-Además, `RecoveryRules` (StrandAnalytics) y `FiveRulesView` (StrandDesign) **ya están muertos**: 0
+Además, `RecoveryRules` (StrandAnalytics) y `FiveRulesView` (CenitDesign) **ya están muertos**: 0
 llamadores de producción (solo tests + un comentario). La «curva intradía / cinco reglas» se retiró antes.
 
 ## Supuestos
@@ -70,7 +70,7 @@ lo que ya está hoy (tendencia autonómica + sueño); su rediseño formal es FER
 | `RecoveryScorer` (`recovery`/`band`/`calibrationNights`/`logisticK/Z0`/`wHRV…`/`bandYellowMax`/`bandRedMax`) | **VIVE** | Consumido por `ReadinessEngine`, `TrainingRegulation`, `DailyBrief`, el héroe de RecoveryDetail y la calibración de Hoy. **No tocar.** |
 | `ReadinessEngine.Flag` + su color | **VIVE** | Usado en CuerpoView / TrainingLoadSheet / MetricInfoSheet / Panorama. |
 
-### StrandDesign (sistema de diseño)
+### CenitDesign (sistema de diseño)
 | Símbolo / archivo | Acción | Nota |
 |---|---|---|
 | `ImpactRows.swift` (`ImpactSignalRow`, `ImpactDivergentBar`, `ImpactAxisLegend`) | **MUERE** | Únicos consumidores = los bloques impact de RecoveryDetail + MetricInfoSheet (mueren). 0 uso intra-paquete (verificado). |
@@ -128,12 +128,12 @@ lo que ya está hoy (tendencia autonómica + sueño); su rediseño formal es FER
 **B. StrandAnalytics — borrar los motores (ya sin consumidor tras A):**
 5. Borrar `RecoveryImpact.swift`, `RecoveryRules.swift`, `RecoveryChange.swift`.
 
-**C. StrandDesign — borrar los componentes (ya sin consumidor tras A):**
+**C. CenitDesign — borrar los componentes (ya sin consumidor tras A):**
 6. Borrar `ImpactRows.swift`, `FiveRules.swift`.
 
 **D. Tests (§4).**
 
-**E. Verificar:** `swift build && swift test` de StrandAnalytics y `swift build` de StrandDesign (verdes).
+**E. Verificar:** `swift build && swift test` de StrandAnalytics y `swift build` de CenitDesign (verdes).
 El compile iOS completo (pasos A tocan `Cenit/**`) va **uno a la vez, máquina idle**
 (`while pgrep -x xcodebuild XCBBuildService; do sleep 30; done`), nunca en paralelo (regla anti-OOM).
 
@@ -167,7 +167,7 @@ referencia). Restaurado. Falta el compile iOS de la capa app (riesgo abierto, ve
 - **Riesgo 2 — no corrí el compile iOS** (regla anti-OOM: sin `xcodebuild` en esta sesión). El type-check de
   `TodayView`/`MetricInfoSheet`/`MetricInfoCatalog`/`RecoveryDetailScreen` queda como **riesgo abierto para
   `/implement`**, que debe correr `xcodebuild … -jobs 4` con la máquina idle. Sí verifiqué que StrandAnalytics
-  y StrandDesign compilan tras el borrado, y que no hay consumidores intra-paquete.
+  y CenitDesign compilan tras el borrado, y que no hay consumidores intra-paquete.
 - **Riesgo 3 — confundir F5 con FER-1030 / F7.** Tentación de «terminar» retirando el héroe `/100`, la entrada
   de Hoy o el campo `DailyMetric.recovery`. **No.** El héroe es FER-1030; el campo/esquema es F7. F5 solo
   quita la maquinaria de descomposición (Impact/Rules/Change + ImpactRows/FiveRules + sus bloques). Si
@@ -182,7 +182,7 @@ AutonomicTrendCard y el sueño, `usesWhoop`/`strapOnlyHistory` (F3, aún pendien
 ## 6. Criterios técnicos de aceptación (checklist de `/implement`)
 
 - [ ] `Packages/StrandAnalytics/.../RecoveryImpact.swift`, `RecoveryRules.swift`, `RecoveryChange.swift` NO existen.
-- [ ] `Packages/StrandDesign/.../ImpactRows.swift`, `FiveRules.swift` NO existen.
+- [ ] `Packages/CenitDesign/.../ImpactRows.swift`, `FiveRules.swift` NO existen.
 - [ ] `grep -rn "RecoveryImpact\|RecoveryRules\|RecoveryChange" --include=*.swift Cenit CenitApp CenitUnitTests Packages` (excluyendo los archivos borrados) → **0** en código; **0** comentarios residuales.
 - [ ] `grep -rn "ImpactSignalRow\|ImpactDivergentBar\|ImpactAxisLegend\|FiveRulesView" --include=*.swift .` → **0**.
 - [ ] `MetricInfo` ya no tiene el campo `impact`; el builder `.recovery` ya no recibe `impact:`.
@@ -190,7 +190,7 @@ AutonomicTrendCard y el sueño, `usesWhoop`/`strapOnlyHistory` (F3, aún pendien
 - [ ] `RecoveryScorer.swift` sin cambios (`git diff` vacío). `SourceLens.swift` sin cambios (F6 intacto).
 - [ ] `DailyMetric.recovery` sigue existiendo (F7).
 - [ ] Tests borrados: `RecoveryImpactTests`, `RecoveryRulesTests`, `RecoveryChangeTests`, `RecoveryDetailModelTests`.
-- [ ] `cd Packages/StrandAnalytics && swift build && swift test` → **verde**. `cd Packages/StrandDesign && swift build` → **verde**.
+- [ ] `cd Packages/StrandAnalytics && swift build && swift test` → **verde**. `cd Packages/CenitDesign && swift build` → **verde**.
 - [ ] `xcodebuild -project Cenit.xcodeproj -scheme Cenit -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO -jobs 4 build` → **compila** (máquina idle, uno a la vez).
 - [ ] En el Simulador/dispositivo Apple-only: RecoveryDetail y la hoja de recuperación se ven **idénticas** a antes (los bloques impact/change ya estaban ocultos); no aparece ningún hueco ni layout roto.
 

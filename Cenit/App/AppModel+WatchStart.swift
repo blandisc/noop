@@ -37,7 +37,7 @@ extension AppModel {
 
     /// The wire vocabulary `CenitWatch` decodes (`"clear"/"caution"/"ease"/"hollow"`) for
     /// `LiquidHoyBuilder.HiloEntrenar.Tono` — the SAME 4-case mapping `EntrenarView.hiloTono(_:)` uses to
-    /// reach `EntrenarHilo.Tone`, just ending in a plain `String` instead of the `StrandDesign` enum
+    /// reach `EntrenarHilo.Tone`, just ending in a plain `String` instead of the `CenitDesign` enum
     /// (`CenitShared` stays free of that import — Alcance §4).
     private static func watchToneRaw(_ hilo: LiquidHoyBuilder.HiloEntrenar) -> String {
         switch hilo.tono {

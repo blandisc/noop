@@ -3,7 +3,7 @@
 > **Solo reporte.** Cero cambios a Swift/CI/linter/baselines.  
 > **Issue:** FER-279 · **rama:** `grok/fer-279b1-uso-1788282399-76192-27724`  
 > **Fecha:** 2026-09-01 · **ejes:** 1 (pieza equivocada) y 2 (evasiones fuera de gate).  
-> **Árbol auditado:** `Cenit/**`, `CenitWidgets`, `CenitWatch`, `Packages/StrandDesign/Sources`.
+> **Árbol auditado:** `Cenit/**`, `CenitWidgets`, `CenitWatch`, `Packages/CenitDesign/Sources`.
 
 ## Método (qué se leyó)
 
@@ -54,7 +54,7 @@ Hallazgos rankeados por severidad (catálogo miente o se viola → reinvento sil
 | `Calendario90` / `YearHeatStrip` | **0** | `LiquidCalendario90` (Stress/Strain/Sleep); sin YearHeatStrip vivo en APP |
 | `.instrumentoCard` | **0** en APP | Consistente con Auditoría C; no es defecto de uso |
 
-**Propuesta:** lote de **sincronía CATALOGO** (regenerar `catalogEntries` en `StrandDesignTokens`): marcar huérfanas como «retirada / solo preview» o borrarlas del índice; añadir las piezas calientes con «cuándo / cuándo no». Sin eso, todo «cuándo no» del índice es teatro.
+**Propuesta:** lote de **sincronía CATALOGO** (regenerar `catalogEntries` en `CenitDesignTokens`): marcar huérfanas como «retirada / solo preview» o borrarlas del índice; añadir las piezas calientes con «cuándo / cuándo no». Sin eso, todo «cuándo no» del índice es teatro.
 
 ---
 
@@ -228,9 +228,9 @@ Cero hits. El riesgo listado en CONTRATO está **vacío hoy**. Sí hay `safeArea
 | **`frame(minHeight: N)` decorativo** | Decenas; excluyendo 44 HIG quedan 46, 52, 56, 38, 40, 32, 96, 520… | `no-spacing-literal` no ve `minHeight` | `WeeklyPlanEditorView.swift:323` (52); `LiveStrengthSheet.swift:1783` (38); `WorkoutImportView.swift:560` (520); `AjustesView.swift:319` (32) | Censo de `minHeight`/`maxHeight` literales; tokenizar los que repiten (52/56) o `LiquidControl.hitTarget` donde sea 44 |
 | **`blur(` suelto en APP** | Pocos pero expresivos | Fuera de `liquidGlass` | `HoyModosHost.swift:192` (halo 6+3×fase); `BreathingView.swift:349` (`LiquidSpace.s550` como radio de blur — **token de espacio usado como blur**) | Censo `blur(radius:`; regla: blur de superficie solo vía receta; Breathing/Hoy documentar o mover a token de efecto |
 | **`LinearGradient` inline** | Varios en Screens sin exempt | No hay regla | `TrainingBodyScreen.swift:419` (`theme.muscleLoadRamp`); `Hoy/HojaDecideTuDia.swift:113`; `CuerpoView.swift:1695–1706` (campo — parte receta); `EntrenarView.swift:729` | Censo; gradientes de identidad → token/pieza; los de `LiquidCampo` ya encapsulados |
-| **Overlay + stroke de borde a mano** | ~35 `.overlay(…stroke` en Cenit | `no-raw-shadow`/`no-sheet-glass` no cubren borde | `ActivityRecoverySheet.swift:203–204`; `RoutineSheetLiveFoco.swift:243`, `:287`, `:501`; `EntrenarHubHeroe.swift:123`, `:170`; `HojaDecideTuDia.swift:75` | Es el «canto» que `liquidGlass` ya compone — censo de strokeBorder Capsule/RoundedRect fuera de StrandDesign; lote hacia receta o `LiquidChip` |
+| **Overlay + stroke de borde a mano** | ~35 `.overlay(…stroke` en Cenit | `no-raw-shadow`/`no-sheet-glass` no cubren borde | `ActivityRecoverySheet.swift:203–204`; `RoutineSheetLiveFoco.swift:243`, `:287`, `:501`; `EntrenarHubHeroe.swift:123`, `:170`; `HojaDecideTuDia.swift:75` | Es el «canto» que `liquidGlass` ya compone — censo de strokeBorder Capsule/RoundedRect fuera de CenitDesign; lote hacia receta o `LiquidChip` |
 | **`safeAreaInset`** | Varios sheets/live | Lista de indecidibles nombra otra API | Ver §2.A | Añadir al censo |
-| **Composición material a mano en PKG** | `ultraThinMaterial` dentro de recetas | Esperado en StrandDesign | `LiquidGlassRecipes.swift`, `EntrenarVidrio`, `ConfirmCard` | OK **dentro** del paquete; el «cuándo no» de `liquidGlass` ya lo dice — vigilar solo APP (hoy APP casi no llama material crudo) |
+| **Composición material a mano en PKG** | `ultraThinMaterial` dentro de recetas | Esperado en CenitDesign | `LiquidGlassRecipes.swift`, `EntrenarVidrio`, `ConfirmCard` | OK **dentro** del paquete; el «cuándo no» de `liquidGlass` ya lo dice — vigilar solo APP (hoy APP casi no llama material crudo) |
 
 ---
 

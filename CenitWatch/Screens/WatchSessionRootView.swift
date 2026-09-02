@@ -1,5 +1,5 @@
 import SwiftUI
-import StrandDesign
+import CenitDesign
 
 /// The watch face for a mirrored strength session (FER-741). One dominant focus per state, color only in
 /// the datum, hierarchy by space — «Instrumento diurno» translated to the wrist. It routes the coarse
@@ -8,7 +8,7 @@ import StrandDesign
 ///
 /// FER-96: the wrist paints `InstrumentoTheme.watch` — a true-black floor of its own, never
 /// `.base.paper` (the iPhone's warm paper, wrong on OLED). `.instrumentoTheme(.watch)` at the root also
-/// carries the theme to any `StrandDesign` component reading `@Environment(\.instrumentoTheme)`
+/// carries the theme to any `CenitDesign` component reading `@Environment(\.instrumentoTheme)`
 /// (`EntrenarHilo`, `OrbeVivo`) further down the tree, so nothing here re-specifies it per-view.
 struct WatchSessionRootView: View {
     @EnvironmentObject var manager: WatchWorkoutManager

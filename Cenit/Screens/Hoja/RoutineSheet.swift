@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import StrandTraining
 import StrandAnalytics
 import Inject   // recarga en caliente (dev-only, inerte en Release)
@@ -322,7 +322,7 @@ struct RoutineSheet: View {
 
     private var emptyFallback: some View {
         VStack(spacing: LiquidSpace.s250) {
-            StrandIcon.sleep.image.font(LiquidType.iconSF(size: 34)).foregroundStyle(LiquidColor.tinta500)
+            CenitIcon.sleep.image.font(LiquidType.iconSF(size: 34)).foregroundStyle(LiquidColor.tinta500)
             Text(isPlanDay ? "Rest day" : "No routine").font(LiquidType.displayS).foregroundStyle(LiquidColor.tinta900)
             Text(isPlanDay ? "This day has no routine. Assign one from the weekly plan."
                            : "This routine could not be found.")

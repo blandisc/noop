@@ -188,9 +188,9 @@ español ya da:
 ## 8. Formato de números y unidades
 
 El formato es parte del lenguaje visual; las pantallas consumen los helpers, no redeclaran
-`NumberFormatter` (`Packages/StrandDesign/Sources/StrandDesign/StrandFormat.swift`).
+`NumberFormatter` (`Packages/CenitDesign/Sources/CenitDesign/CenitFormat.swift`).
 
-- **Enteros agrupados:** `StrandFormat.groupedInt` → `12,345` (sin decimales).
+- **Enteros agrupados:** `CenitFormat.groupedInt` → `12,345` (sin decimales).
 - **Numerales tabulares siempre** (`font-variant-numeric: tabular-nums` / SF Mono) para que las
   columnas de dígitos alineen.
 - **Unidades con espacio:** `%lld h`, `%lld min`, `bpm` (se mantiene en inglés), `pts`, `kcal`.

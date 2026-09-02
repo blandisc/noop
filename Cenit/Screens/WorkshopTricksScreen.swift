@@ -1,6 +1,6 @@
 #if os(iOS)
 import SwiftUI
-import StrandDesign
+import CenitDesign
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // MARK: - «Lo que Cénit sabe hacer» (decisión Fer 2026-07-16)
@@ -88,7 +88,7 @@ struct WorkshopTricksScreen: View {
                 .frame(width: 34, height: 34)
                 .liquidGlass(.superficieSolida)
                 .overlay(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous)
-                    .strokeBorder(t.tint.opacity(StrandOpacity.strokeSoft), lineWidth: 1.5))
+                    .strokeBorder(t.tint.opacity(CenitOpacity.strokeSoft), lineWidth: 1.5))
             VStack(alignment: .leading, spacing: LiquidSpace.s050) {
                 Text(t.title).font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
                 Text(t.body).font(LiquidType.caption).foregroundStyle(LiquidColor.tinta700)

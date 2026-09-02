@@ -2,7 +2,7 @@
 # runs on ubuntu (1× billing) instead of macOS (10×) — it's pure Python, no Swift toolchain needed.
 #
 # Rules activate incrementally as each migration lands. `no-hex` runs on every root (all hex
-# lives in StrandDesign). The font/radius/opacity rules are now ON for the migrated surfaces —
+# lives in CenitDesign). The font/radius/opacity rules are now ON for the migrated surfaces —
 # `Cenit/Screens` + `Cenit/Onboarding` are fully token-clean (tasks 01/02/03). CenitWidgets
 # (Live Activity) and CenitWatch are fixed Dynamic-Island / watch geometry (the WidgetMetrics
 # category, exempt from Dynamic Type) and are intentionally not yet under the 3 new rules.
@@ -59,9 +59,9 @@ jobs:
       - name: Design drift · no-deprecated-metrics + no-instrumento-theme (FER-306)
         run: python3 Tools/check-design-drift.py --rules no-deprecated-metrics,no-instrumento-theme --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media CenitApp
       - name: Design-drift linter — token-exempt es deuda, ratchet (FER-263)
-        run: python3 Tools/check-design-drift.py --rules token-exempt --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media Packages/StrandDesign/Sources CenitApp
+        run: python3 Tools/check-design-drift.py --rules token-exempt --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media Packages/CenitDesign/Sources CenitApp
       - name: Sin vidrio dentro de una hoja (papel opaco)
-        run: python3 Tools/check-design-drift.py --rules no-sheet-glass Packages/StrandDesign/Sources Cenit CenitApp CenitShared CenitWidgets
+        run: python3 Tools/check-design-drift.py --rules no-sheet-glass Packages/CenitDesign/Sources Cenit CenitApp CenitShared CenitWidgets
 
   # FER-264 (épico FER-261): el baseline SOLO puede bajar. Compara el JSON del PR contra el de la
   # base real del PR; cualquier conteo que sube falla. Alta legal ÚNICA: PR dedicado solo-baseline
