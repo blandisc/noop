@@ -215,10 +215,10 @@ enum ComponentGallery {
         Entry(name: "LiquidSectionHeader", family: "Estructura") {
             AnyView(VStack(alignment: .leading, spacing: LiquidSpace.s200) {
                 LiquidSectionHeader("La sesión de hoy")
-                Text("El contenido de la sección vive aquí, sin banda de papel.")
+                Text(verbatim: "El contenido de la sección vive aquí, sin banda de papel.")
                     .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta900)
                 LiquidSectionHeader("Tu plan") {
-                    Text("Editar semana").font(LiquidType.pie).foregroundStyle(LiquidColor.tinta700)
+                    Text(verbatim: "Editar semana").font(LiquidType.pie).foregroundStyle(LiquidColor.tinta700)
                 }
             })
         },
