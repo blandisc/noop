@@ -185,6 +185,16 @@ public enum LiquidType {
     /// Conteo de la fila de nivel — 12/regular, escala (relativo a `.caption`). Mock
     /// `.lvl .cnt {12px/400}`. Auditoría 2026-08-03: antes `captionLectura` (10.5).
     public static let filaConteo = Font.system(.caption)
+    /// Pie de dato / nota al pie — SF `.caption2`, escala. Sucesor de `StrandFont.footnote`
+    /// para las últimas pantallas que drenó FER-306.
+    public static let pie = Font.system(.caption2)
+    /// Cuerpo de lista — SF `.subheadline`, escala. Sucesor de `StrandFont.body` (FER-306).
+    public static let cuerpoLista = Font.system(.subheadline)
+    /// Subtítulo de fila — SF `.footnote`, escala. Sucesor de `StrandFont.subhead` (FER-306).
+    public static let subtituloFila = Font.system(.footnote)
+    /// Conteo tabular de fila — `.caption` medium con dígitos tabulares (sucesor de
+    /// `StrandFont.captionNumber`, FER-306).
+    public static let filaConteoNumero = Font.system(.caption, weight: .medium).monospacedDigit()
 
     /// `unidad` — SF 400 11, color tinta/500. «ms», «lpm», «min» junto a valores.
     public static let unidad = Font.system(size: 11)

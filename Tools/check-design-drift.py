@@ -15,6 +15,8 @@ Rules (each activated in the PR that finishes its migration — pass `--rules` t
     no-emdash-string   em-dash (—) inside a Swift string literal (copy rule)   (FER-878/879; on for Screens+Onboarding)
     no-spacing-literal `.padding(<n>)`, `spacing: <n>`, `lineWidth: <n>`       (FER-258; ratchet over Cenit/Screens…App)
     no-legacy-api      call-site of a retired-generation symbol (Instrumento*/Paper*/…) (FER-263; ratchet)
+    no-deprecated-metrics  a retired `CenitMetrics` member (space1/space2/gap/…) — pure prohibition (FER-306)
+    no-instrumento-theme   `theme.ink/paper/…` / `StrandFont.*` access outside the Watch/Widget carve-out (FER-306; ratchet)
     token-exempt       pseudo-rule: counts the escape hatches themselves        (FER-263; ratchet — an exemption
                        is frozen debt too, so a NEW `token-exempt` fails unless its budget allows it)
 
@@ -49,7 +51,7 @@ DEFAULT_ROOTS = [
 DESIGN_PKG = "Packages/StrandDesign"
 EXEMPT = re.compile(r"//\s*token-exempt\b")
 
-ALL_RULES = ["no-hex", "no-adhoc-font", "no-radius-literal", "no-opacity-literal", "no-emdash-string", "no-raw-shadow", "no-sheet-glass", "no-spacing-literal", "no-legacy-api", "token-exempt", "no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic", "no-motion-literal", "no-dt-cap-adhoc"]
+ALL_RULES = ["no-hex", "no-adhoc-font", "no-radius-literal", "no-opacity-literal", "no-emdash-string", "no-raw-shadow", "no-sheet-glass", "no-spacing-literal", "no-legacy-api", "token-exempt", "no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic", "no-motion-literal", "no-dt-cap-adhoc", "no-deprecated-metrics", "no-instrumento-theme"]
 
 # Per-rule default roots — mirrors `.github/workflows/design-lint.yml` exactly (FER-282).
 # A bare `python3 Tools/check-design-drift.py --baseline …` (no roots) must not paint red on
@@ -78,6 +80,8 @@ DEFAULT_ROOTS_BY_RULE = {
     "no-legacy-api": list(_ROOTS_LEGACY),
     "token-exempt": list(_ROOTS_TOKEN_EXEMPT),
     "no-sheet-glass": list(_ROOTS_SHEET_GLASS),
+    "no-deprecated-metrics": list(_ROOTS_LEGACY),
+    "no-instrumento-theme": list(_ROOTS_LEGACY),
 }
 # no-emdash-string: an em-dash (—, U+2014) inside a user-facing Swift string literal. ADN copy rule
 # (FER-878): on-screen copy uses «:», «·» or a comma, never an em-dash. Scoped to STRING LITERALS so the
@@ -175,6 +179,25 @@ RE_MOTION = re.compile(r"\.ease(?:In|Out|InOut)\(\s*(?:duration:\s*)?[0-9.]|\.sp
 # default de agente. Cero deuda al estreno: prohibición pura, sin baseline.
 RE_DT_CAP = re.compile(r"\.dynamicTypeSize\(\s*(?!\.accessibility5\s*\))")
 
+# no-deprecated-metrics (FER-306, auditoría de tokens 2026-09-02 hallazgo 2): los 8 miembros de
+# `CenitMetrics` retirados en FER-287 (1A) ya eran alias de LiquidSpace/LiquidRadius/LiquidControl y
+# el gate los contaba como token válido — 335 usos de API retirada en verde. FER-300 los drenó a 0
+# en la app iOS; desde aquí es prohibición pura. CenitWatch conserva el carve-out (FER-219).
+RE_DEPRECATED_METRICS = re.compile(
+    r"\bCenitMetrics\.(?:space1|space2|gap|cardPadding|screenPadding|controlRadius|chipRadius|touchTarget)\b"
+)
+# no-instrumento-theme (FER-306, hallazgo 1): el acceso `theme.ink` / `theme.paper` / … de
+# `InstrumentoTheme` y la tipografía `StrandFont.*` — el idioma visual de la generación anterior —
+# que no-legacy-api no ve (solo mira el símbolo `InstrumentoTheme`). Las rampas de DATO
+# (`hrZoneRamp`, `muscleLoadRamp`, `muscleLoadColor`, `movementFamilyTint`) y el pass-through
+# `theme: theme` a piezas del catálogo quedan fuera a propósito. Ratchet con baseline.
+RE_INSTRUMENTO_THEME = re.compile(
+    r"\btheme\.(?:ink|inkSecondary|inkTertiary|inkQuaternary|paper|surface|surfaceRaised|hairline|hairlineStrong"
+    r"|data[A-Z][A-Za-z]*|verdict|critical|warning|positive|onPaper|accent)\b"
+    r"|\bStrandFont\."
+)
+RE_DATA_RAMP = re.compile(r"hrZoneRamp|muscleLoadRamp|muscleLoadColor|movementFamilyTint|ensureFontsRegistered")
+
 RULE_PATTERNS = {
     "no-hex": RE_HEX,
     "no-adhoc-font": RE_FONT,
@@ -189,6 +212,8 @@ RULE_PATTERNS = {
     "no-token-arithmetic": RE_TOKEN_ARITH,
     "no-motion-literal": RE_MOTION,
     "no-dt-cap-adhoc": RE_DT_CAP,
+    "no-deprecated-metrics": RE_DEPRECATED_METRICS,
+    "no-instrumento-theme": RE_INSTRUMENTO_THEME,
 }
 
 
@@ -280,9 +305,11 @@ def check(paths, rules):
             for rule in rules:
                 if rule == "token-exempt":
                     continue
-                if rule in ("no-hex", "no-legacy-api", "no-raw-color", "no-token-arithmetic") and in_design_pkg:
+                if rule in ("no-hex", "no-legacy-api", "no-raw-color", "no-token-arithmetic", "no-deprecated-metrics", "no-instrumento-theme") and in_design_pkg:
                     continue
-                if rule in ("no-legacy-api", "no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic", "no-motion-literal") and in_widget_watch:
+                if rule in ("no-legacy-api", "no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic", "no-motion-literal", "no-deprecated-metrics", "no-instrumento-theme") and in_widget_watch:
+                    continue
+                if rule == "no-instrumento-theme" and RE_DATA_RAMP.search(code):
                     continue
                 if rule == "no-emdash-string":
                     if _emdash_string_hit(code):

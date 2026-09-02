@@ -241,6 +241,32 @@ class Fer271CommentGaps(unittest.TestCase):
                          ["import StrandDesign   // InstrumentoTheme, CenitMetrics, StrandMotion"])
             self.assertEqual(drift.check([src], ["no-legacy-api"]), [])
 
+    def test_deprecated_metrics_es_prohibicion_y_respeta_carveouts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src = _swift(tmp, "Cenit/Screens/A.swift", [
+                ".padding(CenitMetrics.space2)",
+                ".padding(CenitMetrics.rowVPad)",       # miembro vivo: no cuenta
+                ".padding(LiquidSpace.s200)",
+            ])
+            hits = drift.check([src], ["no-deprecated-metrics"])
+            self.assertEqual([(i, r) for _p, i, r, _s in hits], [(1, "no-deprecated-metrics")])
+            watch = _swift(tmp, "CenitWatch/W.swift", [".padding(CenitMetrics.space2)"])
+            self.assertEqual(drift.check([watch], ["no-deprecated-metrics"]), [])
+
+    def test_instrumento_theme_ve_acceso_y_strandfont_pero_no_rampas(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src = _swift(tmp, "Cenit/Screens/B.swift", [
+                ".foregroundStyle(theme.ink)",
+                ".font(StrandFont.caption)",
+                "let c = theme.muscleLoadColor(0.4)",          # rampa de dato: fuera
+                "Task { StrandFont.ensureFontsRegistered() }",   # sistema: fuera
+                ".outlineCapsule(.outline, size: .sm, theme: theme)",   # pass-through: fuera
+                ".foregroundStyle(LiquidColor.tinta900)",
+            ])
+            hits = drift.check([src], ["no-instrumento-theme"])
+            self.assertEqual([i for _p, i, _r, _s in hits], [1, 2])
+            widget = _swift(tmp, "CenitWidgets/W.swift", [".foregroundStyle(theme.ink)"])
+            self.assertEqual(drift.check([widget], ["no-instrumento-theme"]), [])
 
 if __name__ == "__main__":
     unittest.main()

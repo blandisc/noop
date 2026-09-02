@@ -48,9 +48,9 @@ extension StressBand {
     /// Single source for the stress band→color mapping (FER-326).
     func dataColor(_ theme: InstrumentoTheme) -> Color {
         switch self {
-        case .low:    return theme.verdict
-        case .medium: return theme.warning
-        case .high:   return theme.critical
+        case .low:    return LiquidColor.verdePrimario
+        case .medium: return LiquidColor.atencion
+        case .high:   return LiquidColor.negativo
         }
     }
 }
