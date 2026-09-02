@@ -57,6 +57,15 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             RootTabView(isTodayActive: $isTodayTab)
+            #if os(iOS) && DEBUG
+            // FER-315 · galería de componentes: con el launch-arg `-noop.component <Nombre>` el harness
+            // monta UNA pieza de CenitDesign a pantalla completa (fondo opaco → tapa todo lo de atrás).
+            // `nil` en un arranque normal, así que la puerta no existe fuera de la captura DEBUG.
+            if let component = ComponentGalleryLaunch.requestedName {
+                ComponentGalleryHost(name: component)
+                    .zIndex(99)
+            }
+            #endif
             if !onboarded {
                 OnboardingWizard(onFinished: {
                     // FER-109: la entrada de partículas se cuenta como YA CORRIDA al cerrar el
