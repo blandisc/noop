@@ -65,7 +65,7 @@ extension AppModel {
         let slots = await resolveTodaySlotsForWatch(routineId: routine.id, serving: serving)
         guard !slots.isEmpty else { return }
         startStrengthSession(routineId: routine.id, routineName: routine.name, slots: slots,
-                             programWeek: serving.map(\.position.week),
+                             programWeek: serving.flatMap(\.stampWeek),
                              deload: serving.map(\.isLight))
     }
 

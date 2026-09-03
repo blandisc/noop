@@ -183,7 +183,7 @@ extension RoutineSheet {
                 raise: item.raise, progressionState: item.progressionState)
         }
         model.startStrengthSession(routineId: r.id, routineName: r.name, slots: slots,
-                                   programWeek: serving.map(\.position.week),
+                                   programWeek: serving.flatMap(\.stampWeek),
                                    deload: serving.map(\.isLight))
     }
 

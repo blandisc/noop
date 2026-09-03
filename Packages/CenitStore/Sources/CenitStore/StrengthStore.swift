@@ -428,14 +428,16 @@ extension CenitStore {
         }
     }
 
-    /// El `startTs` de cada sesión TERMINADA desde `sinceTs`, para que `ProgramCalendar` cuente las
-    /// semanas entrenadas (D-Q2). Devuelve marcas de tiempo planas: el store no sabe de lunes ni de
-    /// calendarios — eso es del motor puro.
+    /// El `startTs` de cada sesión TERMINADA y SERVIDA POR EL PROGRAMA (`programWeek` no nulo) desde
+    /// `sinceTs`, para que `ProgramCalendar` cuente las semanas entrenadas (D-Q2). Movilidad, sesión
+    /// rápida o «repetir del historial» no acumulan el estrés que la semana ligera disipa, así que no
+    /// avanzan el contador (gate /biomecanico FER-329 #4). Devuelve marcas de tiempo planas: el store
+    /// no sabe de lunes ni de calendarios — eso es del motor puro.
     public func sessionStartTimes(sinceTs: Int, limit: Int = 5000) async throws -> [Int] {
         try syncRead { db in
             try Int.fetchAll(db, sql: """
                 SELECT startTs FROM strengthSession
-                WHERE startTs >= ? AND endTs IS NOT NULL
+                WHERE startTs >= ? AND endTs IS NOT NULL AND programWeek IS NOT NULL
                 ORDER BY startTs DESC LIMIT ?
                 """, arguments: [sinceTs, limit])
         }

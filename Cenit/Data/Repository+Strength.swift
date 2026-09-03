@@ -91,7 +91,9 @@ extension Repository {
                                               inventory: inventory)
             slots.append(.init(re: served, exercise: ex, lastSets: seed.lastSets,
                                raise: seed.evaluation?.raise,
-                               progressionState: seed.evaluation?.state))
+                               progressionState: seed.evaluation?.state,
+                               lightLoad: ProgramServing.lightLoad(context: serving, equipment: ex?.equipment,
+                                                                   inventory: inventory)))
         }
         return slots
     }

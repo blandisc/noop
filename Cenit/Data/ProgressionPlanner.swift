@@ -91,7 +91,16 @@ enum ProgressionPlanner {
         // sigue mostrando (el ciclo no se pierde: la subida ganada aparece la semana que sigue), pero
         // esta sesión se sirvió con menos volumen — ofrecer más kilos encima contradiría lo que la
         // tabla acaba de poner. La descarga reactiva NO se toca: `.deloading` no es una subida.
-        guard !isLightWeek else { return (state, nil) }
+        guard !isLightWeek else {
+            // La descarga REACTIVA sigue viva, pero proponer «bajar a X» en una sesión que ya se sirvió
+            // ligera es una propuesta fantasma: aceptarla no cambia nada (con peso) o se desvanece al
+            // ser frontera (solo series). Esta sesión avisa el estancamiento; la propuesta íntegra
+            // reaparece en la semana 1 del ciclo siguiente (gate /biomecanico FER-329 #3).
+            if case .deloading = state {
+                return (.stalled(sessions: ProgressionMath.deloadStallThreshold), nil)
+            }
+            return (state, nil)
+        }
         let newKg: Double
         let waiting: Bool
         switch state {

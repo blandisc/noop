@@ -791,7 +791,7 @@ private struct EntrenarLanding: View {
         // Ola 1 · E10: la sesión se guarda con la semana con la que se SEMBRÓ esta tabla — la misma
         // que ya recortó los slots si tocaba ligera.
         model.startStrengthSession(routineId: r.id, routineName: r.name, slots: todaySlots,
-                                   programWeek: todayServing.map(\.position.week),
+                                   programWeek: todayServing.flatMap(\.stampWeek),
                                    deload: todayServing.map(\.isLight))
     }
 

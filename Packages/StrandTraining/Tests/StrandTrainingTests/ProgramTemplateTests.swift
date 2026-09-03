@@ -59,15 +59,19 @@ final class ProgramTemplateTests: XCTestCase {
         var sawOther = false
         for re in m.exercises {
             XCTAssertFalse(re.progressionUseRPE)
-            if ProgramTemplate.usesBarbell(exerciseId: re.exerciseId) {
+            let reps = re.targetReps ?? re.sets.first(where: { $0.kind == .work })?.reps ?? Int.max
+            if ProgramTemplate.usesBarbell(exerciseId: re.exerciseId), reps <= ProgramTemplate.everySessionMaxReps {
                 sawBarbell = true
-                XCTAssertEqual(re.progressionSessions, 1, "\(re.exerciseId) es de barra: n = 1")
+                XCTAssertEqual(re.progressionSessions, 1, "\(re.exerciseId) es de barra a bajas reps: n = 1")
             } else {
                 sawOther = true
-                XCTAssertEqual(re.progressionSessions, 2, "\(re.exerciseId) no es de barra: n = 2")
+                XCTAssertEqual(re.progressionSessions, 2, "\(re.exerciseId) no es básico de barra: n = 2")
             }
         }
         XCTAssertTrue(sawBarbell && sawOther, "la prueba necesita ambos casos para valer algo")
+        // El curl de barra (3×12) lleva barra pero es aislamiento: sube con dos sesiones, no una.
+        let curl = m.exercises.first { $0.exerciseId == "Barbell_Curl" }
+        XCTAssertEqual(curl?.progressionSessions, 2, "barra a 12 reps no es un básico de bajas reps")
     }
 
     func testTheOtherEnginesKeepTheTwoSessionCycleEverywhere() {

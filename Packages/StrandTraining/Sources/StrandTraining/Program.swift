@@ -229,10 +229,23 @@ public struct ProgramTemplate: Identifiable, Sendable, Equatable {
     /// sesión limpia; una mancuerna o un aislamiento piden las dos de siempre.
     private func withProgression(_ re: RoutineExercise) -> RoutineExercise {
         var out = re
-        out.progressionSessions = Self.usesBarbell(exerciseId: re.exerciseId)
+        out.progressionSessions = Self.progressesEverySession(re)
             ? barbellProgressionSessions : otherProgressionSessions
         out.progressionUseRPE = progressionUseRPE
         return out
+    }
+
+    /// Tope de reps para que un slot de barra progrese sesión a sesión: los básicos de bajas reps
+    /// (sentadilla, press, remo a 5–8) son los que un lineal de novato sube cada vez; un curl de barra a
+    /// 3×12 es aislamiento aunque lleve barra, y con 20 kg un paso de 2,5 kg cada sesión es +12,5 % —
+    /// fuera de la banda 2,5–10 % del NSCA (gate /biomecanico FER-329 #2). Calibration default.
+    public static let everySessionMaxReps = 8
+
+    /// ¿Este slot sube con UNA sesión limpia? Barra Y bajas reps; el catálogo no trae `mechanic`, así
+    /// que las reps hacen de proxy de «básico» vs. «aislamiento».
+    static func progressesEverySession(_ re: RoutineExercise) -> Bool {
+        let reps = re.targetReps ?? re.sets.first(where: { $0.kind == .work })?.reps ?? Int.max
+        return usesBarbell(exerciseId: re.exerciseId) && reps <= everySessionMaxReps
     }
 
     /// ¿El slot se carga con barra? Se lee del catálogo empaquetado (`Exercise.equipment`), no de una

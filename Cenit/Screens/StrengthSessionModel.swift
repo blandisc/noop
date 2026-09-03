@@ -1409,6 +1409,11 @@ final class StrengthSessionModel: ObservableObject {
         /// B7 (FER-169): today's progression classification, for the live deload pill. Default nil so
         /// plan-less paths (templates, repeats) are untouched — same convention as `raise`.
         var progressionState: ProgressionState? = nil
+        /// Ola 1 · E10 (FER-329): en semana ligera con «menos series y peso», la bajada va sobre el
+        /// peso FINAL de la semilla (`earned ?? held ?? lastWeight`), porque «la última vez» gana al
+        /// plan y taparía un recorte que solo viajara en `re` (arq-B §⑤; gate /qa D1). El plan servido
+        /// (`re.sets`) ya viene rebajado, así que el cierre NO se aplica cuando la semilla cae a él.
+        var lightLoad: ((Double) -> Double)? = nil
     }
 
     static func make(routineId: String?, routineName: String, slots: [PlanSlot],
@@ -1435,7 +1440,8 @@ final class StrengthSessionModel: ObservableObject {
                 // the hero would promise «la subida DESDE 82,5» over a table sitting at 70.
                 let held = (type == .weightReps && slot.raise?.waiting == true) ? slot.raise?.fromKg : nil
                 let earned = (type == .weightReps && slot.raise?.waiting == false) ? slot.raise?.toKg : nil
-                let weight = earned ?? held ?? lastWeight ?? p.weightKg ?? 0
+                let seeded = earned ?? held ?? lastWeight
+                let weight = seeded.map { slot.lightLoad?($0) ?? $0 } ?? p.weightKg ?? 0
                 // E13/FER-94: with a rep range (e.g. 8-12), the cell opens at the TOP — «la última
                 // vez» still wins whenever it exists, exactly the fantasma rule above; the range top
                 // only enters as the plan's fallback, same tier as the fixed `p.reps` it replaces.

@@ -15,8 +15,9 @@ import Foundation
 // - Bell et al. 2023, *Sports Medicine – Open* 9:87 (DOI 10.1186/s40798-023-00633-0) — consenso Delphi:
 //   la descarga puede ser pre-planeada Y autorregulada (100 % de acuerdo), se baja volumen por
 //   series/reps/días (100 %) y la intensidad «podría mantenerse alta» (81 %). SIN porcentajes.
-// - Bell et al. 2024, *Sports Medicine – Open* (PMC10948666) — encuesta de práctica real: 78,9 % baja
-//   series, 83,7 % baja intensidad, cada 5,6 ± 2,3 semanas, durante 6,4 ± 1,7 días.
+// - Rogerson et al. 2024, *Sports Medicine – Open* 10:26 (DOI 10.1186/s40798-024-00691-y, PMC10948666;
+//   Bell es último autor) — encuesta de práctica real: 78,9 % baja series, 83,7 % baja intensidad,
+//   cada 5,6 ± 2,3 semanas, durante 6,4 ± 1,7 días.
 // Por eso el default del producto (D-Q3) es `volumeOnly` — series a la mitad y el peso IGUAL, que es lo
 // más alineado con el consenso — y bajar también el peso es una OPCIÓN, no la norma. Nada de esto es
 // una prescripción ni promete un resultado. (Citas verificadas por /biomecanico, gate-biomecanico-1 · 2026-09-02.)

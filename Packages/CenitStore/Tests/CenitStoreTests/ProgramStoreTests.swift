@@ -136,11 +136,14 @@ final class ProgramStoreTests: XCTestCase {
     func testSessionStartTimesFeedTheWeekCounter() async throws {
         let store = try await CenitStore.inMemory()
         try await routine(store)
-        try await session(store, id: "s1", startTs: 10_000, kg: 100)
-        try await session(store, id: "s2", startTs: 20_000, kg: 100)
+        try await session(store, id: "s1", startTs: 10_000, kg: 100, programWeek: 1)
+        try await session(store, id: "s2", startTs: 20_000, kg: 100, programWeek: 1)
         // Una sesión sin terminar no cuenta como semana entrenada.
-        try await store.saveSession(StrengthSession(id: "open", routineId: "rt1", startTs: 30_000),
-                                    sets: [])
+        try await store.saveSession(StrengthSession(id: "open", routineId: "rt1", startTs: 30_000,
+                                                    programWeek: 1), sets: [])
+        // Una sesión que el programa NO sirvió (movilidad, rápida, repetir del historial) no acumula el
+        // estrés que la semana ligera disipa: no avanza el contador (gate /biomecanico FER-329 #4).
+        try await session(store, id: "mobility", startTs: 25_000, kg: 0)
 
         let all = try await store.sessionStartTimes(sinceTs: 0)
         let recent = try await store.sessionStartTimes(sinceTs: 15_000)

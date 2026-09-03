@@ -27,6 +27,22 @@ enum ProgramServing {
 
         /// Sírvelo ligero: es la semana ligera y el programa no terminó.
         var isLight: Bool { position.isLight }
+        /// La semana que se estampa en la sesión: nil cuando el programa ya terminó («un solo ciclo»),
+        /// porque una fila con `programWeek` afirma «había programa» (gate /qa D3).
+        var stampWeek: Int? { position.ended ? nil : position.week }
+    }
+
+    /// El cierre que `StrengthSessionModel.make` aplica al peso FINAL de la semilla en semana ligera
+    /// con «menos series y peso»; nil en cualquier otro caso. Misma `deloadFraction` y mismo `snap`
+    /// que `serve`, para que la semilla y el plan servido bajen a la misma cifra.
+    static func lightLoad(context: Context?, equipment: String?, inventory: [PlateMath.PlateStock],
+                          barKg: Double = PlateMath.defaultBarKg) -> ((Double) -> Double)? {
+        guard let context, context.isLight, context.program.deloadRule == .volumeAndLoad else { return nil }
+        let implement = PlateMath.Implement.from(equipment: equipment)
+        return { kg in
+            PlateMath.snap(targetKg: kg * (1 - ProgressionMath.deloadFraction), implement: implement,
+                           barKg: barKg, inventory: inventory)
+        }
     }
 
     /// La receta de un ejercicio tal como toca hoy. Sin contexto (no hay programa) o en una semana

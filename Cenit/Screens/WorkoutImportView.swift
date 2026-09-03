@@ -796,6 +796,14 @@ struct WorkoutImportView: View {
             return "One of the routines has no exercises. Check the file and try again."
         case .exerciseWithoutName:
             return "One of the exercises has no name. Check the file and try again."
+        // Ola 1 · E10 (FER-329): programa de varias semanas. Copy mínimo para que el archivo se
+        // rechace con razón; la pantalla del programa y el prompt actualizado llegan con E11.
+        case .unsupportedSemanas:
+            return "The plan's number of weeks isn't supported: it must be between 4 and 8."
+        case .unsupportedSemanaLigera:
+            return "The plan's light-week option isn't supported. Check the file and try again."
+        case .unsupportedAlTerminar:
+            return "The plan's end-of-cycle option isn't supported. Check the file and try again."
         }
     }
 }

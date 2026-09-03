@@ -1335,6 +1335,29 @@ final class StrengthSessionModelTests: XCTestCase {
         XCTAssertEqual(s.runs[0].sets.count, 1)
     }
 
+    /// Ola 1 · E10 (gate /qa D1): con «menos series y peso», la bajada va sobre el peso FINAL de la
+    /// semilla — «la última vez» (100) gana al plan servido (92,5) y sin este cierre la tapaba.
+    func testLightWeekWithLoadLowersTheSeededWeightEvenWithHistory() {
+        var slot = StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 2, reps: 8, weight: 92.5),
+                                                 exercise: ex("bench", "Bench"),
+                                                 lastSets: [lastSet("bench", weight: 100, reps: 8)])
+        slot.lightLoad = { PlateMath.snap(targetKg: $0 * (1 - ProgressionMath.deloadFraction), implement: .barbell) }
+        let s = make([slot])
+        XCTAssertEqual(s.runs[0].sets[0].weightKg, 92.5, accuracy: 0.0001, "100 × 0,925 = 92,5, construible")
+        // Sin historial la semilla cae al plan servido, que YA viene rebajado: no se baja dos veces.
+        var fresh = StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 2, reps: 8, weight: 92.5),
+                                                  exercise: ex("bench", "Bench"), lastSets: [])
+        fresh.lightLoad = slot.lightLoad
+        XCTAssertEqual(make([fresh]).runs[0].sets[0].weightKg, 92.5, accuracy: 0.0001)
+    }
+
+    /// UNA familia de «bajar»: el 7,5 % que StrandTraining recibe inyectado es el del deload reactivo.
+    /// (`ProgramDeloadTests` escribe 0,075 literal porque no puede importar StrandAnalytics; este test
+    /// ata las dos cifras para que una deriva no pase en silencio — gate /biomecanico FER-329 #6.)
+    func testProgramDeloadFractionIsTheReactiveOne() {
+        XCTAssertEqual(ProgressionMath.deloadFraction, 0.075, accuracy: 1e-12)
+    }
+
     /// Un AMRAP planeado nace con la celda VACÍA (Q7) y el ✓ bloqueado hasta que se escriba un número.
     func testAmrapSeedsPendingAndBlocksTheCheck() {
         var slot = re("a", exerciseId: "bench", sets: 1, reps: 8, weight: 80)
