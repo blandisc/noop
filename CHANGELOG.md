@@ -22,6 +22,16 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 ## Unreleased
 
 - Diseño (FER-339): una pieza por rol en el catálogo (toast de error de guardado, pastilla de estado, selector de periodo, campo de texto `LiquidCampoTexto`, aviso Liquid; sin `NoteStrip`; toolbar de Ajustes al `fondoAlto`).
+### Ola 1 de Entrenar · ritmo «según reps en reserva» (FER-326)
+- La regla de subida gana un ritmo: en un ejercicio con el interruptor encendido, terminar la sesión con
+  reps de sobra (esfuerzo 8 o menos) adelanta la subida a una sola sesión; llegar al límite (9,5 o más)
+  no suma al ciclo, pero tampoco lo rompe.
+- Y no te congela: tras tres sesiones seguidas al límite, las tres cuentan como normales. Nunca baja el
+  peso por esfuerzo — para eso está no llegar a las reps.
+- El veredicto sigue mandando encima: una subida adelantada se retiene igual en un día de «Hoy ve leve».
+- Sin cambios en ninguna rutina existente: el interruptor nace apagado y, apagado, la regla es idéntica
+  a la de siempre. Un ejercicio sin RPE en sus series también se comporta igual que antes.
+
 ### Ola 1 de Entrenar · la carga sin reloj (FER-325)
 - Una sesión de fuerza sin reloj ya cuenta. Antes, un día en el que entrenaste sin pulso se leía como
   descanso — un cero — y tiraba tu carga hacia abajo; ahora los minutos y el esfuerzo de la sesión se

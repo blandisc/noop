@@ -47,6 +47,77 @@ public enum ProgressionMath {
     /// Fractional drop a deload proposes (7.5% — within the commonly cited 5–10% deload band).
     public static let deloadFraction = 0.075
 
+    // MARK: - Ritmo «Según reps en reserva» (ola 1 · E4)
+    //
+    // Method — RIR-anchored RPE (Zourdos 2016, JSCR 30(1):267-275; Helms 2016, SCJ 38(4):42-49,
+    // DOI 10.1519/SSC.0000000000000218): 10 = 0 reps in reserve, 9 = 1, 8 = 2. Helms 2016 is literal
+    // about the raise — «increase the intensity if able to complete sets with more than [target] RIR»
+    // — which is the NSCA's «2 for 2» rule reached in ONE session instead of two.
+    //
+    // These are gym CONVENTIONS with a defensible method, not a prescription: calibration defaults,
+    // /biomecanico owns them.
+
+    /// At or below this the session was COMFORTABLE (≥ 2 reps in reserve) — the raise can come early.
+    public static let rpeComfortableMax = 8.0
+    /// At or above this the session was AT THE LIMIT (≈ 0 reps in reserve).
+    public static let rpeLimitMin = 9.5
+    /// How many consecutive met-at-limit sessions before they stop being invisible and count as
+    /// standard. Reuses `deloadStallThreshold` on purpose — no new constant, and it is the same
+    /// «three sessions and I tell you» the deload already speaks. Gate /biomecanico #2: without a cap
+    /// a user who rates 9.5–10 out of habit (Steele 2017, PeerJ 5:e4105 — the less experienced
+    /// under-predict reps to failure by 4–5, so they rate HIGH) would be frozen forever: no raise, no
+    /// deload, no stall signal. Never lowers the weight — Helms 2016 only reduces intensity when the
+    /// reps were NOT completed.
+    public static var atLimitStreakCap: Int { deloadStallThreshold }
+
+    /// How hard a past session was, read from its per-set RPE.
+    public enum Effort: Equatable, Sendable {
+        /// Every work set at or under `rpeComfortableMax` — reps left in reserve.
+        case comfortable
+        /// Between the two thresholds: the session the plan expects.
+        case standard
+        /// At least one work set at or above `rpeLimitMin` — nothing left in the tank.
+        case atLimit
+        /// No usable rating (missing on some set, or not as many ratings as work sets). Behaves
+        /// exactly like `standard`: an unrated session must never change the rule.
+        case unknown
+    }
+
+    /// The session's effort. `unknown` — never a guess — whenever the ratings don't cover the work sets.
+    public static func effort(_ s: PastSession) -> Effort {
+        guard !s.workSetRPE.isEmpty, s.workSetRPE.count == s.workSetReps.count else { return .unknown }
+        let rated = s.workSetRPE.compactMap { $0 }
+        guard rated.count == s.workSetRPE.count else { return .unknown }
+        if rated.contains(where: { $0 >= rpeLimitMin }) { return .atLimit }
+        if rated.allSatisfy({ $0 <= rpeComfortableMax }) { return .comfortable }
+        return .standard
+    }
+
+    /// The sessions the cycle can see at the CURRENT working weight, newest → older, stopping at a
+    /// weight change. One copy of the rule: `classify` and the at-limit counter both read it.
+    static func trailingAtCurrentWeight(_ sessions: [PastSession]) -> [PastSession] {
+        guard let currentKg = sessions.last?.workingKg else { return [] }
+        var trailing: [PastSession] = []
+        for s in sessions.reversed() {
+            guard abs(s.workingKg - currentKg) < 0.0001 else { break }
+            trailing.append(s)
+        }
+        return trailing
+    }
+
+    /// How many consecutive sessions at the top of the history met the goal AT THE LIMIT — the number
+    /// the copy needs for «N sesiones al límite». 0 when the newest session missed or wasn't at the limit.
+    public static func atLimitStreak(_ input: ProgressionInput) -> Int {
+        let sessions = input.history.filter { !$0.optedOut }
+        var streak = 0
+        for s in trailingAtCurrentWeight(sessions) {
+            guard metGoal(s, targetReps: input.targetReps, targetSets: input.targetSets),
+                  effort(s) == .atLimit else { break }
+            streak += 1
+        }
+        return streak
+    }
+
     /// One past session of the exercise, as the classifier needs it. Warm-up sets are excluded by the
     /// caller — `workSetReps` is the reps hit on each WORK set, at `workingKg`.
     public struct PastSession: Equatable, Sendable {
@@ -54,8 +125,14 @@ public enum ProgressionMath {
         public let workSetReps: [Int]
         /// The user chose "Volver a X" this session (opt-out): it counts as neither a hit nor a miss.
         public let optedOut: Bool
-        public init(workingKg: Double, workSetReps: [Int], optedOut: Bool = false) {
+        /// Perceived effort per WORK set, parallel to `workSetReps` (ola 1 · E4). Empty = the caller
+        /// doesn't carry RPE; a `nil` element = that set wasn't rated. Either way the session reads
+        /// `.unknown` and the rule behaves exactly as it did before RPE existed.
+        public let workSetRPE: [Double?]
+        public init(workingKg: Double, workSetReps: [Int], optedOut: Bool = false,
+                    workSetRPE: [Double?] = []) {
             self.workingKg = workingKg; self.workSetReps = workSetReps; self.optedOut = optedOut
+            self.workSetRPE = workSetRPE
         }
     }
 
@@ -76,16 +153,22 @@ public enum ProgressionMath {
         /// from Hoy's verdict: with «Hoy ve leve» or «Recupera» the raise waits for a better day. Kept
         /// as its own flag so the legacy score-driven path keeps its exact behaviour.
         public let deferRaise: Bool
+        /// Ritmo «Según reps en reserva» (ola 1 · E4), from `RoutineExercise.progressionUseRPE`.
+        /// `false` — the default and every pre-existing routine — is byte-identical to the rule
+        /// before RPE existed.
+        public let useRPE: Bool
 
         public init(history: [PastSession], targetReps: Int, targetSets: Int,
                     sessionsToAdvance: Int = 2, incrementKg: Double,
                     deloadWarnOnly: Bool = false,
                     recoveryReason: TrainingRegulation.Reason? = nil,
-                    deferRaise: Bool = false) {
+                    deferRaise: Bool = false,
+                    useRPE: Bool = false) {
             self.history = history; self.targetReps = targetReps; self.targetSets = targetSets
             self.sessionsToAdvance = sessionsToAdvance; self.incrementKg = incrementKg
             self.deloadWarnOnly = deloadWarnOnly; self.recoveryReason = recoveryReason
             self.deferRaise = deferRaise
+            self.useRPE = useRPE
         }
     }
 
@@ -110,21 +193,21 @@ public enum ProgressionMath {
         let currentKg = current.workingKg
 
         // Trailing run of sessions AT the current weight (newest → older), stopping at a weight change.
-        var trailing: [PastSession] = []
-        for s in sessions.reversed() {
-            guard abs(s.workingKg - currentKg) < 0.0001 else { break }
-            trailing.append(s)
-        }
+        let trailing = trailingAtCurrentWeight(sessions)
         let newestMet = metGoal(current, targetReps: input.targetReps, targetSets: input.targetSets)
 
         if newestMet {
             // Count consecutive met sessions from newest.
-            var metRun = 0
-            for s in trailing {
-                guard metGoal(s, targetReps: input.targetReps, targetSets: input.targetSets) else { break }
-                metRun += 1
+            let metPrefix = trailing.prefix {
+                metGoal($0, targetReps: input.targetReps, targetSets: input.targetSets)
             }
-            if metRun >= n {
+            let metRun = metRunCount(Array(metPrefix), useRPE: input.useRPE)
+            // Ola 1 · E4 (a): the newest session met the goal with reps to spare, so the raise comes
+            // NOW instead of at the end of the cycle — Helms 2016's «able to complete sets with more
+            // than [target] RIR». It passes through the SAME gates below (a non-positive increment
+            // can't raise; today's verdict can still defer it), so FER-85 is untouched.
+            let comfortableRaise = input.useRPE && effort(current) == .comfortable
+            if metRun >= n || comfortableRaise {
                 // A non-positive increment can't propose a raise (QA D2): stay honestly in-cycle.
                 guard input.incrementKg > 0 else { return .inCycle(done: metRun, of: n) }
                 let newKg = currentKg + input.incrementKg
@@ -150,5 +233,29 @@ public enum ProgressionMath {
             }
             return .stalled(sessions: failRun)
         }
+    }
+
+    /// How many of the trailing MET sessions (newest → older, all of them met) count toward the cycle.
+    ///
+    /// Without the RPE rhythm: all of them, exactly as before. With it (ola 1 · E4, rule b): a session
+    /// met AT THE LIMIT is invisible — it neither adds to the run nor breaks it — because reaching the
+    /// reps with nothing in reserve is not the same evidence as reaching them with two left. The one
+    /// exception is the cap: once `atLimitStreakCap` of them run consecutively, the whole streak counts
+    /// as standard, so «al límite» can freeze the raise for a while but never forever.
+    static func metRunCount(_ metPrefix: [PastSession], useRPE: Bool) -> Int {
+        guard useRPE else { return metPrefix.count }
+        var run = 0
+        var atLimitRun = 0
+        for s in metPrefix {
+            if effort(s) == .atLimit {
+                atLimitRun += 1
+                continue
+            }
+            if atLimitRun >= atLimitStreakCap { run += atLimitRun }
+            atLimitRun = 0
+            run += 1
+        }
+        if atLimitRun >= atLimitStreakCap { run += atLimitRun }
+        return run
     }
 }
