@@ -19,6 +19,9 @@ Rules (each activated in the PR that finishes its migration — pass `--rules` t
     no-instrumento-theme   `theme.ink/paper/…` / `StrandFont.*` access outside the Watch/Widget carve-out (FER-306; ratchet)
     no-weight-on-grotesk   `.weight(...)` on a grotesk `LiquidType` token — a silent no-op on `.custom` fonts (FER-308; pure)
     no-iphone-tone-on-oled  an iPhone data tone (`LiquidColor.rosa/negativo/…`) painted in `CenitWatch/` — OLED wants `LiquidOLED.*` (retro FER-309; pure)
+    no-capsule-a-mano      `Capsule().fill/stroke/strokeBorder` drawn by hand (same line or the next) — the catalog has OutlineCapsule / HojaCapsulaAccion / LiquidStatePill; data tracks carry `token-exempt(dato)` (FER-338; pure)
+    no-confirmation-dialog  a native `.confirmationDialog(` — the catalog has `.liquidConfirm` (FER-338; pure)
+    no-native-menu          a native `Menu {` / `Menu(` — the catalog has `.liquidMenu` (FER-338; pure)
     token-exempt       pseudo-rule: counts the escape hatches themselves        (FER-263; ratchet — an exemption
                        is frozen debt too, so a NEW `token-exempt` fails unless its budget allows it)
 
@@ -53,7 +56,7 @@ DEFAULT_ROOTS = [
 DESIGN_PKG = "Packages/CenitDesign"
 EXEMPT = re.compile(r"//\s*token-exempt\b")
 
-ALL_RULES = ["no-hex", "no-adhoc-font", "no-radius-literal", "no-opacity-literal", "no-emdash-string", "no-raw-shadow", "no-sheet-glass", "no-spacing-literal", "no-legacy-api", "token-exempt", "no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic", "no-motion-literal", "no-dt-cap-adhoc", "no-deprecated-metrics", "no-instrumento-theme", "no-weight-on-grotesk", "no-iphone-tone-on-oled"]
+ALL_RULES = ["no-hex", "no-adhoc-font", "no-radius-literal", "no-opacity-literal", "no-emdash-string", "no-raw-shadow", "no-sheet-glass", "no-spacing-literal", "no-legacy-api", "token-exempt", "no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic", "no-motion-literal", "no-dt-cap-adhoc", "no-deprecated-metrics", "no-instrumento-theme", "no-weight-on-grotesk", "no-iphone-tone-on-oled", "no-capsule-a-mano", "no-confirmation-dialog", "no-native-menu"]
 
 # Per-rule default roots — mirrors `.github/workflows/design-lint.yml` exactly (FER-282).
 # A bare `python3 Tools/check-design-drift.py --baseline …` (no roots) must not paint red on
@@ -86,6 +89,9 @@ DEFAULT_ROOTS_BY_RULE = {
     "no-instrumento-theme": list(_ROOTS_LEGACY),
     "no-weight-on-grotesk": list(_ROOTS_LEGACY),
     "no-iphone-tone-on-oled": ["CenitWatch"],
+    "no-capsule-a-mano": list(_ROOTS_SPACING_MOTION),
+    "no-confirmation-dialog": list(_ROOTS_SPACING_MOTION),
+    "no-native-menu": list(_ROOTS_SPACING_MOTION),
 }
 # no-emdash-string: an em-dash (—, U+2014) inside a user-facing Swift string literal. ADN copy rule
 # (FER-878): on-screen copy uses «:», «·» or a comma, never an em-dash. Scoped to STRING LITERALS so the
@@ -246,6 +252,16 @@ RE_FONTWEIGHT = re.compile(r"\.fontWeight\(")
 # `CenitWidgets/` conviven la pantalla bloqueada clara y la isla negra en el mismo archivo).
 RE_IPHONE_TONE_ON_OLED = re.compile(r"\bLiquidColor\.(?:rosa|negativo|ambar|atencion|atencionTexto|verdePrimario|verdeProfundo|indigo|cian|azul|oro|teal|tinta900|tinta700|tinta500)\b")
 
+# FER-338 — gate de «pieza reinventada»: el gate revisaba ingredientes (tokens), no recetas. Un chip
+# hecho a mano con tokens válidos pasaba; el catálogo ya tiene la pieza. Tres patrones con deuda 0 al
+# estreno (prohibición pura). Los tracks de DATO (barra de progreso, rampa) llevan `token-exempt(dato)`
+# en la línea del `Capsule()` o en la del modifier.
+RE_CAPSULE_INLINE = re.compile(r"\bCapsule\(\)\s*\.(?:fill|stroke|strokeBorder)\(")
+RE_CAPSULE_ALONE = re.compile(r"\bCapsule\(\)\s*$")
+RE_CAPSULE_MODIFIER = re.compile(r"^\s*\.(?:fill|stroke|strokeBorder)\(")
+RE_CONFIRMATION_DIALOG = re.compile(r"\.confirmationDialog\(")
+RE_NATIVE_MENU = re.compile(r"(?<![A-Za-z.])Menu\s*(?:\{|\()")
+
 RULE_PATTERNS = {
     "no-hex": RE_HEX,
     "no-adhoc-font": RE_FONT,
@@ -264,6 +280,9 @@ RULE_PATTERNS = {
     "no-instrumento-theme": RE_INSTRUMENTO_THEME,
     "no-weight-on-grotesk": RE_WEIGHT_ON_GROTESK,
     "no-iphone-tone-on-oled": RE_IPHONE_TONE_ON_OLED,
+    "no-capsule-a-mano": RE_CAPSULE_INLINE,
+    "no-confirmation-dialog": RE_CONFIRMATION_DIALOG,
+    "no-native-menu": RE_NATIVE_MENU,
 }
 
 
@@ -356,7 +375,7 @@ def check(paths, rules):
             for rule in rules:
                 if rule == "token-exempt":
                     continue
-                if rule in ("no-hex", "no-legacy-api", "no-raw-color", "no-token-arithmetic", "no-deprecated-metrics", "no-instrumento-theme", "no-weight-on-grotesk", "no-iphone-tone-on-oled") and in_design_pkg:
+                if rule in ("no-hex", "no-legacy-api", "no-raw-color", "no-token-arithmetic", "no-deprecated-metrics", "no-instrumento-theme", "no-weight-on-grotesk", "no-iphone-tone-on-oled", "no-capsule-a-mano", "no-confirmation-dialog", "no-native-menu") and in_design_pkg:
                     continue
                 if rule in ("no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic", "no-motion-literal") and in_widget_watch:
                     continue
@@ -367,6 +386,10 @@ def check(paths, rules):
                         hits.append((path, i, rule, stripped[:100]))
                     continue
                 m = RULE_PATTERNS[rule].search(code)
+                if not m and rule == "no-capsule-a-mano" and RE_CAPSULE_ALONE.search(code):
+                    nxt_raw = lines[i] if i < len(lines) else ""
+                    if RE_CAPSULE_MODIFIER.search(_strip_line_comments(nxt_raw)) and not EXEMPT.search(nxt_raw):
+                        m = True
                 if not m and rule == "no-weight-on-grotesk" and RE_FONT_GROTESK.search(code):
                     # `.fontWeight(` sobre un grotesk: misma línea, o la siguiente (cadena de modifiers).
                     nxt = _strip_line_comments(lines[i]) if i < len(lines) else ""
