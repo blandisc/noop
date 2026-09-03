@@ -191,7 +191,7 @@ struct ManualWorkoutSheet: View {
             nil,
             texto: text,
             placeholder: placeholder,
-            teclado: .numberPad,
+            teclado: LiquidCampoTeclado.numberPad,
             a11y: a11y,
             sufijo: unit,
             tipografia: LiquidType.valorM)
