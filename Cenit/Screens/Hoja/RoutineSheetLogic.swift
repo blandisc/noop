@@ -180,11 +180,15 @@ extension RoutineSheet {
                 re: ProgramServing.serve(item.re, context: serving,
                                          equipment: item.exercise.equipment, inventory: inventory),
                 exercise: item.exercise, lastSets: item.lastSets,
-                raise: item.raise, progressionState: item.progressionState)
+                raise: item.raise, progressionState: item.progressionState,
+                // El −7,5 % de «menos series y peso» va sobre el peso FINAL de la semilla también
+                // desde la Hoja (gate /qa FER-329 D1, ronda 2): la misma puerta que el héroe y el reloj.
+                lightLoad: ProgramServing.lightLoad(context: serving, equipment: item.exercise.equipment,
+                                                    inventory: inventory))
         }
         model.startStrengthSession(routineId: r.id, routineName: r.name, slots: slots,
                                    programWeek: serving.flatMap(\.stampWeek),
-                                   deload: serving.map(\.isLight))
+                                   deload: serving.flatMap(\.stampDeload))
     }
 
     // MARK: - Set + exercise mutations

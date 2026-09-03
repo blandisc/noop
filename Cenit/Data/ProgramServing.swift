@@ -30,6 +30,8 @@ enum ProgramServing {
         /// La semana que se estampa en la sesión: nil cuando el programa ya terminó («un solo ciclo»),
         /// porque una fila con `programWeek` afirma «había programa» (gate /qa D3).
         var stampWeek: Int? { position.ended ? nil : position.week }
+        /// Y su pareja: nil cuando el programa terminó, si no «¿se sirvió ligera?».
+        var stampDeload: Bool? { position.ended ? nil : position.isLight }
     }
 
     /// El cierre que `StrengthSessionModel.make` aplica al peso FINAL de la semilla en semana ligera

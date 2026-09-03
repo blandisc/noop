@@ -203,6 +203,13 @@ adversarial (`docs/specs/ola1-entrenar/`):
     el invariante es el opuesto y sigue: un escalón huérfano conserva `mode = drop`, nunca se promueve
     y nada se borra al guardar. En superserie el escalón va ANTES del salto al compañero: «bajar y
     seguir» pertenece a la misma serie. Un escalón que no baja (madre en la barra sola) no se inserta.
+11. **Programa (E10, director + gate /biomecanico 2026-09-02):** «semana entrenada» (D-Q2) = semana con
+    ≥ 1 sesión SERVIDA por el programa (`programWeek` no nulo); movilidad, sesión rápida y «repetir del
+    historial» no avanzan el contador. El lineal de novato sube cada sesión solo en barra Y ≤ 8 reps
+    (el curl de barra a 12 va a dos sesiones). En semana ligera la descarga reactiva AVISA («llevas 3
+    sin cumplir») y no propone «bajar a»: la propuesta íntegra reaparece en la semana 1 del ciclo
+    siguiente. Con «menos series y peso» el −7,5 % va sobre el peso final de la semilla («la última
+    vez»), no solo sobre el plan.
 
 ## 2026-09-04 · Loop 4 (FER-339/340/341) · decisiones del director
 

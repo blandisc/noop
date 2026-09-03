@@ -792,7 +792,7 @@ private struct EntrenarLanding: View {
         // que ya recortó los slots si tocaba ligera.
         model.startStrengthSession(routineId: r.id, routineName: r.name, slots: todaySlots,
                                    programWeek: todayServing.flatMap(\.stampWeek),
-                                   deload: todayServing.map(\.isLight))
+                                   deload: todayServing.flatMap(\.stampDeload))
     }
 
 

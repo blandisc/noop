@@ -66,7 +66,7 @@ extension AppModel {
         guard !slots.isEmpty else { return }
         startStrengthSession(routineId: routine.id, routineName: routine.name, slots: slots,
                              programWeek: serving.flatMap(\.stampWeek),
-                             deload: serving.map(\.isLight))
+                             deload: serving.flatMap(\.stampDeload))
     }
 
     /// Today's scheduled routine, or nil on a rest day / with no plan — the same resolution
