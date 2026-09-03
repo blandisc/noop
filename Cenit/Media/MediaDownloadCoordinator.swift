@@ -104,7 +104,7 @@ final class MediaDownloadCoordinator: ObservableObject {
                 }
                 completed += 1
                 if completed % 10 == 0 || completed == toDownload.count {
-                    downloadState = .downloading(completed: completed, total: toDownload.count)
+                    self.downloadState = .downloading(completed: completed, total: toDownload.count)
                 }
             }
             for exercise in toDownload {
