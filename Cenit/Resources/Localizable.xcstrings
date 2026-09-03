@@ -2940,12 +2940,12 @@
         }
       }
     },
-    "%@: all your data, none of the cloud." : {
+    "%@: all your data, none uploaded." : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@: todos tus datos, nada de nube."
+            "value" : "%@: todos tus datos, nada se sube."
           }
         }
       }
@@ -28551,13 +28551,13 @@
         }
       }
     },
-    "No scored nights yet. Wear the strap with Cénit connected overnight and the engine will score your recovery, strain and sleep itself, no cloud required." : {
+    "No scored nights yet. Wear the strap with Cénit connected overnight and the engine will score your recovery, strain and sleep itself, no server required." : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No scored nights yet. Wear the strap with Cénit connected overnight and the engine will score your recovery, strain and sleep itself, no cloud required."
+            "value" : "No scored nights yet. Wear the strap with Cénit connected overnight and the engine will score your recovery, strain and sleep itself, no server required."
           }
         },
         "es" : {
@@ -48459,19 +48459,19 @@
         }
       }
     },
-    "Your data, none of the cloud." : {
+    "Your data, none uploaded." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your data, none of the cloud."
+            "value" : "Your data, none uploaded."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tus datos, nada en la nube."
+            "value" : "Tus datos, nada se sube."
           }
         }
       }
@@ -51348,19 +51348,19 @@
         }
       }
     },
-    "all your data, none of the cloud" : {
+    "all your data, none uploaded" : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "all your data, none of the cloud"
+            "value" : "all your data, none uploaded"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "todos tus datos, nada de nube"
+            "value" : "todos tus datos, nada se sube"
           }
         }
       }
@@ -57453,7 +57453,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No account, no email, no cloud. Everything is computed on your iPhone. Put it in airplane mode and check right now."
+            "value" : "No account, no email, no server. Everything is computed on your iPhone. Put it in airplane mode and check right now."
           }
         },
         "es" : {

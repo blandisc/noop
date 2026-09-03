@@ -41,7 +41,7 @@ struct SupportView: View {
             Text("About & support")
                 .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
                 .foregroundStyle(LiquidColor.tinta900)
-            Text("\(ProjectInfo.appName): all your data, none of the cloud.")
+            Text("\(ProjectInfo.appName): all your data, none uploaded.")
                 .font(LiquidType.cuerpo)
                 .foregroundStyle(LiquidColor.tinta500)
                 .fixedSize(horizontal: false, vertical: true)

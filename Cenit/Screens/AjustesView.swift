@@ -184,7 +184,7 @@ private struct AjustesLanding: View {
             Text(String(localized: "Settings"))
                 .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
                 .foregroundStyle(LiquidColor.tinta900)
-            Text(String(localized: "On this iPhone · no account · no cloud"))
+            Text(String(localized: "On this iPhone · no account · no server"))
                 .font(LiquidType.captionLectura)
                 .foregroundStyle(LiquidColor.tinta500)
         }

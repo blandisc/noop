@@ -221,7 +221,7 @@ struct ContentView: View {
         // first-paint window would look empty after pass ① — and `didOfferRestore` is sticky.
         //
         // FER-116: y NUNCA a quien terminó el onboarding sin conectar Apple Salud. Esa persona acaba
-        // de leer «sin cuenta, sin nube, ponlo en modo avión y compruébalo» y recibir, 2.5 s después,
+        // de leer «sin cuenta, sin servidor, ponlo en modo avión y compruébalo» y recibir, 2.5 s después,
         // una oferta de restaurar de iCloud contradice la promesa de marca en el peor momento posible.
         // `health.auth` es la señal honesta: solo llega a `.authorized` pasando por
         // `requestAuthorization()` (el acto «permiso» del onboarding), y sobrevive al relanzamiento en
