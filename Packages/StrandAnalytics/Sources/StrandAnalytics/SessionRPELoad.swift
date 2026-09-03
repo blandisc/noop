@@ -2,8 +2,9 @@ import Foundation
 
 // SessionRPELoad.swift — load from MINUTES × EFFORT, on the same 0–21 strain scale (ola 1 · E2).
 //
-// Why it exists: heart rate does not discriminate intensity in strength training (Falk Neto 2020),
-// and a Cénit session logged without a watch produced NO load at all — the day fell through
+// Why it exists: heart rate does not discriminate intensity in resistance-type work (Falk Neto 2020,
+// Front Physiol 11:919 — functional fitness, n = 8, a mechanism the authors extend to lifting; Day 2004
+// and Sweet 2004 show perceived effort DOES discriminate it in lifting), and a Cénit session logged without a watch produced NO load at all — the day fell through
 // `AppleLoadEstimator.classify` as `.rest`, a zero. Perceived effort does discriminate it
 // (Day 2004, Sweet 2004, Haddad 2017), so a session the user rates gets a load.
 //
@@ -14,7 +15,9 @@ import Foundation
 //      receipt, on the app's 6–10 RIR-anchored row (Zourdos 2016: 10 = 0 reps in reserve).
 //   2. That row is NOT CR-10: its dynamic range is 10/6 = 1.67×, Foster's is ≥ 2.5×. A multiplicative
 //      constant cannot absorb an ADDITIVE scale offset, so the map is explicit and affine:
-//      `cr10 = 1.5·rpe − 5` (6→4 «algo duro», 8→7 «muy duro», 10→10 «máximo»).
+//      `cr10 = 1.5·rpe − 5` (6→4 «algo duro», 8→7 «muy duro», 10→10 «máximo»). The anchors are
+//      Foster's (CR-10) and Zourdos's (RIR); the affine cross-walk between them is a PRODUCT mapping —
+//      no published RIR→CR-10 cross-walk exists — and its slope/intercept are unvalidated.
 //   3. Foster's AU are not TRIMP. `trimpPerAU` is the bridge onto the Edwards-TRIMP axis the 0–21
 //      scale is built on, so an estimated session and a measured one land on ONE ruler.
 //
@@ -24,7 +27,7 @@ public enum SessionRPELoad {
 
     // MARK: - Constants (calibration defaults, /estadistico owns)
 
-    /// Lowest rating the session-effort row offers (RIR-anchored: 6 ≈ 4 reps in reserve).
+    /// Lowest rating the session-effort row offers (RIR-anchored: 6 ≈ 4–6 reps in reserve).
     public static let rpeMin: Double = 6.0
     /// Highest rating the row offers (10 = 0 reps in reserve, «al fallo»).
     public static let rpeMax: Double = 10.0
@@ -93,7 +96,7 @@ public enum SessionRPELoad {
     }
 
     /// Whether a freshly fitted scale may REPLACE the one in use (H4). Two gates, both required:
-    /// the evidence has to have DOUBLED since the last fit (5 → 10 → 20 → 40 …), and the new scale
+    /// the evidence has to have DOUBLED since the last fit (5 → 10 → 20 → 40), and the new scale
     /// has to differ by more than `refitMinRelativeChange`. Anything else keeps the current k, so a
     /// user's ACWR doesn't drift band by band on noise.
     /// `lastFitPairCount == nil` = never fitted: only the pair floor applies.

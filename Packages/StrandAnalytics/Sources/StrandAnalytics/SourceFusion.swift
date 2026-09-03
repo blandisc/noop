@@ -144,6 +144,8 @@ public enum SourceFusion {
             var overlapEstimated = false, disjointEstimated = false
             var anyLoad = false
             for s in sessions {
+                // A stored 0 (a measured pulse that never cleared the first Edwards zone) is treated
+                // like an unknown load: the day HOLDS rather than reads as rest (gate /estadistico #2).
                 guard let st = s.strain, st > 0 else { continue }
                 anyLoad = true
                 let t = StrainScorer.strainToTrimp(st)

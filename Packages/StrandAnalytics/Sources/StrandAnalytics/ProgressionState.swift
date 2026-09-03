@@ -65,7 +65,7 @@ public enum ProgressionMath {
     /// standard. Reuses `deloadStallThreshold` on purpose — no new constant, and it is the same
     /// «three sessions and I tell you» the deload already speaks. Gate /biomecanico #2: without a cap
     /// a user who rates 9.5–10 out of habit (Steele 2017, PeerJ 5:e4105 — the less experienced
-    /// under-predict reps to failure by 4–5, so they rate HIGH) would be frozen forever: no raise, no
+    /// under-predict how many reps they had left, so they rate HIGH) would be frozen forever: no raise, no
     /// deload, no stall signal. Never lowers the weight — Helms 2016 only reduces intensity when the
     /// reps were NOT completed.
     public static var atLimitStreakCap: Int { deloadStallThreshold }

@@ -63,6 +63,15 @@ final class SourceFusionOverlayTests: XCTestCase {
         XCTAssertTrue(out.estimatedDays.isEmpty)
     }
 
+    func testMeasuredZeroStrainIsAHold() {
+        // A pulse that never left the first Edwards zone stores strain 0: not a rest, an unknown load.
+        let days = [row(0, strain: 0)]
+        let out = SourceFusion.overlayStrengthLoad(days: days, loads: [load(0, strain: 0, estimated: false)],
+                                                   workouts: [], today: key(1))
+        XCTAssertNil(out.days.first!.strain, "a measured zero on a trained day is a hold")
+        XCTAssertTrue(out.estimatedDays.isEmpty)
+    }
+
     func testMeasuredDayKeepsItsNumberWhenTheSessionHasNoLoad() {
         let days = [row(0, strain: 9.5)]
         let out = SourceFusion.overlayStrengthLoad(days: days, loads: [load(0, strain: nil)],

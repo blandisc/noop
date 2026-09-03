@@ -656,8 +656,11 @@ extension CenitStore {
     /// carried into memory. The 0.8-coverage gate is applied by the caller over `hrSamples` — the
     /// pulse is returned WITH each candidate so a single read serves the whole fit.
     ///
-    /// `limit` bounds the samples pulled into memory (each session is at most a few thousand rows).
-    public func strengthCalibrationPairs(limit: Int = 20) async throws -> [StrengthCalibrationCandidate] {
+    /// `limit` bounds the samples pulled into memory (each session is at most a few thousand rows)
+    /// AND ends the refit ladder: the count the caller gates on can never exceed it, so with 40 the
+    /// scale is refitted at 5 → 10 → 20 → 40 pairs and then stays — it has matured (gate
+    /// /estadistico FER-325 #1, 2026-09-02).
+    public func strengthCalibrationPairs(limit: Int = 40) async throws -> [StrengthCalibrationCandidate] {
         try syncRead { db in
             let heads = try Row.fetchAll(db, sql: """
                 SELECT id, startTs, endTs, sessionRpe FROM strengthSession

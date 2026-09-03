@@ -196,12 +196,11 @@ extension AppModel {
             let hrMean: Double = hrSum / Double(hrSamples.count)
             record.avgHr = Int(hrMean.rounded())
         }
-        // Ola 1 · E2 — the session's EFFORT. The receipt's question is E3; until it ships, the rating
-        // is whatever the sets themselves carried (`SessionRPE.prefill`) — nil, never a defaulted 7.
-        if record.sessionRpe == nil, let suggested = SessionRPE.prefill(sets: sets) {
-            record.sessionRpe = suggested
-            record.sessionRpeSource = .prefill
-        }
+        // Ola 1 · E2 — the session's EFFORT is what the user ANSWERS in the receipt (E3, D-Q13: the
+        // question is asked always, even with a watch). Until that question ships nothing is written
+        // here: `sessionRpe` stays nil, the load keeps coming from the pulse (`.hr`) or stays unknown,
+        // exactly as before v42. `SessionRPE.prefill` is the SUGGESTION E3 shows — it is never
+        // recorded as an answer on the user's behalf (gate /qa + /cso FER-325, 2026-09-02).
         // The LOAD is resolved in `attemptStrengthSave`, where the personal TRIMP-per-AU scale is
         // reachable: ONE source per session (`resolveStrengthLoad`), never a sum of pulse and effort.
         let hrMax = profile.hrMax
@@ -482,7 +481,9 @@ extension AppModel {
         // session strain. nil (→ the line is hidden) when there's no strain or fewer than ~2 weeks
         // of base — we never invent a number.
         let recoverySeries = repo.days.map(\.recovery)
-        let costTomorrowPct: Int? = record.strain.flatMap { strain in
+        // Same source as `costBand` on the same card: the pulse when it covered the session, else the
+        // session's load — never one line from the pulse and the next from the estimate (gate /qa D4).
+        let costTomorrowPct: Int? = (cardiovascularStrain ?? record.strain).flatMap { strain in
             RecoveryForecast.compute(recovery: recoverySeries, sessionStrain: strain)
                 .map { Int($0.estimate.rounded()) }
         }
@@ -511,8 +512,9 @@ extension AppModel {
 
     /// THE rule for a strength session's load — one source, never a sum:
     /// 1. a rating → minutes × effort (`SessionRPELoad`), `strainSource == .rpe`. The rating wins
-    ///    because heart rate does not discriminate intensity in strength work (Falk Neto 2020) while
-    ///    perceived effort does (Day 2004, Sweet 2004, Haddad 2017);
+    ///    because heart rate does not discriminate intensity in resistance-type work (Falk Neto 2020,
+    ///    functional fitness, n = 8) while perceived effort does in lifting (Day 2004, Sweet 2004,
+    ///    Haddad 2017);
     /// 2. no rating but a pulse that actually covered the session → Edwards TRIMP, `.hr` — the same
     ///    number this path has always stored;
     /// 3. neither → `nil`. «Entrenaste, carga sin estimar» is a hold, never a zero.
@@ -553,10 +555,14 @@ extension AppModel {
                                                currentTrimpPerAU: StrengthLoadCalibration.current,
                                                candidateTrimpPerAU: candidate)
         else { return }
+        // The scale is accepted only AFTER the rewrite succeeded: a new k with old sessions is the
+        // very inconsistency the single write exists to prevent (gate /qa D3).
+        do {
+            _ = try await store.recomputeEstimatedStrain(trimpPerAU: candidate) { durationS, rpe in
+                SessionRPELoad.strain(durationS: durationS, rpe: rpe, trimpPerAU: candidate)
+            }
+        } catch { return }
         StrengthLoadCalibration.accept(candidate, pairCount: pairs.count)
-        _ = try? await store.recomputeEstimatedStrain(trimpPerAU: candidate) { durationS, rpe in
-            SessionRPELoad.strain(durationS: durationS, rpe: rpe, trimpPerAU: candidate)
-        }
     }
 }
 

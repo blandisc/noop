@@ -27,7 +27,10 @@ public enum SessionRPE {
     /// the nearest half step and clamped into the row. `nil` when no such set carries a rating.
     ///
     /// It is a SUGGESTION: whoever presents it decides whether an accepted value is recorded as
-    /// `sessionRpeSource == .prefill` (taken as offered) or `.answered` (tapped).
+    /// `sessionRpeSource == .prefill` (taken as offered) or `.answered` (tapped). It is NOT the
+    /// session-RPE construct: the mean of per-set ratings sits ABOVE the global rating of the same
+    /// session (Sweet et al. 2004, JSCR 18(4):796-802), which is why the receipt shows it as «sugerido»
+    /// and never writes it on the user's behalf.
     public static func prefill(sets: [SetEntry]) -> Double? {
         let rated = sets.filter { $0.kind == .work && $0.done && $0.mode != .drop }.compactMap(\.rpe)
         guard !rated.isEmpty else { return nil }
