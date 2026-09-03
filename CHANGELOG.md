@@ -34,9 +34,21 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 - El «?» de Entrenar gana «Palabras del gym»: ocho términos (las que puedas, bajar y seguir, reps en
   reserva, semana ligera, esfuerzo estimado, descansos, programa, 1RM estimado) con una línea cada
   uno.
-- «Nuevo programa» gana el enlace «¿Qué es una semana ligera?» hacia ese glosario — los 3 pasos con
-  su porqué ya los trae FER-334.
+- «Nuevo programa» gana el enlace «¿Qué es una semana ligera?» hacia ese glosario, junto a la línea
+  de porqué que ya traía FER-334 — ambos SOLO en la primera creación de un programa
+  (`entrenar.programa.primeraGuiaVista`); de la segunda en adelante, la guía ya no vuelve (fix QA
+  D2, AC#5 — antes se repetía en cada creación).
 - Sin tour: la enseñanza vive en el lugar donde el concepto aparece, nunca en un modal que bloquea.
+- GAP de backlog (QA D1, AC#2): el test del ciclo del consejo (aparece una vez / «Entendido» lo
+  cierra / `Tips.resetDatastore` lo revive) no tiene una costura testeable hoy. No hay infraestructura
+  de navegación (`ScreenshotNav`) hacia las 6 pantallas ancla ni hacia el glosario, y la suite de
+  screenshots ya es frágil por tocar UI en vivo (histórico del repo) — construir esa infra queda
+  fuera de este cambio por decisión del director. Se probó además una costura sin simulador
+  (`Tip.status` en un test de `swift test`, sin UI): `status` queda en `.pending` incluso justo
+  después de `Tips.configure()` + `invalidate()` — TipKit lo resuelve por un motor async
+  (`statusUpdates`), no de forma síncrona, así que una aserción inmediata sería un test frágil por
+  diseño. Sin costura razonable: el test del ciclo TipKit queda como issue de backlog, no algo que
+  este cambio deba resolver.
 
 ### Ola 1 de Entrenar · pantallas de programa (FER-334)
 - El motor de programas de FER-329 ya tiene dónde prenderse: «Programa · 4 a 6 semanas» en Tu Plan

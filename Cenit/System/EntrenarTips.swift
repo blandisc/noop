@@ -10,7 +10,7 @@ import StrandTraining
 // aparece en pantalla por primera vez, y `Tip.MaxDisplayCount(1)` lo invalida tras esa primera
 // aparición (además del botón «Entendido» de `LiquidConsejoTipStyle`, que invalida al tocarlo). El
 // estilo visual (tinta sobre vidrio) vive en `CenitDesign.LiquidConsejoTipStyle`, aplicado una sola
-// vez en la raíz de la app (`RootTabView`) — ningún sitio de anclaje repite `.tipViewStyle(_:)`.
+// vez en la raíz de la app (`CenitApp.swift:97`, sobre `ContentView()`) — ningún sitio de anclaje repite `.tipViewStyle(_:)`.
 //
 // Copy es-MX final: `docs/specs/ola1-entrenar/tips-es.md` / issue 12 tabla de consejos. Ninguna
 // cadena promete que una sesión cambia el veredicto (D-Q12) — estos seis conceptos son de Entrenar,
