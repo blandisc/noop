@@ -93,7 +93,10 @@ final class MediaDownloadCoordinator: ObservableObject {
         let newMisses = await withTaskGroup(of: ThumbResult.self) { group -> Set<String> in
             var inFlight = 0
             var newMisses: Set<String> = []
-            func record(_ result: ThumbResult) {
+            // `@MainActor` en el closure (no una `func` anidada, que sería `nonisolated` y no podría
+            // mutar `downloadState`): el cuerpo de `withTaskGroup` ya corre en el main actor, así que un
+            // closure literal hereda ese aislamiento y toca `downloadState` sin cruzar de actor.
+            let record: @MainActor (ThumbResult) -> Void = { result in
                 switch result {
                 case .stored: break
                 case .noMedia(let id): newMisses.insert(id)
