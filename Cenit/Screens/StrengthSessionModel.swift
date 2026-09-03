@@ -1420,6 +1420,9 @@ final class StrengthSessionModel: ObservableObject {
         /// plan y taparía un recorte que solo viajara en `re` (arq-B §⑤; gate /qa D1). El plan servido
         /// (`re.sets`) ya viene rebajado, así que el cierre NO se aplica cuando la semilla cae a él.
         var lightLoad: ((Double) -> Double)? = nil
+        /// Ola 1 · E5: por qué el ritmo «según reps en reserva» hizo lo que hizo — para la línea 2 del
+        /// hub (`EntrenarView`). Default nil, misma convención que `raise`/`progressionState`.
+        var raiseRhythmNote: ProgressionPlanner.RaiseRhythmNote? = nil
     }
 
     static func make(routineId: String?, routineName: String, slots: [PlanSlot],

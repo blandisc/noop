@@ -248,7 +248,8 @@ struct HojaTarjetaEjercicioSesion: View {
         }
         // R3: tap en peso/reps de una fila activa/fantasma abre la consola sobre ESA celda —
         // paridad de intención con las tap-zones de F1 (`HojaFilaSerieTapZones`). D-r2.2 (ronda 3):
-        // en una fila HECHA la misma zona de reps (donde vive el sufijo «· Q») abre la hoja de RPE —
+        // en una fila HECHA la misma zona de reps (donde vive el sufijo de reps en reserva) abre la
+        // hoja de RPE —
         // el viejo también lo hacía desde la tabla en línea (`tapEntrenarCell` case `.rpe`).
         .overlay {
             if usesReps {

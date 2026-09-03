@@ -386,10 +386,10 @@ struct LiveStrengthSheet: View {
                     for: .from(equipment: ExerciseCatalog.byID(run.exerciseId)?.equipment),
                     inventory: model.plates.inventory),
                 onBack: { progressionEdit = nil },
-                onSave: { enabled, targetReps, sessions, incrementKg, deload, ignoreRecovery in
+                onSave: { enabled, targetReps, sessions, incrementKg, deload, ignoreRecovery, useRPE in
                     persistProgressionFull(runId: run.id, enabled: enabled, targetReps: targetReps,
                                            sessions: sessions, incrementKg: incrementKg,
-                                           deload: deload, ignoreRecovery: ignoreRecovery)
+                                           deload: deload, ignoreRecovery: ignoreRecovery, useRPE: useRPE)
                     progressionEdit = nil
                 }
             )
@@ -577,18 +577,19 @@ struct LiveStrengthSheet: View {
     /// `LiveStrengthSheetRIRTests`.
     static func rpe(fromRIR rir: Int) -> Double { Double(10 - min(4, max(0, rir))) }
 
-    /// La lectura inversa para la tabla (handoff «Sesión en vivo» §4, ítem 4: «"Q n" ... en filas
-    /// hechas (QUEDABAN = RIR)»): el motor solo guarda RPE (`WorkingSet.rpe`), así que la columna
-    /// de `SetTable` recibe la lectura QUEDABAN ya formateada en vez del RPE crudo — el campo no
-    /// cambia, solo cómo se lee en ESTA tabla (RIR = 10 − RPE, saturado a 0…4, «4+» en el tope).
-    /// `RoutineEditorScreen` sigue leyendo `set.rpe` sin pasar por aquí — su columna RPE es RPE de
-    /// verdad, no QUEDABAN (revisión ronda 3, hallazgo grave/menor duplicado).
+    /// La lectura inversa para la tabla (reps en reserva, D-Q1/D-Q6, ola 1 · E5): el motor solo
+    /// guarda RPE (`WorkingSet.rpe`), así que la columna de `SetTable` recibe la lectura ya
+    /// formateada en vez del RPE crudo — el campo no cambia, solo cómo se lee en ESTA tabla
+    /// (RIR = 10 − RPE, saturado a 0…4, «4+» en el tope). `RoutineEditorScreen` sigue leyendo
+    /// `set.rpe` sin pasar por aquí — su columna RPE es RPE de verdad, no reps en reserva (revisión
+    /// ronda 3, hallazgo grave/menor duplicado). Antes decía «Q n» (abreviatura del prototipo); el
+    /// vocabulario del dueño prohíbe «Q»/«Quedaban» en cualquier cadena visible — 0 en reserva lee
+    /// «al fallo», el resto «N en reserva» / «4+ en reserva».
     static func qLabel(fromRPE rpe: Double) -> String {
         let rir = 10 - Int(rpe.rounded())
         let clamped = min(max(rir, 0), 4)
-        // «Q» es la abreviatura del prototipo (copy.md «Sesión en vivo»), no una palabra a traducir —
-        // igual que el badge «C» de calentamiento en la misma tabla (`badgeText` arriba).
-        return clamped >= 4 ? "Q 4+" : "Q \(clamped)"
+        if clamped == 0 { return String(localized: "at failure") }
+        return clamped >= 4 ? String(localized: "4+ in reserve") : String(localized: "\(clamped) in reserve")
     }
 
 
@@ -1310,7 +1311,8 @@ struct LiveStrengthSheet: View {
     }
 
     private func persistProgressionFull(runId: String, enabled: Bool, targetReps: Int, sessions: Int,
-                                        incrementKg: Double?, deload: DeloadPolicy, ignoreRecovery: Bool) {
+                                        incrementKg: Double?, deload: DeloadPolicy, ignoreRecovery: Bool,
+                                        useRPE: Bool) {
         guard let rid = session.routineId else { return }
         Task {
             guard let store = await model.repo.storeHandle(),
@@ -1322,6 +1324,7 @@ struct LiveStrengthSheet: View {
             res[idx].progressionIncrementKg = incrementKg
             res[idx].progressionDeload = deload
             res[idx].progressionIgnoreRecovery = ignoreRecovery
+            res[idx].progressionUseRPE = useRPE
             res[idx].targetReps = targetReps
             for i in res[idx].sets.indices where res[idx].sets[i].kind == .work {
                 res[idx].sets[i].reps = targetReps

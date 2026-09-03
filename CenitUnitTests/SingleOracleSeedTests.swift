@@ -34,7 +34,8 @@ final class SingleOracleSeedTests: XCTestCase {
     }
 
     private func evaluate(_ advice: TrainingRegulation.Advice)
-        -> (state: ProgressionState, raise: ProgressionPlanner.Raise?)? {
+        -> (state: ProgressionState, raise: ProgressionPlanner.Raise?,
+            rhythmNote: ProgressionPlanner.RaiseRhythmNote?)? {
         ProgressionPlanner.evaluate(re: earnedSlot(), history: earnedHistory(),
                                     inventory: [], equipment: nil, advice: advice)
     }

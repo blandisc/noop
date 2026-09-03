@@ -68,6 +68,19 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 - Sin cambios en ninguna rutina existente: el interruptor nace apagado y, apagado, la regla es idéntica
   a la de siempre. Un ejercicio sin RPE en sus series también se comporta igual que antes.
 
+### Ola 1 de Entrenar · ritmo por reps en reserva: pantallas (FER-331)
+- Progresión de un ejercicio, más sencilla: una frase arriba dice qué va a pasar («Subes 2.5 kg cuando
+  cumples 8 reps con ritmo constante. Si te estancas tres veces, bajas 7.5 %.»), tres controles a la
+  vista (progresión automática, reps objetivo, paso de carga) y dos ajustes finos plegados. Misma
+  funcionalidad que antes, en menos controles.
+- «Ritmo» se elige en una lista con palomita — Constante, Rápido o Reps en reserva, cada una con su
+  porqué — nunca en un selector segmentado. El chip del editor y el hub dicen el mismo ritmo.
+- El hub explica el porqué cuando las reps en reserva cambiaron algo: «Una sesión bastó» si sobraron
+  reps, «Tres veces al fallo y con las reps: subes» si tocó el tope; y una píldora ámbar «Hoy
+  mantienes» cuando cumpliste al fallo y el ritmo te deja invisible al ciclo.
+- El teclado de sesión dice «REPS EN RESERVA» (nunca «QUEDABAN») y una serie hecha con 0 en reserva lee
+  «al fallo» en vez de «Q0» — ninguna cadena visible del app dice ya «Q» ni «Quedaban».
+
 ### Ola 1 de Entrenar · la carga sin reloj (FER-325)
 - Una sesión de fuerza sin reloj ya cuenta. Antes, un día en el que entrenaste sin pulso se leía como
   descanso — un cero — y tiraba tu carga hacia abajo; ahora los minutos y el esfuerzo de la sesión se

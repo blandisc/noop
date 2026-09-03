@@ -17,6 +17,9 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
     /// «Hoy subes: sentadilla · 82,5 kg» ya armado (negritas incluidas) — reusa
     /// `EntrenarLanding.raiseText` tal cual, la Parte B no reinterpreta `raisesToday`.
     let raiseLine: Text?
+    /// Ola 1 · E5: tono de la píldora — `.verde` («Hoy subes») por default; `.ambar` cuando
+    /// `raiseLine` es en realidad «Hoy mantienes» (un ejercicio cumplió al fallo, sin subir).
+    var raiseTono: LiquidTono = .verde
     let onOpenRaise: () -> Void
     let onStart: () -> Void
     let otraFormaAbierta: Bool
@@ -36,11 +39,12 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
     /// — el `body` de este struct se reconstruye cada vez que su padre redibuja de todos modos, así
     /// que evaluarlo en el `init` es equivalente a guardar el closure sin invocar.
     init(tono: LiquidTono, routineName: String, meta: String, exerciseNames: String?, raiseLine: Text?,
+        raiseTono: LiquidTono = .verde,
         onOpenRaise: @escaping () -> Void, onStart: @escaping () -> Void,
         otraFormaAbierta: Bool, onToggleOtraForma: @escaping () -> Void,
         @ViewBuilder pliegue: () -> Pliegue) {
         self.tono = tono; self.routineName = routineName; self.meta = meta
-        self.exerciseNames = exerciseNames; self.raiseLine = raiseLine
+        self.exerciseNames = exerciseNames; self.raiseLine = raiseLine; self.raiseTono = raiseTono
         self.onOpenRaise = onOpenRaise; self.onStart = onStart
         self.otraFormaAbierta = otraFormaAbierta; self.onToggleOtraForma = onToggleOtraForma
         self.pliegue = pliegue()
@@ -89,22 +93,23 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
         .liquidEntrada(index: 0)
     }
 
-    // MARK: - Píldora «Hoy subes»
+    // MARK: - Píldora «Hoy subes» / «Hoy mantienes» (Ola 1 · E5: `raiseTono` la tiñe)
 
     private func subPill(_ line: Text) -> some View {
-        // 2A: cromo vía `OutlineCapsule.Estilo.tenida(.verde)` (alfas en `EntrenarHubMetrics.subPill*`).
+        // 2A: cromo vía `OutlineCapsule.Estilo.tenida(_:)` (alfas en `EntrenarHubMetrics.subPill*`).
         OutlineCapsule(size: .aMedida(insets: EntrenarHubMetrics.subPillInsets, minHeight: nil, touchInset: 0),
-                       estilo: .tenida(.verde), action: onOpenRaise) {
+                       estilo: .tenida(raiseTono), action: onOpenRaise) {
             HStack(spacing: LiquidSpace.s200) {
                 Circle()
                     .fill(LiquidColor.papelTarjeta)
                     .frame(width: EntrenarHubMetrics.subPillBadge, height: EntrenarHubMetrics.subPillBadge)
                     .overlay {
-                        Text(verbatim: "↑")
+                        // «↑» sube, «=» mantiene — el mismo badge, glifo distinto por tono.
+                        Text(verbatim: raiseTono == .verde ? "↑" : "=")
                             .font(EntrenarHubMetrics.subPillGlifo)
-                            .foregroundStyle(LiquidTono.verde.rotulo)
+                            .foregroundStyle(raiseTono.rotulo)
                     }
-                    .accessibilityHidden(true)   // decorativo — la palabra «subes» ya lo dice
+                    .accessibilityHidden(true)   // decorativo — la palabra «subes»/«mantienes» ya lo dice
                 line.font(.system(size: subPillTextoSize)).foregroundStyle(LiquidColor.tinta700)
                     .fixedSize(horizontal: false, vertical: true)
             }

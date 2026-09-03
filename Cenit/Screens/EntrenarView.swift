@@ -89,7 +89,13 @@ private struct EntrenarLanding: View {
     /// Ronda 2 · D1: conserva `fromKg` además de `toKg` — la píldora del héroe sigue mostrando el
     /// peso NUEVO (`toKg`), pero la tile «Subidas listas» del mosaico necesita el ESCALÓN
     /// (`toKg − fromKg`, mock «▲ 2.5 kg»).
-    @State private var raisesToday: [(name: String, fromKg: Double, toKg: Double)] = []
+    @State private var raisesToday: [(name: String, fromKg: Double, toKg: Double,
+                                      rhythmNote: ProgressionPlanner.RaiseRhythmNote?)] = []
+    /// Ola 1 · E5: ejercicios que HOY cumplieron las reps pero al fallo (0 en reserva) — el ritmo
+    /// «según reps en reserva» los deja invisibles al ciclo, así que mantienen en vez de subir. La
+    /// píldora del héroe se pinta ámbar («Hoy mantienes») SOLO cuando no hay ningún ejercicio en
+    /// `raisesToday` — una sesión que sí sube siempre gana el espacio del héroe.
+    @State private var atLimitHeldToday: [(name: String, weightKg: Double)] = []
     /// The verdict `todaySlots` were seeded with; `nil` until the first load. Guards «Empezar» from
     /// handing the session a table built under a verdict that has since changed (FER-82).
     @State private var slotsAdvice: TrainingRegulation.Advice?
@@ -372,7 +378,10 @@ private struct EntrenarLanding: View {
             routineName: r.name,
             meta: sesionMetaTexto(r.id),
             exerciseNames: todaySlotsExerciseNames,
-            raiseLine: raisesToday.isEmpty ? nil : raiseText,
+            raiseLine: heroPillLine,
+            // Ola 1 · E5: ámbar «Hoy mantienes» SOLO cuando no hay ninguna subida que mostrar —
+            // ver `atLimitHeldToday`.
+            raiseTono: raisesToday.isEmpty ? .ambar : .verde,
             onOpenRaise: { openRoutine(r.id) },
             onStart: { startToday() },
             otraFormaAbierta: otraFormaAbierta,
@@ -846,6 +855,46 @@ private struct EntrenarLanding: View {
             t = t + s
         }
         return t
+    }
+
+    /// Ola 1 · E5 (Pasada 2, `ola1-pantallas.html` §②): la píldora del héroe, verde con `raiseText`
+    /// cuando algo sube hoy, o ámbar con `mantieneText` cuando nada sube pero un ejercicio se quedó
+    /// al fallo. Una sesión que sube siempre gana el espacio del héroe sobre una que mantiene.
+    private var heroPillLine: Text? {
+        if !raisesToday.isEmpty {
+            guard let line2 = raiseRhythmLine else { return raiseText }
+            return raiseText + Text(verbatim: "\n") + line2
+        }
+        return mantieneText
+    }
+
+    /// «Llegaste a las reps y te sobraban 3. Una sesión bastó.» / «Tres veces al fallo y con las
+    /// reps: subes, o cambia el ritmo.» — SOLO cuando hay una única subida y su ritmo explica el
+    /// porqué (D-Q1/D-Q6). Con 0 o 2+ subidas, o sin nota de ritmo, el héroe queda idéntico a hoy
+    /// (normal / sin RPE): esta pantalla no re-abre FER-171 combinando varias razones en una línea.
+    private var raiseRhythmLine: Text? {
+        guard raisesToday.count == 1, let note = raisesToday[0].rhythmNote else { return nil }
+        switch note {
+        case .comfortable(let reserveReps):
+            return Text(String(localized: "You hit the reps with \(reserveReps) to spare. One session was enough."))
+        case .atLimitCap:
+            return Text("Three sessions at your limit and you still hit the reps: you raise, or change the rhythm.")
+        case .atLimitHold:
+            return nil   // este caso nunca sube — no debería llegar aquí, pero no hay línea que decir.
+        }
+    }
+
+    /// «Hoy mantienes: Sentadilla · 100 kg» — el ejercicio que cumplió las reps al fallo (0 en
+    /// reserva) y por eso el ritmo lo deja invisible al ciclo, en vez de subir. Solo el primero
+    /// (días con más de uno son un edge case raro; ver GAPS del reporte de E5).
+    private var mantieneText: Text? {
+        guard raisesToday.isEmpty, let held = atLimitHeldToday.first else { return nil }
+        let strong = Text(verbatim: "\(held.name) · \(StrengthDisplay.weight(held.weightKg, system: unitSystem))")
+            .font(LiquidType.tituloFilaNegrita).monospacedDigit()
+            .foregroundStyle(LiquidTono.ambar.rotulo)
+        let line1 = Text("Today you maintain") + Text(verbatim: ": ") + strong
+        return line1 + Text(verbatim: "\n")
+            + Text("You hit the reps, but at your limit. One easier session and it counts toward the raise.")
     }
 
     /// «Hoy mantienes: Press banca · 82,5 kg · la subida espera» — el copy literal del handoff
@@ -1439,7 +1488,9 @@ private struct EntrenarLanding: View {
         // today's routine is loaded (bounded), with the same catalog + override + «la última vez» resolution
         // «Rutina de hoy» uses, so the prefill matches.
         var slots: [StrengthSessionModel.PlanSlot] = []
-        var raisingToday: [(name: String, fromKg: Double, toKg: Double)] = []
+        var raisingToday: [(name: String, fromKg: Double, toKg: Double,
+                            rhythmNote: ProgressionPlanner.RaiseRhythmNote?)] = []
+        var heldToday: [(name: String, weightKg: Double)] = []
         // The verdict this whole pass was built with, published together with the slots it seeded.
         var passAdvice = repo.trainingAdvice
         // Ola 1 · E10: la semana del programa se lee UNA vez por pase, igual que el veredicto.
@@ -1461,7 +1512,17 @@ private struct EntrenarLanding: View {
             raisingToday = seeded.compactMap { slot in
                 guard let raise = slot.raise, !raise.waiting else { return nil }
                 let name = slot.exercise.map(StrengthDisplay.name) ?? slot.re.exerciseId
-                return (name: name, fromKg: raise.fromKg, toKg: raise.toKg)
+                return (name: name, fromKg: raise.fromKg, toKg: raise.toKg, rhythmNote: slot.raiseRhythmNote)
+            }
+            // Ola 1 · E5: cumplió las reps al fallo — el ritmo lo deja invisible al ciclo (mantiene).
+            // `lastSets` viene «newest-first» (`StrengthStore.lastWorkSets`): su primer elemento ES el
+            // peso con el que se mantiene.
+            heldToday = seeded.compactMap { slot in
+                guard slot.raiseRhythmNote == .atLimitHold, let kg = slot.lastSets.first?.weightKg else {
+                    return nil
+                }
+                let name = slot.exercise.map(StrengthDisplay.name) ?? slot.re.exerciseId
+                return (name: name, weightKg: kg)
             }
         }
         let recent = (try? await store.recentSessions(limit: 200)) ?? []
@@ -1490,6 +1551,7 @@ private struct EntrenarLanding: View {
         // plan») a alguien que sí tiene plan — cambiar un parpadeo en blanco por una mentira.
         guard seq == repo.refreshSeq else { return false }
         raisesToday = raisingToday
+        atLimitHeldToday = heldToday
         slotsAdvice = passAdvice
         todayServing = passServing
         routines = rs

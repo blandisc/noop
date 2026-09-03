@@ -895,7 +895,7 @@ extension HojaSesionViva {
         session.moveExerciseEarlier(ei + 1)
     }
 
-    /// «activada · +2,5 kg cada 2 ✓» / «desactivada» — paridad `LiveStrengthSheet.progressionSubtitle`.
+    /// «activada · +2,5 kg · constante ✓» / «desactivada» — paridad `LiveStrengthSheet.progressionSubtitle`.
     private func progressionSubtitle(_ run: StrengthSessionModel.ExerciseRun) -> String {
         guard let re = routineREs[run.id], re.progressionEnabled else { return String(localized: "off") }
         let derived = PlateMath.minimumIncrement(for: .from(equipment: ExerciseCatalog.byID(run.exerciseId)?.equipment),
