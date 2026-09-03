@@ -143,7 +143,7 @@ enum RoutineSetEditing {
     /// mismo peso/reps pero distinto techo de rango cuentan como DISTINTAS. El campo aterrizó en
     /// `Training.swift` con E13/FER-94; esta extensión estaba bloqueada hasta entonces (ver
     /// `RoutineSetEditingTests`).
-    /// Ola 1 (FER-327 · v5 N15): la comparación cubre también `RoutineSet.mode` — un AMPRAP en la
+    /// Ola 1 (FER-327 · v5 N15): la comparación cubre también `RoutineSet.mode` — un AMRAP en la
     /// última serie hace que la receta NO se pliegue, aunque su peso y su piso de reps coincidan con
     /// las demás. Plegar «3 × 8 · 80 kg» sobre una serie que en realidad dice «8+» sería una receta
     /// que miente sobre lo que se va a hacer.

@@ -1,7 +1,7 @@
 import XCTest
 @testable import StrandAnalytics
 
-/// FER-327 · E6 — un AMPRAP («las que puedas») entra al ciclo de doble progresión SIN cambiar la
+/// FER-327 · E6 — un AMRAP («las que puedas») entra al ciclo de doble progresión SIN cambiar la
 /// fórmula: `ProgressionMath.metGoal` ya dice «cumpliste si cada serie de trabajo llegó al objetivo»,
 /// y un AMRAP que hizo 11 con objetivo 8 cumple por la misma regla que una serie fija de 11.
 ///

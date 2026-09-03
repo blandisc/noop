@@ -1037,7 +1037,7 @@ final class StrengthSessionModelTests: XCTestCase {
         let slot = StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 2, reps: 0),
                                                  exercise: ex("bench", "Bench"), lastSets: [])
         let s = make([slot])
-        XCTAssertTrue(s.runs[0].sets.allSatisfy { $0.reps >= 1 })
+        XCTAssertTrue(s.runs[0].sets.allSatisfy { ($0.reps ?? 0) >= 1 })
         XCTAssertTrue(s.canRegisterCurrentSet)
     }
 
