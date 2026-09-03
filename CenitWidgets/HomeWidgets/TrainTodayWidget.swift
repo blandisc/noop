@@ -10,15 +10,23 @@ import SwiftUI
 import WidgetKit
 import CenitDesign
 
-/// `TrainWidgetSnapshot.VerdictTone` → reading color on the Liquid canvas (same roles Entrenar's
-/// hilo shows: positivo / atención / negativo / tinta secundaria).
+/// `TrainWidgetSnapshot.VerdictTone` → reading color on the Liquid canvas, delegating to the
+/// canonical `EntrenarHilo.Tone.word(sobreOLED:)` (FER-95) instead of re-deriving the palette
+/// locally — same reading tone Entrenar's hilo shows, on this widget's clear canvas
+/// (`sobreOLED: false`).
 extension TrainWidgetSnapshot.VerdictTone {
     var liquidWord: Color {
+        entrenarHiloTone.word(sobreOLED: false)
+    }
+
+    /// Los mismos cuatro casos que `EntrenarHilo.Tone`: el widget nunca calcula su propio veredicto,
+    /// solo reproduce el que `AppModel` ya resolvió (el snapshot del App Group trae el tono crudo).
+    private var entrenarHiloTone: EntrenarHilo.Tone {
         switch self {
-        case .clear:   return LiquidColor.positivo
-        case .caution: return LiquidColor.atencionTexto
-        case .ease:    return LiquidColor.negativo
-        case .hollow:  return LiquidColor.tinta700
+        case .clear:   return .clear
+        case .caution: return .caution
+        case .ease:    return .ease
+        case .hollow:  return .hollow
         }
     }
 }

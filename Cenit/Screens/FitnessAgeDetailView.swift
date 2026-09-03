@@ -126,7 +126,7 @@ struct FitnessAgeDetailView: View {
         VStack(alignment: .leading, spacing: LiquidSpace.s300) {
             LiquidCajitaGrid(columnas: 2) {
                 LiquidCajita(
-                    rotulo: String(localized: "Resting heart rate"),
+                    rotulo: String(localized: "Resting HR"),
                     valor: snapshot.restingHR.map { "\(Int($0.rounded()))" } ?? LiquidCajita.sinDato,
                     unidad: snapshot.restingHR != nil ? String(localized: "bpm") : "",
                     pie: String(localized: "The lower it is, the younger."))
@@ -189,7 +189,7 @@ struct FitnessAgeDetailView: View {
                              motivo: String(localized: "Add your age and sex."))
                     // T3: mismo marco que el método (cobertura sobre 7, la del motor
                     // `FitnessAgeEngine`), no un «de 4» que se leía «5 de 4». B6: oración con punto.
-                    usingRow(status("rhr"), label: String(localized: "Resting heart rate"),
+                    usingRow(status("rhr"), label: String(localized: "Resting HR"),
                              motivo: String(localized: "\(snapshot.rhrNights) of 7 nights so far."))
                 }
                 .liquidTarjetaSeccion()
@@ -218,7 +218,7 @@ struct FitnessAgeDetailView: View {
                     usingRow(profileStatus, label: String(localized: "Age and sex"),
                              motivo: String(localized: "Add your age and sex."))
                     // B6: motivo como oración completa con punto (paridad `LiquidChecklistRow`).
-                    usingRow(status("rhr"), label: String(localized: "Resting heart rate"),
+                    usingRow(status("rhr"), label: String(localized: "Resting HR"),
                              motivo: String(localized: "\(snapshot.rhrNights) of 7 nights so far."))
                     usingRow(status("activity"), label: String(localized: "Recent activity"),
                              motivo: String(localized: "\(snapshot.activeDays) of 7 days so far."))
