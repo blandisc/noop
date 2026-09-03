@@ -633,7 +633,7 @@ struct PreparacionDetalleModelo {
     static let bienvenidaSinPermiso = Bienvenida(
         titulo: String(localized: "prep.permiso.titulo", defaultValue: "I need to see your Health"),
         cuerpo: String(localized: "prep.permiso.cuerpo",
-                       defaultValue: "I build Preparation from what your watch already saves in Apple Health: resting heart rate, HRV, sleep, temperature and breathing. Without that permission I have nothing to read. Everything stays on your iPhone."))
+                       defaultValue: "I build Preparation from what your watch already saves in Apple Health: resting heart rate, HRV, sleep, temperature and breathing. Without that permission I have nothing to read. It all runs on your iPhone."))
 
     static let bienvenidaSinHistoria = Bienvenida(
         titulo: String(localized: "prep.sinHistoria.titulo", defaultValue: "Your first mornings"),

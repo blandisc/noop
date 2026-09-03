@@ -38,6 +38,13 @@ el mismo PR** que la implementa (una línea basta: fecha, decisión, por qué).
   sin celdas de la tarjeta activa (thumb + nombre; no las filas/TapZones de peso-reps) entra
   a foco; (b) arrastre del grabber ⌄ hacia abajo sale. El DragGesture vive SOLO en el
   grabber de `FocoCabecera`, nunca sobre el ScrollView de Foco.
+- **2026-09-03 · Respaldo por iCloud (auditoría de estrés).** La DB de salud SÍ se respalda
+  por iCloud/dispositivo — **NO se excluye** (`isExcludedFromBackup` no se pone en
+  `StorePaths`). El dueño prioriza que el historial se restaure al migrar de iPhone sobre la
+  exclusión estructural. Un audit que vuelva a marcar «DB no excluida del backup» describe
+  algo INTENCIONAL; revertir es reabrir esta entrada. (Cénit no hace llamadas de red propias;
+  el respaldo es el de iCloud del propio usuario, cifrado en su cuenta — más el export/import
+  local de `DataBackup`.)
   **Reversión parcial 2026-08-29 (orden del dueño, #1356):** el punto (a) queda DEROGADO — el tap
   del cromo (thumb + nombre) de la tarjeta activa YA NO entra a foco; **abre el DETALLE del
   ejercicio** (`detailExercise`). El foco queda SOLO en el «⤢» y en el «Enfoque» del «···».

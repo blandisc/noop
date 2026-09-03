@@ -97,19 +97,55 @@ enum MatrizChartDraw {
                  with: .color(hue.opacity(alfa)))
     }
 
-    /// Curva suave (Catmull-Rom → Bézier) por los puntos — la voz Liquid del app.
+    /// Curva suave y MONÓTONA por los puntos — la voz Liquid del app. Interpolación cúbica de Hermite
+    /// con tangentes de Fritsch–Carlson: a diferencia de Catmull-Rom, la curva NO sobrepasa el valor de
+    /// los puntos que conecta, así que en señales que oscilan apretado (FC en reposo 50↔55, VFC) no
+    /// dibuja picos ni valles que ningún dato midió. Es el mismo arreglo que `TrendChart` hizo con
+    /// `.interpolationMethod(.monotone)` (ver su comentario #trends-bleed). Asume `x` ascendente (serie
+    /// temporal); un tramo con `dx ≤ 0` cae a pendiente 0 en vez de dividir entre cero.
     static func curva(_ pts: [CGPoint]) -> Path {
         var path = Path()
         guard let first = pts.first else { return path }
         path.move(to: first)
         guard pts.count > 1 else { return path }
-        for i in 0..<(pts.count - 1) {
-            let p0 = i > 0 ? pts[i - 1] : pts[i]
+        let n = pts.count
+        // Secantes de cada tramo.
+        var delta = [CGFloat](repeating: 0, count: n - 1)
+        for i in 0..<(n - 1) {
+            let dx = pts[i + 1].x - pts[i].x
+            delta[i] = dx > 0 ? (pts[i + 1].y - pts[i].y) / dx : 0
+        }
+        // Tangente en cada punto: extremos = secante vecina; interior = 0 si es máx/mín local (secantes
+        // de signo opuesto o alguna nula) para no rebasar, si no la media de las dos secantes.
+        var m = [CGFloat](repeating: 0, count: n)
+        m[0] = delta[0]
+        m[n - 1] = delta[n - 2]
+        for i in 1..<(n - 1) {
+            m[i] = delta[i - 1] * delta[i] <= 0 ? 0 : (delta[i - 1] + delta[i]) / 2
+        }
+        // Ajuste de monotonicidad de Fritsch–Carlson: mantiene la curva dentro de la caja de cada tramo.
+        for i in 0..<(n - 1) {
+            if delta[i] == 0 {
+                m[i] = 0
+                m[i + 1] = 0
+            } else {
+                let a = m[i] / delta[i]
+                let b = m[i + 1] / delta[i]
+                let s = a * a + b * b
+                if s > 9 {
+                    let t = 3 / s.squareRoot()
+                    m[i] = t * a * delta[i]
+                    m[i + 1] = t * b * delta[i]
+                }
+            }
+        }
+        // Hermite → Bézier por tramo: controles a un tercio del ancho con la pendiente de cada extremo.
+        for i in 0..<(n - 1) {
             let p1 = pts[i]
             let p2 = pts[i + 1]
-            let p3 = i + 2 < pts.count ? pts[i + 2] : p2
-            let c1 = CGPoint(x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6)
-            let c2 = CGPoint(x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6)
+            let dx = p2.x - p1.x
+            let c1 = CGPoint(x: p1.x + dx / 3, y: p1.y + m[i] * dx / 3)
+            let c2 = CGPoint(x: p2.x - dx / 3, y: p2.y - m[i + 1] * dx / 3)
             path.addCurve(to: p2, control1: c1, control2: c2)
         }
         return path

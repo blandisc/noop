@@ -79,7 +79,7 @@ enum OnbCopy {
     }
     static var promesaPrivacidad: String {
         String(localized: "onb.1.privacidad",
-               defaultValue: "No account, no email, no cloud. Everything is computed on your iPhone. Put it in airplane mode and check right now.")
+               defaultValue: "No account, no email, no server. Everything is computed on your iPhone. Put it in airplane mode and check right now.")
     }
 
     // Acto 2 · Permiso

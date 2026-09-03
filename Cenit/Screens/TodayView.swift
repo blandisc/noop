@@ -756,7 +756,7 @@ struct TodayView: View {
                             titulo: String(localized: "The orb is still asleep"),
                             cuerpo: String(localized: "Connect Apple Health and it will start beating with your nights."),
                             cta: String(localized: "Connect Apple Health"),
-                            privacidad: String(localized: "Everything stays on your iPhone. No account, no cloud."),
+                            privacidad: String(localized: "It all runs on your iPhone. No server, no account."),
                             onConectar: { showDataSources = true })
                         .padding(.top, LiquidSpace.s200)
                     }

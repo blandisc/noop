@@ -41,7 +41,7 @@ struct SupportView: View {
             Text("About & support")
                 .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
                 .foregroundStyle(LiquidColor.tinta900)
-            Text("\(ProjectInfo.appName): all your data, none of the cloud.")
+            Text("\(ProjectInfo.appName): all your data, none uploaded.")
                 .font(LiquidType.cuerpo)
                 .foregroundStyle(LiquidColor.tinta500)
                 .fixedSize(horizontal: false, vertical: true)
@@ -69,7 +69,7 @@ struct SupportView: View {
                 Spacer(minLength: 0)
             }
 
-            Text("A health app built on Apple Health. Everything stays on this device: your history, your nights, your numbers. Nothing is uploaded. \(ProjectInfo.appName) is an independent, experimental project.")
+            Text("A health app built on Apple Health. It all runs on this device: your history, your nights, your numbers. Cénit uploads nothing. \(ProjectInfo.appName) is an independent, experimental project.")
                 .font(LiquidType.cuerpo)
                 .foregroundStyle(LiquidColor.tinta500)
                 .fixedSize(horizontal: false, vertical: true)

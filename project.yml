@@ -121,11 +121,11 @@ targets:
         # FER-721: required to start any Live Activity (the guided-session rest timer on the lock
         # screen + Dynamic Island). The extension that renders it is the CenitWidgets target below.
         NSSupportsLiveActivities: true
-        NSHealthShareUsageDescription: "Cénit reads your own Apple Health data on-device: sleep, heart rate, heart-rate variability, workouts, and related samples, to show your days and nightly trends. Nothing leaves your device."
+        NSHealthShareUsageDescription: "Cénit reads your own Apple Health data on-device: sleep, heart rate, heart-rate variability, workouts, and related samples, to show your days and nightly trends. Cénit never uploads it. No server, no account."
         NSHealthUpdateUsageDescription: "Cénit saves your strength workouts into Apple Health, on-device and only when you allow it."
         NSPhotoLibraryAddUsageDescription: "Cénit saves the workout card you choose to share to your photo library. It only saves the image you explicitly ask it to."
-        NSCalendarsFullAccessUsageDescription: "Cénit crosses your calendar events with your day's stress, on your iPhone, to show what your most activated moments coincided with. Nothing leaves your device."
-        NSCalendarsUsageDescription: "Cénit crosses your calendar events with your day's stress, on your iPhone, to show what your most activated moments coincided with. Nothing leaves your device."
+        NSCalendarsFullAccessUsageDescription: "Cénit crosses your calendar events with your day's stress, on your iPhone, to show what your most activated moments coincided with. Cénit never uploads it. No server, no account."
+        NSCalendarsUsageDescription: "Cénit crosses your calendar events with your day's stress, on your iPhone, to show what your most activated moments coincided with. Cénit never uploads it. No server, no account."
         # Debug-only URL scheme for screenshot automation (simulator navigation via xcrun simctl openurl)
         CFBundleURLTypes:
           - CFBundleURLSchemes:
@@ -214,7 +214,7 @@ targets:
         # times out to «El reloj no respondió». Matches Apple's multidevice-workout sample.
         WKBackgroundModes:
           - workout-processing
-        NSHealthShareUsageDescription: "Cénit lee tu frecuencia cardiaca en el reloj durante la sesión de fuerza para grabar el entrenamiento. Todo se queda en tu dispositivo."
+        NSHealthShareUsageDescription: "Cénit lee tu frecuencia cardiaca en el reloj durante la sesión de fuerza para grabar el entrenamiento. Cénit nunca lo sube. Sin servidor ni cuenta."
         NSHealthUpdateUsageDescription: "Cénit guarda tu sesión de fuerza como entrenamiento en Apple Salud, en el dispositivo y solo cuando tú lo permites."
     entitlements:
       path: CenitWatch/Resources/CenitWatch.entitlements

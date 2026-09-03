@@ -89,7 +89,7 @@ final class LiquidHoyEstadosRenderTests: XCTestCase {
                             titulo: "El orbe aún duerme",
                             cuerpo: "Conecta Apple Salud y empezará a latir con tus noches.",
                             cta: "Conectar Apple Salud",
-                            privacidad: "Todo se queda en tu iPhone. Sin cuenta, sin nube.",
+                            privacidad: "Todo corre en tu iPhone. Sin cuenta, sin servidor.",
                             onConectar: {})
                         .padding(.top, LiquidSpace.s1400)
                         .padding(.horizontal, LiquidSpace.s550)

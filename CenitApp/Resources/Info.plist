@@ -32,11 +32,11 @@
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.healthcare-fitness</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
-	<string>Cénit crosses your calendar events with your day's stress, on your iPhone, to show what your most activated moments coincided with. Nothing leaves your device.</string>
+	<string>Cénit crosses your calendar events with your day's stress, on your iPhone, to show what your most activated moments coincided with. Cénit never uploads it. No server, no account.</string>
 	<key>NSCalendarsUsageDescription</key>
-	<string>Cénit crosses your calendar events with your day's stress, on your iPhone, to show what your most activated moments coincided with. Nothing leaves your device.</string>
+	<string>Cénit crosses your calendar events with your day's stress, on your iPhone, to show what your most activated moments coincided with. Cénit never uploads it. No server, no account.</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>Cénit reads your own Apple Health data on-device: sleep, heart rate, heart-rate variability, workouts, and related samples, to show your days and nightly trends. Nothing leaves your device.</string>
+	<string>Cénit reads your own Apple Health data on-device: sleep, heart rate, heart-rate variability, workouts, and related samples, to show your days and nightly trends. Cénit never uploads it. No server, no account.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Cénit saves your strength workouts into Apple Health, on-device and only when you allow it.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
