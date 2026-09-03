@@ -13557,6 +13557,23 @@
         }
       }
     },
+    "Computed from last night's heartbeats with the Lomb-Scargle method. It shows the shape of your heartbeat's rhythm: how much was fast (breathing-paced) versus slow, to compare against yourself; it is not the amount of variability (that's your HRV number) and not a measure of stress or autonomic balance." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Computed from last night's heartbeats with the Lomb-Scargle method. It shows the shape of your heartbeat's rhythm: how much was fast (breathing-paced) versus slow, to compare against yourself; it is not the amount of variability (that's your HRV number) and not a measure of stress or autonomic balance."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calculado con los latidos de anoche por el método de Lomb-Scargle. Muestra la forma del ritmo de tu corazón: cuánto fue rápido (al compás de tu respiración) y cuánto lento, para compararte contigo; no es la cantidad de variabilidad (esa es tu cifra de VFC) ni una medida de estrés o de balance autonómico."
+          }
+        }
+      }
+    },
     "Computed on your phone" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -24123,6 +24140,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Anoche la lectura fue corta, así que solo alcanza para la parte respiratoria, no para las ondas lentas."
+          }
+        }
+      }
+    },
+    "Last night's reading was short, so we could only see the fast (breathing) part of the rhythm, not the slow part." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last night's reading was short, so we could only see the fast (breathing) part of the rhythm, not the slow part."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La lectura de anoche fue corta, así que solo alcanzamos a ver la parte rápida (respiración) del ritmo, no la lenta."
           }
         }
       }
@@ -43604,6 +43638,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "El tiempo total que dormiste anoche, estimado a partir de tu movimiento y tu frecuencia cardíaca. El sueño es una de las señales detrás de tu veredicto del día."
+          }
+        }
+      }
+    },
+    "Of last night's rhythmic HRV, how much was fast (breathing) versus slow. The two add up to 100%." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Of last night's rhythmic HRV, how much was fast (breathing) versus slow. The two add up to 100%."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De la parte rítmica de tu VFC de anoche, cuánta fue rápida (respiración) y cuánta lenta. Las dos suman 100 %."
           }
         }
       }
@@ -63414,6 +63465,23 @@
         }
       }
     },
+    "the slow rhythm; a mix of signals" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "the slow rhythm; a mix of signals"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ritmo lento; una mezcla de señales"
+          }
+        }
+      }
+    },
     "small" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -65066,6 +65134,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "tu respiración"
+          }
+        }
+      }
+    },
+    "the fast rhythm, paced by your breathing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "the fast rhythm, paced by your breathing"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ritmo rápido, al compás de tu respiración"
           }
         }
       }
