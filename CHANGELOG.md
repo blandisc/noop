@@ -22,6 +22,9 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 ## Unreleased
 
 ### Correcciones de robustez (auditoría de estrés)
+- **Detalle de métrica (Hoy):** con una sola lectura en el rango, el gráfico ya no dice «No hay
+  lecturas» (era falso: sí había una) — dice «No hay suficientes mediciones para trazar una tendencia»,
+  igual que las demás pantallas.
 - **Miniaturas de ejercicio:** una miniatura que no se pudo bajar por una conexión intermitente ya no
   queda marcada para siempre como «sin imagen» — el siguiente intento la vuelve a pedir. Antes, un
   tramo de red floja envenenaba la lista y una corrida posterior mentía «ya está todo descargado».

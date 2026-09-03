@@ -1316,7 +1316,7 @@ struct LiquidMetricSheetView: View {
             atenuarFuera: nivelExplorado != nil,
             // Eco tabla↔gráfica: el valor bajo el dedo resalta la fila de su nivel.
             onScrubValor: { self.scrubValor = $0 },
-            estadoVacio: String(localized: "No readings in this range."),
+            estadoVacio: String(localized: "Not enough measurements in this range to draw a trend."),
             a11yLabel: tituloHoja)
     }
 

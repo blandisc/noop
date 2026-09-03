@@ -199,6 +199,10 @@ public struct GraficaRangos: View {
     }
 
     private func y(_ v: Double) -> CGFloat {
+        // Dominio degenerado (serie constante, ymax == ymin): evita dividir entre cero → NaN, que
+        // propagaría offsets inválidos a la línea, los washes y el popup del scrub. Cae al centro del
+        // plot, como el resto de la familia de gráficas guarda su dominio (LiquidChartPlot.y → 0.5).
+        guard ymax > ymin else { return (Self.floorY + Self.plotTop) / 2 }
         let clamped = Swift.max(ymin, Swift.min(ymax, v))
         let f = (clamped - ymin) / (ymax - ymin)
         return Self.floorY - CGFloat(f) * (Self.floorY - Self.plotTop)

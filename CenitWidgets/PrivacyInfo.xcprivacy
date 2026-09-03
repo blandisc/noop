@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>NSPrivacyTracking</key>
+    <false/>
+    <!-- The widget/Live Activity extension is a separate binary from the app, so Apple's
+         privacy-manifest scan needs this one too (CenitApp/PrivacyInfo.xcprivacy does NOT cover it).
+         It transmits nothing off-device: it only reads a small local snapshot (routine name, resolved
+         verdict, rest-action queue) from the shared App Group via UserDefaults — hence no collected
+         data types, and the single required-reason API below. -->
+    <key>NSPrivacyCollectedDataTypes</key>
+    <array/>
+    <key>NSPrivacyAccessedAPITypes</key>
+    <array>
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <!-- CA92.1: read/write UserDefaults within the same app group. -->
+                <string>CA92.1</string>
+            </array>
+        </dict>
+    </array>
+</dict>
+</plist>
