@@ -450,7 +450,11 @@ struct WorkoutEditSheet: View {
     private func save() {
         let newStart = Int(startDate.timeIntervalSince1970)
         let delta = newStart - originalStartTs
-        var updated = session                        // id / deviceId / strain / avgHr ride through unchanged
+        // id / deviceId / strain / avgHr ride through unchanged — y con ellos `programWeek`/`deload`
+        // (ola 1 · E10): editar una sesión NUNCA la saca de la semana en la que se hizo. Copiar la fila
+        // entera, en vez de reconstruirla campo por campo, es exactamente lo que garantiza que un campo
+        // nuevo no se pierda al editar sin que nadie se acuerde de este archivo.
+        var updated = session
         updated.startTs = newStart
         updated.endTs = originalEndTs.map { $0 + delta }   // preserve duration
         updated.routineId = routineId

@@ -53,11 +53,24 @@ extension RoutineSheet {
         let inventory = plates.inventory
         let advice = repo.trainingAdvice
         let willStart = !isPlanDay && !res.isEmpty
+        // Ola 1 · E10 (FER-329): la semana del programa se pregunta UNA vez por carga, y solo para las
+        // dos puertas que sirven EL PLAN del día (`.today` / `.planDay`). Abrir una rutina suelta desde
+        // «Mis rutinas» (`.routine`) es editar el plan guardado: ahí la semana ligera no pinta nada, y
+        // servirla recortada haría creer que la rutina cambió.
+        switch origin {
+        case .today, .planDay: programServing = await repo.programServing()
+        case .routine:         programServing = nil
+        }
+        let isLight = programServing?.isLight == true
         var built: [EditorItem] = []
         for re in res {
             guard let ex = byId[re.exerciseId] else { continue }
             if willStart {
-                let seed = await repo.sessionSeed(re: re, exercise: ex, inventory: inventory, advice: advice)
+                // La evaluación se hace contra el plan GUARDADO (4×8), no contra el recorte: el ciclo
+                // de progresión mide la receta real. Lo único que la semana ligera cambia aquí es que
+                // no se ofrece subida (`isLightWeek`).
+                let seed = await repo.sessionSeed(re: re, exercise: ex, inventory: inventory,
+                                                  advice: advice, isLightWeek: isLight)
                 built.append(EditorItem(re: re, exercise: ex, lastSets: seed.lastSets,
                                         raise: Self.raiseForEditorItem(seed.evaluation),
                                         progressionState: seed.evaluation?.state))
@@ -157,11 +170,21 @@ extension RoutineSheet {
         if model.strengthSession != nil { model.resumeStrengthSession(); return }
         guard let r = routine else { return }
         if dirty { persist() }
-        let slots = items.map {
-            StrengthSessionModel.PlanSlot(re: $0.re, exercise: $0.exercise, lastSets: $0.lastSets,
-                                          raise: $0.raise, progressionState: $0.progressionState)
+        // Ola 1 · E10: el recorte de la semana ligera se aplica AQUÍ, sobre lo que la tabla tiene en
+        // este instante (ediciones incluidas) y solo hacia la SESIÓN. `items[].re` —lo que `persist()`
+        // acaba de guardar— nunca lo ve: el plan del usuario sigue diciendo 4×8 con 100 kg.
+        let serving = programServing
+        let inventory = plates.inventory
+        let slots = items.map { item in
+            StrengthSessionModel.PlanSlot(
+                re: ProgramServing.serve(item.re, context: serving,
+                                         equipment: item.exercise.equipment, inventory: inventory),
+                exercise: item.exercise, lastSets: item.lastSets,
+                raise: item.raise, progressionState: item.progressionState)
         }
-        model.startStrengthSession(routineId: r.id, routineName: r.name, slots: slots)
+        model.startStrengthSession(routineId: r.id, routineName: r.name, slots: slots,
+                                   programWeek: serving.map(\.position.week),
+                                   deload: serving.map(\.isLight))
     }
 
     // MARK: - Set + exercise mutations

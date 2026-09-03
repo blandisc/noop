@@ -29,8 +29,10 @@ enum ProgressionPlanner {
     /// that weight (back-off sets at lighter loads don't gate the raise).
     static func pastSessions(from rows: [WorkSetHistoryRow])
         -> [(startTs: Int, session: ProgressionMath.PastSession)] {
-        var grouped: [Int: [(weightKg: Double, reps: Int, optedOut: Bool, rpe: Double?)]] = [:]
-        for r in rows { grouped[r.startTs, default: []].append((r.weightKg, r.reps, r.optedOut, r.rpe)) }
+        var grouped: [Int: [(weightKg: Double, reps: Int, optedOut: Bool, rpe: Double?, deload: Bool)]] = [:]
+        for r in rows {
+            grouped[r.startTs, default: []].append((r.weightKg, r.reps, r.optedOut, r.rpe, r.deload))
+        }
         return grouped.keys.sorted().map { ts in
             let sets = grouped[ts]!
             let top = sets.map(\.weightKg).max() ?? 0
@@ -42,7 +44,10 @@ enum ProgressionPlanner {
                                                     // exercise), so every row of the session carries it
                                                     // — any true makes the session invisible to the cycle.
                                                     optedOut: sets.contains { $0.optedOut },
-                                                    workSetRPE: atTop.map(\.rpe)))
+                                                    workSetRPE: atTop.map(\.rpe),
+                                                    // Ola 1 · E10: la marca de semana ligera es de la
+                                                    // SESIÓN, así que viaja igual en todas sus filas.
+                                                    deload: sets.contains { $0.deload }))
         }
     }
 
@@ -58,7 +63,8 @@ enum ProgressionPlanner {
                          history: [WorkSetHistoryRow],
                          inventory: [PlateMath.PlateStock],
                          equipment: String?,
-                         advice: TrainingRegulation.Advice)
+                         advice: TrainingRegulation.Advice,
+                         isLightWeek: Bool = false)
         -> (state: ProgressionState, raise: Raise?)? {
         guard re.progressionEnabled else { return nil }
         // E13/FER-94: with a rep range (e.g. 8-12) the raise fires once every work set touches the
@@ -81,6 +87,11 @@ enum ProgressionPlanner {
             deferRaise: honoursRecovery && !TrainingRegulation.allowsRaise(advice),
             useRPE: re.progressionUseRPE)
         let state = ProgressionMath.classify(input)
+        // Ola 1 · E10: en la semana ligera NO se propone subida. El estado se sigue calculando y se
+        // sigue mostrando (el ciclo no se pierde: la subida ganada aparece la semana que sigue), pero
+        // esta sesión se sirvió con menos volumen — ofrecer más kilos encima contradiría lo que la
+        // tabla acaba de poner. La descarga reactiva NO se toca: `.deloading` no es una subida.
+        guard !isLightWeek else { return (state, nil) }
         let newKg: Double
         let waiting: Bool
         switch state {
@@ -94,7 +105,11 @@ enum ProgressionPlanner {
         // incluso en un día que retiene la subida— y cortaba la racha de fechas, dejando la frase
         // del «por qué» sin ninguna («Hiciste 3×8 con 82.5 kg el —»). El clasificador ya las ignora;
         // estas dos derivaciones también.
-        let visible = sessions.filter { !$0.session.optedOut }
+        // Ola 1 · E10: la semana ligera es FRONTERA también aquí — las sesiones servidas ligeras no
+        // pueden ser «la última vez» del `fromKg` ni aparecer entre las fechas del «por qué»: se
+        // hicieron con la mitad de las series (y quizá menos peso), así que nombrarlas como prueba de
+        // la subida sería una frase que miente.
+        let visible = sessions.filter { !$0.session.optedOut && !$0.session.deload }
         guard let fromKg = visible.last?.session.workingKg else { return (state, nil) }
         // The qualifying dates: the trailing run of met sessions at the current weight, oldest first.
         let met = visible.reversed().prefix {

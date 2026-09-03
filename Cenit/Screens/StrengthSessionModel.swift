@@ -298,6 +298,12 @@ final class StrengthSessionModel: ObservableObject {
     /// Strap HR captured during the session (FER-399), in memory only — fed by `AppModel.ingestHR` on the
     /// main actor. Drives avgHr/strain + the Keytel calorie estimate at finish; never persisted as a series.
     var hrSamples: [HRSample] = []
+    /// La semana del programa en la que se sirvió esta sesión, y si se sirvió LIGERA (ola 1 · E10,
+    /// FER-329). `nil` = no había programa: la columna se queda NULL, no un 0/false inventado. Se fijan
+    /// al arrancar, viajan en el snapshot de rescate y se guardan en `strengthSession` — desde ahí
+    /// `deload` convierte la sesión en frontera para `ProgressionMath` y la saca de `lastWorkSets`.
+    var programWeek: Int?
+    var deload: Bool?
     /// Whether the receipt's 0→value count-up already played (FER-715). A plain flag (not `@Published`, so
     /// setting it never re-renders): the receipt view sets it after animating, so the numerals count up only
     /// the first time the summary appears (at save), never when the session is re-opened. Dies with the session.
@@ -1243,7 +1249,8 @@ final class StrengthSessionModel: ObservableObject {
     func buildForSave(deviceId: String?, endTs: Int)
         -> (StrengthSession, [SetEntry], progressionOptOuts: Set<String>, notes: [ExerciseNote]) {
         let session = StrengthSession(id: id, routineId: routineId, startTs: startTs,
-                                      endTs: endTs, deviceId: deviceId)
+                                      endTs: endTs, deviceId: deviceId,
+                                      programWeek: programWeek, deload: deload)
         var entries: [SetEntry] = []
         var optedOut: Set<String> = []
         var notes: [ExerciseNote] = []
@@ -1322,7 +1329,8 @@ final class StrengthSessionModel: ObservableObject {
             currentRestTarget: currentRestTarget, currentRestMode: currentRestMode,
             timerStart: timerStart,
             paused: paused, pausedAccumulatedS: pausedAccumulatedS, pausedAt: pausedAt,
-            updatedTs: now, restOwnerSetId: restOwnerSetId, lastRestStartedAt: lastRestStartedAt)
+            updatedTs: now, restOwnerSetId: restOwnerSetId, lastRestStartedAt: lastRestStartedAt,
+            programWeek: programWeek, deload: deload)
     }
 
     /// Rebuild a live session from a persisted snapshot (FER-798). Re-derives `phase` from the rest state;
@@ -1380,6 +1388,10 @@ final class StrengthSessionModel: ObservableObject {
         model.paused = snap.paused
         model.pausedAccumulatedS = snap.pausedAccumulatedS
         model.pausedAt = snap.pausedAt
+        // Ola 1 · E10: la sesión rescatada sigue siendo la de la semana N y sigue siendo (o no) ligera
+        // — se guardó así antes del crash y tiene que guardarse así después.
+        model.programWeek = snap.programWeek
+        model.deload = snap.deload
         return model
     }
 

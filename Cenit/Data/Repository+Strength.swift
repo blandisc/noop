@@ -70,19 +70,61 @@ extension Repository {
         return WeeklySplit.todayRoutineId(split: split, todayWeekday: weekday)
     }
 
+    /// `serving` (ola 1 · E10) lo pasa quien YA leyó la semana en este pase, por la misma razón que
+    /// `advice` no tiene default (FER-82): leerla otra vez aquí serían DOS lecturas de la base por
+    /// pase y, si una sesión se guardara entre ambas, la tabla quedaría recortada con una semana y la
+    /// sesión marcada con otra. `nil` = «no hay programa activo».
     func seedTodaySlots(routineId: String, advice: TrainingRegulation.Advice,
-                        inventory: [PlateMath.PlateStock]) async -> [StrengthSessionModel.PlanSlot] {
+                        inventory: [PlateMath.PlateStock],
+                        serving: ProgramServing.Context?) async -> [StrengthSessionModel.PlanSlot] {
         guard let store = await storeHandle() else { return [] }
         let exs = (try? await store.routineExercises(routineId: routineId)) ?? []
         let memo = await StrengthExerciseMemo.load(for: self, store: store)
         var slots: [StrengthSessionModel.PlanSlot] = []
         for re in exs {
             let ex = (ExerciseCatalog.byID(re.exerciseId) ?? memo.customById[re.exerciseId])?.applying(memo.overrides)
-            let seed = await sessionSeed(re: re, exercise: ex, inventory: inventory, advice: advice)
-            slots.append(.init(re: re, exercise: ex, lastSets: seed.lastSets, raise: seed.evaluation?.raise,
+            // La progresión se evalúa contra el plan GUARDADO (la receta real); el recorte de la
+            // semana ligera solo viaja hacia la sesión, en el slot.
+            let seed = await sessionSeed(re: re, exercise: ex, inventory: inventory, advice: advice,
+                                         isLightWeek: serving?.isLight == true)
+            let served = ProgramServing.serve(re, context: serving, equipment: ex?.equipment,
+                                              inventory: inventory)
+            slots.append(.init(re: served, exercise: ex, lastSets: seed.lastSets,
+                               raise: seed.evaluation?.raise,
                                progressionState: seed.evaluation?.state))
         }
         return slots
+    }
+
+    // MARK: - Programa de varias semanas (ola 1 · E10, FER-329)
+
+    /// El programa activo y la semana en la que va HOY — el ÚNICO punto de la capa app que responde
+    /// «¿en qué semana voy?» y «¿toca ligera?». Toda pantalla que lo necesite llama aquí; ninguna
+    /// vuelve a contar semanas. `nil` = no hay programa (la app entera se comporta como antes de E10).
+    ///
+    /// La semana se DERIVA (`ProgramCalendar`) de `startTs` + las semanas con ≥ 1 sesión terminada
+    /// (D-Q2), así que no hay estado que refrescar ni que pueda quedar viejo.
+    func programServing(now: Date = Date(),
+                        calendar: Calendar = .current) async -> ProgramServing.Context? {
+        guard let store = await storeHandle(),
+              let program = (try? await store.program()) ?? nil else { return nil }
+        let starts = (try? await store.sessionStartTimes(sinceTs: program.startTs)) ?? []
+        let trained = ProgramCalendar.trainedWeekStarts(sessionStartTs: starts, calendar: calendar)
+        let position = ProgramCalendar.position(of: program, trainedWeekStarts: trained,
+                                                now: now, calendar: calendar)
+        return ProgramServing.Context(program: program, position: position)
+    }
+
+    /// Alta/actualización y baja del programa activo. «Terminar programa» borra solo la fila: las
+    /// rutinas y el calendario semanal quedan intactos.
+    func setProgram(_ program: Program) async throws {
+        guard let store = await storeHandle() else { return }
+        try await store.setProgram(program)
+    }
+
+    func endProgram() async throws {
+        guard let store = await storeHandle() else { return }
+        try await store.deleteProgram()
     }
 
     func saveRoutine(_ routine: Routine, exercises: [RoutineExercise]) async throws {
@@ -151,16 +193,21 @@ extension Repository {
     /// `advice` is required and has no default (FER-82): the first cut of this change defaulted it,
     /// and three screens silently kept deciding by the old 0–100 score. Pass `repo.trainingAdvice`,
     /// read ONCE before the loop, so every exercise of the table shares one verdict.
+    /// `isLightWeek` (ola 1 · E10) apaga la SUBIDA de esa sesión: en la semana ligera se entrena menos,
+    /// así que ofrecer más kilos ahí sería incoherente con lo que la pantalla acaba de servir. Default
+    /// `false`, así que todo camino que no sabe de programas se comporta exactamente como antes.
     func sessionSeed(re: RoutineExercise, exercise: Exercise?,
                      inventory: [PlateMath.PlateStock],
-                     advice: TrainingRegulation.Advice) async
+                     advice: TrainingRegulation.Advice,
+                     isLightWeek: Bool = false) async
         -> (lastSets: [SetEntry], evaluation: (state: ProgressionState, raise: ProgressionPlanner.Raise?)?) {
         guard let store = await storeHandle() else { return ([], nil) }
         let last = (try? await store.lastWorkSets(exerciseId: re.exerciseId, limit: 4)) ?? []
         guard re.progressionEnabled, exercise?.type == .weightReps else { return (last, nil) }
         let history = (try? await store.workSetHistory(exerciseId: re.exerciseId)) ?? []
         let eval = ProgressionPlanner.evaluate(re: re, history: history, inventory: inventory,
-                                               equipment: exercise?.equipment, advice: advice)
+                                               equipment: exercise?.equipment, advice: advice,
+                                               isLightWeek: isLightWeek)
         return (last, eval)
     }
 

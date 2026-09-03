@@ -51,6 +51,10 @@ struct RoutineSheet: View {
     @State var items: [EditorItem] = []
     /// Every routine, for the .planDay header «Change routine» picker.
     @State var allRoutines: [Routine] = []
+    /// Ola 1 · E10 (FER-329): el programa activo y la semana en la que va hoy, leído UNA vez en
+    /// `load()` — como `repo.trainingAdvice`, un solo veredicto para toda la tabla. `nil` = no hay
+    /// programa, o esta hoja no sirve el plan del día (abrir una rutina suelta desde «Mis rutinas»).
+    @State var programServing: ProgramServing.Context? = nil
     /// Whether the prescription changed since load (drives save-on-exit, «Saved» status, and Undo).
     @State var dirty = false
     /// Load-time copy of `items` — Undo restores this and re-persists so disk matches the reverted state.

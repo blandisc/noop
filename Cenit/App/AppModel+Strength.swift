@@ -14,13 +14,21 @@ extension AppModel {
 
     /// Begin a guided strength session from a routine's resolved plan (built by «Rutina de hoy»), and show
     /// its sheet. A no-op while one is already running, so re-tapping «Empezar» resumes rather than restarts.
+    /// `programWeek`/`deload` (ola 1 · E10, FER-329) los pasa quien YA resolvió la semana —
+    /// `RoutineSheetLogic.start()`, la única puerta que sirve el plan del día. Con default `nil`, todo
+    /// arranque que no viene de un programa (movilidad, sesión rápida, repetir una del historial,
+    /// arranque desde el reloj) guarda la columna en NULL, que es exactamente lo que significa: no
+    /// había programa.
     func startStrengthSession(routineId: String?, routineName: String,
-                              slots: [StrengthSessionModel.PlanSlot]) {
+                              slots: [StrengthSessionModel.PlanSlot],
+                              programWeek: Int? = nil, deload: Bool? = nil) {
         guard strengthSession == nil else { strengthSheetPresented = true; return }
         pendingHrFlush.removeAll()
         lastAcceptedHrTs = nil
         strengthSession = StrengthSessionModel.make(routineId: routineId, routineName: routineName,
                                                     slots: slots, startTs: Int(Date().timeIntervalSince1970))
+        strengthSession?.programWeek = programWeek
+        strengthSession?.deload = deload
         // r22 (owner): un ejercicio con calentamiento ACTIVADO nace con su rampa «C» puesta — la de
         // PlateMath sobre el peso de trabajo del día (solo barra, como la hoja de discos). Insertar
         // la rampa una vez lo activó; quitar su última «C» en sesión lo apaga (LiveStrengthSheet).

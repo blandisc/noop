@@ -93,6 +93,10 @@ private struct EntrenarLanding: View {
     /// The verdict `todaySlots` were seeded with; `nil` until the first load. Guards «Empezar» from
     /// handing the session a table built under a verdict that has since changed (FER-82).
     @State private var slotsAdvice: TrainingRegulation.Advice?
+    /// Ola 1 · E10 (FER-329): el programa activo y la semana en la que van los `todaySlots`, publicado
+    /// JUNTO con ellos en el mismo pase (igual que `slotsAdvice`) — así la sesión que arranca desde
+    /// aquí se guarda con la misma semana con la que se sembró la tabla. `nil` = no hay programa.
+    @State private var todayServing: ProgramServing.Context?
     /// El puente de Apple Salud, para que la boleta de esta pestaña reciba el MISMO contexto que la
     /// de Hoy (sin él afirmaba «anoche no llegó nada» a quien no ha conectado Salud).
     @EnvironmentObject private var health: HealthKitBridge
@@ -784,7 +788,11 @@ private struct EntrenarLanding: View {
     /// call it without ever re-entering the verdict check.
     private func startTodayNow(_ r: Routine) {
         guard !todaySlots.isEmpty else { openRoutine(r.id); return }
-        model.startStrengthSession(routineId: r.id, routineName: r.name, slots: todaySlots)
+        // Ola 1 · E10: la sesión se guarda con la semana con la que se SEMBRÓ esta tabla — la misma
+        // que ya recortó los slots si tocaba ligera.
+        model.startStrengthSession(routineId: r.id, routineName: r.name, slots: todaySlots,
+                                   programWeek: todayServing.map(\.position.week),
+                                   deload: todayServing.map(\.isLight))
     }
 
 
@@ -1434,6 +1442,8 @@ private struct EntrenarLanding: View {
         var raisingToday: [(name: String, fromKg: Double, toKg: Double)] = []
         // The verdict this whole pass was built with, published together with the slots it seeded.
         var passAdvice = repo.trainingAdvice
+        // Ola 1 · E10: la semana del programa se lee UNA vez por pase, igual que el veredicto.
+        var passServing: ProgramServing.Context?
         if let tid = WeeklySplit.todayRoutineId(split: splitMap, todayWeekday: todayWeekday) {
             // FER-124: los slots los siembra `repo.seedTodaySlots` — EL MISMO método que usa el
             // arranque desde la muñeca, así que el teléfono y el reloj no pueden ofrecer rutinas
@@ -1442,7 +1452,9 @@ private struct EntrenarLanding: View {
             let advice = repo.trainingAdvice
             passAdvice = advice
             let inventory = await MainActor.run { PlatesStore().inventory }
-            let seeded = await repo.seedTodaySlots(routineId: tid, advice: advice, inventory: inventory)
+            passServing = await repo.programServing()
+            let seeded = await repo.seedTodaySlots(routineId: tid, advice: advice, inventory: inventory,
+                                                   serving: passServing)
             slots.append(contentsOf: seeded)
             // FER-171 · hub v18: la subida RETENIDA (`raise.waiting`) ya no tiene pastilla propia en
             // el héroe — el mock v18 solo muestra la subida APLICADA; ver el reporte del agente.
@@ -1479,6 +1491,7 @@ private struct EntrenarLanding: View {
         guard seq == repo.refreshSeq else { return false }
         raisesToday = raisingToday
         slotsAdvice = passAdvice
+        todayServing = passServing
         routines = rs
         exerciseCounts = counts
         routineMuscles = muscles

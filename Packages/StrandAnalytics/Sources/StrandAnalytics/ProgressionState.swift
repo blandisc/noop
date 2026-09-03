@@ -17,6 +17,14 @@ import Foundation
 // ~7.5% and rebuilding. The 7.5% is a documented gym heuristic (the 5–10% band commonly cited for a
 // deload), not a formula. Whether it's proposed or only surfaced is the user's `DeloadPolicy`.
 //
+// Light week — FRONTIER (ola 1 · E10, FER-329). A session served in a program's light week
+// (`PastSession.deload`) is not a data point of the cycle: half the work sets, and with
+// `DeloadRule.volumeAndLoad` also less weight. It can neither earn a raise nor prove a stall, so it is
+// invisible to the met-run and it STOPS the fail-run. What it must never do is erase progress — met,
+// met, light, met still reads as three met sessions minus the light one, not as a reset. The REACTIVE
+// deload below stays fully alive inside a program (gate /biomecanico #1, 2026-09-02): a stall in week 2
+// of 5 still proposes −7.5 % instead of waiting for the light week.
+//
 // Recovery gate — when today's recovery reads LOW (`TrainingRegulation.Reason.recoveryLow`), a ready
 // upgrade is DEFERRED (not cancelled): it becomes `.deferred`, and the cycle progress is preserved so
 // the raise simply waits for the next session.
@@ -95,10 +103,18 @@ public enum ProgressionMath {
 
     /// The sessions the cycle can see at the CURRENT working weight, newest → older, stopping at a
     /// weight change. One copy of the rule: `classify` and the at-limit counter both read it.
+    ///
+    /// Ola 1 · E10: a light-week session is TRANSPARENT to both ends of this. It doesn't get to define
+    /// the current weight (`current` is the newest NON-deload session — otherwise a week at −7,5 %
+    /// would redefine the working load and the next raise would climb from the reduced weight), and it
+    /// doesn't break the trailing run by weight either — it rides along so `classify` can decide, per
+    /// branch, whether to skip it (met-run) or stop at it (fail-run).
     static func trailingAtCurrentWeight(_ sessions: [PastSession]) -> [PastSession] {
-        guard let currentKg = sessions.last?.workingKg else { return [] }
+        guard let currentIdx = sessions.lastIndex(where: { !$0.deload }) else { return [] }
+        let currentKg = sessions[currentIdx].workingKg
         var trailing: [PastSession] = []
-        for s in sessions.reversed() {
+        for s in sessions[...currentIdx].reversed() {
+            if s.deload { trailing.append(s); continue }
             guard abs(s.workingKg - currentKg) < 0.0001 else { break }
             trailing.append(s)
         }
@@ -111,6 +127,7 @@ public enum ProgressionMath {
         let sessions = input.history.filter { !$0.optedOut }
         var streak = 0
         for s in trailingAtCurrentWeight(sessions) {
+            if s.deload { continue }   // ola 1 · E10: la semana ligera no cuenta ni rompe la racha
             guard metGoal(s, targetReps: input.targetReps, targetSets: input.targetSets),
                   effort(s) == .atLimit else { break }
             streak += 1
@@ -125,14 +142,21 @@ public enum ProgressionMath {
         public let workSetReps: [Int]
         /// The user chose "Volver a X" this session (opt-out): it counts as neither a hit nor a miss.
         public let optedOut: Bool
+        /// The session was served in a program's LIGHT week (ola 1 · E10, `strengthSession.deload = 1`).
+        /// It is a FRONTIER, not an opt-out: half the sets at (maybe) less weight is not a performance at
+        /// the working weight, so it can neither earn a raise nor prove a stall — but it also must not
+        /// erase what came before it. So: invisible to the met-run (it neither adds nor breaks), and a
+        /// HARD STOP for the fail-run (a stall doesn't survive a week of deliberate backing off).
+        public let deload: Bool
         /// Perceived effort per WORK set, parallel to `workSetReps` (ola 1 · E4). Empty = the caller
         /// doesn't carry RPE; a `nil` element = that set wasn't rated. Either way the session reads
         /// `.unknown` and the rule behaves exactly as it did before RPE existed.
         public let workSetRPE: [Double?]
         public init(workingKg: Double, workSetReps: [Int], optedOut: Bool = false,
-                    workSetRPE: [Double?] = []) {
+                    workSetRPE: [Double?] = [], deload: Bool = false) {
             self.workingKg = workingKg; self.workSetReps = workSetReps; self.optedOut = optedOut
             self.workSetRPE = workSetRPE
+            self.deload = deload
         }
     }
 
@@ -189,7 +213,10 @@ public enum ProgressionMath {
         let n = max(1, input.sessionsToAdvance)
         // Opt-out sessions are invisible to the cycle: they count as neither hit nor miss.
         let sessions = input.history.filter { !$0.optedOut }
-        guard let current = sessions.last else { return .inCycle(done: 0, of: n) }
+        // Ola 1 · E10: the cycle's «current» session is the newest one that was NOT served light. A
+        // light week is a frontier, not a data point — letting it be `current` would read the reduced
+        // sets (and, with `volumeAndLoad`, the reduced weight) as this exercise's real performance.
+        guard let current = sessions.last(where: { !$0.deload }) else { return .inCycle(done: 0, of: n) }
         let currentKg = current.workingKg
 
         // Trailing run of sessions AT the current weight (newest → older), stopping at a weight change.
@@ -199,7 +226,7 @@ public enum ProgressionMath {
         if newestMet {
             // Count consecutive met sessions from newest.
             let metPrefix = trailing.prefix {
-                metGoal($0, targetReps: input.targetReps, targetSets: input.targetSets)
+                $0.deload || metGoal($0, targetReps: input.targetReps, targetSets: input.targetSets)
             }
             let metRun = metRunCount(Array(metPrefix), useRPE: input.useRPE)
             // Ola 1 · E4 (a): the newest session met the goal with reps to spare, so the raise comes
@@ -224,6 +251,9 @@ public enum ProgressionMath {
             // Count consecutive missed sessions from newest.
             var failRun = 0
             for s in trailing {
+                // Ola 1 · E10: a light week ENDS the stall count — the sessions before it were at a
+                // different dose, so calling them «three in a row at this weight» would be a lie.
+                if s.deload { break }
                 guard !metGoal(s, targetReps: input.targetReps, targetSets: input.targetSets) else { break }
                 failRun += 1
             }
@@ -243,6 +273,9 @@ public enum ProgressionMath {
     /// exception is the cap: once `atLimitStreakCap` of them run consecutively, the whole streak counts
     /// as standard, so «al límite» can freeze the raise for a while but never forever.
     static func metRunCount(_ metPrefix: [PastSession], useRPE: Bool) -> Int {
+        // Ola 1 · E10: a light-week session travels inside the prefix (so it doesn't break the run),
+        // but it never COUNTS toward the cycle — it wasn't the session the plan asked for.
+        let metPrefix = metPrefix.filter { !$0.deload }
         guard useRPE else { return metPrefix.count }
         var run = 0
         var atLimitRun = 0

@@ -24,6 +24,26 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 - Diseño (FER-340): un héroe por pantalla en Intervalos y recibo de fuerza; material solo vía receta (`.dialogo` / `.confirmacion` + `LiquidGlow`); ritmo de sección s700 en Cuerpo y Ajustes; Dynamic Type en RestEditor; `FocoMetrics` alias a `LiquidSpace`.
 - Diseño (FER-339): una pieza por rol en el catálogo (toast de error de guardado, pastilla de estado, selector de periodo, campo de texto `LiquidCampoTexto`, aviso Liquid; sin `NoteStrip`; toolbar de Ajustes al `fondoAlto`).
 
+### Ola 1 de Entrenar · programa de varias semanas (FER-329)
+- Tu plan semanal puede correr como un programa de varias semanas (4 a 6 en la app, hasta 8 si lo
+  importas de tu propia IA) con una semana ligera al final. La semana en la que vas NO se guarda: se
+  deriva de cuándo empezaste y de las semanas en las que de verdad entrenaste, así que unas vacaciones
+  no adelantan la semana ligera — el programa te espera.
+- La semana ligera se sirve a la mitad de las series (mínimo una) con el mismo peso; puedes elegir que
+  además baje el peso un 7,5 %, exactamente el mismo escalón que ya usa la descarga por estancamiento.
+  El calentamiento no se toca, y **tu rutina guardada no cambia**: el recorte vive solo en la sesión
+  de ese día.
+- Esa sesión queda marcada como frontera: ni te gana una subida ni te rompe una racha, y no se usa
+  como «la última vez» para sembrar el peso de la próxima. En la semana ligera no se ofrecen subidas;
+  la que te habías ganado sigue ahí para la semana que sigue. La descarga por estancamiento sigue viva
+  dentro del programa.
+- Cuatro programas de fábrica sobre las rutinas que ya vienen incluidas (lineal de novato, cuerpo
+  completo 3 días, push/pull/legs 6 días, torso/pierna 4 días), y «al terminar el ciclo» puedes
+  repetirlo con los pesos ganados o dejar que el programa se termine solo. Terminar un programa borra
+  solo el programa: tus rutinas y tu calendario quedan intactos.
+- El formato de importación desde tu IA aprende `semanas`, `semana_ligera`, `al_terminar` y el `dia` de
+  cada rutina. Un archivo que trae semanas distintas entre sí no falla: importa la primera y te lo dice.
+
 ### Ola 1 de Entrenar · ritmo «según reps en reserva» (FER-326)
 - La regla de subida gana un ritmo: en un ejercicio con el interruptor encendido, terminar la sesión con
   reps de sobra (esfuerzo 8 o menos) adelanta la subida a una sola sesión; llegar al límite (9,5 o más)
