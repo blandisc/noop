@@ -86,6 +86,14 @@ No heredes el "ya compila" de nadie. Corre tú:
 - Si toca migraciones: que sea **append-only** y traiga su caso en `MigrationTests`.
 - Si toca BLE: que cada frame esté **CRC-gated** y que NO se haya colado un comando
   destructivo (reboot/DFU/ship-mode/wipe/fuel-gauge). Esto es de alto riesgo.
+- **Prueba roja primero (regla dura, retro FER-323).** Una prueba de comportamiento
+  **nueva** que el implementador presenta como evidencia de un criterio NO cuenta hasta que la
+  veas **fallar contra el commit base**: aparta el diff de implementación (`git stash` del
+  worktree ajeno no; copia el fuente viejo con `git show <base>:<archivo>` o corre la prueba en
+  una copia del árbol sin el cambio), corre SOLO la prueba nueva y confirma **FAIL**; luego
+  restaura. Si pasa verde sin el cambio, es un comentario ejecutable, no un guardián — el criterio
+  se marca FAIL con «test verde-de-nacimiento». En la ola 1 de Entrenar salieron 3 así pese a que
+  el principio ya estaba escrito; por eso ahora es un paso ejecutado, no una nota.
 Captura la **salida real** de cada corrida — es tu evidencia.
 
 ### 4. Prueba adversarial: intenta romperlo

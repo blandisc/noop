@@ -81,6 +81,21 @@ el mismo PR** que la implementa (una línea basta: fecha, decisión, por qué).
   2026-08-27, no lo revierte. **DeepSeek sale del reparto por defecto**: deja de ser carril
   estándar y queda como opción experimental solo si el dueño lo pide (`deepseek-lane.sh` sigue
   vivo). Afina el 2026-08-27; se implementa en la skill `/orquesta`.
+- **2026-09-03 · «Prueba roja primero» es paso ejecutado de `/qa`, no nota.** Una prueba de
+  comportamiento nueva no cuenta como criterio cumplido hasta demostrarla ROJA en el commit base
+  (ver el fuente viejo → correr solo esa prueba → FAIL → restaurar); verde sin el cambio = FAIL por
+  «test verde-de-nacimiento». El principio ya estaba en memoria y aun así salieron 3 pruebas así en
+  la ola 1 → se sube a paso ejecutado en la skill `/qa` y a la auto-verificación del implementador.
+- **2026-09-03 · Afinación del reparto: las pantallas del sistema de diseño NO van a Grok.**
+  Una pantalla que toca símbolos de `CenitDesign` y/o el catálogo `Localizable.xcstrings` se rutea
+  a **Sonnet**, no a Grok. Grok headless no compila ni grepea confiable y en UI hace dos fallas
+  estructurales (no aleatorias): **inventa símbolos** (p. ej. `LiquidMotion.interactive`) y
+  **re-serializa el catálogo entero**. La mitigación «grepea cada símbolo antes de usarlo» (FER-299)
+  ya existía y **volvió a fallar** en la ola 1 de Entrenar → se sube de mitigación a regla de ruteo.
+  Grok se queda con lógica/CSV/wiring/mecánico bien especificado (su acierto en esta ola fue el
+  lector CSV, FER-328); «Grok primero» sigue para todo lo demás. Afina el 2026-08-31, no lo revierte.
+  Evidencia: E9 (FER-333, #1480) no compiló + re-serializó el catálogo → re-ruteado a Sonnet; E3
+  (FER-330, #1479) re-serializó `Localizable.xcstrings`. Se implementa en la skill `/orquesta`.
 - **2026-08-31 · Dos agentes nuevos + retro que aprende sin frenar.** (a) `criterio` —
   subagente-espejo del dueño (lee DECISIONS.md + CLAUDE.md + memoria) que el loop consulta para
   dudas de gusto reversibles en vez de adivinar o frenar; marca 🚩 lo que sí requiere al dueño.
