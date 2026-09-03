@@ -363,7 +363,7 @@ struct WorkoutEditSheet: View {
             nil,
             texto: text,
             placeholder: "",
-            teclado: isInt ? .numberPad : .decimalPad,
+            teclado: isInt ? LiquidCampoTeclado.numberPad : LiquidCampoTeclado.decimalPad,
             a11y: "",
             conSuperficie: false,
             tipografia: LiquidType.valorM)
