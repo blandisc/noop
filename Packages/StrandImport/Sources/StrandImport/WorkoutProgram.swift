@@ -71,26 +71,91 @@ public struct WorkoutRoutine: Codable, Sendable, Equatable {
     public let name: String                 // wire: "nombre"
     public let tag: String?                 // wire: "etiqueta" (informational only — no scheduling)
     public let exercises: [WorkoutExercise] // wire: "ejercicios" (≥1)
+    /// The weekday this routine is planned for, in the PLAN's convention: **1 = lunes … 7 = domingo**
+    /// (ola 1 · E10). Deliberately NOT `Calendar`'s convention (1 = Sunday) — the wire format is written
+    /// by an LLM from a human plan, where the week starts on Monday; `assignedWeekdays()` is the one
+    /// place that converts. `nil` (or an out-of-range value) = the plan didn't say, and the importer
+    /// hands it a free day. Distinct from `tag`, which stays purely informational.
+    public let planDay: Int?                // wire: "dia" (1…7, lunes→domingo)
+    /// Which week of the program this routine belongs to, when the plan varies week by week
+    /// (wire: "semana"). Cénit's model is ONE weekly split repeated, so a plan whose weeks differ is
+    /// not supported: the parser keeps week 1 and raises `.weeksDiffer` instead of failing.
+    public let week: Int?
 
-    public init(name: String, tag: String? = nil, exercises: [WorkoutExercise]) {
+    public init(name: String, tag: String? = nil, exercises: [WorkoutExercise],
+                planDay: Int? = nil, week: Int? = nil) {
         self.name = name; self.tag = tag; self.exercises = exercises
+        self.planDay = planDay; self.week = week
     }
 }
 
+/// Why an otherwise valid program couldn't be imported EXACTLY as written (ola 1 · E10). A warning is
+/// never a failure: the program IS imported, and the screen says what had to be simplified.
+public enum WorkoutProgramWarning: String, Codable, Sendable, Equatable, CaseIterable {
+    /// The plan describes different routines per week. Cénit repeats ONE weekly split, so only week 1
+    /// was imported.
+    case weeksDiffer
+}
+
 /// A workout program in the `noop.workout.v1` format: one or more routines (a multi-day split).
+///
+/// Ola 1 · E10 adds the PROGRAM fields — how many weeks the block runs, what its light week does, and
+/// what happens when it ends. All optional and defaulted, so a v1 file written before they existed
+/// parses byte-identically (`weeks == nil` = no program, just routines).
 public struct WorkoutProgram: Codable, Sendable, Equatable {
     public let schema: String
     public let language: WorkoutPlanLanguage // wire: "idioma"
     public let name: String                  // wire: "programa"
     public let routines: [WorkoutRoutine]    // wire: "rutinas" (≥1)
+    /// How many weeks the block runs (wire: "semanas"). `nil` = the file carries no program, only
+    /// routines — exactly what every pre-ola-1 file looks like. Validated against
+    /// `Program.importWeeks` (4…8, wider than the 4…6 the app itself offers: a coach's block is often
+    /// 6–8) and REJECTED outside it, never silently clamped.
+    public let weeks: Int?
+    /// What the light week does (wire: "semana_ligera"). Defaults to `.none` — a plan that says nothing
+    /// gets no light week invented for it.
+    public let deloadRule: DeloadRule
+    /// What happens when the block ends (wire: "al_terminar"). Defaults to `.repeat`.
+    public let endMode: ProgramEndMode
+    /// What had to be simplified to fit Cénit's model. Empty = imported exactly as written.
+    public let warnings: [WorkoutProgramWarning]
 
     public init(schema: String = WorkoutProgram.currentSchema,
-                language: WorkoutPlanLanguage, name: String, routines: [WorkoutRoutine]) {
+                language: WorkoutPlanLanguage, name: String, routines: [WorkoutRoutine],
+                weeks: Int? = nil, deloadRule: DeloadRule = .none,
+                endMode: ProgramEndMode = .repeat,
+                warnings: [WorkoutProgramWarning] = []) {
         self.schema = schema; self.language = language; self.name = name; self.routines = routines
+        self.weeks = weeks; self.deloadRule = deloadRule; self.endMode = endMode
+        self.warnings = warnings
     }
 
     /// The only schema this importer accepts.
     public static let currentSchema = "noop.workout.v1"
+
+    /// The `Calendar` weekday (1 = Sunday … 7 = Saturday — `RoutineSchedule`'s convention) each routine
+    /// lands on, index-aligned with `routines`. `nil` for a routine that couldn't be placed (more
+    /// routines than days in a week).
+    ///
+    /// Rule: a routine that DECLARED a `dia` keeps it (first claim wins on a collision — the file is
+    /// the user's, and silently moving somebody else's day would be worse than honouring the first);
+    /// the rest fall into the FREE days in order lunes→domingo, the same way the bundled templates lay
+    /// out a split. Pure, so the import screen and its test call the same rule.
+    public func assignedWeekdays() -> [Int?] {
+        var taken = Set<Int>()
+        var claimed = [Int?](repeating: nil, count: routines.count)
+        for (i, r) in routines.enumerated() {
+            guard let day = r.planDay, (1...7).contains(day), !taken.contains(day) else { continue }
+            taken.insert(day)
+            claimed[i] = day
+        }
+        var free = (1...7).filter { !taken.contains($0) }.makeIterator()
+        for i in claimed.indices where claimed[i] == nil { claimed[i] = free.next() }
+        return claimed.map { $0.map(Self.calendarWeekday(planDay:)) }
+    }
+
+    /// plan (1 = lunes … 7 = domingo) → `Calendar` (1 = domingo … 7 = sábado). The ONE conversion.
+    public static func calendarWeekday(planDay: Int) -> Int { (planDay % 7) + 1 }
 }
 
 // MARK: - Errors
@@ -107,6 +172,13 @@ public enum WorkoutProgramParseError: Error, Equatable, Sendable, CustomStringCo
     case noRoutines
     case routineWithoutExercises(name: String)
     case exerciseWithoutName(routine: String)
+    /// Ola 1 · E10: "semanas" outside `Program.importWeeks` (4…8). Never clamped silently — a plan that
+    /// says 12 weeks is a plan Cénit doesn't run, and pretending it said 8 would lie about the file.
+    case unsupportedSemanas(found: Int)
+    /// An explicit but unknown "semana_ligera" / "al_terminar" — same discipline as `tipo`/`unidad`:
+    /// absent means «the plan didn't say» (a default), a typo means «I don't know what you meant».
+    case unsupportedSemanaLigera(found: String)
+    case unsupportedAlTerminar(found: String)
 
     public var description: String {
         switch self {
@@ -118,6 +190,12 @@ public enum WorkoutProgramParseError: Error, Equatable, Sendable, CustomStringCo
         case .noRoutines:                    return "The program has no rutinas."
         case .routineWithoutExercises(let n):return "Routine \"\(n)\" has no ejercicios."
         case .exerciseWithoutName(let r):    return "An exercise in routine \"\(r)\" has no nombre."
+        case .unsupportedSemanas(let f):
+            return "Unsupported semanas: \(f) (expected \(Program.importWeeks.lowerBound)…\(Program.importWeeks.upperBound))."
+        case .unsupportedSemanaLigera(let f):
+            return "Unsupported semana_ligera: \"\(f)\" (expected menos_series, menos_series_y_peso or ninguna)."
+        case .unsupportedAlTerminar(let f):
+            return "Unsupported al_terminar: \"\(f)\" (expected repetir or un_ciclo)."
         }
     }
 }
@@ -157,6 +235,34 @@ public struct WorkoutProgramImporter {
         }
 
         let name = root["programa"] as? String ?? ""
+
+        // Ola 1 · E10 — los campos de PROGRAMA. Ausentes = archivo pre-ola-1: `weeks` queda nil y el
+        // resto en su default, así que el payload de siempre parsea idéntico.
+        var weeks: Int?
+        if let raw = Self.intValue(root["semanas"]) {
+            guard Program.importWeeks.contains(raw) else {
+                throw WorkoutProgramParseError.unsupportedSemanas(found: raw)
+            }
+            weeks = raw
+        }
+        let deloadRule: DeloadRule
+        if let raw = root["semana_ligera"] as? String {
+            guard let rule = Self.deloadRule(wire: raw) else {
+                throw WorkoutProgramParseError.unsupportedSemanaLigera(found: raw)
+            }
+            deloadRule = rule
+        } else {
+            deloadRule = .none
+        }
+        let endMode: ProgramEndMode
+        if let raw = root["al_terminar"] as? String {
+            guard let mode = Self.endMode(wire: raw) else {
+                throw WorkoutProgramParseError.unsupportedAlTerminar(found: raw)
+            }
+            endMode = mode
+        } else {
+            endMode = .repeat
+        }
 
         // rutinas — ≥1, each with ≥1 exercise, each exercise with a non-empty name (the match key).
         guard let rawRoutines = root["rutinas"] as? [[String: Any]], !rawRoutines.isEmpty else {
@@ -206,12 +312,48 @@ public struct WorkoutProgramImporter {
                     id: exId, name: exName, type: type, sets: sets, reps: reps, weightKg: weightKg,
                     restSeconds: rest, warmupPercents: warmups, supersetGroup: superset))
             }
+            // dia — 1…7 (lunes→domingo). Fuera de rango o ausente: la rutina toma un día libre en
+            // `assignedWeekdays()`. Estructural, como `series`: no es un dato métrico que se invente.
+            let planDay = Self.intValue(r["dia"]).flatMap { (1...7).contains($0) ? $0 : nil }
+            let week = Self.intValue(r["semana"]).flatMap { $0 > 0 ? $0 : nil }
             routines.append(WorkoutRoutine(name: routineName,
                                            tag: (r["etiqueta"] as? String).flatMap { $0.isEmpty ? nil : $0 },
-                                           exercises: exercises))
+                                           exercises: exercises, planDay: planDay, week: week))
         }
 
-        return WorkoutProgram(schema: schema, language: language, name: name, routines: routines)
+        // Semanas distintas entre sí: Cénit repite UNA semana, así que se importa la primera y se avisa
+        // — nunca se falla (el archivo es válido; es el modelo el que no guarda un plan por semana) ni
+        // se importan las cuatro semanas apiladas en un solo calendario de siete casillas.
+        var warnings: [WorkoutProgramWarning] = []
+        let declaredWeeks = Set(routines.compactMap(\.week))
+        if declaredWeeks.count > 1, let first = declaredWeeks.min() {
+            routines = routines.filter { $0.week == nil || $0.week == first }
+            warnings.append(.weeksDiffer)
+        }
+
+        return WorkoutProgram(schema: schema, language: language, name: name, routines: routines,
+                              weeks: weeks, deloadRule: deloadRule, endMode: endMode,
+                              warnings: warnings)
+    }
+
+    /// wire → `DeloadRule` (ola 1 · E10). Las llaves del formato son español fijo, como el resto del
+    /// contrato; el enum vive en StrandTraining y NO se serializa con su `rawValue` de Swift.
+    static func deloadRule(wire: String) -> DeloadRule? {
+        switch wire {
+        case "menos_series":          return .volumeOnly
+        case "menos_series_y_peso":   return .volumeAndLoad
+        case "ninguna":               return DeloadRule.none
+        default:                      return nil
+        }
+    }
+
+    /// wire → `ProgramEndMode` (ola 1 · E10).
+    static func endMode(wire: String) -> ProgramEndMode? {
+        switch wire {
+        case "repetir":  return .repeat
+        case "un_ciclo": return .single
+        default:         return nil
+        }
     }
 
     /// Convenience for the "paste JSON" path.

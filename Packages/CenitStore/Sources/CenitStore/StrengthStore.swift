@@ -41,9 +41,16 @@ public struct WorkSetHistoryRow: Sendable, Equatable {
     /// todas formas para que quien lea la historia pueda distinguir un «las que puedas» de una serie
     /// fija sin volver a la base.
     public var mode: SetMode
+    /// La sesión se sirvió en la SEMANA LIGERA de un programa (`strengthSession.deload = 1`, ola 1 ·
+    /// E10). Viaja hasta `ProgressionMath.PastSession.deload`, donde es una FRONTERA del ciclo: ni
+    /// acierto ni fallo. Se proyecta en vez de filtrarse en SQL a propósito — el clasificador necesita
+    /// SABER que hubo una semana ligera ahí para no leer las sesiones de antes y las de después como
+    /// una sola racha.
+    public var deload: Bool
 
     public init(sessionId: String, startTs: Int, weightKg: Double, reps: Int, optedOut: Bool = false,
-                rpe: Double? = nil, routineName: String? = nil, mode: SetMode = .standard) {
+                rpe: Double? = nil, routineName: String? = nil, mode: SetMode = .standard,
+                deload: Bool = false) {
         self.sessionId = sessionId
         self.startTs = startTs
         self.weightKg = weightKg
@@ -52,6 +59,7 @@ public struct WorkSetHistoryRow: Sendable, Equatable {
         self.rpe = rpe
         self.routineName = routineName
         self.mode = mode
+        self.deload = deload
     }
 }
 
@@ -379,6 +387,59 @@ extension CenitStore {
     public func clearRoutineSchedule(weekday: Int) async throws {
         try syncWrite { db in
             try db.execute(sql: "DELETE FROM routineSchedule WHERE weekday = ?", arguments: [weekday])
+        }
+    }
+
+    // MARK: - Programa de varias semanas (ola 1 · E10, FER-329 — tabla `program`, v43)
+    //
+    // Fila SINGLETON (`id = 'active'`): o hay un programa corriendo, o no hay ninguno. No se guarda
+    // «la semana actual» — se DERIVA con `ProgramCalendar` a partir de `startTs` y de las semanas
+    // realmente entrenadas, así que no existe una columna que pueda desincronizarse.
+
+    /// El programa activo, o `nil` si no hay ninguno.
+    public func program() async throws -> Program? {
+        try syncRead { db in
+            try Row.fetchOne(db, sql: "SELECT * FROM program WHERE id = ?",
+                             arguments: [Program.activeId]).map(Self.program)
+        }
+    }
+
+    /// Alta o reemplazo del programa activo — upsert sobre la PK, así que «cambiar de programa» es una
+    /// sola escritura, no un borrar-e-insertar que pueda quedar a medias.
+    public func setProgram(_ p: Program) async throws {
+        try syncWrite { db in
+            try db.execute(sql: """
+                INSERT INTO program (id, name, weeks, startTs, deloadRule, endMode, templateId, createdTs)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    name = excluded.name, weeks = excluded.weeks, startTs = excluded.startTs,
+                    deloadRule = excluded.deloadRule, endMode = excluded.endMode,
+                    templateId = excluded.templateId
+                """, arguments: [Program.activeId, p.name, p.weeks, p.startTs,
+                                 p.deloadRule.rawValue, p.endMode.rawValue, p.templateId, p.createdTs])
+        }
+    }
+
+    /// «Terminar programa»: borra la fila y NADA más. Las rutinas y el split semanal siguen ahí — al
+    /// usuario le queda su semana de siempre, no un hueco.
+    public func deleteProgram() async throws {
+        try syncWrite { db in
+            try db.execute(sql: "DELETE FROM program WHERE id = ?", arguments: [Program.activeId])
+        }
+    }
+
+    /// El `startTs` de cada sesión TERMINADA y SERVIDA POR EL PROGRAMA (`programWeek` no nulo) desde
+    /// `sinceTs`, para que `ProgramCalendar` cuente las semanas entrenadas (D-Q2). Movilidad, sesión
+    /// rápida o «repetir del historial» no acumulan el estrés que la semana ligera disipa, así que no
+    /// avanzan el contador (gate /biomecanico FER-329 #4). Devuelve marcas de tiempo planas: el store
+    /// no sabe de lunes ni de calendarios — eso es del motor puro.
+    public func sessionStartTimes(sinceTs: Int, limit: Int = 5000) async throws -> [Int] {
+        try syncRead { db in
+            try Int.fetchAll(db, sql: """
+                SELECT startTs FROM strengthSession
+                WHERE startTs >= ? AND endTs IS NOT NULL AND programWeek IS NOT NULL
+                ORDER BY startTs DESC LIMIT ?
+                """, arguments: [sinceTs, limit])
         }
     }
 
@@ -844,6 +905,12 @@ extension CenitStore {
 
     /// The most recent *work* sets for an exercise, newest first — powers "la última vez" pre-fill.
     ///
+    /// Ola 1 · E10 (FER-329): excluye además las sesiones de SEMANA LIGERA (`strengthSession.deload`),
+    /// por la misma razón que el drop y con más fuerza — con `DeloadRule.volumeAndLoad` la ligera se
+    /// registró a −7,5 %, así que sembrar de ahí abriría la primera sesión del ciclo nuevo por debajo
+    /// del peso que ya se había ganado. La ligera sí sigue en el historial y en el acta: solo no es
+    /// «la última vez» para efectos de sembrar.
+    ///
     /// Ola 1 · FER-327: excluye los DROPS, con el mismo filtro que la progresión (`modesCounting`), y
     /// por la misma razón: esta consulta es la semilla del peso de la próxima sesión. Un drop es el
     /// escalón de −20 % que se hizo cuando la serie ya no daba; si contara, la siguiente sesión abriría
@@ -857,9 +924,12 @@ extension CenitStore {
             // would just shrink the returned count instead of being replaced by the real Nth-most-
             // recent legitimate set.
             let buffered = try Row.fetchAll(db, sql: """
-                SELECT * FROM setEntry WHERE exerciseId = ? AND kind = 'work' AND done = 1
-                  AND \(Self.modesCounting(for: .progression))
-                ORDER BY ts DESC LIMIT ?
+                SELECT e.* FROM setEntry e
+                JOIN strengthSession s ON e.sessionId = s.id
+                WHERE e.exerciseId = ? AND e.kind = 'work' AND e.done = 1
+                  AND \(Self.modesCounting(for: .progression, column: "e.mode"))
+                  AND COALESCE(s.deload, 0) = 0
+                ORDER BY e.ts DESC LIMIT ?
                 """, arguments: [exerciseId, limit + Self.absurdGuardBuffer]).map(Self.setEntry)
             let priorMaxKg = try Self.existingMaxWeightPR(db, exerciseId: exerciseId)
             let eligible = Self.excludingAbsurdCaptures(buffered, priorMaxKg: priorMaxKg)  // oldest→newest
@@ -886,7 +956,7 @@ extension CenitStore {
                 SELECT * FROM (
                     SELECT s.id AS sessionId, s.startTs AS startTs, e.weightKg AS weightKg, e.reps AS reps,
                            (o.exerciseId IS NOT NULL) AS optedOut, e.rpe AS rpe, r.name AS routineName,
-                           e.mode AS mode
+                           e.mode AS mode, COALESCE(s.deload, 0) AS deload
                     FROM setEntry e JOIN strengthSession s ON e.sessionId = s.id
                     LEFT JOIN progressionOptOut o ON o.sessionId = e.sessionId AND o.exerciseId = e.exerciseId
                     LEFT JOIN routine r ON s.routineId = r.id
@@ -901,7 +971,8 @@ extension CenitStore {
                                       weightKg: row["weightKg"], reps: row["reps"],
                                       optedOut: row["optedOut"], rpe: row["rpe"],
                                       routineName: row["routineName"],
-                                      mode: (row["mode"] as String?).flatMap(SetMode.init(rawValue:)) ?? .standard)
+                                      mode: (row["mode"] as String?).flatMap(SetMode.init(rawValue:)) ?? .standard,
+                                      deload: (row["deload"] as Int) != 0)
                 }
             // FER-169 · B10: this feeds `ProgressionPlanner.evaluate` (via `sessionSeed`) — the "siembra"
             // consumer of the guard. Already oldest→newest, so the fold runs straight over it.
@@ -1008,6 +1079,13 @@ extension CenitStore {
                         trimpPerAU: r["trimpPerAU"], source: r["source"], title: r["title"],
                         programWeek: r["programWeek"],
                         deload: (r["deload"] as Int?).map { $0 != 0 })
+    }
+
+    private static func program(_ r: Row) -> Program {
+        Program(id: r["id"], name: r["name"], weeks: r["weeks"], startTs: r["startTs"],
+                deloadRule: DeloadRule(rawValue: r["deloadRule"]) ?? .volumeOnly,
+                endMode: ProgramEndMode(rawValue: r["endMode"]) ?? .repeat,
+                templateId: r["templateId"], createdTs: r["createdTs"])
     }
 
     private static func setEntry(_ r: Row) -> SetEntry {

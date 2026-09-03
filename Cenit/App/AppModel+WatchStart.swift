@@ -57,9 +57,16 @@ extension AppModel {
     func startTodayFromWrist() async {
         guard strengthSession == nil else { return }
         guard let routine = await todayRoutineForWatch() else { return }
-        let slots = await resolveTodaySlotsForWatch(routineId: routine.id)
+        // Ola 1 · E10 (FER-329): arrancar desde la muñeca sirve EL MISMO plan del día que el teléfono,
+        // así que la semana se lee UNA vez y va tanto al recorte de los slots como a la marca de la
+        // sesión. Sin la marca, entrenar desde el reloj en la semana ligera guardaría una sesión
+        // recortada SIN la frontera, y el ciclo la leería como un mal día.
+        let serving = await repo.programServing()
+        let slots = await resolveTodaySlotsForWatch(routineId: routine.id, serving: serving)
         guard !slots.isEmpty else { return }
-        startStrengthSession(routineId: routine.id, routineName: routine.name, slots: slots)
+        startStrengthSession(routineId: routine.id, routineName: routine.name, slots: slots,
+                             programWeek: serving.flatMap(\.stampWeek),
+                             deload: serving.flatMap(\.stampDeload))
     }
 
     /// Today's scheduled routine, or nil on a rest day / with no plan — the same resolution
@@ -75,8 +82,10 @@ extension AppModel {
     /// aquí: es `repo.seedTodaySlots`, el MISMO que siembra el héroe del teléfono (FER-124). Antes
     /// era una copia del bucle que coincidía con la del teléfono por buena voluntad; ahora es la
     /// misma, y no pueden divergir.
-    private func resolveTodaySlotsForWatch(routineId: String) async -> [StrengthSessionModel.PlanSlot] {
+    private func resolveTodaySlotsForWatch(routineId: String,
+                                           serving: ProgramServing.Context?) async
+        -> [StrengthSessionModel.PlanSlot] {
         await repo.seedTodaySlots(routineId: routineId, advice: repo.trainingAdvice,
-                                  inventory: plates.inventory)
+                                  inventory: plates.inventory, serving: serving)
     }
 }

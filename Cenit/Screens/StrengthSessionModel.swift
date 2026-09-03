@@ -298,6 +298,12 @@ final class StrengthSessionModel: ObservableObject {
     /// Strap HR captured during the session (FER-399), in memory only — fed by `AppModel.ingestHR` on the
     /// main actor. Drives avgHr/strain + the Keytel calorie estimate at finish; never persisted as a series.
     var hrSamples: [HRSample] = []
+    /// La semana del programa en la que se sirvió esta sesión, y si se sirvió LIGERA (ola 1 · E10,
+    /// FER-329). `nil` = no había programa: la columna se queda NULL, no un 0/false inventado. Se fijan
+    /// al arrancar, viajan en el snapshot de rescate y se guardan en `strengthSession` — desde ahí
+    /// `deload` convierte la sesión en frontera para `ProgressionMath` y la saca de `lastWorkSets`.
+    var programWeek: Int?
+    var deload: Bool?
     /// Whether the receipt's 0→value count-up already played (FER-715). A plain flag (not `@Published`, so
     /// setting it never re-renders): the receipt view sets it after animating, so the numerals count up only
     /// the first time the summary appears (at save), never when the session is re-opened. Dies with the session.
@@ -1243,7 +1249,8 @@ final class StrengthSessionModel: ObservableObject {
     func buildForSave(deviceId: String?, endTs: Int)
         -> (StrengthSession, [SetEntry], progressionOptOuts: Set<String>, notes: [ExerciseNote]) {
         let session = StrengthSession(id: id, routineId: routineId, startTs: startTs,
-                                      endTs: endTs, deviceId: deviceId)
+                                      endTs: endTs, deviceId: deviceId,
+                                      programWeek: programWeek, deload: deload)
         var entries: [SetEntry] = []
         var optedOut: Set<String> = []
         var notes: [ExerciseNote] = []
@@ -1322,7 +1329,8 @@ final class StrengthSessionModel: ObservableObject {
             currentRestTarget: currentRestTarget, currentRestMode: currentRestMode,
             timerStart: timerStart,
             paused: paused, pausedAccumulatedS: pausedAccumulatedS, pausedAt: pausedAt,
-            updatedTs: now, restOwnerSetId: restOwnerSetId, lastRestStartedAt: lastRestStartedAt)
+            updatedTs: now, restOwnerSetId: restOwnerSetId, lastRestStartedAt: lastRestStartedAt,
+            programWeek: programWeek, deload: deload)
     }
 
     /// Rebuild a live session from a persisted snapshot (FER-798). Re-derives `phase` from the rest state;
@@ -1380,6 +1388,10 @@ final class StrengthSessionModel: ObservableObject {
         model.paused = snap.paused
         model.pausedAccumulatedS = snap.pausedAccumulatedS
         model.pausedAt = snap.pausedAt
+        // Ola 1 · E10: la sesión rescatada sigue siendo la de la semana N y sigue siendo (o no) ligera
+        // — se guardó así antes del crash y tiene que guardarse así después.
+        model.programWeek = snap.programWeek
+        model.deload = snap.deload
         return model
     }
 
@@ -1397,6 +1409,11 @@ final class StrengthSessionModel: ObservableObject {
         /// B7 (FER-169): today's progression classification, for the live deload pill. Default nil so
         /// plan-less paths (templates, repeats) are untouched — same convention as `raise`.
         var progressionState: ProgressionState? = nil
+        /// Ola 1 · E10 (FER-329): en semana ligera con «menos series y peso», la bajada va sobre el
+        /// peso FINAL de la semilla (`earned ?? held ?? lastWeight`), porque «la última vez» gana al
+        /// plan y taparía un recorte que solo viajara en `re` (arq-B §⑤; gate /qa D1). El plan servido
+        /// (`re.sets`) ya viene rebajado, así que el cierre NO se aplica cuando la semilla cae a él.
+        var lightLoad: ((Double) -> Double)? = nil
     }
 
     static func make(routineId: String?, routineName: String, slots: [PlanSlot],
@@ -1423,7 +1440,8 @@ final class StrengthSessionModel: ObservableObject {
                 // the hero would promise «la subida DESDE 82,5» over a table sitting at 70.
                 let held = (type == .weightReps && slot.raise?.waiting == true) ? slot.raise?.fromKg : nil
                 let earned = (type == .weightReps && slot.raise?.waiting == false) ? slot.raise?.toKg : nil
-                let weight = earned ?? held ?? lastWeight ?? p.weightKg ?? 0
+                let seeded = earned ?? held ?? lastWeight
+                let weight = seeded.map { slot.lightLoad?($0) ?? $0 } ?? p.weightKg ?? 0
                 // E13/FER-94: with a rep range (e.g. 8-12), the cell opens at the TOP — «la última
                 // vez» still wins whenever it exists, exactly the fantasma rule above; the range top
                 // only enters as the plan's fallback, same tier as the fixed `p.reps` it replaces.

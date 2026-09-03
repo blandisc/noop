@@ -32,7 +32,11 @@ public enum TrainingWeeks {
     /// Fuerza `firstWeekday = 2` (lunes) sobre una copia del calendario del caller — el mismo
     /// criterio que `WorkoutHistoryScreen.weeklyVolumes`, pero como contrato del motor (no algo
     /// que cada caller deba recordar configurar).
-    private static func mondayFirst(_ calendar: Calendar) -> Calendar {
+    ///
+    /// Ola 1 · E10 (FER-329): pasa de `private` a `internal` porque `ProgramCalendar` cuenta semanas
+    /// con EXACTAMENTE el mismo criterio de lunes. Un solo oráculo del «¿dónde empieza la semana?»:
+    /// si mañana el dueño quisiera domingo, cambia aquí y cambia en los dos motores a la vez.
+    static func mondayFirst(_ calendar: Calendar) -> Calendar {
         var cal = calendar
         cal.firstWeekday = 2
         return cal

@@ -403,7 +403,9 @@ struct ExerciseDetailScreen: View {
         historyDaysAscending = historyDays.sorted { $0.ts < $1.ts }
 
         seriesCache = [
-            .oneRM: OneRepMax.dailySparkline(history.map {
+            // Ola 1 · E10: una semana ligera con peso rebajado es un valle artificial en la tendencia
+            // de 1RM; la sesión ligera es frontera también aquí (revisión Grok FER-329 H6).
+            .oneRM: OneRepMax.dailySparkline(history.filter { !$0.deload }.map {
                 (day: dayKey($0.startTs), weightKg: $0.weightKg, reps: $0.reps)
             }).map(\.estimatedKg),
             .volume: byDay { $0 + $1.weightKg * Double($1.reps) },

@@ -41,7 +41,7 @@ final class SeedTodaySlotsTests: XCTestCase {
         }
         try await repo.saveRoutine(r, exercises: exercises)
 
-        let slots = await repo.seedTodaySlots(routineId: r.id, advice: .planAsIs, inventory: [])
+        let slots = await repo.seedTodaySlots(routineId: r.id, advice: .planAsIs, inventory: [], serving: nil)
 
         XCTAssertEqual(slots.count, 2, "un slot por ejercicio")
         XCTAssertEqual(slots.map(\.re.exerciseId), ex.map(\.id), "en el orden de la rutina")
@@ -51,7 +51,7 @@ final class SeedTodaySlotsTests: XCTestCase {
     /// Rutina inexistente → sin slots, sin crash. El reloj cuenta con esto: `startTodayFromWrist`
     /// hace `guard !slots.isEmpty` antes de arrancar.
     func testRutinaInexistenteDaListaVacia() async throws {
-        let slots = await repo.seedTodaySlots(routineId: "no-existe", advice: .planAsIs, inventory: [])
+        let slots = await repo.seedTodaySlots(routineId: "no-existe", advice: .planAsIs, inventory: [], serving: nil)
         XCTAssertTrue(slots.isEmpty)
     }
 }

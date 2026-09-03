@@ -54,6 +54,20 @@ final class ProgressionPlannerTests: XCTestCase {
         XCTAssertEqual(on?.raise?.toKg, 102.5)
     }
 
+    /// Ola 1 · E10: tres fallos seguidos en semana ligera avisan el estancamiento sin proponer «bajar a».
+    func testLightWeekTurnsTheReactiveDeloadIntoAWarning() {
+        let history = [row(100, kg: 100, reps: 6, rpe: nil), row(200, kg: 100, reps: 6, rpe: nil),
+                       row(300, kg: 100, reps: 6, rpe: nil)]
+        let normal = ProgressionPlanner.evaluate(re: exercise(useRPE: false), history: history,
+                                                 inventory: [], equipment: "barbell", advice: .planAsIs)
+        guard case .deloading? = normal?.state else { return XCTFail("tres fallos → .deloading en semana normal") }
+        let light = ProgressionPlanner.evaluate(re: exercise(useRPE: false), history: history,
+                                                inventory: [], equipment: "barbell", advice: .planAsIs,
+                                                isLightWeek: true)
+        XCTAssertEqual(light?.state, .stalled(sessions: ProgressionMath.deloadStallThreshold))
+        XCTAssertNil(light?.raise)
+    }
+
     /// FER-85 stays on top of the rhythm: «Hoy ve leve» holds the earned raise, one tap away.
     func testEarlyRaiseIsStillHeldByTheVerdict() {
         let history = [row(100, kg: 100, reps: 8, rpe: 8), row(100, kg: 100, reps: 8, rpe: 8)]

@@ -41679,6 +41679,57 @@
         }
       }
     },
+    "The plan's end-of-cycle option isn't supported. Check the file and try again." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The plan's end-of-cycle option isn't supported. Check the file and try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La opción de fin de ciclo del plan no es compatible. Revisa el archivo e inténtalo de nuevo."
+          }
+        }
+      }
+    },
+    "The plan's light-week option isn't supported. Check the file and try again." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The plan's light-week option isn't supported. Check the file and try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La opción de semana ligera del plan no es compatible. Revisa el archivo e inténtalo de nuevo."
+          }
+        }
+      }
+    },
+    "The plan's number of weeks isn't supported: it must be between 4 and 8." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The plan's number of weeks isn't supported: it must be between 4 and 8."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El número de semanas del plan no es compatible, debe estar entre 4 y 8."
+          }
+        }
+      }
+    },
     "The plan's unit isn't supported: it must be kg or lb." : {
       "extractionState" : "manual",
       "localizations" : {

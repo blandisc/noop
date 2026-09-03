@@ -1648,7 +1648,12 @@ struct WorkoutSessionDetailScreen: View {
         let routineId: String? = dispRoutineId
         let routineName: String = dispRoutineName
         let planSlots: [StrengthSessionModel.PlanSlot] = slots
-        model.startStrengthSession(routineId: routineId, routineName: routineName, slots: planSlots)
+        // Ola 1 · E10: repetir un acta que se sirvió LIGERA repite su volumen recortado, así que la
+        // sesión nueva hereda la frontera (`deload`) y no cuenta como sesión normal para la progresión
+        // ni siembra «la última vez». Sin semana: no la sirvió el programa (revisión Grok FER-329 H3).
+        let inheritedDeload: Bool? = (fullSession?.deload == true) ? true : nil
+        model.startStrengthSession(routineId: routineId, routineName: routineName, slots: planSlots,
+                                   deload: inheritedDeload)
     }
 
     /// Delete from the detail: read the sets (so an undo can restore them), delete (the store recomputes
