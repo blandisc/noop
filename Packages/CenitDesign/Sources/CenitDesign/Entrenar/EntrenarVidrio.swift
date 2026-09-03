@@ -28,7 +28,7 @@ public enum LiquidTono: Sendable, Equatable, CaseIterable {
     /// `verde` es `verdeCarga` (identidad de carga), nunca `verdePrimario` (voz de marca).
     public var base: Color {
         switch self {
-        case .neutro: return .white
+        case .neutro: return LiquidTheme.dynamic(light: .white, dark: Color(hex: "#ECE9E0"))
         case .indigo: return LiquidColor.indigo
         case .cian:   return LiquidColor.cian
         case .verde:  return LiquidColor.verdeCarga
@@ -45,11 +45,11 @@ public enum LiquidTono: Sendable, Equatable, CaseIterable {
     /// `LiquidColor.tinta500` — ninguno de los dos es un hex nuevo.
     public var rotulo: Color {
         switch self {
-        case .neutro: return LiquidColor.tinta500
-        case .indigo: return Color(hex: "#514E86")
-        case .cian:   return Color(hex: "#136A78")
-        case .verde:  return Color(hex: "#0A6B4A")
-        case .rosa:   return Color(hex: "#93445A")
+        case .neutro: return LiquidTheme.dynamic(light: Color(hex: "#6F6857"), dark: Color(hex: "#A6A298"))  // = tinta500 en claro; más brillante en oscuro para AA sobre vidrio
+        case .indigo: return LiquidTheme.dynamic(light: Color(hex: "#514E86"), dark: Color(hex: "#C6C3F2"))
+        case .cian:   return LiquidTheme.dynamic(light: Color(hex: "#136A78"), dark: Color(hex: "#7FD0E0"))
+        case .verde:  return LiquidTheme.dynamic(light: Color(hex: "#0A6B4A"), dark: Color(hex: "#5FC79A"))
+        case .rosa:   return LiquidTheme.dynamic(light: Color(hex: "#93445A"), dark: Color(hex: "#E89BB0"))
         case .ambar:  return LiquidColor.atencionTexto
         }
     }
@@ -61,9 +61,16 @@ public enum LiquidTono: Sendable, Equatable, CaseIterable {
     /// el quinto y último hex nuevo del archivo). `neutro` no aparece como tesela en el mock (no
     /// hay «día sin familia» pintado); resuelve a `base` para no dejar el `switch` sin caso.
     public var tesela: Color {
+        // En claro: la tesela es el `base` del tono (texto blanco encima); ámbar usa un oscurecido.
+        // En oscuro: un relleno TEÑIDO OSCURO por tono que sostiene texto blanco ≥3:1 (el gemelo claro
+        // del dato es demasiado claro para blanco encima). B3/FER-351.
         switch self {
-        case .ambar: return Color(hex: "#A0500F")
-        default:     return base
+        case .neutro: return base
+        case .indigo: return LiquidTheme.dynamic(light: Color(hex: "#5D5A9E"), dark: Color(hex: "#4E4A85"))
+        case .cian:   return LiquidTheme.dynamic(light: Color(hex: "#147C8C"), dark: Color(hex: "#17677A"))
+        case .verde:  return LiquidTheme.dynamic(light: Color(hex: "#3F7A5E"), dark: Color(hex: "#2A7358"))
+        case .rosa:   return LiquidTheme.dynamic(light: Color(hex: "#B85068"), dark: Color(hex: "#9A4A60"))
+        case .ambar:  return LiquidTheme.dynamic(light: Color(hex: "#A0500F"), dark: Color(hex: "#7A3D0C"))
         }
     }
 }
