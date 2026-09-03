@@ -1,5 +1,5 @@
 import SwiftUI
-#if canImport(UIKit)
+#if canImport(UIKit) && !os(watchOS)
 import UIKit
 #endif
 
@@ -26,7 +26,7 @@ public enum LiquidCampoTeclado: Sendable {
     case twitter
     case webSearch
 
-    #if canImport(UIKit)
+    #if canImport(UIKit) && !os(watchOS)
     fileprivate var uiKit: UIKeyboardType {
         switch self {
         case .default: return .default
@@ -101,7 +101,7 @@ public struct LiquidCampoTexto: View {
         self.onSubmit = onSubmit
     }
 
-    #if canImport(UIKit)
+    #if canImport(UIKit) && !os(watchOS)
     /// Conveniencia que acepta `UIKeyboardType` directo (call-sites iOS).
     public init(
         _ titulo: String?,
@@ -189,14 +189,14 @@ public struct LiquidCampoTexto: View {
                     .foregroundStyle(LiquidColor.tinta900)
             }
         }
-        #if canImport(UIKit)
+        #if canImport(UIKit) && !os(watchOS)
         .keyboardType(teclado.uiKit)
         #endif
         .applyOnSubmit(onSubmit)
     }
 }
 
-#if canImport(UIKit)
+#if canImport(UIKit) && !os(watchOS)
 private extension LiquidCampoTeclado {
     init(uiKit: UIKeyboardType) {
         switch uiKit {
@@ -265,7 +265,7 @@ private extension View {
                          a11y: "Name")
         LiquidCampoTexto(nil, texto: .constant("72"),
                          placeholder: "optional",
-                         teclado: .numberPad,
+                         teclado: LiquidCampoTeclado.numberPad,
                          a11y: "Average heart rate",
                          sufijo: "bpm")
         LiquidCampoTexto("Notes", texto: .constant(""),
