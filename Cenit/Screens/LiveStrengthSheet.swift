@@ -78,6 +78,8 @@ struct LiveStrengthSheet: View {
     @State private var receiptCountUp = false
     /// Ola 1 · E3: confirmed session-effort answer on the receipt (`nil` = not confirmed yet).
     @State private var receiptEffortAnswer: Double? = nil
+    /// Ola 1 · E3 (gate /qa O3): dos toques rápidos no compiten por el store — el anterior se cancela.
+    @State private var receiptEffortWrite: Task<Void, Never>? = nil
     /// Prefill shown as sugerida (dotted) until the user confirms, changes, or clears.
     @State private var receiptEffortPrefill: Double? = nil
     /// User explicitly deselected — do not resurrect the prefill suggestion.
@@ -1551,8 +1553,10 @@ struct LiveStrengthSheet: View {
                 }
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Text(estimated ? "Effort · estimated" : "Effort"))
-            .accessibilityValue(Text(Self.strainAccessibilityValue(value, scaleSuffix: format.scaleSuffix)))
+            .accessibilityLabel(Text(estimated
+                ? String(localized: "Estimated effort, \(raw) of \(String(Int(LoadScale.max)))")
+                : String(localized: "Effort")))
+            .accessibilityValue(Text(estimated ? "" : Self.strainAccessibilityValue(value, scaleSuffix: format.scaleSuffix)))
         } else if receiptShowsDashHero(s) {
             VStack(alignment: .leading, spacing: LiquidSpace.s050) {
                 Text("Effort").liquidLabel().foregroundStyle(LiquidColor.tinta500)
@@ -1560,8 +1564,6 @@ struct LiveStrengthSheet: View {
                     .font(LiquidType.displayXL).tracking(LiquidType.displayXLTracking)
                     .foregroundStyle(LiquidColor.ambar)
                     .lineLimit(1).minimumScaleFactor(0.6)
-                Text("Without an answer it isn't estimated.")
-                    .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text("Effort"))
@@ -1595,10 +1597,14 @@ struct LiveStrengthSheet: View {
                   let p = receiptEffortPrefill else { return nil }
             return scale.firstIndex(of: p)
         }()
+        // VoiceOver (A9): «8, de 10, esfuerzo duro, te sobraban ~2 reps, sugerido/estimado».
         let calificador: String? = {
-            if seleccion != nil { return estimated ? String(localized: "Estimated") : nil }
-            if sugerida != nil { return String(localized: "suggested") }
-            return nil
+            let spokenFor: Double? = receiptEffortAnswer ?? (sugerida != nil ? receiptEffortPrefill : nil)
+            guard let v = spokenFor else { return nil }
+            var parts = [String(localized: "of 10"), RPESheet.spoken(v)].filter { !$0.isEmpty }
+            if seleccion != nil, estimated { parts.append(String(localized: "Estimated").lowercased()) }
+            if seleccion == nil, sugerida != nil { parts.append(String(localized: "suggested")) }
+            return parts.joined(separator: ", ")
         }()
         return VStack(alignment: .leading, spacing: LiquidSpace.s200) {
             Text("How hard was it?")
@@ -1615,14 +1621,15 @@ struct LiveStrengthSheet: View {
                 guard scale.indices.contains(index) else { return }
                 let value = scale[index]
                 EntrenarHaptic.serieCompletada.play()
+                receiptEffortWrite?.cancel()
                 if receiptEffortAnswer == value {
                     receiptEffortAnswer = nil
                     receiptEffortCleared = true
-                    Task { await model.updateStrengthSessionEffort(rpe: nil, source: nil) }
+                    receiptEffortWrite = Task { await model.updateStrengthSessionEffort(rpe: nil, source: nil) }
                 } else {
                     receiptEffortAnswer = value
                     receiptEffortCleared = false
-                    Task { await model.updateStrengthSessionEffort(rpe: value, source: .answered) }
+                    receiptEffortWrite = Task { await model.updateStrengthSessionEffort(rpe: value, source: .answered) }
                 }
             }
             if sugerida != nil {

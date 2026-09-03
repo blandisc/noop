@@ -392,7 +392,9 @@ extension AppModel {
         let cardiovascularStrain = Self.measuredStrain(hrSamples: session.hrSamples,
                                                        elapsedSeconds: durationS,
                                                        hrMax: Double(profile.hrMax), sex: profile.sex)
-            ?? record.strain
+            // Ola 1 · E3 (gate /qa D1): una carga ESTIMADA por esfuerzo nunca se disfraza de costo
+            // cardiovascular — sin pulso, el bloque de costo no se pinta (D-Q13).
+            ?? (record.strainSource == .rpe ? nil : record.strain)
 
         // Resolve exercises (bundled catalog + user-created) for names + muscles.
         let custom = (try? await store.customExercises()) ?? []
@@ -497,7 +499,7 @@ extension AppModel {
         let recoverySeries = repo.days.map(\.recovery)
         // Same source as `costBand` on the same card: the pulse when it covered the session, else the
         // session's load — never one line from the pulse and the next from the estimate (gate /qa D4).
-        let costTomorrowPct: Int? = (cardiovascularStrain ?? record.strain).flatMap { strain in
+        let costTomorrowPct: Int? = cardiovascularStrain.flatMap { strain in
             RecoveryForecast.compute(recovery: recoverySeries, sessionStrain: strain)
                 .map { Int($0.estimate.rounded()) }
         }

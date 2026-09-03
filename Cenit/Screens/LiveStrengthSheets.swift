@@ -126,6 +126,37 @@ struct RPESheet: View {
         default:  return ""   // 7.5 / 8.5: no descriptor of their own, just the subtitle
         }
     }
+    /// The spoken form of a rating for VoiceOver (ola 1 · E3, A9): «esfuerzo duro, te sobraban ~2 reps».
+    /// Same keys as `descriptor`/`subtitle`, resolved through the catalog; empty pieces are skipped.
+    static func spoken(_ v: Double) -> String {
+        let d: String = {
+            switch v {
+            case 6:   return String(localized: "Comfortable")
+            case 7:   return String(localized: "Moderate effort")
+            case 8:   return String(localized: "Hard effort")
+            case 9:   return String(localized: "Very hard")
+            case 9.5: return String(localized: "Near failure")
+            case 10:  return String(localized: "Maximum")
+            default:  return ""
+            }
+        }()
+        let s: String = {
+            switch v {
+            case 6:   return String(localized: "You could've done 4+ more reps")
+            case 7:   return String(localized: "~3 more reps")
+            case 7.5: return String(localized: "~2-3 more reps")
+            case 8:   return String(localized: "You had ~2 reps left")
+            case 8.5: return String(localized: "~1-2 more reps")
+            case 9:   return String(localized: "~1 more rep")
+            case 9.5: return String(localized: "Near failure")
+            case 10:  return String(localized: "To failure")
+            default:  return ""
+            }
+        }()
+        var parts: [String] = []
+        for piece in [d, s] where !piece.isEmpty && !parts.contains(piece) { parts.append(piece) }
+        return parts.joined(separator: ", ")
+    }
     private static func subtitle(_ v: Double) -> LocalizedStringKey {
         switch v {
         case 6:   return "You could've done 4+ more reps"

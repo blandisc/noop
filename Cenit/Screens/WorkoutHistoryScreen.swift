@@ -1759,12 +1759,11 @@ struct WorkoutSessionDetailScreen: View {
                          caption: estimated ? "Tap to change it" : "What this session cost your body.")
                 if estimated {
                     HStack(spacing: LiquidSpace.s200) {
-                        LiquidStatePill(valencia: String(localized: "Estimated"),
+                        // Una sola vez «estimado» por superficie (A6): importada → la pastilla lo dice todo.
+                        LiquidStatePill(valencia: fullSession?.source != nil
+                                            ? String(localized: "Estimated from your imported history")
+                                            : String(localized: "Estimated"),
                                         tono: LiquidColor.atencionTexto)
-                        if fullSession?.source != nil {
-                            Text("Estimated from your imported history")
-                                .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
-                        }
                         Spacer(minLength: 0)
                     }
                 }
@@ -1928,19 +1927,23 @@ struct WorkoutSessionDetailScreen: View {
             tono: LiquidColor.tinta10)
     }
 
-    /// «FUENTE» — measured with the band (journal join) vs estimated; honest, quiet, never a guess.
-    private var sourceBadge: some View {
-        HStack(spacing: LiquidSpace.s200) {
-            Text("Source").liquidLabel().foregroundStyle(LiquidColor.tinta500)
-            if journalRow != nil {
+    /// «FUENTE» — measured (journal join, or a pulse that covered the session) vs nothing. An effort-
+    /// estimated session says «estimado» ONCE, in its own pill, so the badge stays out (ola 1 · E3, A6).
+    @ViewBuilder private var sourceBadge: some View {
+        if Self.sourceBadgeIsMeasured(journal: journalRow != nil, strainSource: fullSession?.strainSource) {
+            HStack(spacing: LiquidSpace.s200) {
+                Text("Source").liquidLabel().foregroundStyle(LiquidColor.tinta500)
                 LiquidOrigenBadge(String(localized: "Measured on device"),
                                   tono: LiquidColor.verdePrimario)
-            } else {
-                LiquidOrigenBadge(String(localized: "Estimated"), tono: nil)
+                Spacer(minLength: 0)
             }
-            Spacer(minLength: 0)
+            .accessibilityElement(children: .combine)
         }
-        .accessibilityElement(children: .combine)
+    }
+
+    /// The single rule behind the FUENTE badge: shown only when the number was MEASURED.
+    static func sourceBadgeIsMeasured(journal: Bool, strainSource: StrainSource?) -> Bool {
+        journal || strainSource == .hr
     }
 
     /// Match this strength session to a journal workout by interval overlap
