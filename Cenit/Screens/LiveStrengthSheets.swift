@@ -210,7 +210,10 @@ struct SessionEffortRateSheet: View {
                     seleccion: selected.flatMap { SessionRPE.row.firstIndex(of: $0) },
                     tono: .ambar,
                     a11yEtiqueta: String(localized: "Session effort"),
-                    a11yCalificador: selected == nil ? nil : String(localized: "Estimated"),
+                    a11yCalificador: selected.map { v in
+                        [String(localized: "of 10"), RPESheet.spoken(v), String(localized: "Estimated").lowercased()]
+                            .filter { !$0.isEmpty }.joined(separator: ", ")
+                    },
                     a11ySinCalificar: String(localized: "unrated")
                 ) { index in
                     guard SessionRPE.row.indices.contains(index) else { return }

@@ -1554,7 +1554,7 @@ struct LiveStrengthSheet: View {
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text(estimated
-                ? String(localized: "Estimated effort, \(raw) of \(String(Int(LoadScale.max)))")
+                ? String(localized: "Estimated effort, \(raw) of \(String(Int(StrainScorer.maxStrain)))")
                 : String(localized: "Effort")))
             .accessibilityValue(Text(estimated ? "" : Self.strainAccessibilityValue(value, scaleSuffix: format.scaleSuffix)))
         } else if receiptShowsDashHero(s) {

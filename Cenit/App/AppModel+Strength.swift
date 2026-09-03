@@ -546,6 +546,8 @@ extension AppModel {
                                                 trimpPerAU: StrengthLoadCalibration.current,
                                                 hrMax: Double(profile.hrMax), sex: profile.sex)
         do {
+            // Gate /qa O3: dos toques rápidos — la escritura anterior, ya cancelada, no debe llegar tarde.
+            guard !Task.isCancelled else { return }
             try await repo.updateSessionEffort(sessionId: sessionId,
                                                sessionRpe: rpe,
                                                sessionRpeSource: rpe == nil ? nil : source,
