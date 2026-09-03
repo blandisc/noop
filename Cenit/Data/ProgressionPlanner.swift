@@ -29,16 +29,20 @@ enum ProgressionPlanner {
     /// that weight (back-off sets at lighter loads don't gate the raise).
     static func pastSessions(from rows: [WorkSetHistoryRow])
         -> [(startTs: Int, session: ProgressionMath.PastSession)] {
-        var grouped: [Int: [(weightKg: Double, reps: Int, optedOut: Bool)]] = [:]
-        for r in rows { grouped[r.startTs, default: []].append((r.weightKg, r.reps, r.optedOut)) }
+        var grouped: [Int: [(weightKg: Double, reps: Int, optedOut: Bool, rpe: Double?)]] = [:]
+        for r in rows { grouped[r.startTs, default: []].append((r.weightKg, r.reps, r.optedOut, r.rpe)) }
         return grouped.keys.sorted().map { ts in
             let sets = grouped[ts]!
             let top = sets.map(\.weightKg).max() ?? 0
-            let repsAtTop = sets.filter { abs($0.weightKg - top) < 0.0001 }.map(\.reps)
-            // FER-835: the «Volver a X» mark is per (session, exercise), so every row of the session
-            // carries it — any true means the whole session is invisible to the cycle.
-            return (ts, ProgressionMath.PastSession(workingKg: top, workSetReps: repsAtTop,
-                                                    optedOut: sets.contains { $0.optedOut }))
+            let atTop = sets.filter { abs($0.weightKg - top) < 0.0001 }
+            // Ola 1 · E4: the per-set effort rides ALONGSIDE the reps, same sets and same order, so a
+            // missing rating reads as `.unknown` instead of shifting the rule onto the wrong set.
+            return (ts, ProgressionMath.PastSession(workingKg: top, workSetReps: atTop.map(\.reps),
+                                                    // FER-835: the «Volver a X» mark is per (session,
+                                                    // exercise), so every row of the session carries it
+                                                    // — any true makes the session invisible to the cycle.
+                                                    optedOut: sets.contains { $0.optedOut },
+                                                    workSetRPE: atTop.map(\.rpe)))
         }
     }
 
@@ -74,7 +78,8 @@ enum ProgressionPlanner {
             sessionsToAdvance: re.progressionSessions, incrementKg: increment,
             deloadWarnOnly: re.progressionDeload == .warn,
             recoveryReason: nil,
-            deferRaise: honoursRecovery && !TrainingRegulation.allowsRaise(advice))
+            deferRaise: honoursRecovery && !TrainingRegulation.allowsRaise(advice),
+            useRPE: re.progressionUseRPE)
         let state = ProgressionMath.classify(input)
         let newKg: Double
         let waiting: Bool

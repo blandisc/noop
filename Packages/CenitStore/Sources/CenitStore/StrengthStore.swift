@@ -631,6 +631,86 @@ extension CenitStore {
         }
     }
 
+    // MARK: - Session-effort calibration (ola 1 · E2)
+
+    /// One session that can serve as a CALIBRATION PAIR for the session-effort scale: it carries a
+    /// rating AND a pulse series. Whether the pulse is good enough (`HRCoverage`) and what TRIMP it
+    /// adds up to is decided by the caller — that math lives in StrandAnalytics, which this package
+    /// deliberately does not depend on.
+    public struct StrengthCalibrationCandidate: Sendable, Equatable {
+        public var sessionId: String
+        public var startTs: Int
+        public var endTs: Int
+        public var sessionRpe: Double
+        public var hrSamples: [HRSample]
+        public init(sessionId: String, startTs: Int, endTs: Int, sessionRpe: Double,
+                    hrSamples: [HRSample]) {
+            self.sessionId = sessionId; self.startTs = startTs; self.endTs = endTs
+            self.sessionRpe = sessionRpe; self.hrSamples = hrSamples
+        }
+    }
+
+    /// The most recent sessions that can calibrate the session-effort scale, newest first: a finished
+    /// session with a rating AND at least one stored HR sample. Sessions without a rating (never
+    /// answered) or without any pulse can never form a pair, so they are filtered in SQL rather than
+    /// carried into memory. The 0.8-coverage gate is applied by the caller over `hrSamples` — the
+    /// pulse is returned WITH each candidate so a single read serves the whole fit.
+    ///
+    /// `limit` bounds the samples pulled into memory (each session is at most a few thousand rows)
+    /// AND ends the refit ladder: the count the caller gates on can never exceed it, so with 40 the
+    /// scale is refitted at 5 → 10 → 20 → 40 pairs and then stays — it has matured (gate
+    /// /estadistico FER-325 #1, 2026-09-02).
+    public func strengthCalibrationPairs(limit: Int = 40) async throws -> [StrengthCalibrationCandidate] {
+        try syncRead { db in
+            let heads = try Row.fetchAll(db, sql: """
+                SELECT id, startTs, endTs, sessionRpe FROM strengthSession
+                WHERE endTs IS NOT NULL AND sessionRpe IS NOT NULL
+                  AND EXISTS (SELECT 1 FROM strengthHrSample WHERE sessionId = strengthSession.id)
+                ORDER BY startTs DESC LIMIT ?
+                """, arguments: [limit])
+            return try heads.map { r in
+                let id: String = r["id"]
+                let samples = try Row.fetchAll(db, sql:
+                    "SELECT ts, bpm FROM strengthHrSample WHERE sessionId = ? ORDER BY ts ASC",
+                    arguments: [id]).map { HRSample(ts: $0["ts"], bpm: $0["bpm"]) }
+                return StrengthCalibrationCandidate(sessionId: id, startTs: r["startTs"],
+                                                    endTs: r["endTs"], sessionRpe: r["sessionRpe"],
+                                                    hrSamples: samples)
+            }
+        }
+    }
+
+    /// Re-scale every ESTIMATED session onto a new `trimpPerAU`, in ONE write. Only rows whose load
+    /// came from the rating (`strainSource == 'rpe'`) are touched — a measured session is a
+    /// measurement and never moves. `strain` is supplied by the caller (the map lives in
+    /// StrandAnalytics); a `nil` from it leaves that row alone. Returns the number of rows rewritten.
+    ///
+    /// Why persist at all: the receipt, the history and Tendencias must all show the same number for
+    /// the same session, so a recalibration rewrites the stored value instead of being applied on read.
+    @discardableResult
+    public func recomputeEstimatedStrain(
+        trimpPerAU: Double,
+        strain: @Sendable (_ durationS: Int, _ rpe: Double) -> Double?
+    ) async throws -> Int {
+        try syncWrite { db in
+            let rows = try Row.fetchAll(db, sql: """
+                SELECT id, startTs, endTs, sessionRpe FROM strengthSession
+                WHERE strainSource = 'rpe' AND endTs IS NOT NULL AND sessionRpe IS NOT NULL
+                """)
+            var rewritten = 0
+            for r in rows {
+                let startTs: Int = r["startTs"], endTs: Int = r["endTs"]
+                let rpe: Double = r["sessionRpe"]
+                guard let value = strain(endTs - startTs, rpe) else { continue }
+                try db.execute(sql:
+                    "UPDATE strengthSession SET strain = ?, trimpPerAU = ? WHERE id = ?",
+                    arguments: [value, trimpPerAU, r["id"] as String])
+                rewritten += 1
+            }
+            return rewritten
+        }
+    }
+
     /// Deletes all HR samples for a session (discard path — the session row itself is dropped
     /// separately, or by `deleteSession`, which also clears this table).
     public func deleteStrengthHR(sessionId: String) async throws {

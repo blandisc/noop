@@ -1336,4 +1336,84 @@ final class StrengthStoreTests: XCTestCase {
         XCTAssertEqual(volumes["s1"]?.volumeKg, 80 * 8 + 64 * 10)
         XCTAssertEqual(volumes["s1"]?.setCount, 2)
     }
+
+    // MARK: - Ola 1 · E2 · provenance + session-effort calibration
+
+    /// The v42 provenance columns are written and read back as one piece — a session whose load came
+    /// from the rating must never come back looking measured.
+    func testSessionRoundTripsProvenanceColumns() async throws {
+        let store = try await CenitStore.inMemory()
+        let estimated = StrengthSession(id: "s1", startTs: 1000, endTs: 4120, strain: 10.95,
+                                        strainSource: .rpe, sessionRpe: 8,
+                                        sessionRpeSource: .prefill, trimpPerAU: 0.29)
+        let measured = StrengthSession(id: "s2", startTs: 9000, endTs: 12000, strain: 9.2,
+                                       strainSource: .hr, sessionRpe: 7, sessionRpeSource: .answered)
+        try await store.saveSession(estimated, sets: [])
+        try await store.saveSession(measured, sets: [])
+
+        let back = try await store.recentSessions(limit: 10)
+        let s1 = back.first { $0.id == "s1" }!
+        XCTAssertEqual(s1.strainSource, .rpe)
+        XCTAssertEqual(s1.sessionRpe, 8)
+        XCTAssertEqual(s1.sessionRpeSource, .prefill)
+        XCTAssertEqual(s1.trimpPerAU!, 0.29, accuracy: 1e-9)
+        let s2 = back.first { $0.id == "s2" }!
+        XCTAssertEqual(s2.strainSource, .hr)
+        XCTAssertEqual(s2.sessionRpeSource, .answered)
+        XCTAssertNil(s2.trimpPerAU)
+    }
+
+    /// A calibration pair needs BOTH halves: a rating and a pulse. Sessions missing either can never
+    /// form one, so they don't even leave SQL; the 0.8-coverage gate is the caller's, over the
+    /// samples returned here.
+    func testCalibrationPairsRequireCoverageAndRpe() async throws {
+        let store = try await CenitStore.inMemory()
+        try await store.saveSession(StrengthSession(id: "ok", startTs: 1000, endTs: 4000,
+                                                    strain: 10.9, strainSource: .rpe, sessionRpe: 8),
+                                    sets: [])
+        try await store.saveSession(StrengthSession(id: "noRpe", startTs: 5000, endTs: 8000,
+                                                    strain: 9.2, strainSource: .hr), sets: [])
+        try await store.saveSession(StrengthSession(id: "noHR", startTs: 9000, endTs: 12000,
+                                                    strain: 10.0, strainSource: .rpe, sessionRpe: 9),
+                                    sets: [])
+        try await store.saveSession(StrengthSession(id: "open", startTs: 13000, sessionRpe: 9), sets: [])
+        let pulse = (0...600).map { HRSample(ts: 1000 + $0, bpm: 130) }
+        try await store.appendStrengthHR(sessionId: "ok", samples: pulse)
+        try await store.appendStrengthHR(sessionId: "noRpe", samples: pulse)
+        try await store.appendStrengthHR(sessionId: "open", samples: pulse)
+
+        let pairs = try await store.strengthCalibrationPairs()
+        XCTAssertEqual(pairs.map(\.sessionId), ["ok"])
+        XCTAssertEqual(pairs[0].sessionRpe, 8)
+        XCTAssertEqual(pairs[0].hrSamples.count, pulse.count, "the pulse rides along for the coverage gate")
+        XCTAssertEqual(pairs[0].endTs - pairs[0].startTs, 3000)
+    }
+
+    /// A recalibration rewrites the ESTIMATED sessions onto the new scale, in one write. A measured
+    /// session is a measurement: it never moves.
+    func testRecomputeEstimatedStrainRewritesOnlyRpeSessions() async throws {
+        let store = try await CenitStore.inMemory()
+        try await store.saveSession(StrengthSession(id: "est", startTs: 0, endTs: 3000, strain: 10.9,
+                                                    strainSource: .rpe, sessionRpe: 8,
+                                                    trimpPerAU: 0.29), sets: [])
+        try await store.saveSession(StrengthSession(id: "meas", startTs: 5000, endTs: 8000, strain: 9.2,
+                                                    strainSource: .hr, sessionRpe: 8), sets: [])
+        try await store.saveSession(StrengthSession(id: "legacy", startTs: 9000, endTs: 12000,
+                                                    strain: 8.0), sets: [])
+
+        let rewritten = try await store.recomputeEstimatedStrain(trimpPerAU: 0.20) { durationS, rpe in
+            XCTAssertEqual(durationS, 3000)
+            XCTAssertEqual(rpe, 8)
+            return 9.5
+        }
+        XCTAssertEqual(rewritten, 1)
+
+        let back = try await store.recentSessions(limit: 10)
+        let est = back.first { $0.id == "est" }!
+        XCTAssertEqual(est.strain!, 9.5, accuracy: 1e-9)
+        XCTAssertEqual(est.trimpPerAU!, 0.20, accuracy: 1e-9)
+        XCTAssertEqual(back.first { $0.id == "meas" }!.strain!, 9.2, accuracy: 1e-9)
+        XCTAssertEqual(back.first { $0.id == "legacy" }!.strain!, 8.0, accuracy: 1e-9)
+        XCTAssertNil(back.first { $0.id == "legacy" }!.trimpPerAU)
+    }
 }

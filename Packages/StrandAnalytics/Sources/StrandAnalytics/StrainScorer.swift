@@ -169,6 +169,18 @@ public enum StrainScorer {
         return (value * 100).rounded() / 100
     }
 
+    /// Exact inverse of `trimpToStrain`: the TRIMP-like load a 0–21 strain stands for.
+    /// `strain ≤ 0` → 0. Public (ola 1 · E2) because the session-RPE calibration and the per-day
+    /// overlay both have to add loads in TRIMP space, OUTSIDE `ReadinessEngine` — which keeps its
+    /// `strainToLoad` as a one-line forwarder so there is exactly one copy of the inverse.
+    ///
+    /// Note `trimpToStrain` rounds to 2 dp, so the round trip is exact only to ~0.21 % relative
+    /// (0.005 · lnD / 21); compare with a RELATIVE tolerance, never ±1e-6 (gate estadístico H8).
+    public static func strainToTrimp(_ strain: Double, denominator: Double = strainDenominator) -> Double {
+        guard strain > 0 else { return 0 }
+        return max(0, exp(strain * log(denominator) / maxStrain) - 1.0)
+    }
+
     // MARK: - Denominator calibration
 
     /// Calibrate D from (TRIMP, reference_strain) pairs via the through-origin

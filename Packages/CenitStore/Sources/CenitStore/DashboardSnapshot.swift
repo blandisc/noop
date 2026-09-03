@@ -1,5 +1,6 @@
 import Foundation
 import GRDB
+import StrandTraining
 
 // DashboardSnapshot.swift — FER-970 (R-03). Everything `Repository.performRefresh` used to read in
 // ~13 sequential actor round-trips (each with its own hop + read transaction + WAL snapshot) is
@@ -59,8 +60,37 @@ public struct DashboardSnapshot: Sendable {
     public var sleepConsistency: [MetricPoint] = []
     public var sleepNeed: [MetricPoint] = []
     public var sleepDebt: [MetricPoint] = []
+    /// Ola 1 · E2: the finished Cénit strength sessions in the window, so the assembler can overlay
+    /// their load onto the daily series (`SourceFusion.overlayStrengthLoad`). Read here, in the same
+    /// transaction as everything else, so the overlay is cross-table consistent by construction.
+    public var strengthLoads: [StrengthSessionLoad] = []
+    /// Ola 1 · E2: the spans of the Apple workouts in the window — a strength session that OVERLAPS
+    /// one of these is probably the same training Apple already counted, so the day takes the max
+    /// instead of double-counting. Gated on `includeApple`, like every other Apple read.
+    public var appleWorkouts: [WorkoutSpan] = []
 
     public init() {}
+}
+
+/// A finished Cénit strength session, reduced to what the daily-load overlay needs (ola 1 · E2).
+public struct StrengthSessionLoad: Sendable, Equatable {
+    public var startTs: Int
+    public var endTs: Int
+    /// The session's 0–21 load; `nil` = trained, load unknown (no pulse, no rating).
+    public var strain: Double?
+    /// Where `strain` came from. `nil` alongside a non-nil `strain` = a pre-v42 row = measured.
+    public var strainSource: StrainSource?
+    public init(startTs: Int, endTs: Int, strain: Double?, strainSource: StrainSource?) {
+        self.startTs = startTs; self.endTs = endTs
+        self.strain = strain; self.strainSource = strainSource
+    }
+}
+
+/// The wall-clock span of one Apple workout (ola 1 · E2).
+public struct WorkoutSpan: Sendable, Equatable {
+    public var startTs: Int
+    public var endTs: Int
+    public init(startTs: Int, endTs: Int) { self.startTs = startTs; self.endTs = endTs }
 }
 
 extension CenitStore {
@@ -107,6 +137,13 @@ extension CenitStore {
                 snap.sleepDebt = try Self.fetchMetricSeries(db, deviceId: req.strapDeviceId,
                                                             key: "sleep_debt_min",
                                                             from: req.fromDay, to: req.toDay)
+            }
+            // Ola 1 · E2: strength sessions are Cénit's own — never gated on a source mode — plus the
+            // Apple workout spans the overlay needs to tell «the same training» from «extra work».
+            snap.strengthLoads = try Self.fetchStrengthLoads(db, from: req.fromTs, to: req.toTs)
+            if req.includeApple {
+                snap.appleWorkouts = try Self.fetchWorkoutSpans(db, deviceId: req.appleDeviceId,
+                                                                from: req.fromTs, to: req.toTs)
             }
             return snap
         }
@@ -166,6 +203,29 @@ extension CenitStore {
                            basalKcal: $0["basalKcal"], vo2max: $0["vo2max"], avgHr: $0["avgHr"],
                            maxHr: $0["maxHr"], walkingHr: $0["walkingHr"], weightKg: $0["weightKg"])
             }
+    }
+
+    static func fetchStrengthLoads(_ db: Database, from: Int, to: Int) throws -> [StrengthSessionLoad] {
+        try Row.fetchAll(db, sql: """
+            SELECT startTs, endTs, strain, strainSource FROM strengthSession
+            WHERE endTs IS NOT NULL AND startTs >= ? AND startTs <= ?
+            ORDER BY startTs ASC
+            """, arguments: [from, to])
+            .map {
+                StrengthSessionLoad(startTs: $0["startTs"], endTs: $0["endTs"], strain: $0["strain"],
+                                    strainSource: ($0["strainSource"] as String?)
+                                        .flatMap(StrainSource.init(rawValue:)))
+            }
+    }
+
+    static func fetchWorkoutSpans(_ db: Database, deviceId: String,
+                                  from: Int, to: Int) throws -> [WorkoutSpan] {
+        try Row.fetchAll(db, sql: """
+            SELECT startTs, endTs FROM workout
+            WHERE deviceId = ? AND endTs >= ? AND startTs <= ?
+            ORDER BY startTs ASC
+            """, arguments: [deviceId, from, to])
+            .map { WorkoutSpan(startTs: $0["startTs"], endTs: $0["endTs"]) }
     }
 
     static func fetchMetricSeries(_ db: Database, deviceId: String, key: String,

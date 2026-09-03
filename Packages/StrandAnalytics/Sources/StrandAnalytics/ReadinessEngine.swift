@@ -634,9 +634,9 @@ public enum ReadinessEngine {
     /// of StrainScorer's `21·ln(TRIMP+1)/ln(D)` map) so ACWR and monotony run on a
     /// dose linear in physiological load. For imported strains on a comparable 0–21
     /// log scale this is a consistent linearization, not an exact TRIMP recovery.
+    /// Forwards to `StrainScorer.strainToTrimp` — the ONE copy of the inverse (ola 1 · E2 made it
+    /// public so the session-RPE overlay adds loads on the same axis). Numerically unchanged.
     static func strainToLoad(_ strain: Double) -> Double {
-        guard strain > 0 else { return 0 }
-        let lnD = log(StrainScorer.strainDenominator)
-        return max(0, exp(strain * lnD / StrainScorer.maxStrain) - 1.0)
+        StrainScorer.strainToTrimp(strain)
     }
 }

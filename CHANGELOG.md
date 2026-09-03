@@ -23,6 +23,31 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 - Diseño (FER-339): una pieza por rol en el catálogo (toast de error de guardado, pastilla de estado, selector de periodo, campo de texto `LiquidCampoTexto`, aviso Liquid; sin `NoteStrip`; toolbar de Ajustes al `fondoAlto`).
 
+### Ola 1 de Entrenar · ritmo «según reps en reserva» (FER-326)
+- La regla de subida gana un ritmo: en un ejercicio con el interruptor encendido, terminar la sesión con
+  reps de sobra (esfuerzo 8 o menos) adelanta la subida a una sola sesión; llegar al límite (9,5 o más)
+  no suma al ciclo, pero tampoco lo rompe.
+- Y no te congela: tras tres sesiones seguidas al límite, las tres cuentan como normales. Nunca baja el
+  peso por esfuerzo — para eso está no llegar a las reps.
+- El veredicto sigue mandando encima: una subida adelantada se retiene igual en un día de «Hoy ve leve».
+- Sin cambios en ninguna rutina existente: el interruptor nace apagado y, apagado, la regla es idéntica
+  a la de siempre. Un ejercicio sin RPE en sus series también se comporta igual que antes.
+
+### Ola 1 de Entrenar · la carga sin reloj (FER-325)
+- Una sesión de fuerza sin reloj ya cuenta. Antes, un día en el que entrenaste sin pulso se leía como
+  descanso — un cero — y tiraba tu carga hacia abajo; ahora los minutos y el esfuerzo de la sesión se
+  convierten a la misma escala 0–21 y entran a Carga y al ACWR, etiquetados como estimados. El
+  esfuerzo lo respondes tú al cerrar la sesión: esa pregunta llega con FER-330 y, hasta entonces, la
+  carga sigue saliendo del pulso (o queda sin estimar).
+- Si entrenaste y no hay con qué estimar la carga, el día se queda **sin dato** en vez de contarse como
+  descanso: no sabemos cuánto, pero sabemos que no descansaste.
+- El pulso ya no cuenta como «medido» solo por durar: hace falta que cubra al menos el 80 % de la
+  sesión. Con el reloj a medias, la sesión se estima por esfuerzo en vez de guardar un número corto.
+- La escala del estimado se calibra sola contra tus sesiones con pulso, y solo se cambia cuando hay el
+  doble de evidencia y el cambio es real (>15 %); al cambiar, todas las sesiones estimadas se
+  recalculan de una sola vez para que el recibo y Tendencias digan lo mismo.
+- El veredicto **no cambia** por una sesión: la carga todavía no vota (D-Q12).
+
 ### Ola 1 de Entrenar · esquema (FER-324)
 - Base de datos v42/v43: columnas para el esfuerzo de sesión y su origen, la procedencia de sesiones
   importadas, el ritmo «según reps en reserva» por ejercicio, el modo de cada serie («las que puedas»,
