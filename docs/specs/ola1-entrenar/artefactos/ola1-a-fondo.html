@@ -1,0 +1,415 @@
+<title>Ola 1 a fondo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;700;800&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root{
+    --fondo:#FEFEFD; --fondo-bajo:#F3F4F2; --tarjeta:#FFFFFF;
+    --tinta:#221D16; --tinta-700:#5C5648; --tinta-500:#6F6857;
+    --tinta-10:rgba(34,29,22,.10); --tinta-7:rgba(34,29,22,.07); --tinta-4:rgba(34,29,22,.04);
+    --verde:#0C8F62; --verde-profundo:#00774B; --verde-suave:rgba(12,143,98,.12);
+    --ambar:#C4631F; --ambar-texto:#8F4712; --ambar-suave:rgba(196,99,31,.13);
+    --negativo:#B3402A; --negativo-suave:rgba(179,64,42,.11);
+    --azul:#3B6FA0; --azul-suave:rgba(59,111,160,.12);
+    --display:"Schibsted Grotesk",-apple-system,"SF Pro Display",Helvetica,Arial,sans-serif;
+    --cuerpo:"Instrument Sans",-apple-system,"SF Pro Text",Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--fondo);color:var(--tinta);font-family:var(--cuerpo);font-size:15.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  a{color:var(--verde-profundo);text-decoration:none;border-bottom:1px solid rgba(0,119,75,.35)}
+  a:focus-visible,summary:focus-visible{outline:2px solid var(--verde);outline-offset:2px}
+  .pagina{max-width:980px;margin:0 auto;padding:40px 28px 80px}
+  h1,h2,h3,h4{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-.01em}
+  h1{font-size:clamp(30px,4.5vw,44px);font-weight:800;line-height:1.05}
+  h2{font-size:26px;font-weight:800;margin-top:64px;padding-top:22px;border-top:1px solid var(--tinta-10);display:flex;gap:14px;align-items:baseline}
+  h2 .n{color:var(--verde-profundo);font-variant-numeric:tabular-nums}
+  h3{font-size:15px;font-weight:700;margin-top:26px;color:var(--tinta-700);text-transform:uppercase;letter-spacing:.08em}
+  h4{font-size:15.5px;font-weight:700;margin-top:14px}
+  p{max-width:70ch;margin:10px 0}
+  .eyebrow{font-size:11.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--tinta-500)}
+  .tesis{font-size:18px;line-height:1.45;max-width:62ch;margin-top:14px}
+  .enuna{font-size:19px;font-family:var(--display);font-weight:700;line-height:1.35;max-width:60ch;margin:14px 0 6px;color:var(--tinta)}
+  .chip{display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;font-size:11.5px;font-weight:600;letter-spacing:.02em;white-space:nowrap;margin-right:6px}
+  .chip.v{background:var(--verde-suave);color:var(--verde-profundo)}
+  .chip.a{background:var(--ambar-suave);color:var(--ambar-texto)}
+  .chip.r{background:var(--negativo-suave);color:var(--negativo)}
+  .chip.z{background:var(--azul-suave);color:var(--azul)}
+  .chip.g{background:var(--tinta-7);color:var(--tinta-700)}
+  .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  /* pantalla mock */
+  .telefonos{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-top:14px}
+  .tel{background:var(--tarjeta);border:1px solid var(--tinta-10);border-radius:18px;padding:14px 14px 12px;box-shadow:0 1px 0 rgba(255,255,255,.9) inset}
+  .tel .donde{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--tinta-500);margin-bottom:8px}
+  .tel .fila{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--tinta-7);font-size:13.5px}
+  .tel .fila:last-child{border-bottom:0}
+  .tel .fila b{font-weight:600}
+  .tel .fila .num{font-variant-numeric:tabular-nums;color:var(--tinta-700)}
+  .tel .titular{font-family:var(--display);font-weight:800;font-size:19px;line-height:1.15;margin:4px 0 6px}
+  .tel .sub{font-size:12.5px;color:var(--tinta-700)}
+  .tel .boton{display:inline-block;margin-top:10px;background:var(--verde);color:#F4F1E8;border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600}
+  .tel .boton.suave{background:var(--fondo-bajo);color:var(--tinta)}
+  .tel .marca{display:inline-block;background:var(--verde-suave);color:var(--verde-profundo);border-radius:6px;padding:1px 6px;font-size:11px;font-weight:700}
+  .tel .marca.ambar{background:var(--ambar-suave);color:var(--ambar-texto)}
+  .tel .marca.azul{background:var(--azul-suave);color:var(--azul)}
+  .tel .escala{display:flex;gap:4px;margin-top:8px}
+  .tel .escala span{flex:1;height:26px;border-radius:6px;background:var(--fondo-bajo);display:flex;align-items:center;justify-content:center;font-size:12px;font-variant-numeric:tabular-nums}
+  .tel .escala span.on{background:var(--verde);color:#F4F1E8;font-weight:700}
+  .tel .semana{display:flex;gap:5px;margin-top:8px}
+  .tel .semana span{flex:1;height:30px;border-radius:7px;background:var(--fondo-bajo);display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:600}
+  .tel .semana span.hecha{background:var(--verde-suave);color:var(--verde-profundo)}
+  .tel .semana span.hoy{background:var(--verde);color:#F4F1E8}
+  .tel .semana span.descarga{background:var(--azul-suave);color:var(--azul)}
+  /* ejemplo numérico */
+  .calc{background:var(--fondo-bajo);border-radius:14px;padding:14px 18px;margin-top:14px;font-variant-numeric:tabular-nums;max-width:70ch}
+  .calc .l{display:grid;grid-template-columns:1fr auto;gap:12px;padding:5px 0;border-bottom:1px solid var(--tinta-10);font-size:14px}
+  .calc .l:last-child{border-bottom:0;font-weight:700}
+  .calc .l .r{font-family:var(--display);font-weight:700}
+  /* tablas */
+  .marco{overflow-x:auto;border:1px solid var(--tinta-10);border-radius:14px;background:var(--tarjeta);margin-top:14px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px}
+  th{font-family:var(--display);font-size:12px;text-align:left;padding:10px 12px;background:var(--fondo-bajo);color:var(--tinta-700);border-bottom:1px solid var(--tinta-10)}
+  td{padding:9px 12px;border-bottom:1px solid var(--tinta-7);vertical-align:top}
+  tr:last-child td{border-bottom:0}
+  /* listas */
+  ul.lista{max-width:72ch;padding-left:20px;margin:8px 0}
+  ul.lista li{margin:6px 0}
+  .dos{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:8px}
+  .caja{background:var(--tarjeta);border:1px solid var(--tinta-10);border-radius:14px;padding:14px 18px}
+  .caja h4{margin-top:0}
+  .caja.ojo{border-left:3px solid var(--ambar)}
+  .caja.dec{border-left:3px solid var(--azul)}
+  .caja ul{padding-left:18px;margin:6px 0}
+  .caja li{margin:5px 0;font-size:14px}
+  .analogia{border-left:3px solid var(--verde);padding:6px 16px;margin:14px 0;color:var(--tinta-700);font-style:italic;max-width:66ch}
+  .diagrama{margin-top:20px;background:var(--tarjeta);border:1px solid var(--tinta-10);border-radius:16px;padding:14px;overflow-x:auto}
+  .diagrama svg{width:100%;max-width:920px;display:block;margin:0 auto}
+  .nota{font-size:13px;color:var(--tinta-700)}
+  @media (max-width:760px){.dos{grid-template-columns:1fr}.pagina{padding:28px 16px 60px}}
+</style>
+
+<div class="pagina">
+  <header>
+    <div class="eyebrow">Cénit · Entrenar · ola 1 de la paridad</div>
+    <h1>Ola 1 a fondo: cinco piezas, un solo círculo</h1>
+    <p class="tesis">Todo lo de esta ola vive en los paquetes de matemática y modelo, con pruebas, sin tocar todavía la pantalla más que en lo mínimo. Aquí va cada pieza en tres capas: cómo la vives en la app, cómo funciona por dentro en palabras llanas, y qué toca del código. Al final, el orden, las dependencias y las cuatro decisiones que son tuyas.</p>
+    <div class="meta"><span class="chip v">Paquetes: StrandAnalytics · StrandTraining · StrandImport · CenitStore</span><span class="chip a">Carril pesado</span><span class="chip z">Pasa por /arquitecto (dos migraciones)</span></div>
+  </header>
+
+  <div class="diagrama" aria-label="Cómo se conectan las cinco piezas">
+    <svg viewBox="0 0 920 300" xmlns="http://www.w3.org/2000/svg" font-family="Instrument Sans, -apple-system, Helvetica, sans-serif">
+      <defs><marker id="f" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5C5648"/></marker></defs>
+      <!-- nodos -->
+      <g>
+        <rect x="20" y="110" width="170" height="80" rx="14" fill="#FFFFFF" stroke="#221D16" stroke-opacity=".12"/>
+        <text x="105" y="143" text-anchor="middle" font-size="15" font-weight="700" fill="#221D16">Sesión de hoy</text>
+        <text x="105" y="165" text-anchor="middle" font-size="12" fill="#5C5648">series · reps · peso · RPE</text>
+        <text x="105" y="181" text-anchor="middle" font-size="11" fill="#3B6FA0" font-weight="600">③ tipos de serie</text>
+      </g>
+      <g>
+        <rect x="260" y="110" width="170" height="80" rx="14" fill="#FFFFFF" stroke="#0C8F62" stroke-width="2"/>
+        <text x="345" y="143" text-anchor="middle" font-size="15" font-weight="700" fill="#221D16">Carga del día</text>
+        <text x="345" y="165" text-anchor="middle" font-size="12" fill="#5C5648">con reloj: FC · sin reloj: esfuerzo</text>
+        <text x="345" y="181" text-anchor="middle" font-size="11" fill="#00774B" font-weight="600">① carga sin FC</text>
+      </g>
+      <g>
+        <rect x="500" y="110" width="170" height="80" rx="14" fill="#FFFFFF" stroke="#221D16" stroke-opacity=".12"/>
+        <text x="585" y="143" text-anchor="middle" font-size="15" font-weight="700" fill="#221D16">Veredicto de mañana</text>
+        <text x="585" y="165" text-anchor="middle" font-size="12" fill="#5C5648">HRV · FC reposo · sueño · carga</text>
+        <text x="585" y="181" text-anchor="middle" font-size="11" fill="#6F6857" font-weight="600">ya existe (Hoy)</text>
+      </g>
+      <g>
+        <rect x="740" y="110" width="160" height="80" rx="14" fill="#FFFFFF" stroke="#0C8F62" stroke-width="2"/>
+        <text x="820" y="143" text-anchor="middle" font-size="15" font-weight="700" fill="#221D16">¿Subes?</text>
+        <text x="820" y="165" text-anchor="middle" font-size="12" fill="#5C5648">reps + esfuerzo + veredicto</text>
+        <text x="820" y="181" text-anchor="middle" font-size="11" fill="#00774B" font-weight="600">② RPE en la progresión</text>
+      </g>
+      <!-- flechas -->
+      <path d="M190,150 L258,150" stroke="#5C5648" stroke-width="1.5" marker-end="url(#f)" fill="none"/>
+      <path d="M430,150 L498,150" stroke="#5C5648" stroke-width="1.5" marker-end="url(#f)" fill="none"/>
+      <path d="M670,150 L738,150" stroke="#5C5648" stroke-width="1.5" marker-end="url(#f)" fill="none"/>
+      <path d="M820,190 C820,250 105,250 105,192" stroke="#0C8F62" stroke-width="1.5" marker-end="url(#f)" fill="none" stroke-dasharray="4 3"/>
+      <text x="460" y="262" text-anchor="middle" font-size="12" fill="#00774B" font-weight="600">la siguiente sesión arranca con el peso que te ganaste</text>
+      <!-- entradas laterales -->
+      <g>
+        <rect x="20" y="20" width="170" height="56" rx="12" fill="#F3F4F2"/>
+        <text x="105" y="43" text-anchor="middle" font-size="12.5" font-weight="700" fill="#221D16">⑤ Programa de 5 semanas</text>
+        <text x="105" y="62" text-anchor="middle" font-size="11.5" fill="#5C5648">dicta qué sesión toca y cuándo descargar</text>
+        <path d="M105,76 L105,108" stroke="#5C5648" stroke-width="1.5" marker-end="url(#f)" fill="none"/>
+      </g>
+      <g>
+        <rect x="260" y="20" width="170" height="56" rx="12" fill="#F3F4F2"/>
+        <text x="345" y="43" text-anchor="middle" font-size="12.5" font-weight="700" fill="#221D16">④ Historial de Strong y Hevy</text>
+        <text x="345" y="62" text-anchor="middle" font-size="11.5" fill="#5C5648">llega con esfuerzo y alimenta la carga</text>
+        <path d="M345,76 L345,108" stroke="#5C5648" stroke-width="1.5" marker-end="url(#f)" fill="none"/>
+      </g>
+    </svg>
+    <p class="nota" style="margin:8px 8px 0">Hoy el círculo se rompe en «Carga del día»: sin reloj, la sesión vale cero. Y «¿Subes?» solo mira reps. Las piezas ① y ② cierran dos de tres eslabones; la tercera (que el veredicto baje series) queda fuera de esta ola por FER-85.</p>
+  </div>
+
+  <!-- ================= 1 ================= -->
+  <h2><span class="n">①</span>La sesión cuenta aunque no traigas reloj</h2>
+  <p class="enuna">Una sesión de fuerza sin Apple Watch entra a la carga de entrenamiento con un número estimado a partir de cuánto duró y qué tan duro estuvo.</p>
+  <div class="meta"><span class="chip a">Esfuerzo medio</span><span class="chip v">StrandAnalytics + una columna nueva</span><span class="chip g">Método: session-RPE, Foster 2001</span><span class="chip z">Gate: /estadistico y /cso</span></div>
+
+  <h3>Cómo lo vives</h3>
+  <div class="telefonos">
+    <div class="tel"><div class="donde">Al terminar · recibo</div>
+      <div class="titular">¿Qué tan duro estuvo?</div>
+      <div class="sub">Una sola pregunta, un toque. Viene prellenada con el promedio de esfuerzo de tus series si lo capturaste.</div>
+      <div class="escala"><span>5</span><span>6</span><span>7</span><span class="on">8</span><span>9</span><span>10</span></div>
+      <span class="boton">Listo</span></div>
+    <div class="tel"><div class="donde">Recibo · bloque de carga</div>
+      <div class="fila"><b>Duración</b><span class="num">52 min</span></div>
+      <div class="fila"><b>Esfuerzo</b><span class="num">8 / 10</span></div>
+      <div class="fila"><b>Carga</b><span class="num">11.4 <span class="marca ambar">estimada</span></span></div>
+      <div class="sub" style="margin-top:8px">Con reloj el bloque dice «medida» y usa la FC, como hoy.</div></div>
+    <div class="tel"><div class="donde">Tendencias · Carga de entrenamiento</div>
+      <div class="titular">Carga alta esta semana</div>
+      <div class="sub">3 sesiones de fuerza, 1 con reloj. La curva ya no tiene huecos los días que entrenaste sin Watch.</div>
+      <div class="semana"><span class="hecha">L</span><span>M</span><span class="hecha">M</span><span>J</span><span class="hecha">V</span><span>S</span><span>D</span></div></div>
+  </div>
+
+  <h3>Cómo funciona por dentro</h3>
+  <p>Hoy la carga de cada día sale de la frecuencia cardiaca: cuánto tiempo pasaste en cada zona, comprimido a una escala de 0 a 21. Sin pulso no hay zonas, y el día queda en cero aunque hayas hecho piernas pesado.</p>
+  <p>La pieza nueva usa el método más citado para medir carga sin sensores: <b>duración × esfuerzo percibido</b> (Foster 2001, «session-RPE»). Es el mismo principio que usa Apple cuando te pregunta «Esfuerzo» al cerrar un entreno en el Watch. El número resultante se traduce a la misma escala de 0 a 21 que ya usa la app, para que el ACWR, la monotonía y el veredicto de mañana no cambien de fórmula: solo reciben un dato más.</p>
+  <div class="calc">
+    <div class="l"><span>Duración de la sesión</span><span class="r">52 min</span></div>
+    <div class="l"><span>Esfuerzo (prellenado: promedio de RPE de series de trabajo 8.2 → redondea a 8)</span><span class="r">8</span></div>
+    <div class="l"><span>Carga lineal = 52 × 8</span><span class="r">416 unidades</span></div>
+    <div class="l"><span>Se comprime a la escala 0–21 con la misma curva que la carga por FC</span><span class="r">≈ 11.4</span></div>
+  </div>
+  <p class="nota">La constante que alinea «416 unidades» con la escala de la FC la calibra el estadístico: la regla es que una sesión de 50 minutos a esfuerzo 8 caiga en la misma banda que una sesión con reloj de esfuerzo parecido. Ese factor queda documentado y probado, no escondido.</p>
+  <div class="analogia">Es como el odómetro y el mapa: si el GPS (reloj) está apagado, el auto sigue sabiendo cuánto anduvo por las vueltas de la llanta. Menos preciso, pero nunca cero.</div>
+
+  <h4>Tres reglas que evitan mentir</h4>
+  <ul class="lista">
+    <li><b>Si hubo reloj, manda el reloj.</b> Una sesión con FC usa la carga medida y nunca suma las dos. La estimada solo entra cuando no hay pulso.</li>
+    <li><b>Si no contestas la pregunta y no capturaste RPE, no se inventa nada.</b> El día queda como «entrenaste, carga sin estimar» y el ACWR no lo cuenta. Nunca un 7 por defecto.</li>
+    <li><b>El número siempre lleva su etiqueta.</b> «Estimada» en el recibo, en el detalle y en Tendencias. El copy nunca dice «medimos tu carga».</li>
+  </ul>
+
+  <h3>Qué toca</h3>
+  <ul class="lista">
+    <li>Un motor nuevo en StrandAnalytics (duración × esfuerzo → escala 0–21), con test de ida y vuelta y test de «con reloj no se duplica».</li>
+    <li>La sesión de fuerza guarda de dónde salió su carga: medida o estimada. Es una columna nueva, migración append-only con addColumnIfMissing.</li>
+    <li>La pregunta del recibo y la etiqueta «estimada» en tres pantallas. Copy es-MX pasa por el gate de ciencia.</li>
+  </ul>
+  <div class="dos">
+    <div class="caja ojo"><h4>Riesgos</h4><ul><li>Doble conteo si una sesión de fuerza ya generó carga por FC parcial (empezaste con reloj y se acabó la pila). Regla: la sesión es una sola fuente; si hay FC suficiente, FC; si no, esfuerzo.</li><li>Calibración de la escala: si queda alta, el ACWR gritará «pico» cada semana de fuerza. Por eso el CDO calibra contra sesiones reales que sí tuvieron reloj.</li></ul></div>
+    <div class="caja dec"><h4>Decisión tuya</h4><ul><li>¿Preguntar «¿qué tan duro estuvo?» al cerrar cada sesión, prellenada y saltable? <b>Recomiendo sí</b>: un toque, y es lo que hace Apple. Sin esa pregunta, las sesiones donde nadie capturó RPE quedan fuera de la carga.</li></ul></div>
+  </div>
+
+  <!-- ================= 2 ================= -->
+  <h2><span class="n">②</span>El esfuerzo decide si subes, no solo las reps</h2>
+  <p class="enuna">Llegar a las reps cómodo y llegar al fallo dejan de valer lo mismo: el RPE que ya capturas entra a la regla de progresión.</p>
+  <div class="meta"><span class="chip a">Esfuerzo medio</span><span class="chip v">StrandAnalytics, sin migración</span><span class="chip g">Método: Helms 2016 · Zourdos 2016</span><span class="chip z">Gate: /biomecanico</span></div>
+
+  <h3>Cómo lo vives</h3>
+  <div class="telefonos">
+    <div class="tel"><div class="donde">Hub Entrenar · héroe del día</div>
+      <div class="titular">Hoy subes en press: 62.5 kg</div>
+      <div class="sub">Llegaste a 8 reps las dos últimas veces con esfuerzo 7 y 7.5. Te lo ganaste.</div>
+      <span class="boton">Empezar</span></div>
+    <div class="tel"><div class="donde">Hub Entrenar · héroe del día</div>
+      <div class="titular">Hoy mantienes en sentadilla</div>
+      <div class="sub">Sí llegaste a las reps, pero al límite (esfuerzo 9.5 y 10). Una sesión más cómoda y subes.</div>
+      <span class="boton">Empezar</span></div>
+    <div class="tel"><div class="donde">Editor de rutina · progresión</div>
+      <div class="fila"><b>Reps objetivo</b><span class="num">8</span></div>
+      <div class="fila"><b>Sesiones para subir</b><span class="num">2</span></div>
+      <div class="fila"><b>Paso de carga</b><span class="num">2.5 kg</span></div>
+      <div class="fila"><b>Usar mi esfuerzo (RPE)</b><span class="marca">Sí</span></div>
+      <div class="sub" style="margin-top:8px">Apagado, la regla vuelve a ser solo reps, como hoy.</div></div>
+  </div>
+
+  <h3>Cómo funciona por dentro</h3>
+  <p>La regla actual es «doble progresión»: cumples las reps objetivo en todas las series de trabajo dos sesiones seguidas y la siguiente vez subes el paso de carga. El RPE se guarda en cada serie, sale en el recibo y en el CSV, pero la regla no lo mira. Es como un examen que solo cuenta si acabaste, no cómo acabaste.</p>
+  <p>La pieza nueva mete el esfuerzo en la misma regla, con tres casos y nada más:</p>
+  <div class="marco"><table>
+    <thead><tr><th>Cumpliste las reps y…</th><th>Qué pasa</th><th>Por qué</th></tr></thead>
+    <tbody>
+      <tr><td>todas las series con esfuerzo <b>≤ 8</b></td><td><span class="chip v">Subes en 1 sesión</span> en vez de 2</td><td>Te sobraban dos o más reps: el peso ya quedó chico (RPE 8 ≈ 2 reps en reserva).</td></tr>
+      <tr><td>esfuerzo entre <b>8.5 y 9</b></td><td><span class="chip g">Como hoy</span> cuenta una sesión de las 2</td><td>Es el rango donde la doble progresión ya funciona bien.</td></tr>
+      <tr><td>alguna serie con esfuerzo <b>≥ 9.5</b></td><td><span class="chip a">Mantienes</span> no cuenta para subir ni para el deload</td><td>Llegaste, pero al fallo. Subir peso encima de eso es la receta de estancarse.</td></tr>
+      <tr><td>no capturaste esfuerzo</td><td><span class="chip g">Como hoy</span></td><td>Sin dato no se supone nada.</td></tr>
+    </tbody>
+  </table></div>
+  <p>El veredicto del cuerpo sigue mandando encima de todo: aunque el esfuerzo diga «sube», un día de «mantienes» del veredicto sigue difiriendo la subida, como ahora. Son dos filtros en serie, no dos oráculos.</p>
+  <div class="analogia">Antes: «¿acabaste la carrera?». Ahora: «¿acabaste, y con cuánto aire?». Si llegaste caminando, la próxima no es más larga.</div>
+
+  <h3>Qué toca</h3>
+  <ul class="lista">
+    <li>La regla vive en un solo lugar (ProgressionState). Se le agrega el esfuerzo por serie a la sesión pasada y los tres casos. Pruebas: cómodo sube en 1, al límite no sube aunque cumpla, sin RPE igual que antes, y el veredicto sigue difiriendo.</li>
+    <li>Un interruptor en el setup de progresión, encendido por defecto.</li>
+    <li>Dos frases nuevas en el héroe del hub que explican el porqué. Copy pasa por el gate de ciencia.</li>
+  </ul>
+  <div class="dos">
+    <div class="caja ojo"><h4>Riesgos</h4><ul><li>Gente que marca RPE 10 «por costumbre» nunca subiría. Mitigación: el copy del héroe lo explica y el interruptor existe.</li><li>Los umbrales (8 / 9.5) son convención de la literatura de RPE en fuerza; el biomecánico los valida y quedan como constantes nombradas, no números sueltos.</li></ul></div>
+    <div class="caja dec"><h4>Decisión tuya</h4><ul><li>¿Subida acelerada (1 sesión) cuando llegaste cómodo? <b>Recomiendo sí</b>. Es lo que diferencia a Alpha Progression. Si prefieres conservador, se deja solo el freno de «al límite».</li></ul></div>
+  </div>
+
+  <!-- ================= 3 ================= -->
+  <h2><span class="n">③</span>Series AMRAP, drop y al fallo</h2>
+  <p class="enuna">Dos tipos de serie nuevos y un atajo: AMRAP (las que puedas), drop (bajas peso sin descansar) y «al fallo» como esfuerzo 10 de un toque.</p>
+  <div class="meta"><span class="chip v">Esfuerzo bajo</span><span class="chip v">StrandTraining + enum en la base</span><span class="chip g">Convención de programación, sin claim</span><span class="chip z">Necesaria para ⑤</span></div>
+
+  <h3>Cómo lo vives</h3>
+  <div class="telefonos">
+    <div class="tel"><div class="donde">Sesión en vivo · fila de serie</div>
+      <div class="fila"><b>Serie 3</b><span class="marca azul">AMRAP</span></div>
+      <div class="fila"><span>Peso</span><span class="num">80 kg</span></div>
+      <div class="fila"><span>Reps</span><span class="num">máx → <b>11</b></span></div>
+      <div class="sub" style="margin-top:8px">El keypad dice «máx» en vez de un número; anotas lo que salió.</div></div>
+    <div class="tel"><div class="donde">Sesión en vivo · menú de la serie</div>
+      <div class="fila"><b>Agregar drop</b><span class="num">−20 % → 64 kg</span></div>
+      <div class="sub" style="margin-top:6px">Aparece una sub-serie debajo, sin descanso, con el peso ya redondeado a tus discos.</div>
+      <div class="fila" style="margin-top:8px"><b>Al fallo</b><span class="marca ambar">RPE 10</span></div>
+      <div class="sub" style="margin-top:6px">Un toque que pone esfuerzo 10. No es un tipo de serie: es el esfuerzo máximo.</div></div>
+    <div class="tel"><div class="donde">Recibo</div>
+      <div class="fila"><span>Press 80 kg</span><span class="num">8 · 8 · <b>11</b><span class="marca azul" style="margin-left:6px">AMRAP</span></span></div>
+      <div class="fila"><span>↳ drop 64 kg</span><span class="num">9</span></div>
+      <div class="fila"><span>Récord de reps a 80 kg</span><span class="marca">nuevo</span></div></div>
+  </div>
+
+  <h3>Cómo funciona por dentro</h3>
+  <p>Hoy una serie es «de trabajo» o «de calentamiento». Se agregan dos clases más y cada una tiene reglas claras sobre a qué cuenta y a qué no:</p>
+  <div class="marco"><table>
+    <thead><tr><th>Tipo</th><th>Cuenta para volumen</th><th>Cuenta para «¿subes?»</th><th>Cuenta para récords</th><th>1RM estimado</th></tr></thead>
+    <tbody>
+      <tr><td><b>Trabajo</b> (como hoy)</td><td>Sí</td><td>Sí</td><td>Sí</td><td>Sí</td></tr>
+      <tr><td><b>Calentamiento</b> (como hoy)</td><td>No</td><td>No</td><td>No</td><td>No</td></tr>
+      <tr><td><b>AMRAP</b></td><td>Sí</td><td>Sí, cumple si reps ≥ objetivo</td><td>Sí, es la mejor señal de récord de reps</td><td>Sí, con tope de 12 reps como ahora</td></tr>
+      <tr><td><b>Drop</b></td><td>Sí</td><td>No</td><td>No (peso menor a propósito)</td><td>No</td></tr>
+      <tr><td><b>Al fallo</b></td><td colspan="4">No es un tipo: es esfuerzo 10 en cualquier serie. Entra a la regla ② como «al límite».</td></tr>
+    </tbody>
+  </table></div>
+  <div class="analogia">Es como en un recibo de super: el descuento (drop) suma al total que pagaste pero no al precio del producto.</div>
+
+  <h3>Qué toca</h3>
+  <ul class="lista">
+    <li>El tipo de serie es un texto en la base; se agregan dos valores. Las bases viejas siguen leyendo bien. Prueba de migración que decodifica los cuatro valores.</li>
+    <li>Las cuatro reglas de la tabla viven en el paquete, no en la pantalla: volumen, progresión, récords y 1RM leen el tipo y deciden.</li>
+    <li>Sesión en vivo: «máx» en el keypad, el menú de la serie y la sub-serie drop con el peso de tus discos (PlateMath ya lo redondea).</li>
+  </ul>
+  <div class="dos">
+    <div class="caja ojo"><h4>Riesgos</h4><ul><li>Casi ninguno técnico. El riesgo es de diseño: que el menú de la serie se llene de opciones. Son dos entradas más y ya.</li></ul></div>
+    <div class="caja dec"><h4>Decisión tuya</h4><ul><li>«Al fallo» como atajo de esfuerzo 10 y no como tipo de serie. <b>Recomiendo así</b>: evita tres etiquetas que dicen lo mismo y mantiene una sola regla de esfuerzo.</li></ul></div>
+  </div>
+
+  <!-- ================= 4 ================= -->
+  <h2><span class="n">④</span>Importar tu historial de Strong o Hevy</h2>
+  <p class="enuna">Traes el CSV que exportan esas apps y Cénit lo convierte en sesiones tuyas: récords, 1RM y mapa muscular arrancan con tu historia, no en cero.</p>
+  <div class="meta"><span class="chip v">Esfuerzo bajo a medio</span><span class="chip v">StrandImport, sin migración</span><span class="chip g">Offline: un archivo, cero red</span><span class="chip z">Se apoya en ① si el CSV trae RPE</span></div>
+
+  <h3>Cómo lo vives</h3>
+  <div class="telefonos">
+    <div class="tel"><div class="donde">Ajustes · Datos y fuentes · Importar</div>
+      <div class="fila"><b>Exportación de Apple Health</b><span>›</span></div>
+      <div class="fila"><b>Historial de Strong o Hevy (CSV)</b><span class="marca">nuevo</span></div>
+      <div class="sub" style="margin-top:8px">Cénit reconoce cuál de las dos es por sus columnas.</div></div>
+    <div class="tel"><div class="donde">Vista previa antes de importar</div>
+      <div class="titular">214 sesiones · 2022–2026</div>
+      <div class="fila"><span>Ejercicios reconocidos</span><span class="num">61 de 68</span></div>
+      <div class="fila"><span>Por resolver</span><span class="num">7</span></div>
+      <div class="fila"><span>Ya estaban en Cénit</span><span class="num">0</span></div>
+      <span class="boton">Importar</span> <span class="boton suave">Revisar los 7</span></div>
+    <div class="tel"><div class="donde">Resolver un ejercicio</div>
+      <div class="titular">«Cable Fly (High)»</div>
+      <div class="sub">Elige el ejercicio de Cénit que corresponde, o créalo como propio.</div>
+      <div class="fila"><span>Aperturas en polea alta</span><span class="marca">sugerido</span></div>
+      <div class="fila"><span>Aperturas en polea</span><span></span></div>
+      <div class="fila"><span>Crear como ejercicio propio</span><span>›</span></div></div>
+  </div>
+
+  <h3>Cómo funciona por dentro</h3>
+  <p>Un CSV es una tabla: una fila por serie, con fecha, nombre del entreno, nombre del ejercicio, peso, reps y a veces esfuerzo. Cénit ya sabe exportar el suyo en ese formato; lo nuevo es leer los dos ajenos. Cada uno tiene sus columnas y sus mañas (Hevy exporta en kilos o libras según tu ajuste; Strong pone la duración como texto). El lector se prueba contra archivos reales de cada app antes de dar por buena una columna.</p>
+  <p>El paso difícil no es leer, es <b>casar nombres</b>: «Barbell Bench Press» tiene que volverse tu «Press de banca con barra». Cénit ya tiene una tabla de alias de ejercicios para el import desde tu IA; se reutiliza y se amplía con los nombres de Strong y Hevy. Lo que no case queda en una lista corta para que decidas tú, una vez, y la app recuerda tu decisión.</p>
+  <ul class="lista">
+    <li><b>No duplica.</b> Cada sesión importada guarda su origen y su hora original; volver a importar el mismo archivo no crea sesiones repetidas.</li>
+    <li><b>No inventa lo que no viene.</b> Sin FC no hay esfuerzo de sesión ni carga medida. Si el CSV trae RPE por serie (Hevy y Strong lo exportan), la pieza ① le calcula carga estimada y esas sesiones sí alimentan la curva.</li>
+    <li><b>Todo lo demás se recalcula solo.</b> Récords, 1RM y mapa muscular leen del historial; al entrar 214 sesiones, aparecen con nuestra matemática, no con la de la otra app.</li>
+  </ul>
+  <div class="analogia">Es cambiarte de banco y que tus estados de cuenta viejos aparezcan en la app nueva: los movimientos son los mismos, la contabilidad la hace el banco nuevo.</div>
+
+  <h3>Qué toca</h3>
+  <ul class="lista">
+    <li>Lector de CSV con dos dialectos en StrandImport, puro y con pruebas por archivo real (un Hevy en kg, un Hevy en lb, un Strong).</li>
+    <li>Casador de nombres sobre la tabla de alias existente; prueba con la lista de los 100 ejercicios más comunes de cada app.</li>
+    <li>Tres pantallas ligeras en Datos y fuentes: entrada, vista previa, resolver.</li>
+  </ul>
+  <div class="dos">
+    <div class="caja ojo"><h4>Riesgos</h4><ul><li>Los formatos cambian sin aviso. Mitigación: el lector detecta columnas por nombre, no por posición, y avisa «este archivo no lo reconozco» en vez de importar basura.</li><li>Nombres ambiguos («Row» puede ser cuatro remos). Van a la lista de resolver, nunca se adivinan.</li></ul></div>
+    <div class="caja dec"><h4>Decisión tuya</h4><ul><li>Ninguna. Es paridad limpia con Hevy.</li></ul></div>
+  </div>
+
+  <!-- ================= 5 ================= -->
+  <h2><span class="n">⑤</span>Programas de varias semanas con descarga programada</h2>
+  <p class="enuna">Tu plan deja de ser una semana que se repite: es un ciclo de 4 a 6 semanas que sabe en qué semana vas y baja el volumen en la última, a propósito.</p>
+  <div class="meta"><span class="chip r">Esfuerzo alto</span><span class="chip v">StrandTraining + tabla nueva</span><span class="chip g">Convención: Helms 2019 · revisión Bell 2023 (a verificar)</span><span class="chip z">/arquitecto obligatorio</span></div>
+
+  <h3>Cómo lo vives</h3>
+  <div class="telefonos">
+    <div class="tel"><div class="donde">Tu Plan</div>
+      <div class="titular">Empuje · Tirón · Pierna</div>
+      <div class="sub">Semana 3 de 5 · descarga en 2 semanas</div>
+      <div class="semana"><span class="hecha">1</span><span class="hecha">2</span><span class="hoy">3</span><span>4</span><span class="descarga">5</span></div>
+      <div class="sub" style="margin-top:8px">La semana de descarga se ve distinta desde el día uno. No sorprende.</div></div>
+    <div class="tel"><div class="donde">Hub Entrenar · semana 5</div>
+      <div class="titular">Semana de descarga</div>
+      <div class="sub">Tirón A con 2 series menos por ejercicio y el peso al 90 %. Mismo tiempo en el gym, menos desgaste. La próxima semana arrancas el ciclo con los pesos que te ganaste.</div>
+      <span class="boton">Empezar</span></div>
+    <div class="tel"><div class="donde">Crear plan</div>
+      <div class="fila"><b>Plantillas</b><span>›</span></div>
+      <div class="fila"><b>Programas</b><span class="marca">nuevo</span></div>
+      <div class="sub" style="margin-top:6px">Lineal para empezar · PPL en 6 días · Superior/inferior en 4 · Cuerpo completo en 3. Todos de 5 semanas con descarga.</div>
+      <div class="fila" style="margin-top:6px"><b>Desde cero</b><span>›</span></div>
+      <div class="fila"><b>Importar desde tu IA</b><span>›</span></div></div>
+  </div>
+
+  <h3>Cómo funciona por dentro</h3>
+  <p>Hoy el plan es un calendario de siete casillas: qué rutina va cada día de la semana, para siempre. La progresión avanza ejercicio por ejercicio, y el único descanso planeado es reactivo: si te estancas tres veces, se propone bajar 7.5 %.</p>
+  <p>Un programa es ese mismo calendario más un <b>contador de semanas</b> y una <b>regla para la última</b>. Las semanas 1 a 4 corren exactamente como ahora (doble progresión, esfuerzo, veredicto). La semana 5 es de descarga: cada rutina se sirve con menos series y menos peso, según una regla fija y citada. Al terminar, el contador vuelve a 1 y el ciclo arranca con los pesos que la progresión ya te dio.</p>
+  <div class="calc">
+    <div class="l"><span>Semana de descarga · series de trabajo</span><span class="r">−40 %  (4 → 2, mínimo 1)</span></div>
+    <div class="l"><span>Semana de descarga · peso</span><span class="r">−10 %, redondeado a tus discos</span></div>
+    <div class="l"><span>Contadores de estancamiento</span><span class="r">se reinician</span></div>
+    <div class="l"><span>Veredicto del cuerpo</span><span class="r">sigue mandando igual</span></div>
+  </div>
+  <p>Los programas que vienen incluidos son <b>motores de dominio público</b>, no la biblioteca de coaches de Boostcamp: un lineal para novatos, un empuje-tirón-pierna, un superior-inferior y un cuerpo completo. Los nombramos por lo que son, sin marcas registradas. La cola larga (el programa de tu coach, el de un libro) llega por «importar desde tu IA», que ya existe y solo necesita aprender el campo «semanas».</p>
+  <div class="analogia">Un plan semanal es una escalera sin descansos. Un programa es la misma escalera con un descanso cada cinco pisos, marcado antes de subir.</div>
+
+  <h3>Qué toca</h3>
+  <ul class="lista">
+    <li>Una tabla nueva (programa: nombre, semanas, semana actual, fecha de inicio) y una relación con el calendario que ya existe. Migración append-only con su prueba. Por eso pasa por /arquitecto.</li>
+    <li>La regla de descarga vive en StrandTraining, pura, con pruebas: 4 series → 2, 1 → 1, peso al 90 % cae en un peso construible.</li>
+    <li>El import desde tu IA gana un campo opcional «semanas» y «descarga».</li>
+    <li>Pantallas: la tira de semanas en Tu Plan, el héroe de descarga en el hub, la fila «Programas» en Crear plan. Lo demás es lo que ya hay.</li>
+  </ul>
+  <div class="dos">
+    <div class="caja ojo"><h4>Riesgos</h4><ul><li>Es la pieza más grande y la que más toca pantallas. Si el tiempo aprieta, es la que se recorta, no las otras cuatro.</li><li>Choque entre descarga programada y deload reactivo: si en la semana 4 te estancas, ¿bajas ya o esperas a la 5? Regla propuesta: esperar a la 5 y reiniciar contadores. El biomecánico valida.</li></ul></div>
+    <div class="caja dec"><h4>Decisiones tuyas</h4><ul><li>Forma de la descarga: <b>recomiendo volumen −40 % y peso −10 %</b> (la convención más común). La alternativa «solo volumen» es válida y más simple.</li><li>Cuatro programas incluidos, sin biblioteca de coaches. <b>Recomiendo así</b>: no tenemos licencias ni contenido, y sí tenemos el import desde tu IA.</li></ul></div>
+  </div>
+
+  <!-- ================= orden ================= -->
+  <h2><span class="n">→</span>Orden, dependencias y qué corre en paralelo</h2>
+  <div class="marco"><table>
+    <thead><tr><th>Carril</th><th>Piezas</th><th>Dónde</th><th>Depende de</th><th>Esfuerzo</th></tr></thead>
+    <tbody>
+      <tr><td><b>A · matemática</b></td><td>① carga sin FC · ② RPE en la progresión</td><td>StrandAnalytics + 1 columna</td><td>Nada</td><td>medio + medio</td></tr>
+      <tr><td><b>B · modelo</b></td><td>③ tipos de serie · ⑤ programas con descarga</td><td>StrandTraining + CenitStore</td><td>③ antes que ⑤ (los programas usan AMRAP)</td><td>bajo + alto</td></tr>
+      <tr><td><b>C · datos</b></td><td>④ import CSV</td><td>StrandImport</td><td>Nada; mejora con ① si el CSV trae RPE</td><td>bajo a medio</td></tr>
+      <tr><td><b>D · pantallas</b></td><td>La capa mínima de UI de las cinco</td><td>Cenit/Screens</td><td>A, B y C mergeados</td><td>medio</td></tr>
+    </tbody>
+  </table></div>
+  <p>A, B y C corren en tres worktrees a la vez, en paquetes, con swift test como verificación por pieza. La app completa se compila una sola vez al cerrar la ola, como marca el contrato de flujo. Los gates: /arquitecto antes de B (dos migraciones), /estadistico y /cso sobre ①, /biomecanico sobre ② ③ ⑤, /qa independiente en todo por ser carril pesado.</p>
+
+  <h2><span class="n">?</span>Las cuatro decisiones que son tuyas</h2>
+  <div class="marco"><table>
+    <thead><tr><th>#</th><th>Decisión</th><th>Mi recomendación</th><th>Alternativa</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Pregunta «¿qué tan duro estuvo?» al cerrar cada sesión (prellenada, saltable)</td><td><b>Sí.</b> Un toque; sin ella las sesiones sin RPE quedan fuera de la carga</td><td>Solo usar el RPE por serie; las sesiones sin RPE no cuentan</td></tr>
+      <tr><td>2</td><td>Subida acelerada en 1 sesión cuando llegaste cómodo (RPE ≤ 8)</td><td><b>Sí.</b> Es lo que hace único a Alpha Progression</td><td>Solo el freno «al límite»; subir siempre en 2</td></tr>
+      <tr><td>3</td><td>Forma de la semana de descarga</td><td><b>Volumen −40 % y peso −10 %</b></td><td>Solo volumen −40 %, mismo peso</td></tr>
+      <tr><td>4</td><td>Programas incluidos</td><td><b>Cuatro motores de dominio público</b> + import desde tu IA para el resto</td><td>Solo el motor, sin programas incluidos</td></tr>
+    </tbody>
+  </table></div>
+  <p class="nota" style="margin-top:14px">Fuera de esta ola, a propósito: que el veredicto baje series (toca FER-85), el Watch que registra solo (ola 3), leer entrenos de otras apps desde Apple Health y los récords por ejercicio (ola 2), y el catálogo con imágenes (después).</p>
+</div>

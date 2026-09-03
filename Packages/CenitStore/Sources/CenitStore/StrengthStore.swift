@@ -199,15 +199,16 @@ extension CenitStore {
                     re.supersetGroup, re.hrRestReference.rawValue, re.hrRestValue,
                     re.progressionEnabled, re.progressionSessions, re.progressionIncrementKg,
                     re.progressionDeload.rawValue, re.progressionIgnoreRecovery,
-                    (noteText?.isEmpty == false) ? noteText : nil
+                    (noteText?.isEmpty == false) ? noteText : nil,
+                    re.progressionUseRPE
                 ]
                 try db.execute(sql: """
                     INSERT INTO routineExercise
                         (id, routineId, exerciseId, position, targetSets, targetReps, targetWeightKg,
                          warmupPercents, restMode, restSeconds, supersetGroup, hrRestReference, hrRestValue,
                          progressionEnabled, progressionSessions, progressionIncrementKg, progressionDeload,
-                         progressionIgnoreRecovery, note)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                         progressionIgnoreRecovery, note, progressionUseRPE)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, arguments: StatementArguments(args))
                 for (idx, s) in planned.enumerated() {
                     // The four rest columns are written together (FER-715): a non-nil override writes
@@ -217,13 +218,14 @@ extension CenitStore {
                     let sArgs: [DatabaseValueConvertible?] = [
                         s.id, re.id, idx, s.kind.rawValue, s.reps, s.weightKg,
                         s.rest?.mode.rawValue, s.rest?.seconds,
-                        s.rest?.hrReference.rawValue, s.rest?.hrValue, s.repsRangeTop
+                        s.rest?.hrReference.rawValue, s.rest?.hrValue, s.repsRangeTop,
+                        s.mode == .standard ? nil : s.mode.rawValue
                     ]
                     try db.execute(sql: """
                         INSERT INTO routineSet
                             (id, routineExerciseId, position, kind, reps, weightKg,
-                             restMode, restSeconds, hrRestReference, hrRestValue, repsRangeTop)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                             restMode, restSeconds, hrRestReference, hrRestValue, repsRangeTop, mode)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """, arguments: StatementArguments(sArgs))
                 }
             }
@@ -429,7 +431,8 @@ extension CenitStore {
                         progressionIncrementKg: r["progressionIncrementKg"],
                         progressionDeload: DeloadPolicy(rawValue: r["progressionDeload"] ?? "propose") ?? .propose,
                         progressionIgnoreRecovery: r["progressionIgnoreRecovery"] ?? false,
-                        note: r["note"])
+                        note: r["note"],
+                        progressionUseRPE: r["progressionUseRPE"] ?? false)
     }
 
     private static func routineSet(_ r: Row) -> RoutineSet {
@@ -444,7 +447,8 @@ extension CenitStore {
         return RoutineSet(id: r["id"], position: r["position"],
                           kind: SetKind(rawValue: r["kind"]) ?? .work,
                           reps: r["reps"], weightKg: r["weightKg"], repsRangeTop: r["repsRangeTop"],
-                          rest: rest)
+                          rest: rest,
+                          mode: (r["mode"] as String?).flatMap(SetMode.init(rawValue:)) ?? .standard)
     }
 
     // MARK: - Sessions + sets (+ PR derivation, transactional)
@@ -459,28 +463,37 @@ extension CenitStore {
             let sArgs: [DatabaseValueConvertible?] = [
                 session.id, session.routineId, session.startTs, session.endTs,
                 session.deviceId, session.strain, session.avgHr, session.notes,
-                session.energyKcal, session.energySource?.rawValue
+                session.energyKcal, session.energySource?.rawValue,
+                session.strainSource?.rawValue, session.sessionRpe, session.sessionRpeSource?.rawValue,
+                session.trimpPerAU, session.source, session.title, session.programWeek,
+                session.deload.map { $0 ? 1 : 0 }
             ]
             try db.execute(sql: """
                 INSERT INTO strengthSession
-                    (id, routineId, startTs, endTs, deviceId, strain, avgHr, notes, energyKcal, energySource)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (id, routineId, startTs, endTs, deviceId, strain, avgHr, notes, energyKcal, energySource,
+                     strainSource, sessionRpe, sessionRpeSource, trimpPerAU, source, title, programWeek, deload)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     routineId = excluded.routineId, endTs = excluded.endTs, deviceId = excluded.deviceId,
                     strain = excluded.strain, avgHr = excluded.avgHr, notes = excluded.notes,
-                    energyKcal = excluded.energyKcal, energySource = excluded.energySource
+                    energyKcal = excluded.energyKcal, energySource = excluded.energySource,
+                    strainSource = excluded.strainSource, sessionRpe = excluded.sessionRpe,
+                    sessionRpeSource = excluded.sessionRpeSource, trimpPerAU = excluded.trimpPerAU,
+                    source = excluded.source, title = excluded.title,
+                    programWeek = excluded.programWeek, deload = excluded.deload
                 """, arguments: StatementArguments(sArgs))
 
             try db.execute(sql: "DELETE FROM setEntry WHERE sessionId = ?", arguments: [session.id])
             for s in sets {
                 let args: [DatabaseValueConvertible?] = [
                     s.id, s.sessionId, s.exerciseId, s.position, s.kind.rawValue,
-                    s.weightKg, s.reps, s.timeS, s.distanceM, s.done ? 1 : 0, s.ts, s.rpe, s.restTakenS
+                    s.weightKg, s.reps, s.timeS, s.distanceM, s.done ? 1 : 0, s.ts, s.rpe, s.restTakenS,
+                    s.mode == .standard ? nil : s.mode.rawValue
                 ]
                 try db.execute(sql: """
                     INSERT INTO setEntry
-                        (id, sessionId, exerciseId, position, kind, weightKg, reps, timeS, distanceM, done, ts, rpe, restTakenS)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        (id, sessionId, exerciseId, position, kind, weightKg, reps, timeS, distanceM, done, ts, rpe, restTakenS, mode)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, arguments: StatementArguments(args))
             }
             // Replace this session's opt-out rows (delete-first keeps a re-save idempotent, like setEntry).
@@ -519,29 +532,38 @@ extension CenitStore {
             let sArgs: [DatabaseValueConvertible?] = [
                 session.id, session.routineId, session.startTs, session.endTs,
                 session.deviceId, session.strain, session.avgHr, session.notes,
-                session.energyKcal, session.energySource?.rawValue
+                session.energyKcal, session.energySource?.rawValue,
+                session.strainSource?.rawValue, session.sessionRpe, session.sessionRpeSource?.rawValue,
+                session.trimpPerAU, session.source, session.title, session.programWeek,
+                session.deload.map { $0 ? 1 : 0 }
             ]
             try db.execute(sql: """
                 INSERT INTO strengthSession
-                    (id, routineId, startTs, endTs, deviceId, strain, avgHr, notes, energyKcal, energySource)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (id, routineId, startTs, endTs, deviceId, strain, avgHr, notes, energyKcal, energySource,
+                     strainSource, sessionRpe, sessionRpeSource, trimpPerAU, source, title, programWeek, deload)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     routineId = excluded.routineId, startTs = excluded.startTs, endTs = excluded.endTs,
                     deviceId = excluded.deviceId, strain = excluded.strain, avgHr = excluded.avgHr,
                     notes = excluded.notes, energyKcal = excluded.energyKcal,
-                    energySource = excluded.energySource
+                    energySource = excluded.energySource,
+                    strainSource = excluded.strainSource, sessionRpe = excluded.sessionRpe,
+                    sessionRpeSource = excluded.sessionRpeSource, trimpPerAU = excluded.trimpPerAU,
+                    source = excluded.source, title = excluded.title,
+                    programWeek = excluded.programWeek, deload = excluded.deload
                 """, arguments: StatementArguments(sArgs))
 
             try db.execute(sql: "DELETE FROM setEntry WHERE sessionId = ?", arguments: [session.id])
             for s in sets {
                 let args: [DatabaseValueConvertible?] = [
                     s.id, s.sessionId, s.exerciseId, s.position, s.kind.rawValue,
-                    s.weightKg, s.reps, s.timeS, s.distanceM, s.done ? 1 : 0, s.ts, s.rpe, s.restTakenS
+                    s.weightKg, s.reps, s.timeS, s.distanceM, s.done ? 1 : 0, s.ts, s.rpe, s.restTakenS,
+                    s.mode == .standard ? nil : s.mode.rawValue
                 ]
                 try db.execute(sql: """
                     INSERT INTO setEntry
-                        (id, sessionId, exerciseId, position, kind, weightKg, reps, timeS, distanceM, done, ts, rpe, restTakenS)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        (id, sessionId, exerciseId, position, kind, weightKg, reps, timeS, distanceM, done, ts, rpe, restTakenS, mode)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, arguments: StatementArguments(args))
             }
 
@@ -835,14 +857,21 @@ extension CenitStore {
         StrengthSession(id: r["id"], routineId: r["routineId"], startTs: r["startTs"], endTs: r["endTs"],
                         deviceId: r["deviceId"], strain: r["strain"], avgHr: r["avgHr"], notes: r["notes"],
                         energyKcal: r["energyKcal"],
-                        energySource: (r["energySource"] as String?).flatMap(EnergySource.init(rawValue:)))
+                        energySource: (r["energySource"] as String?).flatMap(EnergySource.init(rawValue:)),
+                        strainSource: (r["strainSource"] as String?).flatMap(StrainSource.init(rawValue:)),
+                        sessionRpe: r["sessionRpe"],
+                        sessionRpeSource: (r["sessionRpeSource"] as String?).flatMap(SessionRpeSource.init(rawValue:)),
+                        trimpPerAU: r["trimpPerAU"], source: r["source"], title: r["title"],
+                        programWeek: r["programWeek"],
+                        deload: (r["deload"] as Int?).map { $0 != 0 })
     }
 
     private static func setEntry(_ r: Row) -> SetEntry {
         SetEntry(id: r["id"], sessionId: r["sessionId"], exerciseId: r["exerciseId"], position: r["position"],
                  kind: SetKind(rawValue: r["kind"]) ?? .work, weightKg: r["weightKg"], reps: r["reps"],
                  timeS: r["timeS"], distanceM: r["distanceM"], done: (r["done"] as Int) != 0, ts: r["ts"],
-                 rpe: r["rpe"], restTakenS: r["restTakenS"])
+                 rpe: r["rpe"], restTakenS: r["restTakenS"],
+                 mode: (r["mode"] as String?).flatMap(SetMode.init(rawValue:)) ?? .standard)
     }
 
     private static func personalRecord(_ r: Row) -> PersonalRecord {

@@ -194,4 +194,38 @@ final class StrengthSessionSnapshotTests: XCTestCase {
         let decoded = try JSONDecoder().decode(StrengthSessionSnapshot.self, from: data)
         XCTAssertNil(decoded.runs.first?.deloadState)
     }
+
+    /// Ola 1 (v42): `mode` on a set and `programWeek`/`deload` on the root round-trip, and a snapshot
+    /// written before ola 1 (keys absent) still decodes with nil — a crash mid-session on an updated
+    /// app must never lose the in-flight session over a new key.
+    func testPreOla1SnapshotDecodesWithoutModeAndProgramKeys() throws {
+        let json = """
+        {"id":"s1","routineId":null,"routineName":"Empuje","startTs":1000,
+         "runs":[{"id":"r1","exerciseId":"press","name":"Press","type":"weightReps","restSeconds":90,
+                  "restMode":"fixed","hrRestReference":"restingMargin","hrRestValue":0,
+                  "sets":[{"id":"a","weightKg":80,"reps":8,"done":false,"kind":"work"}],
+                  "currentSet":0,"skipped":false}],
+         "currentIndex":0,"currentRestMode":"fixed","paused":false,"pausedAccumulatedS":0,"updatedTs":1001}
+        """
+        let snap = try JSONDecoder().decode(StrengthSessionSnapshot.self, from: Data(json.utf8))
+        XCTAssertNil(snap.runs[0].sets[0].mode)
+        XCTAssertNil(snap.programWeek)
+        XCTAssertNil(snap.deload)
+    }
+
+    func testPreservesModeAndProgramWeek() throws {
+        let set = StrengthSessionSnapshot.SetSnapshot(id: "a", weightKg: 80, reps: 0, mode: .amrap)
+        let run = StrengthSessionSnapshot.RunSnapshot(id: "r1", exerciseId: "press", name: "Press",
+                                                       type: .weightReps, restSeconds: 90, restMode: .fixed,
+                                                       hrRestReference: .restingMargin, hrRestValue: 0,
+                                                       sets: [set], currentSet: 0, skipped: false)
+        let snap = StrengthSessionSnapshot(id: "s1", routineId: nil, routineName: "Empuje", startTs: 1000,
+                                           runs: [run], currentIndex: 0, updatedTs: 1001,
+                                           programWeek: 5, deload: true)
+        let data = try JSONEncoder().encode(snap)
+        let back = try JSONDecoder().decode(StrengthSessionSnapshot.self, from: data)
+        XCTAssertEqual(back.runs[0].sets[0].mode, .amrap)
+        XCTAssertEqual(back.programWeek, 5)
+        XCTAssertEqual(back.deload, true)
+    }
 }

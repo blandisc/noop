@@ -308,7 +308,7 @@ download already fetched.
 
 ## 7. Storage model (CenitStore / SQLite)
 
-GRDB drives a migrator (the migrator currently reaches `v41`; see `Database.swift` — the source of
+GRDB drives a migrator (the migrator currently reaches `v43`; see `Database.swift` — the source of
 truth is the migration list, not a constant). The schema groups into four
 concerns:
 
@@ -371,6 +371,20 @@ concerns:
   `realRestSeconds(routineId:sessionLimit:)` and averaged by the pure `StrandTraining.RestStats`
   (interruption cap 900 s) for the hub's «DESCANSO REAL» tile. NULL = no measured rest (last set,
   intra-round superset jump, «sin descanso», pre-v40 rows) — never a default 0.
+- `strengthSession.strainSource` / `sessionRpe` / `sessionRpeSource` / `trimpPerAU` / `source` / `title` /
+  `programWeek` / `deload` (v42, ola 1 · FER-324) — where the session's strain came from (`hr` measured,
+  `rpe` estimated: the label the receipt and Tendencias must show), the one-tap session effort (6–10,
+  NULL = never answered, never defaulted), whether it was tapped or accepted as the suggested prefill, the
+  estimate's scale, the import provenance (`strong`/`hevy`/`cenit-csv`, NULL = Cénit), and the program
+  week / light-week flag (1 = a progression boundary). All nullable, appended via `addColumnIfMissing`.
+- `routineExercise.progressionUseRPE` (v42, DEFAULT 0) — the «Según reps en reserva» rhythm; off in every
+  pre-existing routine by construction.
+- `routineSet.mode` / `setEntry.mode` (v42) — `SetMode` (`standard`|`amrap`|`drop`), NULL = standard; an
+  axis ORTHOGONAL to `SetKind` so the app's `kind == .work` filters stay untouched. A drop is its own
+  `setEntry` right after its mother set by `position`, no FK.
+- `program` (v43) — the one active program (PK `id = 'active'`): `name`, `weeks`, `startTs`, `deloadRule`,
+  `endMode`, `templateId`, `createdTs`. The current week is DERIVED from `startTs` and the weeks actually
+  trained (`ProgramCalendar`, E10), never stored. Deleting the row leaves routines and the weekly schedule.
 - `strengthHrSample` (v41, FER-226) — one row per `(sessionId, ts)`: raw watch-pulse samples captured
   during a live guided strength session, reviving the capturer F7 ("la banda nunca existió") had
   accidentally amputated with the band. `AppModel.ingestWatchPulse` admits each pulse through the pure

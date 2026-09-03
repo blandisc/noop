@@ -165,3 +165,36 @@ Orden del dueño («también hay que migrar watch y widgets, entra en loop… ha
 1. **Widgets de pantalla de inicio y Live Activity en pantalla bloqueada: lienzo Liquid** (`fondoAlto`, `LiquidType`, `LiquidSpace`, tonos de dato de `LiquidColor`), igual que la app.
 2. **Watch y Dynamic Island: Liquid sobre OLED.** El negro se queda (OLED + HIG del Watch); las tintas vienen del set nuevo `LiquidOLED` (`fondo`, `superficie`, `tinta`, `tintaSecundaria`, `tintaTerciaria`, `borde`, `bordeFuerte`, `verde`, `ámbar`). Los tonos de dato son los mismos que en el iPhone: el dato no cambia de color por pantalla.
 3. El gate deja de excluir `CenitWidgets/` y `CenitWatch/` de `no-legacy-api`, `no-instrumento-theme`, `no-deprecated-metrics` y `no-weight-on-grotesk` cuando la deuda de cada raíz llegue a cero (misma disciplina que FER-306: prohibición pura, sin baseline).
+
+
+## 2026-09-02 · FER-85 (transcripción) y decisiones de la ola 1 de Entrenar (dueño)
+
+**FER-85 — la app aconseja, no bloquea.** Vivía en código (`EntrenarView.swift`, «Otra forma ›») y no aquí.
+Orden del dueño (2026-08-16): «yo sí quiero que el usuario, si quiere, le pueda subir». Consecuencias
+vigentes: con veredicto ámbar/rojo la sesión siembra el peso anterior y la subida queda a un toque («subir
+de todos modos»); editar a mano nunca se bloquea; el bloque «Otra forma ›» NUNCA lee el veredicto ni
+reordena sus puertas (sugerir Movilidad el día «Recupera» fue retirado a propósito); el veredicto nunca
+cambia la rutina del día.
+
+**Ola 1 de Entrenar (épico FER-323), decisiones cerradas por el dueño el 2026-09-02** tras el taller
+adversarial (`docs/specs/ola1-entrenar/`):
+1. **La carga NO vota en el veredicto en esta ola** (D-Q12). El eje de carga del acta sigue siendo
+   contexto («never flips the verdict»); ninguna pantalla dice que una sesión cambia el veredicto. La
+   pieza «la carga vota» es FER-336 (ola 1b, gate /cso).
+2. **Se pregunta «¿qué tan duro estuvo?» siempre al cerrar fuerza, también con reloj** (D-Q13; ciencia:
+   Falk Neto 2020, Day 2004, Sweet 2004, Haddad 2017; Apple pide Esfuerzo en fuerza). Prellenado
+   «sugerido», un toque, saltable. Con reloj el esfuerzo manda la carga de fuerza; la FC queda como costo
+   cardiovascular. Nunca «el mayor de los dos».
+3. **Cumplir reps con ≥2 reps en reserva → sube en 1 sesión** (D-Q1, Helms 2016). El ritmo se elige por
+   ejercicio; en rutinas existentes nace «Constante» (D-Q6).
+4. **El contador de semanas solo avanza en semanas con ≥1 sesión** (D-Q2).
+5. **Semana ligera = series ×0,5, peso igual** por default; la opción con peso usa el mismo 7,5 % del
+   deload reactivo: una sola familia de «bajar» (D-Q3).
+6. **Cuatro motores de programa = las plantillas existentes + semanas; sin biblioteca de coaches** (D-Q4).
+7. **La celda de reps de «las que puedas» arranca vacía** (D-Q7). **«Programa» fuera del primer uso**
+   (D-Q8). **Sin rutinas desde nombres importados** (D-Q9). **La semana ligera cambia solo kicker y meta
+   del héroe existente** (D-Q10; no se reabre v18).
+8. **Vocabulario en palabras:** «reps en reserva» (nunca «Q»/«Quedaban»), «las que puedas», «bajar y
+   seguir», «llegué al fallo», «semana ligera» (nunca «descarga»), «esfuerzo estimado».
+9. **Regla de selectores:** segmentado solo para etiquetas de una palabra o número; opciones con
+   explicación → lista con palomita; valor que abre pantalla → fila con chevron; acciones → botones cortos.

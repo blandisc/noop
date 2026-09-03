@@ -133,12 +133,17 @@ public struct RoutineSet: Codable, Sendable, Identifiable, Equatable {
     /// materializes existing sets by copying the exercise's rest, so old data reads back identically;
     /// sets added afterward stay `nil` and fall back to the exercise at runtime.
     public var rest: RestConfig?
+    /// How the set is performed (ola 1, v42): `.standard` (today), `.amrap` («las que puedas»: `reps` is
+    /// the floor the progression compares against, `repsRangeTop` is nil) or `.drop`. NULL in the DB
+    /// reads back as `.standard`.
+    public var mode: SetMode
 
     public init(id: String = UUID().uuidString, position: Int, kind: SetKind = .work,
                 reps: Int? = nil, weightKg: Double? = nil, repsRangeTop: Int? = nil,
-                rest: RestConfig? = nil) {
+                rest: RestConfig? = nil, mode: SetMode = .standard) {
         self.id = id; self.position = position; self.kind = kind
         self.reps = reps; self.weightKg = weightKg; self.repsRangeTop = repsRangeTop; self.rest = rest
+        self.mode = mode
     }
 
     /// Texto de reps para la receta: "piso" cuando no hay techo, "piso-techo" cuando sí — nil cuando la
@@ -212,6 +217,10 @@ public struct RoutineExercise: Codable, Sendable, Identifiable, Equatable {
     /// `true` = raise even on a low-recovery day (skip the TrainingRegulation gate). Default `false`:
     /// a `recoveryLow` day DEFERS an earned raise to the next session (2c's "Recuperación baja" row).
     public var progressionIgnoreRecovery: Bool
+    /// Ritmo «Según reps en reserva» (ola 1, v42, DEFAULT 0): when true, the set-level RPE (RIR) feeds
+    /// the double-progression rule (E4). Off in every pre-existing routine by construction — nothing
+    /// changes until the user (or a new template) turns it on.
+    public var progressionUseRPE: Bool
     /// Nota fija del ejercicio (FER-166): viaja a cada sesión como semilla de `ExerciseRun.note`; nil =
     /// sin nota, nunca "". Distinta de `strengthExerciseNote`, que es historia por sesión.
     public var note: String?
@@ -224,7 +233,8 @@ public struct RoutineExercise: Codable, Sendable, Identifiable, Equatable {
                 hrRestReference: HRRestReference = .restingMargin, hrRestValue: Double = 0,
                 progressionEnabled: Bool = false, progressionSessions: Int = 2,
                 progressionIncrementKg: Double? = nil, progressionDeload: DeloadPolicy = .propose,
-                progressionIgnoreRecovery: Bool = false, note: String? = nil) {
+                progressionIgnoreRecovery: Bool = false, note: String? = nil,
+                progressionUseRPE: Bool = false) {
         self.id = id; self.routineId = routineId; self.exerciseId = exerciseId
         self.position = position; self.targetSets = targetSets; self.targetReps = targetReps
         self.targetWeightKg = targetWeightKg; self.warmupPercents = warmupPercents
@@ -235,6 +245,7 @@ public struct RoutineExercise: Codable, Sendable, Identifiable, Equatable {
         self.progressionIncrementKg = progressionIncrementKg; self.progressionDeload = progressionDeload
         self.progressionIgnoreRecovery = progressionIgnoreRecovery
         self.note = note
+        self.progressionUseRPE = progressionUseRPE
     }
 
     /// The per-set plan to act on: the authored `sets` when present, else a 1:1 expansion of the legacy
@@ -297,21 +308,77 @@ public struct StrengthSession: Codable, Sendable, Identifiable, Equatable {
     /// Where `energyKcal` came from (FER-715). `nil` alongside a non-nil `energyKcal` shouldn't occur;
     /// both are written together at close.
     public var energySource: EnergySource?
+    /// Where `strain` came from (ola 1, v42): `.hr` measured from watch pulse, `.rpe` estimated from
+    /// minutes × session effort. `nil` alongside a non-nil `strain` = a pre-v42 row = measured (`hr`).
+    /// The label the receipt and Tendencias MUST show («estimado») hangs off this, not off `strain`.
+    public var strainSource: StrainSource?
+    /// The one-tap session effort («¿qué tan duro estuvo?», 6–10 with half steps). `nil` = never
+    /// answered and no set carried an RPE — never a defaulted 7.
+    public var sessionRpe: Double?
+    /// Whether `sessionRpe` was tapped by the user (`answered`) or accepted as the suggested mean of the
+    /// work sets' RPE (`prefill`). Calibration reads it; copy never does.
+    public var sessionRpeSource: SessionRpeSource?
+    /// The TRIMP-per-AU scale used to estimate this session's `strain` (E2). Persisted so a later
+    /// recalibration can recompute every `.rpe` session onto one scale in a single write.
+    public var trimpPerAU: Double?
+    /// Import provenance (E8): `"strong"`, `"hevy"`, `"cenit-csv"`; `nil` = logged in Cénit.
+    public var source: String?
+    /// The workout title as the source app named it (imports only); `nil` = logged in Cénit.
+    public var title: String?
+    /// Which week of the active program this session was served in (E10); `nil` = no program.
+    public var programWeek: Int?
+    /// `true` when the session was served in a light week («semana ligera», E10) — the progression
+    /// treats it as a boundary (neither hit nor miss) and «la última vez» skips it. `nil` = pre-v42 /
+    /// no program.
+    public var deload: Bool?
 
     public init(id: String = UUID().uuidString, routineId: String? = nil, startTs: Int,
                 endTs: Int? = nil, deviceId: String? = nil, strain: Double? = nil,
                 avgHr: Int? = nil, notes: String? = nil,
-                energyKcal: Double? = nil, energySource: EnergySource? = nil) {
+                energyKcal: Double? = nil, energySource: EnergySource? = nil,
+                strainSource: StrainSource? = nil, sessionRpe: Double? = nil,
+                sessionRpeSource: SessionRpeSource? = nil, trimpPerAU: Double? = nil,
+                source: String? = nil, title: String? = nil,
+                programWeek: Int? = nil, deload: Bool? = nil) {
         self.id = id; self.routineId = routineId; self.startTs = startTs; self.endTs = endTs
         self.deviceId = deviceId; self.strain = strain; self.avgHr = avgHr; self.notes = notes
         self.energyKcal = energyKcal; self.energySource = energySource
+        self.strainSource = strainSource; self.sessionRpe = sessionRpe
+        self.sessionRpeSource = sessionRpeSource; self.trimpPerAU = trimpPerAU
+        self.source = source; self.title = title
+        self.programWeek = programWeek; self.deload = deload
     }
+}
+
+/// Where a strength session's `strain` came from (ola 1, v42).
+public enum StrainSource: String, Codable, Sendable {
+    /// Measured from watch heart rate (Edwards/Banister TRIMP), as before v42.
+    case hr
+    /// Estimated from minutes × session effort (E2). Every surface that shows it says «estimado».
+    case rpe
+}
+
+/// Whether the session effort was tapped by the user or accepted as the suggested prefill.
+public enum SessionRpeSource: String, Codable, Sendable {
+    case answered
+    case prefill
 }
 
 /// Whether a logged set is a warm-up (doesn't count toward PR/volume) or a work set.
 public enum SetKind: String, Codable, Sendable {
     case work
     case warmup
+}
+
+/// How a WORK set is performed (ola 1, v42). Deliberately an axis ORTHOGONAL to `SetKind`: an AMRAP
+/// («las que puedas») and a drop («bajar y seguir») are still `kind == .work`, so the ~60 `kind == .work`
+/// filters across the app stay correct untouched — only the four rule sites (volume / progression /
+/// records / e1RM) read `mode`. A NULL column reads back as `.standard`. The rules themselves
+/// (`SetMode.counts(for:)`) land with E6 (FER-327); this is the storage contract only.
+public enum SetMode: String, Codable, Sendable, CaseIterable {
+    case standard
+    case amrap
+    case drop
 }
 
 /// A single logged set. Which measure is filled depends on the exercise's `ExerciseType`
@@ -335,15 +402,20 @@ public struct SetEntry: Codable, Sendable, Identifiable, Equatable {
     /// and persisted at save (FER-167, v40). `nil` = no measured rest (last set of the session, an
     /// intra-round superset jump, «sin descanso» configured, or a pre-v40 row) — never a default 0.
     public var restTakenS: Int?
+    /// How the set was performed (ola 1, v42) — see `SetMode`. A drop («bajar y seguir») is its own
+    /// `SetEntry` with `mode == .drop`, sitting right after its mother set by `position`; no FK.
+    public var mode: SetMode
 
     public init(id: String = UUID().uuidString, sessionId: String, exerciseId: String,
                 position: Int, kind: SetKind = .work, weightKg: Double? = nil,
                 reps: Int? = nil, timeS: Double? = nil, distanceM: Double? = nil,
-                done: Bool = false, ts: Int, rpe: Double? = nil, restTakenS: Int? = nil) {
+                done: Bool = false, ts: Int, rpe: Double? = nil, restTakenS: Int? = nil,
+                mode: SetMode = .standard) {
         self.id = id; self.sessionId = sessionId; self.exerciseId = exerciseId
         self.position = position; self.kind = kind; self.weightKg = weightKg; self.reps = reps
         self.timeS = timeS; self.distanceM = distanceM; self.done = done; self.ts = ts; self.rpe = rpe
         self.restTakenS = restTakenS
+        self.mode = mode
     }
 }
 
@@ -376,16 +448,21 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
         /// The real rest (seconds, pauses excluded) that FOLLOWED this set (FER-167), mirroring
         /// `SetEntry.restTakenS`. Legacy JSON without the key decodes to nil, same pattern as `rpe`.
         public var restTakenS: Int?
+        /// How the set is performed (ola 1, `SetMode`). Legacy JSON without the key decodes to nil
+        /// (= `.standard`), same pattern as `rpe`.
+        public var mode: SetMode?
 
         public init(id: String, weightKg: Double, reps: Int, timeS: Int? = nil,
                     distanceM: Double? = nil, done: Bool = false, doneTs: Int? = nil,
                     rest: RestConfig? = nil, kind: SetKind = .work, rpe: Double? = nil,
-                    note: String? = nil, touched: Bool? = nil, restTakenS: Int? = nil) {
+                    note: String? = nil, touched: Bool? = nil, restTakenS: Int? = nil,
+                    mode: SetMode? = nil) {
             self.id = id; self.weightKg = weightKg; self.reps = reps; self.timeS = timeS
             self.distanceM = distanceM; self.done = done; self.doneTs = doneTs
             self.rest = rest; self.kind = kind; self.rpe = rpe; self.note = note
             self.touched = touched
             self.restTakenS = restTakenS
+            self.mode = mode
         }
     }
     /// One exercise's run within the session.
@@ -507,13 +584,18 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
     public var pausedAt: Date?
     /// When this snapshot was taken — for debugging / picking the newest if two ever exist.
     public var updatedTs: Int
+    /// The program week the session was served in and whether it was served light (ola 1, E10) — they
+    /// must survive a crash so the saved session carries them. Optional: a pre-ola-1 snapshot decodes.
+    public var programWeek: Int?
+    public var deload: Bool?
 
     public init(id: String, routineId: String?, routineName: String, startTs: Int,
                 runs: [RunSnapshot], currentIndex: Int, restEndsAt: Date? = nil,
                 restStartedAt: Date? = nil, currentRestTarget: Int? = nil,
                 currentRestMode: RestMode = .fixed, timerStart: Date? = nil,
                 paused: Bool = false, pausedAccumulatedS: Int = 0, pausedAt: Date? = nil,
-                updatedTs: Int, restOwnerSetId: String? = nil, lastRestStartedAt: Date? = nil) {
+                updatedTs: Int, restOwnerSetId: String? = nil, lastRestStartedAt: Date? = nil,
+                programWeek: Int? = nil, deload: Bool? = nil) {
         self.id = id; self.routineId = routineId; self.routineName = routineName
         self.startTs = startTs; self.runs = runs; self.currentIndex = currentIndex
         self.restEndsAt = restEndsAt; self.restStartedAt = restStartedAt
@@ -523,6 +605,7 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
         self.paused = paused; self.pausedAccumulatedS = pausedAccumulatedS; self.pausedAt = pausedAt
         self.updatedTs = updatedTs
         self.restOwnerSetId = restOwnerSetId
+        self.programWeek = programWeek; self.deload = deload
     }
 }
 

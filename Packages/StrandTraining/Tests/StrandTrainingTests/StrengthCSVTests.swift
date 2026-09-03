@@ -15,7 +15,7 @@ final class StrengthCSVTests: XCTestCase {
 
     func testHeaderColumns() {
         XCTAssertEqual(StrengthCSV.header,
-            "date,routine,exercise,set_index,set_kind,weight_kg,reps,time_s,distance_m,rpe,rest_taken_s,notes")
+            "date,routine,exercise,set_index,set_kind,weight_kg,reps,time_s,distance_m,rpe,rest_taken_s,notes,set_mode")
     }
 
     /// A fixture that would pass with a naive `joined(separator: ",")` generator MUST fail first —
@@ -25,14 +25,16 @@ final class StrengthCSVTests: XCTestCase {
         let line = StrengthCSV.line(for: row(notes: notes))
 
         // The notes field must be one single quoted CSV field, not split by its internal comma/newline.
-        let expectedNotesField = "\"Dolor en el hombro, dijo \"\"no puedo más\"\"\nparar aquí\""
+        // Since ola 1 (v42) `set_mode` follows it as the 13th column (blank for a standard set).
+        let expectedNotesField = "\"Dolor en el hombro, dijo \"\"no puedo más\"\"\nparar aquí\","
         XCTAssertTrue(line.hasSuffix(expectedNotesField),
-                      "expected the escaped notes field at the end of the line, got: \(line)")
+                      "expected the escaped notes field followed by a blank set_mode, got: \(line)")
 
-        // Round-trip: a naive split on "," would produce more than 12 fields. A correct CSV parser
-        // (respecting quotes) must recover exactly 12.
-        XCTAssertEqual(parseCSVLine(line).count, 12)
-        XCTAssertEqual(parseCSVLine(line).last, notes)
+        // Round-trip: a naive split on "," would produce more than 13 fields. A correct CSV parser
+        // (respecting quotes) must recover exactly 13, with the notes intact in column 12.
+        XCTAssertEqual(parseCSVLine(line).count, 13)
+        XCTAssertEqual(parseCSVLine(line)[11], notes)
+        XCTAssertEqual(parseCSVLine(line).last, "")
     }
 
     func testRoutineNameWithCommaIsQuoted() {
@@ -141,5 +143,20 @@ final class StrengthCSVTests: XCTestCase {
         }
         fields.append(field)
         return fields
+    }
+
+    /// Ola 1 (v42): `set_mode` is the 13th column. A standard set writes it blank (pre-ola-1 readers see
+    /// their 12 columns plus one empty field); a drop writes `drop`, an AMRAP `amrap`.
+    func testSetModeIsLastColumnBlankForStandard() {
+        let date = Date(timeIntervalSince1970: 1_700_000_000)
+        let standard = StrengthCSV.Row(date: date, routineName: nil, exerciseName: "Press", setIndex: 1,
+                                       setKind: .work, weightKg: 80, reps: 8, timeS: nil, distanceM: nil,
+                                       rpe: nil, restTakenS: nil, notes: nil)
+        let drop = StrengthCSV.Row(date: date, routineName: nil, exerciseName: "Press", setIndex: 2,
+                                   setKind: .work, weightKg: 64, reps: 9, timeS: nil, distanceM: nil,
+                                   rpe: nil, restTakenS: nil, notes: nil, setMode: .drop)
+        XCTAssertTrue(StrengthCSV.line(for: standard).hasSuffix(","), "standard = blank last field")
+        XCTAssertTrue(StrengthCSV.line(for: drop).hasSuffix(",drop"))
+        XCTAssertEqual(StrengthCSV.line(for: drop).split(separator: ",", omittingEmptySubsequences: false).count, 13)
     }
 }
