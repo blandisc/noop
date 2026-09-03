@@ -197,15 +197,23 @@ public enum LiquidColor {
     // MARK: Blancos de vidrio (alfas fijos de #FFFFFF — §4.1)
 
     /// `.92` — highlight especular.
-    public static let vidrioEspecular = Color.white.opacity(0.92)
+    public static let vidrioEspecular = LiquidTheme.dynamic(light: Color.white.opacity(0.92), dark: Color(hex: "#ECE9E0").opacity(0.42))
+
+    /// A1/B1 (FER-349): el realce especular del vidrio, por modo. En claro es blanco (el brillo de
+    /// siempre); en oscuro es una luz cálida muy tenue (el blanco puro «quema» sobre negro). `alpha`
+    /// es el `highlightTop`/`highlightBottom` de la receta; en oscuro se atenúa a ~16 %.
+    static func vidrioHighlight(_ alpha: Double) -> Color {
+        LiquidTheme.dynamic(light: Color.white.opacity(alpha),
+                            dark: Color(hex: "#ECE9E0").opacity(alpha * 0.16))
+    }
     /// `.9` — borde de esfera / gota.
     public static let vidrioBordeFuerte = Color.white.opacity(0.9)
     /// `.85` — bordes de vidrio.
     public static let vidrioBorde = Color.white.opacity(0.85)
     /// `.8` — borde de pastilla + inner-highlights.
-    public static let vidrioBordePastilla = Color.white.opacity(0.8)
+    public static let vidrioBordePastilla = LiquidTheme.dynamic(light: Color.white.opacity(0.8), dark: Color(hex: "#ECE9E0").opacity(0.16))
     /// `.72` — borde de superficie (tiles).
-    public static let vidrioBordeSuperficie = Color.white.opacity(0.72)
+    public static let vidrioBordeSuperficie = LiquidTheme.dynamic(light: Color.white.opacity(0.72), dark: Color(hex: "#ECE9E0").opacity(0.13))
     /// `.55` — streak especular del dock.
     public static let vidrioStreak = Color.white.opacity(0.55)
     /// `.5` — relleno lente/dial.
@@ -216,11 +224,11 @@ public enum LiquidColor {
     public static let vidrioRealcePastilla = Color.white.opacity(0.35)
     /// `.46` — relleno pastilla. Subido de 0.32 para estabilizar el vidrio durante
     /// el arrastre de la hoja: menos backdrop = menos «blanqueo» al bajar (pedido del dueño).
-    public static let vidrioPastilla = Color.white.opacity(0.46)
+    public static let vidrioPastilla = LiquidTheme.dynamic(light: Color.white.opacity(0.46), dark: Color(hex: "#ECE9E0").opacity(0.05))
     /// `.46` — relleno superficie tile. Subido de 0.30 (canon previo del doc §1
     /// LIQUID-GLASS.md) por la misma razón — la tabla dependía del backdrop y cambiaba
     /// de valor al arrastrar/scrollear la hoja.
-    public static let vidrioSuperficie = Color.white.opacity(0.46)
+    public static let vidrioSuperficie = LiquidTheme.dynamic(light: Color.white.opacity(0.46), dark: Color(hex: "#ECE9E0").opacity(0.055))
     /// `.7` — relleno de los steppers circulares del enfoque (FER-170 · F5, ronda 2 del gate — Grok
     /// G8: `FocoHeroe` traía `Color.white.opacity(...)` crudo). Mock `hoja-pantallas.html` `.step
     /// {background:rgba(255,255,255,.7)}` — un alfa propio, distinto de `vidrioBordeSuperficie` (.72)
@@ -317,7 +325,7 @@ public enum LiquidColor {
     /// «caro» de «lavado» sobre fondo claro: un filo de tinta bajo el borde blanco. Subido de
     /// .06 a .08 al aprobarse el vidrio al 30 % sobre blanco puro (FER-118): sobre #FFFFFF un
     /// borde blanco no existe y el canto de tinta es el único filo del módulo.
-    public static let vidrioCanto = tinta900.opacity(0.08)
+    public static let vidrioCanto = LiquidTheme.dynamic(light: Color(hex: "#221D16").opacity(0.08), dark: Color(hex: "#ECE9E0").opacity(0.14))
 
     // MARK: Vidrio de la ATMÓSFERA (FER-118 — módulos de Hoy sobre blanco puro + partículas)
     //
@@ -326,11 +334,11 @@ public enum LiquidColor {
     // nada; al 10 % el fondo competía con las gráficas en los días ámbar y rojo).
 
     /// `.30` — relleno del módulo de vidrio sobre la atmósfera (receta `.superficieAtmosfera`).
-    public static let vidrioAtmosfera = Color.white.opacity(0.30)
+    public static let vidrioAtmosfera = LiquidTheme.dynamic(light: Color.white.opacity(0.30), dark: Color(hex: "#ECE9E0").opacity(0.045))
     /// `.45` — el plan B OPACO de la misma receta si el vidrio real no sostiene 60 fps sobre la
     /// capa Metal (condición del dueño: el blur tiene que ser real; si cae a sólido, sube a 45 %,
     /// nunca 30 % opaco, que se ve gris sucio).
-    public static let vidrioAtmosferaSolida = Color.white.opacity(0.45)
+    public static let vidrioAtmosferaSolida = LiquidTheme.dynamic(light: Color.white.opacity(0.45), dark: Color(hex: "#1A1714").opacity(0.92))
 
     /// Factor de saturación del backdrop de un módulo («refracción honesta»): lo que pasa
     /// detrás del vidrio se ve 1.28× más vivo que fuera. En iOS 26 el vidrio nativo aporta
