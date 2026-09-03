@@ -61,6 +61,10 @@ struct TrainingLoadSheet: View {
     var onSeeTrends: (() -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
+    /// Ola 1 · E3: la procedencia de la fuerza en el pie (sesiones estimadas por esfuerzo y sesiones
+    /// sin esfuerzo que NO entran a la carga). Opcional: la hoja también se monta en previews sin app.
+    @Environment(AppModel.self) private var app: AppModel?
+    @State private var provenance: (estimated: Int, unrated: Int)?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.liquidMotionDisabled) private var motionDisabled
 
@@ -123,6 +127,7 @@ struct TrainingLoadSheet: View {
         }
         .task {
             levelsHost.load(rows: chartSeriesPairs)
+            if let app { provenance = await app.repo.strengthEffortProvenance() }
         }
     }
 
@@ -422,6 +427,14 @@ struct TrainingLoadSheet: View {
                      mostrar: String(localized: "Show method"),
                      ocultar: String(localized: "Hide method")) {
             LiquidNotaLine(methodProse)
+            // Ola 1 · E3 (A7): cuántas sesiones de fuerza entraron ESTIMADAS por esfuerzo y cuántas se
+            // quedaron fuera por no tener esfuerzo — la carga no inventa; lo dice.
+            if let provenance, provenance.estimated > 0 {
+                LiquidNotaLine(String(localized: "Includes \(provenance.estimated) sessions with estimated effort"))
+            }
+            if let provenance, provenance.unrated > 0 {
+                LiquidNotaLine(String(localized: "\(provenance.unrated) sessions without effort: not in your load"))
+            }
             // Chip DENTRO del plegable (patrón `origenChipVista` del compositor).
             // Carga es un CÁLCULO en el teléfono, no una lectura de Apple.
             if model.acwr != nil {
