@@ -21,6 +21,7 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- Diseño (FER-358 · loop 6): `LiquidBarraProgreso` con marcas mudas dentro de la pieza y `.pastillaSolida` en vez de `.clipShape(Capsule())` a mano; Dynamic Type (`@ScaledMetric`) en detalle/edición de workout, ejercicio y progresión; `.white`/velo a tokens `LiquidColor`; comentario de etapas de sueño honesto.
 - Diseño (FER-342 · loop 5): tipografía de hoja en Interval Timer; `LiquidAviso` / `SegmentedPillControl` en vez de `Capsule()` a mano; tokens `LiquidColor` por `.white`; se borra `TodayBanner`; `LiquidCampoTexto` en import; `liquidTarjetaSeccion` en ShareCard; comentarios Instrumento alineados al código Liquid.
 ### Ola 1 de Entrenar · esfuerzo al cerrar (FER-330)
 ### ES

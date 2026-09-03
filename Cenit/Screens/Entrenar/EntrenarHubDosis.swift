@@ -61,21 +61,12 @@ struct EntrenarHubDosis: View {
                     : LiquidColor.cian,
                 pista: LiquidColor.papelTarjeta.opacity(EntrenarHubMetrics.dosisTrackFondoAlfa),
                 altura: EntrenarHubMetrics.dosisTrackHeight,
-                animada: false)
-                .overlay {
-                    GeometryReader { geo in
-                        // Los dos ticks MUDOS de referencia — 50 % y el tope, sin texto (mock `.band`/`::after`).
-                        Rectangle().fill(LiquidColor.tinta900.opacity(EntrenarHubMetrics.dosisTickAlfa))
-                            .frame(width: EntrenarHubMetrics.dosisTickWidth)
-                            .position(x: geo.size.width * 0.5, y: geo.size.height / 2)
-                        Rectangle().fill(LiquidColor.tinta900.opacity(EntrenarHubMetrics.dosisTickAlfa))
-                            .frame(width: EntrenarHubMetrics.dosisTickWidth)
-                            .position(x: geo.size.width - EntrenarHubMetrics.dosisTickWidth / 2,
-                                      y: geo.size.height / 2)
-                    }
-                }
+                animada: false,
+                // Los dos ticks MUDOS de referencia — 50 % y el tope, sin texto (mock `.band`/`::after`);
+                // viven dentro de la pieza y se recortan con la cápsula (FER-358).
+                marcasMudas: [0.5, 1.0],
+                tonoMarcaMuda: LiquidColor.tinta900.opacity(EntrenarHubMetrics.dosisTickAlfa))
                 .frame(maxWidth: .infinity)
-                .clipShape(Capsule())
             Text(verbatim: MuscleFatigueMap.formattedSets(fila.sets))
                 .font(EntrenarHubMetrics.subLsDelta)   // grotesk 10.5/700 tabular — mismo peldaño que `.drow b`
                 .foregroundStyle(LiquidColor.tinta700)

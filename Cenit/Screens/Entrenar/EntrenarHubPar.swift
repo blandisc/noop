@@ -131,17 +131,11 @@ struct EntrenarHubPar: View {
             tono: LiquidColor.cian.opacity(EntrenarHubMetrics.restFillAlfa),
             pista: LiquidColor.tinta900.opacity(EntrenarHubMetrics.vbarsEmptyAlfa),
             altura: EntrenarHubMetrics.restTrackHeight,
-            animada: false)
-            .overlay {
-                GeometryReader { geo in
-                    Rectangle().fill(LiquidColor.tinta900.opacity(EntrenarHubMetrics.restPlanTickAlfa))
-                        .frame(width: EntrenarHubMetrics.restPlanTickWidth)
-                        .position(x: geo.size.width - EntrenarHubMetrics.restPlanTickWidth / 2,
-                                  y: geo.size.height / 2)
-                }
-            }
+            animada: false,
+            // Tick del plan en el tope, dentro de la pieza (FER-358).
+            marcasMudas: [1.0],
+            tonoMarcaMuda: LiquidColor.tinta900.opacity(EntrenarHubMetrics.restPlanTickAlfa))
             .frame(maxWidth: .infinity)
-            .clipShape(Capsule())
     }
 
     private static func mmss(_ seconds: Int) -> String {

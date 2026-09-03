@@ -144,7 +144,7 @@ struct SessionKeypad: View {
             }
             .frame(height: LiquidControl.hitTarget)
             // 2A: track `.pastillaSolida` (gesto de posición y 5 elementos VoiceOver intactos).
-            .clipShape(Capsule())
+            // La receta ya clipa la pastilla; no hace falta otro clipShape a mano.
             .liquidGlass(.pastillaSolida)
         }
         .padding(.horizontal, LiquidSpace.s400).padding(.vertical, LiquidSpace.s200)

@@ -62,6 +62,7 @@ struct ExerciseDetailScreen: View {
     @State private var variant: Exercise?
     /// Other catalog exercises that share this one's primary muscle — derived once (FER-739).
     @State private var variants: [Exercise] = []
+    @ScaledMetric(relativeTo: .footnote) private var lectura = LiquidType.lecturaHojaBase
 
     private enum DetailTab: String, CaseIterable, Identifiable {
         case guide, progress, history
@@ -225,7 +226,7 @@ struct ExerciseDetailScreen: View {
                     Image(systemName: isLoopPlaying ? "pause.fill" : "play.fill")
                         .font(LiquidType.infoGlifoCompacto.weight(.semibold))
                         .foregroundStyle(LiquidColor.papelTarjeta)
-                        .padding(LiquidSpace.s200).background(.black.opacity(CenitOpacity.strokeSoft), in: Circle())
+                        .padding(LiquidSpace.s200).background(LiquidColor.tinta900.opacity(CenitOpacity.strokeSoft), in: Circle())
                 }
                 .buttonStyle(EntrenarPressStyle())
                 // FER-121: círculo visible ≈28pt; el toque real crece a 44 (HIG) sin mover el
@@ -616,7 +617,7 @@ struct ExerciseDetailScreen: View {
                             .foregroundStyle(familyTint)
                             .frame(width: 15, alignment: .leading)
                         Text(cue)
-                            .font(Font.system(size: LiquidType.lecturaHojaBase))
+                            .font(.system(size: lectura))
                             .foregroundStyle(LiquidColor.tinta900)
                             .fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -785,7 +786,7 @@ struct ExerciseDetailScreen: View {
     /// so it never overrides the «▲» accent `cycleLine` paints on `.readyToAdvance`.
     private func recordRow(_ label: Text, _ value: Text) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s300) {
-            label.font(Font.system(size: LiquidType.lecturaHojaBase)).foregroundStyle(LiquidColor.tinta700)
+            label.font(.system(size: lectura)).foregroundStyle(LiquidColor.tinta700)
             Spacer(minLength: LiquidSpace.s200)
             value.font(LiquidType.datoMenor).monospacedDigit()
         }
