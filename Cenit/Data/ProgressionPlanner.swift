@@ -21,8 +21,11 @@ enum ProgressionPlanner {
         /// Subió antes de tiempo: la sesión más reciente cumplió con `reserveReps` de sobra
         /// (Helms 2016 — «able to complete sets with more than [target] RIR»).
         case comfortable(reserveReps: Int)
-        /// Cumplió, pero al fallo (0 en reserva): invisible al ciclo, así que mantiene.
-        case atLimitHold
+        /// Cumplió, pero al fallo (0 en reserva): invisible al ciclo, así que mantiene. Gate QA
+        /// FER-331 O2: carga el peso de la sesión (`visible.last?.session.workingKg`) desde AQUÍ —
+        /// la píldora del hub no debe re-derivarlo de `lastSets` (que puede incluir una sesión
+        /// opted-out/deload más nueva que el planner ya excluyó de `visible`).
+        case atLimitHold(workingKg: Double)
         /// Tres (o más) sesiones al fallo seguidas por fin cuentan como estándar y suben de todos modos.
         case atLimitCap
     }
@@ -113,7 +116,9 @@ enum ProgressionPlanner {
         // `atLimitStreak` (ambas públicas) sobre la MISMA sesión más reciente que `classify` ya vio.
         // `useRPE == false` es byte-idéntico a como esta pantalla se veía antes de E4/E5: `nil`.
         let rhythmNote: RaiseRhythmNote? = {
-            guard re.progressionUseRPE else { return nil }
+            // Gate QA FER-331 O3 (D-Q10): la semana ligera solo cambia kicker y meta — ninguna
+            // nota de ritmo nueva nace ahí, sin importar el estado.
+            guard re.progressionUseRPE, !isLightWeek else { return nil }
             switch state {
             case .readyToAdvance, .deferred:
                 if ProgressionMath.atLimitStreak(input) >= ProgressionMath.atLimitStreakCap {
@@ -127,7 +132,9 @@ enum ProgressionPlanner {
                 let reserve = max(0, Int((10 - maxRPE).rounded()))
                 return .comfortable(reserveReps: reserve)
             case .inCycle:
-                return ProgressionMath.atLimitStreak(input) > 0 ? .atLimitHold : nil
+                guard ProgressionMath.atLimitStreak(input) > 0,
+                      let workingKg = visible.last?.session.workingKg else { return nil }
+                return .atLimitHold(workingKg: workingKg)
             default:
                 return nil
             }

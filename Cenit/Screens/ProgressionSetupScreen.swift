@@ -109,26 +109,49 @@ struct ProgressionSetupScreen: View {
     }
 
     private var ritmoSection: some View {
+        // Sin filete propio: `incrementRow` (la fila de arriba) ya cierra con el suyo — dos filetes
+        // pegados se leerían como uno solo, más grueso, sin espacio entre ellos.
+        opcionesSection(titulo: String(localized: "Rhythm"), dividerAbove: false,
+                        opciones: Ritmo.allCases.map { r in
+            Opcion(title: ritmoTitulo(r), subtitle: ritmoSubtitulo(r), seleccionado: ritmo == r,
+                  action: { selectRitmo(r) })
+        })
+    }
+
+    /// Una opción de `opcionesSection` — título + subtítulo corto + palomita.
+    private struct Opcion {
+        let title: String
+        let subtitle: String
+        let seleccionado: Bool
+        let action: () -> Void
+    }
+
+    /// Rótulo + lista con palomita (D-Q1/D-Q6, DECISIONS ola 1 §9: segmentado SOLO para etiquetas
+    /// de una palabra o número — «Bajar 7,5 %» / «Solo avisar» / «Esperar / Subir igual» no lo son).
+    /// `LiquidListRow` BARE (sin `LiquidListCard`, que traería su propio vidrio — ADN §11.1,
+    /// no-sheet-glass: esta hoja ya es papel opaco, `.superficieSolida`), con su padding horizontal
+    /// compensado (`LiquidSpace.s300`) para alinear el texto con el resto de las filas de la tarjeta
+    /// (`LiquidSpace.s400` − `LiquidListRow`'s `LiquidSpace.s100`).
+    private func opcionesSection(titulo: String, dividerAbove: Bool, opciones: [Opcion]) -> some View {
         VStack(alignment: .leading, spacing: .zero) {
-            // Sin filete propio: `incrementRow` (la fila de arriba) ya cierra con el suyo — dos
-            // filetes pegados se leerían como uno solo, más grueso, sin espacio entre ellos.
-            Text("Rhythm")
+            Text(verbatim: titulo)
                 .font(LiquidType.tituloFila)
                 .foregroundStyle(LiquidColor.tinta900)
                 .padding(.horizontal, LiquidSpace.s400)
                 .padding(.top, LiquidSpace.s300)
                 .padding(.bottom, LiquidSpace.s100)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            // Compensa el padding propio de `LiquidListRow` (`LiquidSpace.s100`) para alinear su
-            // texto con el resto de las filas de esta tarjeta (`LiquidSpace.s400`) — sin envolver en
-            // `LiquidListCard`, que traería SU vidrio (ADN §11.1, no-sheet-glass: esta hoja ya es
-            // papel opaco, `.superficieSolida`).
+                .overlay(alignment: .top) {
+                    if dividerAbove {
+                        Rectangle().fill(LiquidColor.tinta10).frame(height: 0.5)
+                    }
+                }
             VStack(spacing: .zero) {
-                ForEach(Array(Ritmo.allCases.enumerated()), id: \.offset) { idx, r in
-                    LiquidListRow(title: ritmoTitulo(r), subtitle: ritmoSubtitulo(r),
-                                  tone: LiquidColor.verdeCarga, seleccionado: ritmo == r,
-                                  divider: idx < Ritmo.allCases.count - 1,
-                                  action: { selectRitmo(r) })
+                ForEach(Array(opciones.enumerated()), id: \.offset) { idx, o in
+                    LiquidListRow(title: o.title, subtitle: o.subtitle,
+                                  tone: LiquidColor.verdeCarga, seleccionado: o.seleccionado,
+                                  divider: idx < opciones.count - 1,
+                                  action: o.action)
                 }
             }
             .padding(.horizontal, LiquidSpace.s300)
@@ -219,22 +242,29 @@ struct ProgressionSetupScreen: View {
 
                 if ajustesAbiertos {
                     VStack(spacing: .zero) {
-                        fila(rotulo: String(localized: "If you stall 3 sessions"),
-                             nota: String(localized: "drop ~7.5% and rebuild")) {
-                            SegmentedPillControl([DeloadPolicy.propose, .warn], selection: $deload) {
-                                $0 == .propose ? String(localized: "Propose") : String(localized: "Warn only")
-                            }
-                        }
+                        // Gate QA FER-331 D1: lista con palomita, no segmentado — «Bajar 7,5 %» y
+                        // «Solo avisar» son etiquetas de MÁS de una palabra (DECISIONS ola 1 §9).
+                        opcionesSection(titulo: String(localized: "If you stall 3 sessions"), dividerAbove: false,
+                                       opciones: [
+                            Opcion(title: String(localized: "Drop 7.5%"),
+                                  subtitle: String(localized: "drops the weight and rebuilds"),
+                                  seleccionado: deload == .propose, action: { deload = .propose }),
+                            Opcion(title: String(localized: "Warn only"),
+                                  subtitle: String(localized: "keeps the weight, just warns you"),
+                                  seleccionado: deload == .warn, action: { deload = .warn }),
+                        ])
                         // FER-85: el rótulo describe el aplazamiento del veredicto (ámbar + fuera de
                         // rango). Ola 1 · E5: renombrada de «Días fuera de rango» a lo que de verdad
                         // dice — el veredicto del cuerpo, no un calendario.
-                        fila(rotulo: String(localized: "When your body says hold"),
-                             nota: String(localized: "defers the raise, doesn't cancel it: you take it with one tap in the session"),
-                             divider: false) {
-                            SegmentedPillControl([false, true], selection: $ignoreRecovery) {
-                                $0 ? String(localized: "Raise anyway") : String(localized: "Wait")
-                            }
-                        }
+                        opcionesSection(titulo: String(localized: "When your body says hold"), dividerAbove: true,
+                                       opciones: [
+                            Opcion(title: String(localized: "Wait"),
+                                  subtitle: String(localized: "the raise waits for a better day"),
+                                  seleccionado: !ignoreRecovery, action: { ignoreRecovery = false }),
+                            Opcion(title: String(localized: "Raise anyway"),
+                                  subtitle: String(localized: "takes the raise, verdict aside"),
+                                  seleccionado: ignoreRecovery, action: { ignoreRecovery = true }),
+                        ])
                     }
                     .liquidGlass(.superficieSolida)
                     .disabled(!enabled)
@@ -302,15 +332,20 @@ struct ProgressionSetupScreen: View {
         }
     }
 
-    private var resumenPhrase: String {
-        let ritmoWord: String
+    /// Gate QA FER-331 O1: la cláusula de ritmo viaja COMPLETA (no una palabra sustituida en una
+    /// plantilla fija) — «según reps en reserva» no es «con ritmo reps en reserva» con un sustantivo
+    /// cambiado; es una construcción distinta en español.
+    private var ritmoClause: String {
         switch ritmo {
-        case .constante:     ritmoWord = String(localized: "constant")
-        case .rapido:        ritmoWord = String(localized: "fast")
-        case .repsEnReserva: ritmoWord = String(localized: "reps in reserve")
+        case .constante:     return String(localized: "with a constant rhythm")
+        case .rapido:        return String(localized: "with a fast rhythm")
+        case .repsEnReserva: return String(localized: "by reps in reserve")
         }
-        let head = String(format: String(localized: "You raise %@ kg when you hit %lld reps with a %@ rhythm."),
-                          kgText(incrementKg), targetReps, ritmoWord)
+    }
+
+    private var resumenPhrase: String {
+        let head = String(format: String(localized: "You raise %@ kg when you hit %lld reps %@."),
+                          kgText(incrementKg), targetReps, ritmoClause)
         let tail: String
         if deload == .propose {
             let deloadPercent = kgText(ProgressionMath.deloadFraction * 100)

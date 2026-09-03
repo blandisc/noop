@@ -66811,6 +66811,413 @@
       }
     },
     "Effort · estimated" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effort · estimated"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esfuerzo · estimado"
+          }
+        }
+      }
+    },
+    "How hard was it?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How hard was it?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Qué tan duro estuvo?"
+          }
+        }
+      }
+    },
+    "Suggested from your sets. Tap to confirm or change." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suggested from your sets. Tap to confirm or change."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sugerido por tus series. Toca para confirmar o cambiar."
+          }
+        }
+      }
+    },
+    "Without an answer it isn't estimated." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Without an answer it isn't estimated."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin respuesta no se estima."
+          }
+        }
+      }
+    },
+    "Leave unrated" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leave unrated"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin calificar"
+          }
+        }
+      }
+    },
+    "Rate effort…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rate effort…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calificar esfuerzo…"
+          }
+        }
+      }
+    },
+    "Effort unrated" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effort unrated"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esfuerzo sin calificar"
+          }
+        }
+      }
+    },
+    "Tap to change it" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap to change it"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toca para cambiarlo"
+          }
+        }
+      }
+    },
+    "Counts toward your load from tomorrow" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Counts toward your load from tomorrow"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuenta en tu carga desde mañana"
+          }
+        }
+      }
+    },
+    "Load recalculates on its own" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Load recalculates on its own"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La Carga recalcula sola"
+          }
+        }
+      }
+    },
+    "Session effort" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Session effort"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esfuerzo de la sesión"
+          }
+        }
+      }
+    },
+    "unrated" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "unrated"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sin calificar"
+          }
+        }
+      }
+    },
+    "Includes %lld sessions with estimated effort" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Includes %lld sessions with estimated effort"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Incluye %lld sesiones con esfuerzo estimado"
+          }
+        }
+      }
+    },
+    "Includes %lld days with estimated effort" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Includes %lld days with estimated effort"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Incluye %lld días con esfuerzo estimado"
+          }
+        }
+      }
+    },
+    "%lld session without effort: not in your load" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld session without effort: not in your load"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld sesión sin esfuerzo: no entra a la carga"
+          }
+        }
+      }
+    },
+    "%lld sessions without effort: not in your load" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld sessions without effort: not in your load"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld sesiones sin esfuerzo: no entran a la carga"
+          }
+        }
+      }
+    },
+    "Estimated from your imported history" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estimated from your imported history"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estimado de tu historial importado"
+          }
+        }
+      }
+    },
+    "From %lld min at effort %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From %lld min at effort %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De %lld min a esfuerzo %@"
+          }
+        }
+      }
+    },
+    "Session · %lld min" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Session · %lld min"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sesión · %lld min"
+          }
+        }
+      }
+    },
+    "Estimated effort, %@ of %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estimated effort, %@ of %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esfuerzo estimado, %@ de %@"
+          }
+        }
+      }
+    },
+    "Rate ›" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rate ›"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calificar ›"
+          }
+        }
+      }
+    },
+    "suggested" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "suggested"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sugerido"
+          }
+        }
+      }
+    },
+    "of 10" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "of 10"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "de 10"
+          }
+        }
+      }
+    },
+    "Includes %lld session with estimated effort" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Includes %lld session with estimated effort"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Incluye %lld sesión con esfuerzo estimado"
+          }
+        }
+      }
+    },
     "Rhythm" : {
       "comment" : "Ola 1 · E5: rótulo de la sección «Ritmo» en ProgressionSetupScreen (lista con palomita).",
       "extractionState" : "manual",
@@ -66818,20 +67225,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Effort · estimated"
             "value" : "Rhythm"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Esfuerzo · estimado"
             "value" : "Ritmo"
           }
         }
       }
     },
-    "How hard was it?" : {
     "Steady rhythm" : {
       "comment" : "Ola 1 · E5: título de la opción «Constante» del selector Ritmo (progressionUseRPE=false, sessions=2).",
       "extractionState" : "manual",
@@ -66839,20 +67243,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "How hard was it?"
             "value" : "Steady rhythm"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "¿Qué tan duro estuvo?"
             "value" : "Constante"
           }
         }
       }
     },
-    "Suggested from your sets. Tap to confirm or change." : {
     "Fast rhythm" : {
       "comment" : "Ola 1 · E5: título de la opción «Rápido» del selector Ritmo (progressionUseRPE=false, sessions=1).",
       "extractionState" : "manual",
@@ -66860,20 +67261,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Suggested from your sets. Tap to confirm or change."
             "value" : "Fast rhythm"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sugerido por tus series. Toca para confirmar o cambiar."
             "value" : "Rápido"
           }
         }
       }
     },
-    "Without an answer it isn't estimated." : {
     "Reps in reserve rhythm" : {
       "comment" : "Ola 1 · E5: título de la opción «Reps en reserva» del selector Ritmo (progressionUseRPE=true).",
       "extractionState" : "manual",
@@ -66881,20 +67279,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Without an answer it isn't estimated."
             "value" : "Reps in reserve rhythm"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sin respuesta no se estima."
             "value" : "Reps en reserva"
           }
         }
       }
     },
-    "Leave unrated" : {
     "raises after 2 sessions in a row" : {
       "comment" : "Ola 1 · E5: subtítulo de «Constante» en el selector Ritmo.",
       "extractionState" : "manual",
@@ -66902,20 +67297,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Leave unrated"
             "value" : "raises after 2 sessions in a row"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sin calificar"
             "value" : "subes tras 2 sesiones cumplidas"
           }
         }
       }
     },
-    "Rate effort…" : {
     "raises after 1" : {
       "comment" : "Ola 1 · E5: subtítulo de «Rápido» en el selector Ritmo.",
       "extractionState" : "manual",
@@ -66923,20 +67315,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rate effort…"
             "value" : "raises after 1"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Calificar esfuerzo…"
             "value" : "subes tras 1"
           }
         }
       }
     },
-    "Effort unrated" : {
     "1 if you had 2 to spare · waits if you hit failure" : {
       "comment" : "Ola 1 · E5: subtítulo de «Reps en reserva» en el selector Ritmo.",
       "extractionState" : "manual",
@@ -66944,20 +67333,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Effort unrated"
             "value" : "1 if you had 2 to spare · waits if you hit failure"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Esfuerzo sin calificar"
             "value" : "1 si te sobraron 2 · espera si llegaste al fallo"
           }
         }
       }
     },
-    "Tap to change it" : {
     "Fine-tune" : {
       "comment" : "Ola 1 · E5: disclosure «Ajustes finos ▾» en ProgressionSetupScreen (Pasada 2).",
       "extractionState" : "manual",
@@ -66965,20 +67351,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tap to change it"
             "value" : "Fine-tune"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Toca para cambiarlo"
             "value" : "Ajustes finos"
           }
         }
       }
     },
-    "Counts toward your load from tomorrow" : {
     "Load step" : {
       "comment" : "Ola 1 · E5: rótulo del incremento en ProgressionSetupScreen (antes «Increment»).",
       "extractionState" : "manual",
@@ -66986,20 +67369,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Counts toward your load from tomorrow"
             "value" : "Load step"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cuenta en tu carga desde mañana"
             "value" : "Paso de carga"
           }
         }
       }
     },
-    "Load recalculates on its own" : {
     "from your plates" : {
       "comment" : "Ola 1 · E5: nota corta del paso de carga cuando no hay override a mano.",
       "extractionState" : "manual",
@@ -67007,20 +67387,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Load recalculates on its own"
             "value" : "from your plates"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La Carga recalcula sola"
             "value" : "de tus discos"
           }
         }
       }
     },
-    "Session effort" : {
     "When your body says hold" : {
       "comment" : "Ola 1 · E5: renombre de «Days that aren't in range» — describe el veredicto, no un calendario.",
       "extractionState" : "manual",
@@ -67028,20 +67405,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Session effort"
             "value" : "When your body says hold"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Esfuerzo de la sesión"
             "value" : "Cuando tu cuerpo dice mantén"
           }
         }
       }
     },
-    "unrated" : {
     "Raise anyway" : {
       "comment" : "Ola 1 · E5: opción del segmentado «Cuando tu cuerpo dice mantén» (progressionIgnoreRecovery=true).",
       "extractionState" : "manual",
@@ -67049,20 +67423,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "unrated"
             "value" : "Raise anyway"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "sin calificar"
             "value" : "Subir igual"
           }
         }
       }
     },
-    "Includes %lld sessions with estimated effort" : {
     "Wait" : {
       "comment" : "Ola 1 · E5: opción del segmentado «Cuando tu cuerpo dice mantén» (progressionIgnoreRecovery=false).",
       "extractionState" : "manual",
@@ -67070,20 +67441,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Includes %lld sessions with estimated effort"
             "value" : "Wait"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Incluye %lld sesiones con esfuerzo estimado"
             "value" : "Esperar"
           }
         }
       }
     },
-    "Includes %lld days with estimated effort" : {
     "constant" : {
       "comment" : "Ola 1 · E5: palabra de ritmo embebida en la frase-resumen «Subes X kg cuando cumples Y reps con ritmo…».",
       "extractionState" : "manual",
@@ -67091,20 +67459,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Includes %lld days with estimated effort"
             "value" : "constant"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Incluye %lld días con esfuerzo estimado"
             "value" : "constante"
           }
         }
       }
     },
-    "%lld session without effort: not in your load" : {
     "fast" : {
       "comment" : "Ola 1 · E5: palabra de ritmo embebida en la frase-resumen (ver «constant»).",
       "extractionState" : "manual",
@@ -67112,20 +67477,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld session without effort: not in your load"
             "value" : "fast"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld sesión sin esfuerzo: no entra a la carga"
             "value" : "rápido"
           }
         }
       }
     },
-    "%lld sessions without effort: not in your load" : {
     "reps in reserve" : {
       "comment" : "Ola 1 · E5: palabra de ritmo embebida en la frase-resumen (ver «constant») y en ProgressionChip.summary.",
       "extractionState" : "manual",
@@ -67133,62 +67495,35 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld sessions without effort: not in your load"
             "value" : "reps in reserve"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld sesiones sin esfuerzo: no entran a la carga"
             "value" : "reps en reserva"
           }
         }
       }
     },
-    "Estimated from your imported history" : {
-    "You raise %@ kg when you hit %lld reps with a %@ rhythm." : {
-      "comment" : "Ola 1 · E5: frase-resumen arriba de ProgressionSetupScreen (Pasada 2, tarjeta verde).",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Estimated from your imported history"
-            "value" : "You raise %@ kg when you hit %lld reps with a %@ rhythm."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Estimado de tu historial importado"
-            "value" : "Subes %@ kg cuando cumples %lld reps con ritmo %@."
-          }
-        }
-      }
-    },
-    "From %lld min at effort %@" : {
     "Stall three times and you drop %@%%." : {
-      "comment" : "Ola 1 · E5: cola de la frase-resumen cuando el deload es «Propose».",
+      "comment" : "Ola 1 · E5: cola de la frase-resumen cuando el deload es «Propose». Gate QA FER-331 O1: espacio antes de % en es, como la clave hermana «bajas ~7,5 % y reconstruyes».",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "From %lld min at effort %@"
             "value" : "Stall three times and you drop %@%%."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "De %lld min a esfuerzo %@"
-            "value" : "Si te estancas tres veces, bajas %@%%."
+            "value" : "Si te estancas tres veces, bajas %@ %%."
           }
         }
       }
     },
-    "Session · %lld min" : {
     "Stall three times and Cénit just warns you." : {
       "comment" : "Ola 1 · E5: cola de la frase-resumen cuando el deload es «Warn only».",
       "extractionState" : "manual",
@@ -67196,20 +67531,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Session · %lld min"
             "value" : "Stall three times and Cénit just warns you."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sesión · %lld min"
             "value" : "Si te estancas tres veces, Cénit solo te avisa."
           }
         }
       }
     },
-    "Estimated effort, %@ of %@" : {
     "You hit the reps with %lld to spare. One session was enough." : {
       "comment" : "Ola 1 · E5: línea 2 del héroe — caso cómodo (RaiseRhythmNote.comfortable).",
       "extractionState" : "manual",
@@ -67217,20 +67549,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Estimated effort, %@ of %@"
             "value" : "You hit the reps with %lld to spare. One session was enough."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Esfuerzo estimado, %@ de %@"
             "value" : "Llegaste a las reps y te sobraban %lld. Una sesión bastó."
           }
         }
       }
     },
-    "Rate ›" : {
     "Three sessions at your limit and you still hit the reps: you raise, or change the rhythm." : {
       "comment" : "Ola 1 · E5: línea 2 del héroe — caso tope (RaiseRhythmNote.atLimitCap).",
       "extractionState" : "manual",
@@ -67238,20 +67567,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rate ›"
             "value" : "Three sessions at your limit and you still hit the reps: you raise, or change the rhythm."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Calificar ›"
             "value" : "Tres veces al fallo y con las reps: subes, o cambia el ritmo."
           }
         }
       }
     },
-    "suggested" : {
     "Today you maintain" : {
       "comment" : "Ola 1 · E5: prefijo de la píldora ámbar del héroe (paralelo a «Today you raise»).",
       "extractionState" : "manual",
@@ -67259,20 +67585,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "suggested"
             "value" : "Today you maintain"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "sugerido"
             "value" : "Hoy mantienes"
           }
         }
       }
     },
-    "of 10" : {
     "You hit the reps, but at your limit. One easier session and it counts toward the raise." : {
       "comment" : "Ola 1 · E5: línea 2 de la píldora ámbar «Hoy mantienes» (RaiseRhythmNote.atLimitHold).",
       "extractionState" : "manual",
@@ -67280,20 +67603,17 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "of 10"
             "value" : "You hit the reps, but at your limit. One easier session and it counts toward the raise."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "de 10"
             "value" : "Llegaste, pero al fallo. Una sesión más holgada y cuenta para subir."
           }
         }
       }
     },
-    "Includes %lld session with estimated effort" : {
     "at failure" : {
       "comment" : "Ola 1 · E5: LiveStrengthSheet.qLabel con 0 en reserva — antes «Q 0». Nunca «Q»/«Quedaban».",
       "extractionState" : "manual",
@@ -67301,14 +67621,12 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Includes %lld session with estimated effort"
             "value" : "at failure"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Incluye %lld sesión con esfuerzo estimado"
             "value" : "al fallo"
           }
         }
@@ -67346,6 +67664,168 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "4+ en reserva"
+          }
+        }
+      }
+    },
+    "You raise %@ kg when you hit %lld reps %@." : {
+      "comment" : "Ola 1 · E5: frase-resumen de ProgressionSetupScreen (Pasada 2). Gate QA FER-331 O1: la cláusula de ritmo (%@) viaja completa — «con ritmo constante» / «con ritmo rápido» / «según reps en reserva», nunca «con ritmo reps en reserva».",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You raise %@ kg when you hit %lld reps %@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subes %@ kg cuando cumples %lld reps %@."
+          }
+        }
+      }
+    },
+    "with a constant rhythm" : {
+      "comment" : "Ola 1 · E5: cláusula de ritmo de la frase-resumen, ritmo Constante.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "with a constant rhythm"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "con ritmo constante"
+          }
+        }
+      }
+    },
+    "with a fast rhythm" : {
+      "comment" : "Ola 1 · E5: cláusula de ritmo de la frase-resumen, ritmo Rápido.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "with a fast rhythm"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "con ritmo rápido"
+          }
+        }
+      }
+    },
+    "by reps in reserve" : {
+      "comment" : "Ola 1 · E5: cláusula de ritmo de la frase-resumen, ritmo Reps en reserva (gate QA FER-331 O1: «según», no «con ritmo»).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "by reps in reserve"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "según reps en reserva"
+          }
+        }
+      }
+    },
+    "Drop 7.5%" : {
+      "comment" : "Ola 1 · E5: opción de la lista con palomita «Si te estancas 3 sesiones» (gate QA FER-331 D1/D2 — reemplaza el segmentado «Propose»; NO reutiliza esa clave, y el espacio antes de % sigue a «bajas ~7,5 % y reconstruyes»).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drop 7.5%"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bajar 7,5 %"
+          }
+        }
+      }
+    },
+    "drops the weight and rebuilds" : {
+      "comment" : "Ola 1 · E5: subtítulo de «Drop 7.5%» en la lista con palomita.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "drops the weight and rebuilds"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "baja el peso y reconstruye"
+          }
+        }
+      }
+    },
+    "keeps the weight, just warns you" : {
+      "comment" : "Ola 1 · E5: subtítulo de «Warn only» en la lista con palomita «Si te estancas 3 sesiones».",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "keeps the weight, just warns you"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "no toca el peso, solo avisa"
+          }
+        }
+      }
+    },
+    "the raise waits for a better day" : {
+      "comment" : "Ola 1 · E5: subtítulo de «Wait» en la lista con palomita «Cuando tu cuerpo dice mantén».",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "the raise waits for a better day"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "la subida espera a un día mejor"
+          }
+        }
+      }
+    },
+    "takes the raise, verdict aside" : {
+      "comment" : "Ola 1 · E5: subtítulo de «Raise anyway» en la lista con palomita «Cuando tu cuerpo dice mantén».",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "takes the raise, verdict aside"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "toma la subida, veredicto aparte"
           }
         }
       }

@@ -1515,12 +1515,11 @@ private struct EntrenarLanding: View {
                 return (name: name, fromKg: raise.fromKg, toKg: raise.toKg, rhythmNote: slot.raiseRhythmNote)
             }
             // Ola 1 · E5: cumplió las reps al fallo — el ritmo lo deja invisible al ciclo (mantiene).
-            // `lastSets` viene «newest-first» (`StrengthStore.lastWorkSets`): su primer elemento ES el
-            // peso con el que se mantiene.
+            // Gate QA FER-331 O2: el peso viaja EN la nota (`workingKg`, del planner) — no se
+            // re-deriva de `lastSets`, que puede traer una sesión más nueva que `visible` ya excluyó
+            // (opted-out / semana ligera).
             heldToday = seeded.compactMap { slot in
-                guard slot.raiseRhythmNote == .atLimitHold, let kg = slot.lastSets.first?.weightKg else {
-                    return nil
-                }
+                guard case .atLimitHold(let kg)? = slot.raiseRhythmNote else { return nil }
                 let name = slot.exercise.map(StrengthDisplay.name) ?? slot.re.exerciseId
                 return (name: name, weightKg: kg)
             }
