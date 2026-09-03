@@ -9,10 +9,6 @@
     "Cenit/App/AppMap.swift": 2,
     "Cenit/App/AppMapSerieActiva.swift": 2
   },
-  "no-raw-color": {
-    "Cenit/Screens/DataSourcesView.swift": 1,
-    "Cenit/Screens/ExerciseDetailScreen.swift": 1
-  },
   "no-spacing-literal": {
     "Cenit/App/AppMap.swift": 3,
     "Cenit/App/AppMapSerieActiva.swift": 1,
@@ -27,7 +23,6 @@
     "Cenit/Screens/InstrumentoAddButton.swift": 1,
     "Cenit/Screens/LiveStrengthSheet.swift": 2,
     "Cenit/Screens/RoutineSetEditing.swift": 1,
-    "Cenit/Screens/ShareCardView.swift": 1,
     "Cenit/Screens/StarterTemplatesSheet.swift": 1,
     "Cenit/Screens/TrainingBodyScreen.swift": 3,
     "Cenit/Screens/TrainingLoadStrip.swift": 1,

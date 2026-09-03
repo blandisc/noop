@@ -204,29 +204,19 @@ struct WorkoutImportView: View {
         if midWork { confirmDiscard = true } else { dismiss() }
     }
 
-    /// La zona punteada de PASO 2: sigue siendo el mismo `TextEditor` de siempre (pegar o escribir),
-    /// solo con el marco a rayas y el texto de invitación del handoff.
+    /// Zona punteada de PASO 2: `LiquidCampoTexto` multilínea (FER-342) + marco a rayas del handoff.
     private var dashedPasteField: some View {
-        TextEditor(text: $pasteText)
-            .font(Font.system(.footnote, design: .monospaced))
-            .foregroundStyle(LiquidColor.tinta900)
-            .scrollContentBackground(.hidden)
-            .frame(minHeight: 96)
-            .padding(LiquidSpace.s400)
-            .liquidGlass(.superficieSolida)
-            .overlay(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous)
-                .strokeBorder(LiquidColor.vidrioBordeFuerte, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
-            .overlay(alignment: .center) {
-                if pasteText.isEmpty {
-                    VStack(spacing: LiquidSpace.s100) {
-                        Text("Paste the JSON").font(LiquidType.cuerpo.weight(.semibold)).foregroundStyle(LiquidColor.tinta900)
-                        Text("or open the downloaded .json file").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
-                    }
-                    .multilineTextAlignment(.center)
-                    .allowsHitTesting(false)
-                }
-            }
-            .accessibilityLabel("Paste your plan")
+        LiquidCampoTexto(
+            nil,
+            texto: $pasteText,
+            placeholder: String(localized: "Paste the JSON"),
+            a11y: String(localized: "Paste your plan"),
+            eje: .vertical,
+            tipografia: Font.system(.footnote, design: .monospaced)
+        )
+        .frame(minHeight: 96)
+        .overlay(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous)
+            .strokeBorder(LiquidColor.vidrioBordeFuerte, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
     }
 
     private var openFileLink: some View {

@@ -5,11 +5,10 @@ import StrandAnalytics
 
 // MARK: - Fitness Age detail — «Edad física» en vidrio Liquid (FER-141 · FER-105 · TND-33)
 //
-// Migración PURAMENTE VISUAL del esqueleto «Tendencias Final» (papel «Instrumento») a los legos
-// Liquid, calcando el patrón de `SkinTempDetailScreen.swift` (la vara) y de las hermanas ya
-// firmadas: campo teñido a sangre (`LiquidCampoMetrica`) → costuras de sección
-// (`LiquidFranjaSeccion`) → cajitas / notas → método + sello. La matemática y el copy se
-// conservan; esto es un reskin.
+// «Edad física» en Liquid Glass · El Eje (FER-141 · FER-342). Calcando el patrón de
+// `SkinTempDetailScreen.swift` (la vara) y de las hermanas ya firmadas: campo teñido a sangre
+// (`LiquidCampoMetrica`) → costuras de sección (`LiquidFranjaSeccion`) → cajitas / notas →
+// método + sello. La matemática y el copy se conservan.
 //
 // Presenta el número honestamente en los dos estados que el motor distingue:
 //   • ready / estimate — campo verde longevidad con cápsula ESTIMATE permanente, delta + margen +

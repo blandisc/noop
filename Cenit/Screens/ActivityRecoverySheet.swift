@@ -4,11 +4,11 @@ import StrandAnalytics
 
 // MARK: - ActivityRecoverySheet — «Cómo amaneces tras cada deporte» en vidrio Liquid (FER-139 · FER-105 · TND-33)
 //
-// Migración PURAMENTE VISUAL del esqueleto «Tendencias Final» (papel «Instrumento») a los legos
-// Liquid, calcando el patrón de `SkinTempDetailScreen.swift` (la vara de esta migración) y de las
-// hermanas ya firmadas: campo teñido a sangre (`LiquidCampoMetrica`) → costura de sección
-// (`LiquidFranjaSeccion`) → tarjetas de deporte compuestas EN LÍNEA con átomos Liquid → método +
-// sello (patrón `pieMetodo` de Sueño). La matemática y el orden del ranking NO CAMBIAN.
+// «Cómo amaneces tras cada deporte» en Liquid Glass · El Eje (FER-139 · FER-342). Calcando el
+// patrón de `SkinTempDetailScreen.swift` (la vara) y de las hermanas ya firmadas: campo teñido
+// a sangre (`LiquidCampoMetrica`) → costura de sección (`LiquidFranjaSeccion`) → tarjetas de
+// deporte compuestas EN LÍNEA con átomos Liquid → método + sello (patrón `pieMetodo` de Sueño).
+// La matemática y el orden del ranking NO CAMBIAN.
 //
 // IDENTIDAD ÁMBAR (decisión ya tomada, FER-105/A): el campo se tiñe con `LiquidColor.ambar`, la
 // paridad con Esfuerzo (strain) — NO el verde de longevidad de las otras dos hojas de Tendencias.

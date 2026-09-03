@@ -7,13 +7,13 @@ import Foundation
 
 // MARK: - SkinTempDetailScreen — el «Detalle de Temperatura de la piel» en vidrio Liquid (FER-101 · TND-12)
 //
-// Migración PURAMENTE VISUAL del esqueleto «Tendencias Final» (papel «Instrumento») a los legos
-// Liquid, calcando el patrón de `SleepDetailScreen.swift` (la vara de esta migración) y de
-// `StrainDetailScreen.swift` / `StressDetailScreen.swift` (los bloques hermanos ya firmados):
-// campo teñido a sangre (`LiquidCampoMetrica`) → costuras de sección (`LiquidFranjaSeccion`) →
-// lectura de nivel (`LiquidReadingLine`; los rangos viven en la escalera tocable del historial,
-// UX-08) → historial (`LiquidRangeSelector` + `LiquidGraficaNiveles` +
-// `LiquidResumenVentana` + `LiquidLevelsList`) → método + sello (patrón `pieMetodo` de Sueño).
+// Detalle de Temperatura de piel en Liquid Glass · El Eje (FER-342). Calcando el patrón de
+// `SleepDetailScreen.swift` (la vara) y de `StrainDetailScreen` / `StressDetailScreen`
+// (hermanos): campo teñido a sangre (`LiquidCampoMetrica`) → costuras de sección
+// (`LiquidFranjaSeccion`) → lectura de nivel (`LiquidReadingLine`; los rangos viven en la
+// escalera tocable del historial, UX-08) → historial (`LiquidRangeSelector` +
+// `LiquidGraficaNiveles` + `LiquidResumenVentana` + `LiquidLevelsList`) → método + sello
+// (patrón `pieMetodo` de Sueño).
 //
 // `SkinTempDetailModel` NO CAMBIA (contrato de datos congelado): consume `repo.displayDays`
 // tal cual — cero matemática nueva. La identidad es el DORADO propio de la temperatura de piel

@@ -223,7 +223,8 @@ struct ExerciseDetailScreen: View {
                     .accessibilityHidden(true)
                 Button { isLoopPlaying.toggle() } label: {
                     Image(systemName: isLoopPlaying ? "pause.fill" : "play.fill")
-                        .font(LiquidType.infoGlifoCompacto.weight(.semibold)).foregroundStyle(.white)
+                        .font(LiquidType.infoGlifoCompacto.weight(.semibold))
+                        .foregroundStyle(LiquidColor.papelTarjeta)
                         .padding(LiquidSpace.s200).background(.black.opacity(CenitOpacity.strokeSoft), in: Circle())
                 }
                 .buttonStyle(EntrenarPressStyle())

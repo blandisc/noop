@@ -131,8 +131,7 @@ struct IntervalTimerView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s050) {
             Text("Interval Timer")
-                .font(LiquidType.displayL)
-                .tracking(LiquidType.displayLTracking)
+                .font(LiquidType.tituloHoja)
                 .foregroundStyle(LiquidColor.tinta900)
             Text("Silent haptic HIIT: your phone buzzes the transitions")
                 .font(LiquidType.cuerpo)

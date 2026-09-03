@@ -5,11 +5,10 @@ import StrandAnalytics
 
 // MARK: - BodyAgeSheet — «Edad corporal» en vidrio Liquid (FER-145 · FER-105 · TND-33)
 //
-// Migración PURAMENTE VISUAL del esqueleto «Tendencias Final» (papel «Instrumento») a los legos
-// Liquid, calcando el patrón de `SkinTempDetailScreen.swift` (la vara) y de las hermanas ya
-// firmadas: campo teñido a sangre (`LiquidCampoMetrica`) → costuras de sección
-// (`LiquidFranjaSeccion`) → banda / barras / notas → método + sello. La matemática y el copy se
-// conservan; esto es un reskin.
+// «Edad corporal» en Liquid Glass · El Eje (FER-145 · FER-342). Calcando el patrón de
+// `SkinTempDetailScreen.swift` (la vara) y de las hermanas ya firmadas: campo teñido a sangre
+// (`LiquidCampoMetrica`) → costuras de sección (`LiquidFranjaSeccion`) → banda / barras / notas
+// → método + sello. La matemática y el copy se conservan.
 //
 // La Edad corporal es el héroe (campo verde longevidad, cápsula ESTIMATE permanente); el matiz de
 // estimación parcial vive en la lectura del campo. La lectura es un RANGO (`LiquidBandaEdad`, ±5),

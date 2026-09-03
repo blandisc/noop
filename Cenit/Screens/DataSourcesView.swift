@@ -436,7 +436,7 @@ struct DataSourcesView: View {
                     Circle().fill(LiquidColor.verdePrimario)
                     Image(systemName: "checkmark")
                         .font(LiquidType.iconSF(size: 12))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(LiquidColor.tintaSobreVerde)
                 }
                 .frame(width: 16, height: 16)
                 Text(verbatim: "\(String(localized: "Imported history")) · \(Self.coverageSummaryText(cov))")

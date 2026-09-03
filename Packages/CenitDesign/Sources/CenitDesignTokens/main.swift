@@ -633,7 +633,7 @@ public let catalogEntries: [CatalogEntry] = [
     CatalogEntry(rol: "Aviso Liquid", simbolo: "LiquidAviso",
                  archivo: "LiquidGlass/LiquidAviso.swift",
                  cuandoUsarlo: "Heads-up / desconexión / nudge / aviso con pie de acciones en pantalla Liquid — `LiquidPatternBlock` + `liquidTarjetaSeccion` (receta HealthAlertBanner); icono/CTA/pie opcionales.",
-                 cuandoNo: "No snack de deshacer (`UndoToast`); no error de escritura (`.saveErrorToast`); no banner Instrumento de Hoy aún sin migrar (`TodayBanner`)."),
+                 cuandoNo: "No snack de deshacer (`UndoToast`); no error de escritura (`.saveErrorToast`)."),
     // —— Rampas de dato (FER-317 / catálogo FER-319) ——
     CatalogEntry(rol: "Rampas de dato Liquid", simbolo: "LiquidRampas",
                  archivo: "LiquidGlass/LiquidRampas.swift",

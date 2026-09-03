@@ -7,12 +7,11 @@ import Foundation
 
 // MARK: - StressDetailScreen — el «Detalle de Estrés» en vidrio Liquid (FER-101 · TND-11)
 //
-// Migración PURAMENTE VISUAL del esqueleto «Tendencias Final» (papel «Instrumento») a los legos
-// Liquid, calcando el patrón de `SleepDetailScreen.swift` (la vara de esta migración) y de
-// `StrainDetailScreen.swift` (el bloque hermano ya firmado): campo teñido a sangre
-// (`LiquidCampoMetrica`) → costuras de sección (`LiquidFranjaSeccion`) → lectura de nivel
-// (`LiquidReadingLine`; los rangos viven en la escalera tocable del historial, UX-08) →
-// mapa del día (`StressDayMapBlock`, ya en vidrio) → historial
+// Detalle de Estrés en Liquid Glass · El Eje (FER-342). Calcando el patrón de
+// `SleepDetailScreen.swift` (la vara) y de `StrainDetailScreen.swift` (el bloque hermano):
+// campo teñido a sangre (`LiquidCampoMetrica`) → costuras de sección (`LiquidFranjaSeccion`) →
+// lectura de nivel (`LiquidReadingLine`; los rangos viven en la escalera tocable del historial,
+// UX-08) → mapa del día (`StressDayMapBlock`, ya en vidrio) → historial
 // (`LiquidRangeSelector` + `LiquidGraficaNiveles` + `LiquidResumenVentana` + `LiquidLevelsList`)
 // → calendario (`LiquidCalendario90`) → método + sello (patrón `pieMetodo` de Sueño).
 //

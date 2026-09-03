@@ -16,9 +16,8 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 //     and the board below it.
 //   · WITHOUT A SINGLE SOURCE (`noSources`) → the SLEEPING ORB (FER-41): the same particle orb
 //     as the hero, in neutral ink with its level at zero, plus the one action that exists —
-//     connect Apple Health. It replaced the classic «Instrumento» surface (a sleep hero stuck
-//     on «—» plus a connect card), the last remnant of the retired warm-paper DNA, which
-//     asserted a reading that in that state never exists.
+//     connect Apple Health. An empty vessel: no fake sleep hero, no asserted reading that
+//     in this state never exists (Liquid Glass · El Eje, FER-41 / FER-342).
 //
 // The header (date · live BPM · the 34pt `DialSeal` that is both the 24h signature and the
 // pull-to-refresh spinner) rides above both.
@@ -26,7 +25,7 @@ import Inject   // recarga en caliente (dev-only, inerte en Release)
 // Pull-to-refresh: the seal winds up with the pull and spins while syncing; the tile values settle
 // straight to their numbers (no count-up or reveal sequence on completion).
 
-/// Identifiable wrapper so the light «Instrumento» Detalle de Sueño can ride `.sheet(item:)` from Today
+/// Identifiable wrapper so the Liquid Detalle de Sueño can ride `.sheet(item:)` from Today
 /// (the model itself isn't Identifiable). Mirrors the one Cuerpo uses. (FER-251)
 private struct SleepDetailItem: Identifiable {
     let id: UUID
@@ -213,8 +212,8 @@ struct TodayView: View {
     /// FER-953: sleep summary para la hoja de resumen Liquid, built off-main when the sleep info sheet opens.
     @State private var sleepSummaryModel: SleepDetailModel? = nil
 
-    // Rich «Instrumento» Detalle drilled into via the summary sheet's "Ver más" (FER-251). These mirror the
-    // ones Cuerpo presents — Today reuses the SAME static `.build()` factories / specs, so the detail is
+    // Rich Liquid Detalle drilled into via the summary sheet's "Ver más" (FER-251). These mirror the
+    // ones Cuerpo presents: Today reuses the SAME static `.build()` factories / specs, so the detail is
     // identical from both tabs. `pendingSeeMore` defers presenting until the summary fully dismisses, so the
     // sheet-over-sheet hand-off never gets swallowed (it runs in the summary sheet's `onDismiss`).
     @State private var pendingSeeMore: (() -> Void)? = nil
@@ -353,9 +352,8 @@ struct TodayView: View {
                 guard !Task.isCancelled else { return }   // sheet switched away while building
                 sleepSummaryModel = model
             }
-            // Rich «Instrumento» Detalle, drilled into from a summary sheet's "Ver más" — the SAME screens
-            // Cuerpo presents, theme passed explicitly (it doesn't propagate through `.sheet`), NO nested
-            // NavigationStack (FER-171). (FER-251)
+            // Rich Liquid Detalle, drilled into from a summary sheet's "Ver más": the SAME screens
+            // Cuerpo presents, NO nested NavigationStack (FER-171). (FER-251)
             //
             // `.recEntranceGate()` on each: the hero's rise (recRise) otherwise plays WHILE the system sheet
             // slides up from the bottom, so a synchronous-datum screen (Estrés, Temp. de piel, Carga) shows
@@ -440,10 +438,10 @@ struct TodayView: View {
     }
 
 
-    /// Builds the metric detail sheet, passing the live «Instrumento» theme (it does NOT propagate
-    /// through `.sheet`'s fresh environment) and deciding the "connect Apple Salud" hint: shown only
-    /// for Apple-sourceable metrics that aren't connected and have no value yet — strap-only metrics
-    /// (strain, heart rate) never get it. The connect action itself stays in Today. (FER-162)
+    /// Builds the metric detail sheet in Liquid Glass · El Eje and decides the "connect Apple Salud"
+    /// hint: shown only for Apple-sourceable metrics that aren't connected and have no value yet;
+    /// strap-only metrics (strain, heart rate) never get it. The connect action itself stays in Today.
+    /// (FER-162 / FER-342)
     /// ¿Los pasos que se muestran hoy vienen de una ESTIMACIÓN en el teléfono y no de un
     /// conteo real de Apple? El tile ya lo rotulaba «est.», pero la hoja del mismo dato
     /// afirmaba Apple Salud sin mirar: dos superficies del mismo número diciendo procedencias
@@ -651,15 +649,13 @@ struct TodayView: View {
         // controlador raíz del WindowGroup y un valor puesto AQUÍ (dentro del TabView) no llega.
         // En vivo se abre como HOJA (FER-190), no pantalla completa: un `.sheet` con grabber, igual que
         // las hojas de métrica. La hoja abre a la altura del contenido — el detente lo fija `LiveView`
-        // midiéndose (FER-196). El tema «Instrumento» se pasa explícito (no se propaga por el entorno
-        // fresco del sheet) y la hoja se presenta en claro con el papel del tema; cierra con swipe.
+        // midiéndose (FER-196). La hoja se presenta en claro con el fondo Liquid; cierra con swipe.
         .sheet(isPresented: $showDataSources) {
             // Present Data Sources directly so the Key Metrics nudge connects Apple Health in one tap,
-            // without sending the user to dig through the More tab. Reskinned to the light «Instrumento»
-            // language (FER-338): a light sheet with its own NavigationStack (so «Ver datos importados»
-            // pushes the Apple Health viewer), the theme injected at the root (it doesn't cross the
-            // `.sheet` boundary, FER-162). A sheet starts a fresh environment branch, so re-inject the
-            // objects DataSourcesView needs (same pattern as the cover above).
+            // without sending the user to dig through the More tab. Liquid Glass · El Eje (FER-338 /
+            // FER-342): a light sheet with its own NavigationStack (so «Ver datos importados»
+            // pushes the Apple Health viewer). A sheet starts a fresh environment branch, so re-inject
+            // the objects DataSourcesView needs (same pattern as the cover above).
             NavigationStack {
                 DataSourcesView()
                     .navigationBarTitleDisplayMode(.inline)
@@ -739,9 +735,8 @@ struct TodayView: View {
                 // alimentada por el MISMO estado derivado (builder puro). El estado sin ni una
                 // fuente es el ORBE DORMIDO (FER-41): el mismo objeto del héroe, en tinta
                 // neutra y con su nivel en cero — un recipiente vacío, que es literalmente lo
-                // que se sabe del usuario ahí. Sustituyó a la superficie clásica «Instrumento»
-                // (héroe de sueño en «—» + tarjeta de conectar), que era la última reminiscencia
-                // del ADN retirado y afirmaba un dato que en ese estado nunca existe.
+                // que se sabe del usuario ahí (Liquid Glass · El Eje, FER-41 / FER-342): sin héroe
+                // de sueño inventado ni tarjeta que afirme un dato que en ese estado nunca existe.
                 if noSources && !liquidDemo {
                     VStack(alignment: .leading, spacing: LiquidSpace.s200) {
                         headerBlock
@@ -943,25 +938,16 @@ struct TodayView: View {
 
 
 
-    // MARK: - Banners de estado (handoff «Hoy · Estados» · FER-711)
+    // MARK: - Banners de estado (handoff «Hoy · Estados» · FER-711 · FER-342)
     //
-    // La tarjeta estándar reutilizable (`CenitDesign.TodayBanner`) montada bajo el header, sobre el
-    // día normal. Se dibuja SOLO el banner de mayor prioridad activo, y SOLO desde señales que la app
-    // YA tiene (batería del strap, enlace BLE, antigüedad del último sync + reloj) — sin inventar
-    // detección nueva (regla del issue). Los banners que exigen detección/matemática nueva —siesta
-    // (re-scoring del numeral), cambio de huso horario (exención de regularidad) y permisos PARCIALES
-    // de Apple Salud— se difieren a issues propios de /pm; la tarjeta ya soporta su forma.
-
-
+    // Avisos de estado bajo el header van con `LiquidAviso` (Liquid Glass · El Eje). Hoy no monta
+    // ninguno mientras no haya banda: batería / desconexión / antigüedad eran señales de la banda.
+    // TODO(/pm): ¿banners Apple-equivalentes sin banda?
 
     /// La banda se vio antes, ahora está desconectada, es de día y no está sincronizando. Apaga el BPM
-    /// del header («SIN SEÑAL») y enciende el banner de banda desconectada.
+    /// del header («SIN SEÑAL») y enciende el aviso de banda desconectada.
 
     /// Días enteros desde el último sync COMPLETO, o nil si nunca hubo. Puro diff de fechas (no math).
-
-    /// El banner de estado activo (mayor prioridad primero), o nada. Presentacional: cada rama arma un
-    /// `TodayBanner` con copy es-MX. Orden = urgencia descendente (batería antes que hueco de base).
-    // TODO(/pm): sin banda, Hoy no tiene banners de estado propios (bateria/desconexión/antigüedad eran de la banda); ¿banners Apple-equivalentes?
 
     // MARK: - Superficie Liquid (FER-1045)
     //
