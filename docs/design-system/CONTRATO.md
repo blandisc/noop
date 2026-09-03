@@ -135,6 +135,7 @@ Tabla humana (resumen) — la verdad máquina-legible es el bloque JSON de abajo
 | no-dt-cap-adhoc (prohibición pura, FER-269) | árbol 10 raíces UI | árbol 10 raíces UI | árbol 10 raíces UI |
 | no-deprecated-metrics / no-instrumento-theme (trinquete, FER-306) | árbol 8 raíces | árbol 8 raíces | árbol 8 raíces |
 | no-weight-on-grotesk (prohibición pura, FER-308) | árbol 8 raíces | árbol 8 raíces | árbol 8 raíces |
+| no-iphone-tone-on-oled (prohibición pura, retro FER-309) | árbol CenitWatch | árbol CenitWatch | árbol CenitWatch |
 | monotonía del baseline | — (hook delgado) | espejo vs origin/iOS | job `baseline-monotony` |
 
 ¹ divergencia declarada: local corre sobre los archivos tocados (más estricto en Watch); CI usa las
@@ -169,7 +170,8 @@ raíces explícitas donde vive el defecto (incluye el paquete, excluye CenitWatc
     "no-dt-cap-adhoc":      {"pre-commit": "tree:dtcap", "verify-quick": "tree:dtcap", "design-lint": "tree:dtcap"},
     "no-deprecated-metrics": {"pre-commit": "tree:legacy+baseline", "verify-quick": "tree:legacy+baseline", "design-lint": "tree:legacy+baseline"},
     "no-instrumento-theme":  {"pre-commit": "tree:legacy+baseline", "verify-quick": "tree:legacy+baseline", "design-lint": "tree:legacy+baseline"},
-    "no-weight-on-grotesk":  {"pre-commit": "tree:legacy+baseline", "verify-quick": "tree:legacy+baseline", "design-lint": "tree:legacy+baseline"}
+    "no-weight-on-grotesk":  {"pre-commit": "tree:legacy+baseline", "verify-quick": "tree:legacy+baseline", "design-lint": "tree:legacy+baseline"},
+    "no-iphone-tone-on-oled": {"pre-commit": "tree:CenitWatch", "verify-quick": "tree:CenitWatch", "design-lint": "tree:CenitWatch"}
   }
 }
 ```
