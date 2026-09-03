@@ -48,6 +48,7 @@ public struct LiquidAtmosfera: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.liquidMotionDisabled) private var motionDisabled
     @Environment(\.liquidAmbientPaused) private var ambientPaused
+    @Environment(\.colorScheme) private var colorScheme   // A1/FER-345: paleta Metal por modo
     /// El origen del tiempo del polvo: segundos de SESIÓN, no el reloj absoluto (un `Float` no
     /// resuelve `timeIntervalSinceReferenceDate`; con < 1 día de sesión resuelve 0.02 pt).
     @State private var inicio = Date()
@@ -63,7 +64,7 @@ public struct LiquidAtmosfera: View {
     private var still: Bool { reduceMotion || motionDisabled }
     private var paused: Bool { still || ambientPaused || !estado.visible }
     private var neutra: Bool { ambiente == .neutro }
-    private var paleta: EcosistemaPaleta { .desde(clima: ambiente.particulaColor) }
+    private var paleta: EcosistemaPaleta { .desde(clima: ambiente.particulaColor, colorScheme: colorScheme) }
     /// El crossfade del clima: 1.6 s como el héroe. Con `still` (Reduce Motion / renders) el reloj
     /// del polvo está PAUSADO, así que un crossfade no podría avanzar nunca: el cambio es
     /// instantáneo (y honesto: el color del veredicto se ve al momento).

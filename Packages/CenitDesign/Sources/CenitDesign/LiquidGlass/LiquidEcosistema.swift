@@ -1105,6 +1105,7 @@ private struct EcosistemaEscenario: View {
 
     /// Ancla del eclipse (el guardián viaja al asomarse; con `still` aparece colocado).
     @State private var eclipseDesde: TimeInterval?
+    @Environment(\.colorScheme) private var colorScheme   // A1/FER-345: alimenta la paleta Metal por modo
     #if os(iOS) && canImport(MetalKit)
     @ObservedObject private var metal = EcosistemaMetal.compartido
     #endif
@@ -1133,7 +1134,7 @@ private struct EcosistemaEscenario: View {
         if let recursos = metal.recursos {
             ZStack {
                 EcosistemaMetalLienzo(recursos: recursos, escena: escena, t: t,
-                                      paleta: .desde(clima: coreo.tintaClima))
+                                      paleta: .desde(clima: coreo.tintaClima, colorScheme: colorScheme))
                 EcosistemaCanvas(coreo: coreo, escena: escena, t: t, rotulos: rotulos,
                                  soloEtiquetas: true)
             }
@@ -1290,8 +1291,17 @@ private struct EcosistemaCanvas: View {
     /// Identidad besada por el clima (70/30): el morado sigue siendo morado, pero la
     /// atmósfera del veredicto lo entinta — mismo lerp que la paleta Metal.
     private static func mezclada(_ identidad: Color, hacia clima: Color, k: Double = 0.30) -> Color {
-        let a = identidad.resolve(in: EnvironmentValues())
-        let b = clima.resolve(in: EnvironmentValues())
+        // A1/FER-345: devuelve un Color DINÁMICO (antes horneaba con `EnvironmentValues()` vacío →
+        // el Canvas nunca seguía el modo). El lerp se hornea por modo; SwiftUI/GraphicsContext
+        // resuelve el correcto por vista. Con el flag apagado ambos modos dan el valor claro.
+        LiquidTheme.dynamic(light: Self.lerp(identidad, clima, k: k, at: .light),
+                            dark: Self.lerp(identidad, clima, k: k, at: .dark))
+    }
+
+    private static func lerp(_ identidad: Color, _ clima: Color, k: Double, at scheme: ColorScheme) -> Color {
+        var env = EnvironmentValues(); env.colorScheme = scheme
+        let a = identidad.resolve(in: env)
+        let b = clima.resolve(in: env)
         func l(_ x: Float, _ y: Float) -> Double { Double(x) + (Double(y) - Double(x)) * k }
         return Color(.sRGB, red: l(a.red, b.red), green: l(a.green, b.green),
                      blue: l(a.blue, b.blue), opacity: l(a.opacity, b.opacity))

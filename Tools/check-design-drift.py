@@ -57,7 +57,7 @@ DEFAULT_ROOTS = [
 DESIGN_PKG = "Packages/CenitDesign"
 EXEMPT = re.compile(r"//\s*token-exempt\b")
 
-ALL_RULES = ["no-hex", "no-adhoc-font", "no-radius-literal", "no-opacity-literal", "no-emdash-string", "no-raw-shadow", "no-sheet-glass", "no-spacing-literal", "no-legacy-api", "token-exempt", "no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic", "no-motion-literal", "no-dt-cap-adhoc", "no-deprecated-metrics", "no-instrumento-theme", "no-weight-on-grotesk", "no-iphone-tone-on-oled", "no-capsule-a-mano", "no-confirmation-dialog", "no-native-menu", "no-native-material"]
+ALL_RULES = ["no-hex", "no-adhoc-font", "no-radius-literal", "no-opacity-literal", "no-emdash-string", "no-raw-shadow", "no-sheet-glass", "no-spacing-literal", "no-legacy-api", "token-exempt", "no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic", "no-motion-literal", "no-dt-cap-adhoc", "no-deprecated-metrics", "no-instrumento-theme", "no-weight-on-grotesk", "no-iphone-tone-on-oled", "no-capsule-a-mano", "no-confirmation-dialog", "no-native-menu", "no-native-material", "no-raw-contrast"]
 
 # Per-rule default roots — mirrors `.github/workflows/design-lint.yml` exactly (FER-282).
 # A bare `python3 Tools/check-design-drift.py --baseline …` (no roots) must not paint red on
@@ -93,6 +93,7 @@ DEFAULT_ROOTS_BY_RULE = {
     "no-capsule-a-mano": list(_ROOTS_SPACING_MOTION),
     "no-confirmation-dialog": list(_ROOTS_SPACING_MOTION),
     "no-native-menu": list(_ROOTS_SPACING_MOTION),
+    "no-raw-contrast": ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "CenitApp", "Packages/CenitDesign/Sources"],
     "no-native-material": list(_ROOTS_SPACING_MOTION) + ["Packages/CenitDesign/Sources"],
 }
 # no-emdash-string: an em-dash (—, U+2014) inside a user-facing Swift string literal. ADN copy rule
@@ -272,6 +273,12 @@ RE_NATIVE_MENU = re.compile(r"(?<![A-Za-z.])Menu\s*(?:\{|\()")
 # casa legítima del Material es `LiquidGlassRecipes.swift`.
 RE_NATIVE_MATERIAL = re.compile(r"\.(?:ultraThin|thin|regular|thick|ultraThick|bar)Material\b")
 
+# no-raw-contrast (A1/FER-345): `OKLab.darkened/lightened(` es algoritmo de contraste solo-para-claro
+# (darkened) o su espejo (lightened). El único camino sancionado es el helper mode-aware
+# `LiquidColor.contrastTuned`, que vive en LiquidContrast.swift; `tonoCampo` vive en LiquidColor.swift.
+# Fuera de esos dos archivos, un uso crudo re-introduce oscurecer-sobre-negro (rompe AA en oscuro).
+RE_RAW_CONTRAST = re.compile(r"\bOKLab\.(?:darkened|lightened)\(")
+
 RULE_PATTERNS = {
     "no-hex": RE_HEX,
     "no-adhoc-font": RE_FONT,
@@ -282,6 +289,7 @@ RULE_PATTERNS = {
     "no-spacing-literal": RE_SPACING,
     "no-legacy-api": RE_LEGACY_API,
     "no-raw-color": RE_RAW_COLOR,
+    "no-raw-contrast": RE_RAW_CONTRAST,
     "no-edgeinsets-literal": RE_EDGEINSETS,
     "no-token-arithmetic": RE_TOKEN_ARITH,
     "no-motion-literal": RE_MOTION,
@@ -390,6 +398,8 @@ def check(paths, rules):
                     continue
                 if rule == "no-native-material" and norm.endswith("LiquidGlassRecipes.swift"):
                     continue
+                if rule == "no-raw-contrast" and (norm.endswith("LiquidContrast.swift") or norm.endswith("LiquidColor.swift") or norm.endswith("Instrumento.swift")):
+                    continue   # A1: sancionados (definen contrastTuned/tonoCampo) + Instrumento LEGADO (darkened contra su propio paper fijo, fuera del path dinámico; no se extiende)
                 if rule in ("no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic", "no-motion-literal") and in_widget_watch:
                     continue
                 if rule == "no-instrumento-theme" and RE_DATA_RAMP.search(code):

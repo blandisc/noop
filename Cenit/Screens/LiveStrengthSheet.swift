@@ -774,7 +774,7 @@ struct LiveStrengthSheet: View {
         if let bpm = model.watchBpm {
             // El numeral es 13 pt, por debajo del piso de 24 en que el ADN permite el hue saturado en
             // texto — el mismo tono de lectura que `SessionStatsBar` ya usa para este mismo hue.
-            let tone = OKLab.darkened(LiquidColor.rosa, toContrast: 4.5, against: LiquidColor.papelTarjeta)
+            let tone = LiquidColor.contrastTuned(LiquidColor.rosa, against: LiquidColor.papelTarjeta)
             HStack(spacing: LiquidSpace.s100) {
                 Image(systemName: "heart.fill").font(LiquidType.infoGlifoCompacto)
                 Text("\(bpm)").font(LiquidType.cuerpoBanner.weight(.semibold))
@@ -2000,7 +2000,7 @@ struct LiveStrengthSheet: View {
             .textCase(.uppercase)
             .underline(isActive)
             .foregroundStyle(isActive
-                ? OKLab.darkened(bandColor(b), toContrast: 4.5, against: LiquidColor.papelTarjeta)
+                ? LiquidColor.contrastTuned(bandColor(b), against: LiquidColor.papelTarjeta)
                 : LiquidColor.tinta500)
             .accessibilityHidden(!isActive)
     }

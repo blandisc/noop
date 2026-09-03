@@ -11,7 +11,7 @@ import SwiftUI
 
 public enum CenitColor {
     /// El blanco del lienzo de pantalla — el token único. Cámbialo aquí y cambia en toda la app.
-    public static let pantalla = Color.white
+    public static let pantalla = LiquidTheme.dynamic(light: .white, dark: Color(hex: "#0C0B0A"))
 }
 
 public extension View {

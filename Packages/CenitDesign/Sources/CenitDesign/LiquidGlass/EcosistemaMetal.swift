@@ -161,7 +161,15 @@ struct EcosistemaPaleta: Equatable {
     var vigiaTemp: SIMD4<Float>
     var vigiaResp: SIMD4<Float>
 
-    static func desde(clima: Color) -> EcosistemaPaleta {
+    /// A1/FER-345: resuelve por `colorScheme` REAL (antes `EnvironmentValues()` vacío → nunca
+    /// seguía el modo). Default `.light` para el renderer sin vista (`EcosistemaMetalRenderer`).
+    /// `blanco` deja de ser fijo y viene del token dinámico `ecosistemaBlanco` (B4 afina el arte).
+    static func desde(clima: Color, colorScheme: ColorScheme = .light) -> EcosistemaPaleta {
+        var env = EnvironmentValues(); env.colorScheme = colorScheme
+        func rgba(_ color: Color) -> SIMD4<Float> {
+            let r = color.resolve(in: env)
+            return SIMD4<Float>(r.red, r.green, r.blue, r.opacity)
+        }
         let c = rgba(clima)
         func besada(_ identidad: Color) -> SIMD4<Float> {
             let i = rgba(identidad)
@@ -172,18 +180,11 @@ struct EcosistemaPaleta: Equatable {
                                 negativo: rgba(LiquidColor.negativo),
                                 neutra: rgba(LiquidColor.particulaNeutra),
                                 vigia: rgba(LiquidColor.azul),
-                                blanco: SIMD4<Float>(1, 1, 1, 1),
+                                blanco: rgba(LiquidColor.ecosistemaBlanco),
                                 sueno: besada(LiquidColor.indigo),
                                 reposo: besada(LiquidColor.rosa),
                                 vigiaTemp: besada(LiquidColor.doradoTemp),
                                 vigiaResp: besada(LiquidColor.azul))
-    }
-
-    /// El token es la fuente de verdad; aquí solo se lee su valor sRGB. `resolve(in:)`
-    /// evita bajar a UIKit/AppKit y deja la paleta compilable en las tres plataformas.
-    private static func rgba(_ color: Color) -> SIMD4<Float> {
-        let r = color.resolve(in: EnvironmentValues())
-        return SIMD4<Float>(r.red, r.green, r.blue, r.opacity)
     }
 
     func color(_ tinta: EcosistemaSimulacion.Tinta) -> SIMD4<Float> {

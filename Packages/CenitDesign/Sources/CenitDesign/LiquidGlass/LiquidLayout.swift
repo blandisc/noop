@@ -244,7 +244,7 @@ public struct LiquidShadowLayer: Sendable {
 
 public enum LiquidElevation {
     /// Tinta base de las sombras (tinta/900 en distintos alfas).
-    private static let tintaSombra = Color(hex: "#221D16")
+    private static let tintaSombra = LiquidTheme.dynamic(light: Color(hex: "#221D16"), dark: Color(hex: "#000000"))
 
     /// `e/0 reposo` — 0 2px 8px tinta al 5 %. Tiles en reposo.
     public static let e0: [LiquidShadowLayer] = [

@@ -753,6 +753,28 @@ tint), and the pure **OKLab** colour math (Ottosson 2020) backs the paper gradie
 never imported — `CenitDesign` remains the dependency-free leaf of the package graph, 100% offline
 (`Date`/`Calendar` only).
 
+### Two-mode color resolution (modo oscuro — épico FER-343, cimiento A1/FER-345)
+
+Since A1, `LiquidColor`'s public tokens keep their name and `Color` type but resolve by `ColorScheme`:
+each is built by `LiquidTheme.dynamic(light:dark:)` over a platform dynamic provider
+(`UIColor/NSColor(dynamicProvider:)`, behind `#if canImport(UIKit) && os(iOS)` / `AppKit` — the package
+stays UIKit/AppKit-free by import; watchOS falls to a light-only `#else` because the wrist keeps its own
+`LiquidOLED` vocabulary, D1=a). The deterministic source of truth for tests and the Metal hero is
+`Color.resolved(at:)`, which sets `EnvironmentValues.colorScheme` explicitly before `resolve(in:)` — a
+dynamic color does NOT resolve dark from the ambient appearance on a headless macOS test host, only from
+an explicit scheme (`LiquidThemeResolveTests`). A single global switch `LiquidTheme.oscuroHabilitado`
+(default `false`, read inside every provider) keeps everything resolving light — in every process, app and
+widgets — until A3 flips it atomically. Light-mode values are byte-identical to the old static hexes
+(`LiquidThemeRegresionClaroTests`), so A1 changes nothing visible on its own.
+
+Contrast is mode-aware through one sanctioned helper, `LiquidColor.contrastTuned(_:against:)`: it darkens a
+data hue against light paper in `.light` (the old `OKLab.darkened`) and keeps or lightens the hue against
+the dark floor in `.dark` (`OKLab.lightened`, mirroring `EntrenarHilo.word(sobreOLED:)`) — because
+`OKLab.darkened` is a light-only algorithm (darkening on black destroys contrast). `tonoCampo` is likewise
+mode-aware. The `no-raw-contrast` gate forbids raw `OKLab.darkened/lightened(` outside `LiquidContrast.swift`
+/ `LiquidColor.swift` (Instrumento legacy exempt), so no screen can re-introduce a light-only anchor. The
+Apple Watch keeps `LiquidOLED` unchanged (`LiquidOLEDIntactoTests`): dark data twins are iPhone-only (D1=a).
+
 **The Today hero renders on two backends (FER-10 Phase A → FER-13 Phase B).** «El Ecosistema» is the
 only place in the design system with a GPU path. The two share a **choreography** contract, not a
 pixel one — Core Graphics and Metal antialias differently, and nothing asserts they rasterize
@@ -850,6 +872,8 @@ scroll (parallax). The hero is **not** part of the background: it scrolls with t
   the ambient clock stays at 20 Hz.
 
 ### Design-system enforcement (gates, baseline, censo) — épico FER-261
+
+> Regla añadida A1/FER-345: **`no-raw-contrast`** — `OKLab.darkened/lightened(` crudo solo en `LiquidContrast.swift`/`LiquidColor.swift`; el contraste de dato pasa por `contrastTuned` (mode-aware). Cuatro patas + paridad, como el resto.
 
 `CenitDesign` is the source of visual truth **in fact, not just on paper**, because a tooling layer
 stops the gated debt classes from growing (a PR that sabotages the tooling itself is caught by its
