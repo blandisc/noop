@@ -91,7 +91,7 @@ public struct EntrenarChip: View {
         func tone(_ theme: InstrumentoTheme = .base) -> Color {
             let _ = theme
             switch self {
-            case .rest:        return OKLab.darkened(LiquidColor.rosa, toContrast: 4.5, against: EntrenarMetrics.lienzoContraste)
+            case .rest:        return LiquidColor.contrastTuned(LiquidColor.rosa, against: EntrenarMetrics.lienzoContraste)
             case .progression: return LiquidColor.positivo
             case .warmup:      return LiquidColor.tinta700
             }

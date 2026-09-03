@@ -40,7 +40,7 @@ public enum EntrenarFamily: String, Sendable, CaseIterable, Hashable {
     public func reading(_ theme: InstrumentoTheme = .base) -> Color {
         let _ = theme
         // AA sobre el lienzo de referencia (FER-316); ver nota en `EntrenarHilo.Tone.word`.
-        return OKLab.darkened(tint(), toContrast: 4.5, against: EntrenarMetrics.lienzoContraste)
+        return LiquidColor.contrastTuned(tint(), against: EntrenarMetrics.lienzoContraste)
     }
 
     /// Nombre visible de la familia (vía catálogo). Claves `muscleGroup.*` — un «Push» suelto

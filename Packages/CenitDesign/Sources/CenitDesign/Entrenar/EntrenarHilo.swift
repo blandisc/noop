@@ -75,7 +75,7 @@ public struct EntrenarHilo: View {
             }
             // AA sobre el lienzo de referencia (FER-316).
             return self == .hollow ? LiquidColor.tinta700
-                            : OKLab.darkened(hue(), toContrast: 4.5, against: EntrenarMetrics.lienzoContraste)
+                            : LiquidColor.contrastTuned(hue(), against: EntrenarMetrics.lienzoContraste)
         }
     }
 

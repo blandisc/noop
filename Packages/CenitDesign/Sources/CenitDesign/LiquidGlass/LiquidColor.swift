@@ -17,7 +17,7 @@ public enum LiquidColor {
     // MARK: Tinta (texto y trazos)
 
     /// Texto principal, iconos activos.
-    public static let tinta900 = Color(hex: "#221D16")
+    public static let tinta900 = LiquidTheme.dynamic(light: Color(hex: "#221D16"), dark: Color(hex: "#ECE9E0"))
     /// Texto secundario, kickers de fecha.
     public static let tinta700 = Color(hex: "#5C5648")
     /// Labels, captions neutros, iconos inactivos.
@@ -38,7 +38,7 @@ public enum LiquidColor {
     /// Tarjeta de HOJA — blanco puro (mock canónico `.card{background:#FFFFFF}`): las
     /// tarjetas internas de las hojas van en blanco, no en el papel cálido de pantalla
     /// (#inject r3, pedido del dueño: «los elementos deberían ser blancos»).
-    public static let papelTarjeta = Color(hex: "#FFFFFF")
+    public static let papelTarjeta = LiquidTheme.dynamic(light: Color(hex: "#FFFFFF"), dark: Color(hex: "#1A1714"))
 
     /// El degradado de pantalla papel/alto → papel/bajo (fondo base de toda pantalla Liquid).
     public static let papelGradient = LinearGradient(
@@ -49,7 +49,7 @@ public enum LiquidColor {
     /// Amend «El Tablero» (FER-28): un punto más frío y claro (#FEFEFD/#F3F4F2) para que la
     /// plasta monocroma del veredicto y la aurora fina de los filos respiren sobre un suelo
     /// casi blanco — el tercio del héroe es «cielo», el tablero «instrumento».
-    public static let fondoAlto = Color(hex: "#FEFEFD")
+    public static let fondoAlto = LiquidTheme.dynamic(light: Color(hex: "#FEFEFD"), dark: Color(hex: "#0C0B0A"))
     public static let fondoBajo = Color(hex: "#F3F4F2")
     public static let fondoGradient = LinearGradient(
         colors: [fondoAlto, fondoBajo], startPoint: .top, endPoint: .bottom)
@@ -81,7 +81,7 @@ public enum LiquidColor {
     /// HRV.
     public static let cian = Color(hex: "#147C8C")
     /// FC en reposo.
-    public static let rosa = Color(hex: "#B85068")
+    public static let rosa = LiquidTheme.dynamic(light: Color(hex: "#B85068"), dark: Color(hex: "#BD546C"))
     /// Esfuerzo, temperatura de piel.
     public static let ambar = Color(hex: "#C4631F")
     /// Pasos.
@@ -144,6 +144,10 @@ public enum LiquidColor {
     /// Partícula blanca: el realce especular puro de la simulación del orbe (tinta `.blanco`).
     /// El sistema es dueño del blanco, no el componente de superficie (FER-31).
     public static let particulaBlanca = Color.white
+
+    /// El realce especular del héroe Metal (antes `SIMD4(1,1,1,1)` fijo en EcosistemaMetal).
+    /// Token dinámico para que el orbe siga el modo; B4 afina el arte oscuro.
+    public static let ecosistemaBlanco = LiquidTheme.dynamic(light: .white, dark: Color(hex: "#ECE9E0"))
 
     /// Las MISMAS tintas de partícula de arriba, en componentes sRGB 0–1.
     ///
@@ -255,7 +259,14 @@ public enum LiquidColor {
     ///
     /// Es una función pura sobre sRGB: `LiquidCampoContrasteTests` la comprueba en frío.
     public static func tonoCampo(_ tone: Color) -> Color {
-        let c = tone.rgbaComponents
+        // A1/FER-345: mode-aware. En claro OSCURECE el tono contra el papel claro (comportamiento de
+        // hoy); en oscuro lo ACLARA contra el papel oscuro (oscurecer sobre negro rompería el AA).
+        // Devuelve un Color dinámico; con el flag apagado ambos ramos dan el valor claro. B3 afina.
+        LiquidTheme.dynamic(light: tonoCampoClaro(tone), dark: tonoCampoOscuro(tone))
+    }
+
+    private static func tonoCampoClaro(_ tone: Color) -> Color {
+        let c = tone.resolved(at: .light).rgbaComponents
         var k = 0.0
         while k <= 0.60 {
             let oscuro = (r: c.r * (1 - k), g: c.g * (1 - k), b: c.b * (1 - k))
@@ -265,6 +276,22 @@ public enum LiquidColor {
             k += 0.01
         }
         return Color(red: c.r * (1 - k), green: c.g * (1 - k), blue: c.b * (1 - k))
+    }
+
+    /// Papel de calado del campo en modo oscuro (espejo de `papelAltoRGB`, = `papelTarjeta` oscuro). B3 lo afina.
+    static let papelOscuroRGB = (r: 0x1A / 255.0, g: 0x17 / 255.0, b: 0x14 / 255.0)
+
+    private static func tonoCampoOscuro(_ tone: Color) -> Color {
+        let c = tone.resolved(at: .dark).rgbaComponents
+        var k = 0.0
+        while k <= 0.60 {
+            let claro = (r: c.r + (1 - c.r) * k, g: c.g + (1 - c.g) * k, b: c.b + (1 - c.b) * k)
+            if contraste(calado: papelOscuroRGB, alfa: LiquidCampo.alfaRotulo, sobre: claro) >= 4.5 {
+                break
+            }
+            k += 0.01
+        }
+        return Color(red: c.r + (1 - c.r) * k, green: c.g + (1 - c.g) * k, blue: c.b + (1 - c.b) * k)
     }
 
     /// `#F8F6EF` en componentes — el calado del campo, para la matemática de contraste.

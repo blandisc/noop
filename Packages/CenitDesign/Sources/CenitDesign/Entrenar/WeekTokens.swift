@@ -160,7 +160,7 @@ public struct SessionStatsBar: View {
             // «hue de dato / tono de lectura» que `EntrenarFamily.reading` ya obliga en la sección.
             stat(pulse, unit: "bpm",
                  tone: isPaused ? LiquidColor.tinta700
-                                : OKLab.darkened(LiquidColor.rosa, toContrast: 4.5, against: EntrenarMetrics.lienzoContraste))
+                                : LiquidColor.contrastTuned(LiquidColor.rosa, against: EntrenarMetrics.lienzoContraste))
         }
     }
 
