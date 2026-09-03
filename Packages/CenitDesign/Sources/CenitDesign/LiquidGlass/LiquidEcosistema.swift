@@ -144,7 +144,6 @@ public struct LiquidEcosistema: View {
     @Environment(\.liquidMotionDisabled) private var motionDisabled
     @Environment(\.liquidAmbientPaused) private var ambientPaused
     @Environment(\.scenePhase) private var scenePhase
-    @Environment(\.colorScheme) private var colorScheme   // A1/FER-345: alimenta la paleta Metal por modo
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     public init(senales: [LiquidHoyModel.Senal], hero: LiquidHoyModel.Hero,
@@ -1106,6 +1105,7 @@ private struct EcosistemaEscenario: View {
 
     /// Ancla del eclipse (el guardián viaja al asomarse; con `still` aparece colocado).
     @State private var eclipseDesde: TimeInterval?
+    @Environment(\.colorScheme) private var colorScheme   // A1/FER-345: alimenta la paleta Metal por modo
     #if os(iOS) && canImport(MetalKit)
     @ObservedObject private var metal = EcosistemaMetal.compartido
     #endif
