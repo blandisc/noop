@@ -480,14 +480,12 @@ struct CreateExerciseSheet: View {
                     salida: .cancelar(String(localized: "Cancel")),
                     onSalir: { dismiss() })
 
-                VStack(alignment: .leading, spacing: LiquidSpace.s200) {
-                    Text("Name").liquidKicker().foregroundStyle(LiquidColor.tinta500)
-                    TextField("e.g. Svend press", text: $name)
-                        .font(LiquidType.tituloGemela).foregroundStyle(LiquidColor.tinta900)
-                        .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s250)
-                        .liquidGlass(.superficieSolida)
-                        .accessibilityLabel(Text("Name"))
-                }
+                LiquidCampoTexto(
+                    String(localized: "Name"),
+                    texto: $name,
+                    placeholder: String(localized: "e.g. Svend press"),
+                    a11y: String(localized: "Name"),
+                    tipografia: LiquidType.tituloGemela)
 
                 VStack(alignment: .leading, spacing: LiquidSpace.s050) {
                     pickerRow("Primary muscle", isPresented: $showMusclePicker, selection: $muscle, options: muscles, placeholder: String(localized: "Pick a muscle"), label: StrengthDisplay.muscle)

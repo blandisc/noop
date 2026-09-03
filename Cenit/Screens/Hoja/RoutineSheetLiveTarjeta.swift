@@ -182,7 +182,7 @@ struct HojaTarjetaEjercicioSesion: View {
                 }
                 // B11 (FER-169): el destello de récord trae su copy justo bajo la fila que lo bate.
                 if vivo.prFlash?.setId == set.id, let flash = vivo.prFlash {
-                    prFlashBanner(flash).padding(.vertical, LiquidSpace.s150)
+                    recordFlash(flash).padding(.vertical, LiquidSpace.s150)
                 }
             }
             // El descanso puede no tener dónde anclar (el ejercicio ya cerró todas sus filas visibles) —
@@ -202,7 +202,7 @@ struct HojaTarjetaEjercicioSesion: View {
     /// B6b: «Volver a {fromKg}» revierte la subida ya aplicada (celdas sin palomear); «Seguir en
     /// {toKg}» solo cierra la tarjeta — ni acierto ni fallo, la aritmética lo respeta (mapa B6b).
     private func raiseRevertCard(_ raise: ProgressionPlanner.Raise) -> some View {
-        NoteStrip(style: .info) {
+        LiquidAviso(titulo: "", cuerpo: "", tono: LiquidColor.verdePrimario) {
             HStack(spacing: LiquidSpace.s400) {
                 Button {
                     withAnimation(vivo.reduceMotion ? nil : .snappy) { vivo.raiseRevertOpenRunId = nil }
@@ -344,63 +344,46 @@ struct HojaTarjetaEjercicioSesion: View {
             .outlineCapsule(.outline, size: .sm)
     }
 
-    /// B11 (FER-169): el copy del mapa — «RÉCORD peso máx · antes 100.0» — bajo la fila que acaba de
-    /// batirlo. Mismo rosa que el destello de la fila (R16, `LiquidColor.rosa` — sin token de acento
-    /// rosa en `NoteStrip`, que solo trae `.warning`/`.info`, así que este banner queda propio con las
-    /// mismas anotaciones `token-exempt` que ya usa el destello de arriba).
-    @ViewBuilder private func prFlashBanner(_ flash: PRFlash) -> some View {
-        HStack(spacing: LiquidSpace.s150) {
-            Text("RECORD").font(LiquidType.filaConteo.weight(.bold)).foregroundStyle(LiquidColor.rosa)
-            Text(recordMetricLabel(flash.metric)).font(LiquidType.caption).foregroundStyle(LiquidColor.tinta700)
-            if let prior = flash.priorText {
-                Text(verbatim: "· ") + Text("before \(prior)")
-            }
-        }
-        .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta700)
-        .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s200)
+    /// B11 (FER-169) / FER-339: «RÉCORD peso máx · antes 100.0» bajo la fila que acaba de batirlo.
+    /// Misma pieza de estado (`LiquidStatePill`) y tono rosa de récord.
+    @ViewBuilder private func recordFlash(_ flash: PRFlash) -> some View {
+        let metric = recordMetricLabel(flash.metric)
+        let prior: String = {
+            guard let p = flash.priorText else { return "" }
+            return " · " + String(localized: "before \(p)")
+        }()
+        LiquidStatePill(
+            valencia: String(localized: "RECORD") + " " + metric + prior,
+            tono: LiquidColor.rosa)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            LiquidColor.rosa.opacity(0.10),  // token-exempt(paridad): mismo molde rosa transitorio que el destello R16, arriba
-            in: RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: LiquidRadius.control, style: .continuous)
-                .strokeBorder(LiquidColor.rosa.opacity(0.30), lineWidth: 0.5)  // token-exempt(paridad): mismo molde rosa transitorio que el destello R16, arriba
-        )
         .transition(LiquidMotion.fadeOrIdentity(reduceMotion: vivo.reduceMotion))
-        .accessibilityElement(children: .combine)
     }
 
-    private func recordMetricLabel(_ metric: PRMetric) -> LocalizedStringKey {
+    private func recordMetricLabel(_ metric: PRMetric) -> String {
         switch metric {
-        case .maxWeight: return "max weight"
-        case .maxReps:   return "max reps"
-        case .maxVolume: return "max volume"
+        case .maxWeight: return String(localized: "max weight")
+        case .maxReps:   return String(localized: "max reps")
+        case .maxVolume: return String(localized: "max volume")
         }
     }
 
-    /// B10 (FER-169): el aviso del mapa — «¿825 KG? es 8× tu récord» con ERA X / SÍ, N — bajo la fila
-    /// que lo disparó. `NoteStrip(.warning)` (mismo cristal que otros avisos del app), reversible: ERA
-    /// corrige y vuelve a pasar por el guard; SÍ guarda tal cual.
+    /// B10 (FER-169) / FER-339: «¿825 KG? es 8× tu récord» con ERA X / SÍ, N — bajo la fila
+    /// que lo disparó. `LiquidAviso` (pieza de aviso); reversible: ERA corrige y vuelve a pasar
+    /// por el guard; SÍ guarda tal cual.
     @ViewBuilder private func absurdCaptureBanner(_ target: AbsurdCaptureTarget) -> some View {
-        NoteStrip(style: .warning) {
-            VStack(alignment: .leading, spacing: LiquidSpace.s150) {
-                (Text("\(vivo.plateNumber(vivo.displayWeight(target.weightKg))) \(vivo.weightUnit().uppercased())?")
-                    .font(LiquidType.filaConteo.weight(.bold))
-                 + Text(verbatim: " ")
-                 + Text("is 8× your record").font(LiquidType.caption))
-                    .foregroundStyle(LiquidColor.tinta900)
-                HStack(spacing: LiquidSpace.s250) {
-                    OutlineCapsule(size: .md, action: { vivo.correctAbsurdCapture() }) {
-                        Text("It was \(vivo.plateNumber(vivo.displayWeight(target.weightKg / 10)))")
-                            .font(LiquidType.captionFuerte).foregroundStyle(LiquidColor.tinta900)
-                    }
-                    Button { vivo.confirmAbsurdCaptureAsIs() } label: {
-                        Text("Yes, \(vivo.plateNumber(vivo.displayWeight(target.weightKg)))")
-                            .font(LiquidType.captionFuerte).foregroundStyle(LiquidColor.negativo)
-                    }
-                    .buttonStyle(.plain)
+        let weight = "\(vivo.plateNumber(vivo.displayWeight(target.weightKg))) \(vivo.weightUnit().uppercased())?"
+        let cuerpo = weight + " " + String(localized: "is 8× your record")
+        LiquidAviso(titulo: "", cuerpo: cuerpo, tono: LiquidColor.atencionTexto) {
+            HStack(spacing: LiquidSpace.s250) {
+                OutlineCapsule(size: .md, action: { vivo.correctAbsurdCapture() }) {
+                    Text("It was \(vivo.plateNumber(vivo.displayWeight(target.weightKg / 10)))")
+                        .font(LiquidType.captionFuerte).foregroundStyle(LiquidColor.tinta900)
                 }
+                Button { vivo.confirmAbsurdCaptureAsIs() } label: {
+                    Text("Yes, \(vivo.plateNumber(vivo.displayWeight(target.weightKg)))")
+                        .font(LiquidType.captionFuerte).foregroundStyle(LiquidColor.negativo)
+                }
+                .buttonStyle(.plain)
             }
         }
         .transition(LiquidMotion.fadeOrIdentity(reduceMotion: vivo.reduceMotion))

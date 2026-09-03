@@ -682,7 +682,7 @@ private struct AjustesLanding: View {
             NavigationStack {
                 DataSourcesView()
                     .navigationBarTitleDisplayMode(.inline)
-                    .toolbarBackground(LiquidColor.papelAlto, for: .navigationBar)
+                    .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) {
                             Button(String(localized: "Done")) { presentedSheet = nil }
@@ -700,7 +700,7 @@ private struct AjustesLanding: View {
             NavigationStack {
                 SupportView()
                     .navigationBarTitleDisplayMode(.inline)
-                    .toolbarBackground(LiquidColor.papelAlto, for: .navigationBar)
+                    .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) {
                             Button(String(localized: "Done")) { presentedSheet = nil }

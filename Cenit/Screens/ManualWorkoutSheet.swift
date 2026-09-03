@@ -57,15 +57,12 @@ struct ManualWorkoutSheet: View {
             VStack(alignment: .leading, spacing: LiquidSpace.s300) {
                 header
                 VStack(alignment: .leading, spacing: LiquidSpace.bloqueAjuste) {
-                    field("Sport") {
-                        TextField("e.g. Running", text: $sport)
-                            .textFieldStyle(.plain)
-                            .font(LiquidType.tituloGemela)
-                            .foregroundStyle(LiquidColor.tinta900)
-                            .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s250)
-                            .liquidGlass(.superficieSolida)
-                            .accessibilityLabel("Sport")
-                    }
+                    LiquidCampoTexto(
+                        String(localized: "Sport"),
+                        texto: $sport,
+                        placeholder: String(localized: "e.g. Running"),
+                        a11y: String(localized: "Sport"),
+                        tipografia: LiquidType.tituloGemela)
                     field("Start") {
                         DatePicker("", selection: $start, in: ...Date(),
                                    displayedComponents: [.date, .hourAndMinute])
@@ -87,12 +84,18 @@ struct ManualWorkoutSheet: View {
                     }
                     HStack(alignment: .top, spacing: LiquidSpace.bloqueAjuste) {
                         field("Avg HR") {
-                            numberInput("optional", text: $avgHrText, unit: String(localized: "bpm"))
-                                .accessibilityLabel("Average heart rate in beats per minute, optional")
+                            numberInput(
+                                String(localized: "optional"),
+                                text: $avgHrText,
+                                unit: String(localized: "bpm"),
+                                a11y: String(localized: "Average heart rate in beats per minute, optional"))
                         }
                         field("Calories") {
-                            numberInput("optional", text: $kcalText, unit: "kcal")
-                                .accessibilityLabel("Calories in kilocalories, optional")
+                            numberInput(
+                                String(localized: "optional"),
+                                text: $kcalText,
+                                unit: "kcal",
+                                a11y: String(localized: "Calories in kilocalories, optional"))
                         }
                     }
                 }
@@ -182,17 +185,16 @@ struct ManualWorkoutSheet: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func numberInput(_ placeholder: LocalizedStringKey, text: Binding<String>, unit: String) -> some View {
-        HStack(spacing: LiquidSpace.s150) {
-            TextField(placeholder, text: text)
-                .textFieldStyle(.plain)
-                .keyboardType(.numberPad)
-                .font(LiquidType.valorM)
-                .foregroundStyle(LiquidColor.tinta900)
-            Text(unit).font(LiquidType.unidad).foregroundStyle(LiquidColor.tinta500)
-        }
-        .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s250)
-        .liquidGlass(.superficieSolida)
+    private func numberInput(_ placeholder: String, text: Binding<String>,
+                             unit: String, a11y: String) -> some View {
+        LiquidCampoTexto(
+            nil,
+            texto: text,
+            placeholder: placeholder,
+            teclado: .numberPad,
+            a11y: a11y,
+            sufijo: unit,
+            tipografia: LiquidType.valorM)
     }
 
     private func noteRow(_ text: LocalizedStringKey) -> some View {

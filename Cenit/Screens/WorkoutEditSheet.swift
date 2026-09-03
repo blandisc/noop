@@ -357,29 +357,31 @@ struct WorkoutEditSheet: View {
                 if ref.field == .weight { groups[ref.g].sets[ref.s].weightKg = max(0, storedKg(fromDisplay: v)) }
                 else { groups[ref.g].sets[ref.s].reps = max(0, Int(v.rounded())) }
             })
-        // Cromo compartido (2026-07-19): esta celda era una TERCERA variante — SF en vez de Grotesk
-        // (§8.7 le da los numerales a Grotesk) y subrayado enfocado en ember donde el editor y la
-        // sesión usan tinta. El mecanismo (TextField + teclado nativo) no cambia.
-        return TextField("", text: text)
-            .keyboardType(isInt ? .numberPad : .decimalPad)
+        // Cromo compartido (2026-07-19): celda con subrayado vía `setCellChrome`; el TextField
+        // vive en `LiquidCampoTexto` (FER-339) sin superficie de vidrio.
+        return LiquidCampoTexto(
+            nil,
+            texto: text,
+            placeholder: "",
+            teclado: isInt ? .numberPad : .decimalPad,
+            a11y: "",
+            conSuperficie: false,
+            tipografia: LiquidType.valorM)
             .focused($focused, equals: ref)
             .setCellChrome(width: 64, focused: focused == ref)
             .onChange(of: focused) { _, now in if now != ref { buffers[ref] = nil } }   // drop buffer on blur
     }
 
     private var notesSection: some View {
-        VStack(alignment: .leading, spacing: LiquidSpace.s150) {
-            Text("Notes").liquidLabel().foregroundStyle(LiquidColor.tinta500)
-            TextField(
-                "",
-                text: $notes,
-                prompt: Text("Add a note (optional)").foregroundStyle(LiquidColor.tinta500),
-                axis: .vertical
-            )
-            .font(Font.system(size: LiquidType.lecturaHojaBase))
-            .foregroundStyle(LiquidColor.tinta900)
-            .lineLimit(1...5)
-        }
+        LiquidCampoTexto(
+            String(localized: "Notes"),
+            texto: $notes,
+            placeholder: String(localized: "Add a note (optional)"),
+            a11y: String(localized: "Notes"),
+            eje: .vertical,
+            limiteLineas: 1...5,
+            conSuperficie: false,
+            tipografia: .system(size: LiquidType.lecturaHojaBase))
     }
 
     private func validationNote(_ key: LocalizedStringKey) -> some View {

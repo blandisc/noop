@@ -46,12 +46,17 @@ enum HojaCabecera {
                 if sheet.isPlanDay { dayMenu(sheet: sheet) }
             }
             HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s200) {
-                TextField("Routine name", text: Binding(
-                    get: { sheet.routine?.name ?? "" },
-                    set: { sheet.routine?.name = $0; sheet.dirty = true }
-                ))
-                .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
-                .foregroundStyle(sheet.items.isEmpty ? LiquidColor.tinta500 : LiquidColor.tinta900)
+                LiquidCampoTexto(
+                    nil,
+                    texto: Binding(
+                        get: { sheet.routine?.name ?? "" },
+                        set: { sheet.routine?.name = $0; sheet.dirty = true }
+                    ),
+                    placeholder: String(localized: "Routine name"),
+                    a11y: String(localized: "Routine name"),
+                    conSuperficie: false,
+                    tipografia: LiquidType.displayS,
+                    tracking: LiquidType.displaySTracking)
                 .disabled(sheet.locked)
                 // ✎ decorativo (mock «.lapiz»): el campo ya se edita tocándolo; el glifo solo lo anuncia.
                 Text(verbatim: "✎").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)

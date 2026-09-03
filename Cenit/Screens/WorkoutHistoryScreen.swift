@@ -336,7 +336,12 @@ struct WorkoutHistoryScreen: View {
     @ViewBuilder private var todoDialect: some View {
         let eff = effectiveTodoRange
         let visible = todoVisibleEntries
-        SegmentedPillControl(ExploreRange.allCases, selection: $range, tall: true) { $0.label }
+        LiquidRangeSelector(
+            opciones: ExploreRange.allCases.map(\.label),
+            seleccion: Binding(
+                get: { ExploreRange.allCases.firstIndex(of: range) ?? 0 },
+                set: { range = ExploreRange.allCases[$0] }),
+            tono: LiquidColor.tinta700)
         todoHero(count: visible.count, eff: eff, fellBack: eff != range)
         if case .sport(let name) = filtro { sportChip(name) }
         todoTiles(entries: visible)

@@ -35,6 +35,7 @@ public struct LiquidAviso: View {
     private let icono: LiquidIcon.Glyph?
     private let cta: String?
     private let accion: (() -> Void)?
+    private let pie: AnyView?
 
     /// Aviso de una sola línea de cuerpo (paridad con HealthAlertBanner).
     /// - Parameters:
@@ -56,6 +57,7 @@ public struct LiquidAviso: View {
         self.icono = icono
         self.cta = cta
         self.accion = accion
+        self.pie = nil
     }
 
     /// Aviso con varias líneas de cuerpo (paridad con `LiquidPatternBlock.lineas`).
@@ -71,14 +73,46 @@ public struct LiquidAviso: View {
         self.icono = icono
         self.cta = cta
         self.accion = accion
+        self.pie = nil
+    }
+
+    /// Aviso con pie libre (acciones extra bajo el cuerpo; FER-339, adopta call-sites de `NoteStrip`).
+    /// Con `pie`, la tarjeta NO es un botón global — los controles viven en el pie.
+    public init<Pie: View>(titulo: String,
+                           cuerpo: String,
+                           tono: Color,
+                           icono: LiquidIcon.Glyph? = nil,
+                           @ViewBuilder pie: () -> Pie) {
+        self.titulo = titulo
+        self.lineas = cuerpo.isEmpty ? [] : [cuerpo]
+        self.tono = tono
+        self.icono = icono
+        self.cta = nil
+        self.accion = nil
+        self.pie = AnyView(pie())
+    }
+
+    /// Igual que el init con `cuerpo` + `pie`, pero con varias líneas.
+    public init<Pie: View>(titulo: String,
+                           lineas: [String],
+                           tono: Color,
+                           icono: LiquidIcon.Glyph? = nil,
+                           @ViewBuilder pie: () -> Pie) {
+        self.titulo = titulo
+        self.lineas = lineas
+        self.tono = tono
+        self.icono = icono
+        self.cta = nil
+        self.accion = nil
+        self.pie = AnyView(pie())
     }
 
     public var body: some View {
         let card = nucleo
             .liquidTarjetaSeccion(padding: LiquidAvisoMetrics.tarjetaPadding)
-            .accessibilityElement(children: .combine)
+            .accessibilityElement(children: pie == nil ? .combine : .contain)
 
-        if let accion {
+        if let accion, pie == nil {
             Button(action: accion) {
                 card.contentShape(Rectangle())
             }
@@ -88,26 +122,34 @@ public struct LiquidAviso: View {
         }
     }
 
-    /// Sin icono ni CTA → `LiquidPatternBlock` solo (HealthAlertBanner bit-a-bit).
+    /// Sin icono ni CTA ni pie → `LiquidPatternBlock` solo (HealthAlertBanner bit-a-bit).
     @ViewBuilder
     private var nucleo: some View {
-        if icono == nil && cta == nil {
+        if icono == nil && cta == nil && pie == nil {
             LiquidPatternBlock(overline: titulo, lineas: lineas, tono: tono)
         } else {
             VStack(alignment: .leading, spacing: LiquidAvisoMetrics.slotSpacing) {
-                HStack(alignment: .top, spacing: LiquidAvisoMetrics.slotSpacing) {
-                    if let icono {
-                        LiquidIcon(icono,
-                                   size: LiquidAvisoMetrics.iconSize,
-                                   color: tono)
+                if !lineas.isEmpty || (titulo.isEmpty == false) || icono != nil {
+                    HStack(alignment: .top, spacing: LiquidAvisoMetrics.slotSpacing) {
+                        if let icono {
+                            LiquidIcon(icono,
+                                       size: LiquidAvisoMetrics.iconSize,
+                                       color: tono)
+                        }
+                        if !lineas.isEmpty {
+                            LiquidPatternBlock(overline: titulo.isEmpty ? nil : titulo,
+                                               lineas: lineas, tono: tono)
+                        }
                     }
-                    LiquidPatternBlock(overline: titulo, lineas: lineas, tono: tono)
                 }
                 if let cta {
                     Text(verbatim: cta)
                         .font(LiquidType.boton)
                         .tracking(LiquidType.botonTracking)
                         .foregroundStyle(LiquidColor.verdeProfundo)
+                }
+                if let pie {
+                    pie
                 }
             }
         }
