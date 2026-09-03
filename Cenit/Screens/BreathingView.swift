@@ -318,18 +318,11 @@ struct BreathingView: View {
                     .frame(width: maxDiameter, height: maxDiameter)
 
                 // Outer breathing halo — soft physiological glow in breath identity hue.
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [azul.opacity(0.18),  // token-exempt(dato): rampa decorativa (halo)
-                                     azul.opacity(0.0)],  // token-exempt(dato): rampa decorativa (halo)
-                            center: .center,
-                            startRadius: diameter * 0.20,
-                            endRadius: diameter * 0.70
-                        )
-                    )
-                    .frame(width: diameter * 1.35, height: diameter * 1.35)
-                    .blur(radius: LiquidSpace.s550)
+                LiquidGlowDisco(
+                    color: azul,  // token-exempt(dato): rampa decorativa (halo)
+                    diametro: diameter * 1.35,
+                    blur: LiquidSpace.s550,
+                    opacidadCentro: 0.18)
 
                 // The orb body — azul fill (breath identity), not dataHrv/cyan.
                 Circle()

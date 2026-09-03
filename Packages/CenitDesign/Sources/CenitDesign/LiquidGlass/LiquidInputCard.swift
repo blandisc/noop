@@ -78,7 +78,6 @@ public struct LiquidInputCard: View {
     let onCommit: (String) -> Void
 
     @FocusState private var focused: Bool
-    @Environment(\.liquidMotionDisabled) private var motionDisabled
     @ScaledMetric(relativeTo: .footnote) private var fieldSize = LiquidType.lecturaHojaBase
 
     public init(text: Binding<String>, title: String, context: String,
@@ -96,10 +95,6 @@ public struct LiquidInputCard: View {
 
     private var trimmed: String {
         text.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private var cardShape: RoundedRectangle {
-        RoundedRectangle(cornerRadius: LiquidRadius.hoja, style: .continuous)
     }
 
     public var body: some View {
@@ -146,41 +141,8 @@ public struct LiquidInputCard: View {
         .padding(.horizontal, LiquidSpace.s600)
         .padding(.vertical, LiquidSpace.s550)
         .frame(width: 310)
-        .background(cardGlassBackground)
+        .liquidGlass(.dialogo)
         .onAppear { focused = true }
-    }
-
-    private var cardGlassBackground: some View {
-        cardGlassFill
-            .liquidShadow([.init(color: LiquidColor.tinta900.opacity(0.18), radius: 20, y: 12)],
-                          silhouette: cardShape)
-    }
-
-    @ViewBuilder
-    private var cardGlassFill: some View {
-        if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *), !motionDisabled {
-            Color.clear
-                .background { cardShape.fill(LiquidColor.vidrioSuperficie) }
-                .glassEffect(.regular, in: cardShape)
-        } else {
-            ZStack {
-                cardShape.fill(.ultraThinMaterial)
-                cardShape.fill(LiquidColor.vidrioSuperficie)
-            }
-            .overlay {
-                cardShape
-                    .strokeBorder(
-                        LinearGradient(
-                            stops: [
-                                .init(color: .white.opacity(0.8), location: 0),
-                                .init(color: .white.opacity(0.35), location: 1),
-                            ],
-                            startPoint: .topLeading, endPoint: .bottomTrailing),
-                        lineWidth: 1.5)
-                    .blur(radius: 0.5)
-                    .allowsHitTesting(false)
-            }
-        }
     }
 
     private func commit() {

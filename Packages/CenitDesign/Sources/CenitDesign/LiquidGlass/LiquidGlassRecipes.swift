@@ -39,6 +39,13 @@ public enum LiquidGlassRecipe: Sendable {
     /// blanco no existe) — y se dibuja también en el camino nativo de iOS 26, cuyo filo propio
     /// es blanco.
     case superficieAtmosfera
+    /// Diálogo flotante centrado (`LiquidInputCard`). Misma óptica que `.lente` (material
+    /// fino + e/3) pero con `r/hoja` en rectángulo continuo — el dock usa cápsula; el diálogo
+    /// no. LIQUID-GLASS.md: diálogo flotante = lente.
+    case dialogo
+    /// Confirmación anclada al borde inferior (`ConfirmCard`). Radios SOLO arriba (`r/hoja`),
+    /// material fino de superficie, sombra hacia ARRIBA (la hoja proyecta sobre el scrim).
+    case confirmacion
 }
 
 /// Régimen del vidrio teñido unificado (FER-234 · épico FER-229 «Un solo vidrio»).
@@ -124,6 +131,28 @@ public extension View {
                 // El canto de tinta también sobre el vidrio nativo: su filo propio es blanco y
                 // sobre el fondo blanco de la atmósfera desaparece.
                 bordeSobreNativo: true))
+        case .dialogo:
+            // Óptica de lente (material fino + e/3) con forma de hoja — diálogo flotante.
+            modifier(LiquidGlassLayer(
+                shape: RoundedRectangle(cornerRadius: LiquidRadius.hoja, style: .continuous),
+                material: .thinMaterial,
+                fill: LiquidColor.vidrioSuperficie,
+                border: LiquidColor.vidrioBordeSuperficie,
+                highlightTop: 0.8, highlightBottom: 0.35,
+                streak: false,
+                shadow: LiquidElevation.e3))
+        case .confirmacion:
+            // Hoja anclada abajo: radios superiores, sombra hacia arriba (no está en e/N).
+            modifier(LiquidGlassLayer(
+                shape: UnevenRoundedRectangle(
+                    topLeadingRadius: LiquidRadius.hoja,
+                    topTrailingRadius: LiquidRadius.hoja),
+                material: .ultraThinMaterial,
+                fill: LiquidColor.vidrioSuperficie,
+                border: LiquidColor.vidrioBordeSuperficie,
+                highlightTop: 0.8, highlightBottom: 0.35,
+                streak: false,
+                shadow: LiquidElevation.confirmacionArriba))
         }
     }
 
@@ -265,6 +294,24 @@ private struct LiquidSolidLayer<S: InsettableShape>: ViewModifier {
             }
             .clipShape(shape)
             .liquidShadow(shadow, silhouette: shape)
+    }
+}
+
+// MARK: - Base de material (única puerta fuera de liquidGlass(_:))
+
+/// Relleno de material del sistema. Piezas del paquete con forma/saturación propias
+/// (módulo, selector del dock, hoja Entrenar, menú, popup de chart) lo usan en vez de
+/// pintar `Material` a mano. Las pantallas siguen yendo por `liquidGlass(_:)`.
+public enum LiquidGlassBase {
+    /// Material ultra-fino del sistema, recortado a `shape`.
+    @ViewBuilder
+    public static func ultraFino<S: Shape>(_ shape: S) -> some View {
+        shape.fill(.ultraThinMaterial)
+    }
+
+    /// Rectángulo a pantalla completa (fondos de hoja / `presentationBackground`).
+    public static var rectanguloUltraFino: some View {
+        Rectangle().fill(.ultraThinMaterial)
     }
 }
 

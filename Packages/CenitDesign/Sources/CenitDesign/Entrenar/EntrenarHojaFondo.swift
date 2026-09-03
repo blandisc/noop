@@ -62,7 +62,7 @@ public extension View {
 /// de `.entrenarHojaFondo`, que es puramente decorativo sobre lo que ya está fijo, esta barra
 /// necesita OCLUIR: un tinte con alpha solo, sin base opaca detrás, deja transparentarse el
 /// contenido que pasa debajo mientras el usuario hace scroll (hallazgo FER-220, ronda 2). Misma
-/// receta de cristal (`glassEffect` nativo / `.ultraThinMaterial` antes de iOS 26) pero con
+/// receta de cristal (`glassEffect` nativo / `LiquidGlassBase` antes de iOS 26) pero con
 /// `LiquidColor.fondoGradient` — opaco, sin alfa — como piso, así que la barra oculta aunque el
 /// material por sí solo no bastara.
 public extension View {
@@ -97,7 +97,7 @@ private struct EntrenarHojaBarraFondoModifier: ViewModifier {
                 .glassEffect(.regular, in: Rectangle())
         } else {
             ZStack {
-                Rectangle().fill(.ultraThinMaterial)
+                LiquidGlassBase.rectanguloUltraFino
                 tinte
             }
         }
@@ -138,7 +138,7 @@ private struct EntrenarHojaFondoModifier: ViewModifier {
                 .glassEffect(.regular, in: Rectangle())
         } else {
             ZStack {
-                Rectangle().fill(.ultraThinMaterial)
+                LiquidGlassBase.rectanguloUltraFino
                 tinte
             }
         }

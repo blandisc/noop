@@ -118,7 +118,7 @@ private struct AjustesLanding: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: LiquidSpace.s800) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s700) {
                 header
                 profileSection
                 moreSection
@@ -265,7 +265,7 @@ private struct AjustesLanding: View {
     // MARK: - More (grouped nav rows + toggle blocks, each in its own overlined card)
 
     private var moreSection: some View {
-        VStack(alignment: .leading, spacing: LiquidSpace.s800) {
+        VStack(alignment: .leading, spacing: LiquidSpace.s700) {
             section(String(localized: "App")) {
                 VStack(spacing: .zero) {
                     LiquidListRow(title: String(localized: "Units & format"), subtitle: unitsSubtitle,

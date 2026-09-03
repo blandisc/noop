@@ -228,7 +228,7 @@ struct LiquidTonoReceta: ViewModifier {
                 .glassEffect(.regular, in: shape)
         } else {
             ZStack {
-                shape.fill(.ultraThinMaterial).saturation(LiquidColor.vidrioRefraccion)
+                LiquidGlassBase.ultraFino(shape).saturation(LiquidColor.vidrioRefraccion)
                 shape.fill(relleno)
             }
         }

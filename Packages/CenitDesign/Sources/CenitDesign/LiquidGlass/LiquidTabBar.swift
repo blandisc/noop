@@ -93,8 +93,7 @@ public struct LiquidTabBar: View {
         if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *), !motionDisabled {
             Color.clear.glassEffect(.regular, in: Capsule())
         } else {
-            Capsule()
-                .fill(.ultraThinMaterial)
+            LiquidGlassBase.ultraFino(Capsule())
                 .overlay(Capsule().fill(LiquidColor.vidrioRealcePastilla))
                 .overlay(Capsule().strokeBorder(LiquidColor.vidrioBordePastilla, lineWidth: 0.5))
         }

@@ -1474,8 +1474,7 @@ struct LiveStrengthSheet: View {
     /// The editorial headline: «{rutina}, hecha.» + the session's one honest achievement.
     private func receiptHeadline(_ s: StrengthSummary) -> some View {
         (Text("\(s.routineName), done.") + Text(verbatim: "\n") + Text(verbatim: achievementLine(s)))
-            .font(LiquidType.displayL)
-            .tracking(LiquidType.displayLTracking)
+            .font(LiquidType.tituloHoja)
             .foregroundStyle(LiquidColor.tinta900)
             .fixedSize(horizontal: false, vertical: true)
     }

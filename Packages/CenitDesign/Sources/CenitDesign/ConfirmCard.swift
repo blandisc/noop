@@ -3,11 +3,10 @@ import SwiftUI
 // MARK: - ConfirmCard — cristal El Eje (dialecto Entrenar de Liquid Glass; reskin FER-196)
 //
 // El reemplazo estilizado de `.confirmationDialog`: una tarjeta de VIDRIO anclada al borde
-// inferior sobre un scrim de tinta — vidrio translúcido claro (`LiquidColor.vidrioSuperficie`
-// + `.ultraThinMaterial`), canto hairline, highlight superior y una sombra que proyecta hacia
-// ARRIBA. Piel El Eje sobre el mismo esqueleto de siempre: API pública y comportamiento
-// intactos (FER-196, Ola 0 del épico «Entrenar en vidrio»). Tres reglas son LEY aquí, no
-// convención:
+// inferior sobre un scrim de tinta — receta `.confirmacion` (vidrio + canto + highlight +
+// sombra hacia ARRIBA). Piel El Eje sobre el mismo esqueleto de siempre: API pública y
+// comportamiento intactos (FER-196, Ola 0 del épico «Entrenar en vidrio»). Tres reglas son
+// LEY aquí, no convención:
 //   • El overline nombra el CONTEXTO y lo que está en juego («SESIÓN · 23:41 EN CURSO»).
 //   • El cuerpo dice la consecuencia CONCRETA de confirmar.
 //   • Una acción destructiva se renderiza como contorno ROJO — nunca como el primario
@@ -124,8 +123,6 @@ public struct ConfirmCard: View {
     let actions: [InstrumentoConfirmAction]
     @Binding var isPresented: Bool
 
-    @Environment(\.liquidMotionDisabled) private var motionDisabled
-
     public init(title: String, context: String, message: String?,
                 actions: [InstrumentoConfirmAction], isPresented: Binding<Bool>) {
         self.title = title
@@ -172,60 +169,8 @@ public struct ConfirmCard: View {
         .padding(.horizontal, LiquidSpace.s600)
         .padding(.top, LiquidSpace.s550)
         .padding(.bottom, LiquidSpace.s550)
-        .background(cardGlassBackground)
-        .overlay(alignment: .top) {
-            cardShape
-                .stroke(LiquidColor.vidrioBordeSuperficie, lineWidth: 0.5)
-                .ignoresSafeArea(edges: .bottom)
-        }
-    }
-
-    /// Esquinas SOLO arriba (hoja anclada abajo) — `LiquidRadius.hoja` (28), el radio
-    /// reservado del sistema para sheets y modales.
-    private var cardShape: UnevenRoundedRectangle {
-        UnevenRoundedRectangle(topLeadingRadius: LiquidRadius.hoja, topTrailingRadius: LiquidRadius.hoja)
-    }
-
-    /// El cristal + su sombra, sobre la forma de esquinas parciales que `.liquidGlass(_:)` no
-    /// expone: mismo split nativo-vs-imitación que `LiquidModulo`/`LiquidTabBar` (vidrio NATIVO
-    /// en iOS 26 con refracción/lensing reales; `.ultraThinMaterial` + relleno + highlight
-    /// superior 0.8→0.35 antes, y en renders/previews congelados). La sombra usa la silueta
-    /// pública `liquidShadow(_:silhouette:)` — un `.shadow` sobre el contenido proyectaría el
-    /// rectángulo del material, no la silueta (mismo defecto documentado en
-    /// `LiquidGlassRecipes.swift`) — con `y` NEGATIVA porque esta hoja proyecta hacia ARRIBA
-    /// (token-exempt: `LiquidElevation` solo modela sombras hacia abajo).
-    private var cardGlassBackground: some View {
-        cardGlassFill
-            .liquidShadow([.init(color: LiquidColor.tinta900.opacity(0.18), radius: 20, y: -12)],
-                          silhouette: cardShape)
-            .ignoresSafeArea(edges: .bottom)
-    }
-
-    @ViewBuilder
-    private var cardGlassFill: some View {
-        if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *), !motionDisabled {
-            Color.clear
-                .background { cardShape.fill(LiquidColor.vidrioSuperficie) }
-                .glassEffect(.regular, in: cardShape)
-        } else {
-            ZStack {
-                cardShape.fill(.ultraThinMaterial)
-                cardShape.fill(LiquidColor.vidrioSuperficie)
-            }
-            .overlay {
-                cardShape
-                    .strokeBorder(
-                        LinearGradient(
-                            stops: [
-                                .init(color: .white.opacity(0.8), location: 0),
-                                .init(color: .white.opacity(0.35), location: 1),
-                            ],
-                            startPoint: .topLeading, endPoint: .bottomTrailing),
-                        lineWidth: 1.5)
-                    .blur(radius: 0.5)
-                    .allowsHitTesting(false)
-            }
-        }
+        .liquidGlass(.confirmacion)
+        .ignoresSafeArea(edges: .bottom)
     }
 
     @ViewBuilder

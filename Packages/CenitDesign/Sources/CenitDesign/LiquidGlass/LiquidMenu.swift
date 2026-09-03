@@ -138,7 +138,7 @@ struct LiquidMenuCard: View {
         // clip here (FER-951; see file header). System popover supplies elevation.
         .presentationBackground {
             ZStack {
-                Rectangle().fill(.ultraThinMaterial)
+                LiquidGlassBase.rectanguloUltraFino
                 Rectangle().fill(LiquidColor.vidrioSuperficie)
             }
         }

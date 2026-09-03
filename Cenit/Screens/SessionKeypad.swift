@@ -289,7 +289,8 @@ struct SessionKeypad: View {
                 .font(.system(size: size)).foregroundStyle(LiquidColor.tinta900)  // token-exempt(dato): numeral de tecla del keypad
                 .frame(maxWidth: .infinity).frame(height: EntrenarMetrics.keyCap)
                 .background(RoundedRectangle(cornerRadius: EntrenarMetrics.keyRadius, style: .continuous).fill(LiquidColor.papelTarjeta))
-                .shadow(color: LiquidColor.tinta900.opacity(0.08), radius: 0, x: 0, y: 1)  // token-exempt(falta-pieza): sombra sutil <0.10
+                .liquidShadow(LiquidElevation.e0,
+                              silhouette: RoundedRectangle(cornerRadius: EntrenarMetrics.keyRadius, style: .continuous))
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

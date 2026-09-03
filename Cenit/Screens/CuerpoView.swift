@@ -278,13 +278,15 @@ private struct CuerpoLanding: View {
     var body: some View {
         ZStack {
         ScrollView {
-            VStack(alignment: .leading, spacing: LiquidSpace.s100) {
-                titleBlock
-                periodSelector
-                // §8.7 landing micro-legend: today's values vs last month's trends (period selector above).
-                Text("Today's values \u{00B7} last month's trends")
-                    .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+            VStack(alignment: .leading, spacing: LiquidSpace.s700) {
+                VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+                    titleBlock
+                    periodSelector
+                    // §8.7 landing micro-legend: today's values vs last month's trends (period selector above).
+                    Text("Today's values \u{00B7} last month's trends")
+                        .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
                 recoveryHero
                 restLoadCard
                 trainingLoadCard

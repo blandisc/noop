@@ -201,8 +201,7 @@ struct IntervalTimerView: View {
             // Phase + round line
             HStack(alignment: .firstTextBaseline) {
                 Text(phase.label)
-                    .font(LiquidType.displayM)
-                    .tracking(LiquidType.reglaTracking)
+                    .liquidKicker()
                     .foregroundStyle(phaseColor)
                 Spacer()
                 HStack(spacing: LiquidSpace.s150) {
