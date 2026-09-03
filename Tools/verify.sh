@@ -118,6 +118,14 @@ run_package() {
   [ -d "Packages/$name" ] || fail "no existe Packages/$name"
   echo "verify: swift build + test — $name"
   (cd "Packages/$name" && swift build && swift test) || fail "Packages/$name falló build o tests."
+  if [ "$name" = "CenitDesign" ]; then
+    # Se embebe en Watch e iOS: el build de macOS no ve UIKeyboardType sin !os(watchOS) (FER-197/FER-339).
+    echo "verify: cross-compile CenitDesign — watchOS + iOS simulator"
+    (cd "Packages/$name" \
+      && swift build --triple arm64-apple-watchos10.0-simulator --sdk "$(xcodebuild -version -sdk watchsimulator Path)" --scratch-path .build/watch \
+      && swift build --triple arm64-apple-ios17.0-simulator --sdk "$(xcodebuild -version -sdk iphonesimulator Path)" --scratch-path .build/ios) \
+      || fail "Packages/$name no compila para watchOS o iOS simulator."
+  fi
 }
 
 touched_packages() {
