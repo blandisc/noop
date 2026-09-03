@@ -93,6 +93,14 @@ struct ContentView: View {
                     .transition(LiquidMotion.fadeTransition)
                     .zIndex(1)
             }
+            // P0-1 (auditoría de estrés): tras restaurar un respaldo el store queda cerrado a propósito
+            // hasta relanzar (cero escrituras al inodo viejo). Estado bloqueante sobre todo: el archivo
+            // restaurado carga en el próximo arranque en frío, con las cachés/sesiones ya limpias.
+            if repo.quiescedForRestore {
+                RestoredNeedsReopenView()
+                    .transition(LiquidMotion.fadeTransition)
+                    .zIndex(3)
+            }
             #endif
             // Terms acknowledgment gate — over EVERYTHING (before onboarding/pairing/Bluetooth) until
             // the current terms version is accepted; re-appears if the terms materially change.
@@ -243,12 +251,14 @@ struct ContentView: View {
     }
 
     @MainActor private func runRestore() async {
-        switch await DataBackup.runImport() {
+        switch await DataBackup.runImport(beforeSwap: { await repo.quiesceForRestore() }) {
         case .imported:
-            restoreMessage = String(localized: "Your data has been restored. Reopen Cénit for it to take effect.")
-            restoreSucceeded = true
-            showRestoreResult = true
+            // P0-1: el store ya quedó quiescido (cero escrituras al inodo viejo). `repo.quiescedForRestore`
+            // dispara la pantalla bloqueante «reabre Cénit» — el archivo restaurado carga al reabrir en
+            // frío. Ya no usamos el aviso descartable de antes: dejaba seguir usando la app (y fugando).
+            break
         case .failure(let message):
+            repo.unquiesceAfterFailedRestore()   // el .sqlite original quedó intacto — reabrirlo
             restoreMessage = message
             restoreSucceeded = false
             showRestoreResult = true
@@ -296,6 +306,34 @@ private struct StoreFailureView: View {
                 }
             }
             .padding(.top, LiquidSpace.s800)
+            Spacer()
+        }
+        .padding(.horizontal, LiquidSpace.s550)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .background(LiquidColor.fondoGradient.ignoresSafeArea())
+    }
+}
+
+/// P0-1 (auditoría de estrés): tras restaurar un respaldo, el store se cierra a propósito hasta
+/// relanzar — así ninguna escritura cae al inodo que el swap del archivo dejó huérfano. Estado honesto
+/// y BLOQUEANTE (sin botón de salir: iOS no relanza por código, y `exit(0)` se lee como un crash; el
+/// usuario cierra y reabre). Mismo lenguaje sobrio que `StoreFailureView`, en tono positivo: el
+/// respaldo ya está en el teléfono, solo falta reabrir para cargarlo.
+private struct RestoredNeedsReopenView: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: .zero) {
+            Spacer()
+            Text(String(localized: "restore.reopen.title", defaultValue: "Backup restored."))
+                .font(LiquidType.displayS)
+                .tracking(LiquidType.displaySTracking)
+                .foregroundStyle(LiquidColor.tinta900)
+                .fixedSize(horizontal: false, vertical: true)
+            Text(String(localized: "restore.reopen.body",
+                        defaultValue: "Your data is back on this phone. Close Cénit completely and open it again to load it. Nothing is written until you do."))
+                .font(.system(.subheadline))
+                .foregroundStyle(LiquidColor.tinta500)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, LiquidSpace.s300)
             Spacer()
         }
         .padding(.horizontal, LiquidSpace.s550)

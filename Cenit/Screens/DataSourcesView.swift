@@ -920,7 +920,8 @@ struct DataSourcesView: View {
     private func runImport() {
         backupBusy = true
         Task {
-            let result = await DataBackup.runImport()
+            // P0-1: cerrar el store vivo antes del swap del archivo (cero escrituras al inodo huérfano).
+            let result = await DataBackup.runImport(beforeSwap: { await model.repo.quiesceForRestore() })
             handleBackup(result)
         }
     }
@@ -938,6 +939,9 @@ struct DataSourcesView: View {
             backupAlertMessage = String(localized: "Your data has been restored. Quit and reopen Cénit for it to take effect.")
             backupAlertIsError = false; showBackupAlert = true
         case .failure(let message):
+            // P0-1: si el swap falló, el .sqlite original quedó intacto — reabre ese archivo (no-op si
+            // no se había quiescido, p. ej. un fallo de exportación).
+            model.repo.unquiesceAfterFailedRestore()
             backupAlertTitle = String(localized: "Backup problem"); backupAlertMessage = message
             backupAlertIsError = true; showBackupAlert = true
         }
