@@ -2,10 +2,9 @@ import SwiftUI
 
 // MARK: - Metric row (dense list)
 //
-// The list-style metric row from the Today redesign: `label (+ optional flag) · inline sparkline ·
-// right-aligned value + unit`. The Apple/Whoop "Key Metrics" pattern — denser than a `StatTile`
-// grid, so six metrics read as one calm column instead of six boxes. Values are tabular and pinned
-// to a fixed-width column so the decimal points line up. Reuses `Sparkline`. Tokens-only.
+// Fila densa de métrica: `label (+ flag opcional) · sparkline inline · valor + unidad` alineados
+// a la derecha. Seis métricas leen como una columna calmada. Valores tabulares en columna de
+// ancho fijo. Reusa `Sparkline`. Solo tokens.
 
 struct MetricRow: View {
     let label: LocalizedStringKey
@@ -14,8 +13,8 @@ struct MetricRow: View {
     let value: String
     var unit: String?
     var valueColor: Color
-    /// Label / unit ink. Default to the legacy `StrandPalette` so existing callers are unchanged;
-    /// «Instrumento diurno» screens pass `theme.inkSecondary` / `theme.inkTertiary`. (FER-135)
+    /// Tinta de label / unidad. Default legacy `StrandPalette`; pantallas Liquid pasan
+    /// `theme.inkSecondary` / `theme.inkTertiary`. (FER-135)
     var labelColor: Color
     var unitColor: Color
     var sparkline: [Double]?

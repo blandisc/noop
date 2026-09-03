@@ -375,10 +375,8 @@ struct RootTabView: View {
         // launch — double DB work + an extra refreshSeq bump that re-fired TodayView.loadAll.
     }
 
-    /// Which tabs render in the light «Instrumento diurno» paper (drives the status-bar color scheme
-    /// via `isTodayActive` and the instrument bar's `isLight`). Hoy and Cuerpo — the «historia» landing
-    /// is warm paper too (FER-186), color only on the datum; every other tab is the dark instrument
-    /// panel. (En vivo's light paper lives in a cover over Hoy, not a tab.)
+    /// Tabs con esquema claro Liquid Glass · El Eje (barra de estado oscura vía `isTodayActive` /
+    /// `isLight`): Hoy, Cuerpo, Entrenar y Ajustes. El resto del chrome legacy sigue oscuro.
     private func isLightTab(_ tab: Tab) -> Bool { tab == .today || tab == .body || tab == .train || tab == .settings }
 
     /// The hub tab that owns a given secondary screen (for debug navigation).

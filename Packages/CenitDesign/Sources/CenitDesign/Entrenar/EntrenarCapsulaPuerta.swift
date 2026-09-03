@@ -71,7 +71,7 @@ public struct EntrenarCapsulaPuerta: View {
         }
         .buttonStyle(.liquidPress)
         // El dibujo se queda al tamaño chico del mock; lo que crece hasta 44 es el ÁREA DE
-        // TOQUE — mismo criterio que `PaperStepper` (pad invisible, nunca infla la pastilla).
+        // TOQUE — pad invisible hasta `LiquidControl.hitTarget` (nunca infla la pastilla).
         .frame(minWidth: LiquidControl.hitTarget, minHeight: LiquidControl.hitTarget)
         .contentShape(Rectangle())
     }

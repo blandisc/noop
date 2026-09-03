@@ -5,24 +5,18 @@ import CenitDesign
 import StrandAnalytics
 import Foundation
 
-// MARK: - MetricDetailScreen — the unified, reusable Detalle de Métrica (FER-185)
+// MARK: - MetricDetailScreen — Detalle de Métrica unificado (FER-185) · Liquid Glass · El Eje
 //
-// One light «Instrumento» screen that replaces, FOR THE THREE VITALS (HRV / FC en reposo /
-// Frecuencia respiratoria), both the old `MetricInfoSheet` (from Hoy) and the dark
-// `MetricDetailView` (from Cuerpo's Explorer bridge). It is parameterised by a `MetricDetailSpec`
-// (which blocks, how the hero reads, the baseline config) and a `Depth`:
+// Hoja Liquid (`LiquidSheetFondo` + bloques narrativos Liquid) que reemplaza, para los vitales
+// HRV / FC en reposo / Frecuencia respiratoria, al viejo `MetricInfoSheet` y al `MetricDetailView`
+// oscuro. Parametrizada por `MetricDetailSpec` y `Depth`:
 //
-//   • `.focus` (from Hoy) — a quick "photo of the day": a short window and only the chart+band,
-//     normal range, night vitals (where the spec has them) and method.
-//   • `.full`  (from Cuerpo) — every block the spec declares.
+//   • `.focus` (Hoy) — foto del día: ventana corta, chart+banda, rango, vitales nocturnos, método.
+//   • `.full`  (Cuerpo) — todos los bloques del spec.
 //
-// It is ONE view tree filtered by depth, never two screens. Presented via `.sheet(item:)` WITHOUT a
-// nested NavigationStack (a nested stack crossing the tab's path crashed SwiftUI — FER-171).
-//
-// Data: the three vitals come from `repo.displayDays` for a BLE user (computed scores live under
-// `strap-noop`, so `series("strap")` is empty) — the caller injects the loaders. The hero is the
-// 7-day moving average (`SeriesShape.latestMovingAverage`), not today's single reading; today is shown
-// as secondary context.
+// Un solo árbol filtrado por depth. `.sheet(item:)` sin NavigationStack anidado (FER-171).
+// Datos vía loaders del caller sobre `repo.displayDays`; héroe = media móvil 7d
+// (`SeriesShape.latestMovingAverage`), hoy como contexto secundario.
 
 struct MetricDetailScreen: View {
     let spec: MetricDetailSpec
@@ -470,26 +464,15 @@ struct MetricDetailScreen: View {
     }
 
 
-    // MARK: - Cuerpo narrativo en vidrio Liquid (FER-103 · TND-20)
+    // MARK: - Cuerpo narrativo Liquid Glass · El Eje (FER-103 · TND-20)
     //
-    // Migración PURAMENTE VISUAL del camino narrativo (HRV / FC en reposo / Respiración / SpO₂ — un
-    // solo árbol para los cuatro) del papel «Instrumento» a los legos Liquid, calcando el patrón de
-    // `SleepDetailScreen` (la vara) y de `StrainDetailScreen` / `StressDetailScreen` /
-    // `SkinTempDetailScreen` (los bloques hermanos ya firmados): campo teñido a sangre
-    // (`LiquidCampoMetrica`) → costuras de sección (`LiquidFranjaSeccion`) → lectura de nivel
-    // (`LiquidReadingLine`; los rangos viven en la escalera tocable del historial, A-UX-08) →
-    // patrón (`LiquidTendenciaCard`, posición de las gemelas: entre Niveles e Historial) →
+    // Árbol narrativo único (HRV / FC en reposo / Respiración / SpO₂) en legos Liquid, calco de
+    // `SleepDetailScreen` / `StrainDetailScreen` / `StressDetailScreen` / `SkinTempDetailScreen`:
+    // `LiquidCampoMetrica` → `LiquidFranjaSeccion` → `LiquidReadingLine` → `LiquidTendenciaCard` →
     // historial (`LiquidRangeSelector` + `LiquidGraficaNiveles` + `LiquidResumenVentana` +
-    // `LiquidLevelsList`) → espectral VFC (`LiquidCajitaGrid`, calco «Estabilidad térmica») →
-    // método + sello (patrón `pieMetodo` de Sueño).
-    //
-    // La plomería de datos NO CAMBIA (A14): spec + closures + `.task` con parseo off-main quedan tal
-    // cual; cero matemática nueva. La ESCALERA ÚNICA (TND-19) es la fuente de toda palabra/color:
-    // `spec.info.bands` (con `key` de motor) para FCr/Resp/SpO₂, la banda personal ±σ para VFC, y
-    // `spo2HeroVerdict` para el héroe de SpO₂. El CAMPO se tiñe SIEMPRE por identidad (cian/rosa/
-    // azul, calco `LiquidMetricSheetView.tono` :225-248), nunca por juicio.
-    //
-    // El camino de papel (árboles *Final / helpers Instrumento) ya se retiró: solo vive Liquid.
+    // `LiquidLevelsList`) → espectral VFC (`LiquidCajitaGrid`) → método + sello.
+    // Plomería intacta (A14). Escalera única (TND-19) para palabra/color; campo siempre por
+    // identidad (cian/rosa/azul), nunca por juicio.
 
     /// La identidad Liquid de la métrica — calco del mapa id→hue de la hoja de Hoy
     /// (`LiquidMetricSheetView.tono` :225-248): hrv → cian · rhr → rosa · resp_rate/spo2 → azul

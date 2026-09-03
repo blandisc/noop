@@ -185,10 +185,9 @@ final class DesignDriftTokenTests: XCTestCase {
     }
 }
 
-/// (1) `LiquidSectionHeader` — el componente Liquid que reemplaza `InstrumentoSectionBand`
-/// (sin banda de papel). Test barato de existencia/forma: el kicker reusa `LiquidType.kicker`
-/// y el `Trailing == EmptyView` sigue disponible cuando no hay acción — no renderiza, solo
-/// prueba que el API se construye con el mismo patrón que `InstrumentoSectionBand`.
+/// (1) `LiquidSectionHeader` — kicker Liquid sin banda de fondo. Test barato de existencia/
+/// forma: el kicker reusa `LiquidType.kicker` y el `Trailing == EmptyView` sigue disponible
+/// cuando no hay acción — no renderiza, solo prueba que el API se construye.
 final class LiquidSectionHeaderTests: XCTestCase {
     @MainActor func test_initWithAndWithoutTrailingCompiles() {
         _ = LiquidSectionHeader("Título")

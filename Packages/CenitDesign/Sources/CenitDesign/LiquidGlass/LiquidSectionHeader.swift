@@ -2,17 +2,10 @@ import SwiftUI
 
 // MARK: - Liquid Glass · Encabezado de sección (FER-273, CONTRATO.md — checklist Fase 1)
 //
-// El reemplazo Liquid de `InstrumentoSectionBand` (SectionBand.swift): un kicker en
-// mayúsculas chicas + aire, SIN banda de fondo. `InstrumentoSectionBand` hunde el rótulo en
-// un `patternBlock` a sangre — el gesto correcto para el papel de «Instrumento diurno», pero
-// el que sobra en Liquid Glass · El Eje: el sistema ya separa secciones con aire y vidrio,
-// no con una franja de papel. Esta pieza NACE aquí — adoptarla en los 13 call-sites de
-// InstrumentoSectionBand (WorkoutHistoryScreen/EntrenarView/WeeklyPlanEditorView/
-// ExerciseLibraryScreen) es trabajo del lote de `/migracion` que sigue, no de este issue.
-//
-// Reusa el mismo kicker que ya usan las cabeceras Liquid (`LiquidType.kicker` + `.liquidKicker()`
-// — MAYÚSCULAS 11.5/600, tracking +1.5, ver `LiquidPatterns.LiquidScreenHeader`) para que
-// «kicker de sección» y «kicker de pantalla» hablen el mismo tamaño en todo el sistema.
+// Encabezado de sección Liquid Glass · El Eje: kicker en mayúsculas chicas + aire, SIN banda
+// de fondo — las secciones se separan con aire y vidrio, no con franja de papel.
+// Reusa `LiquidType.kicker` + `.liquidKicker()` (MAYÚSCULAS 11.5/600, tracking +1.5) para que
+// «kicker de sección» y «kicker de pantalla» hablen el mismo tamaño.
 
 /// El encabezado de sección Liquid: un kicker a la izquierda + un trailing opcional a la
 /// derecha (una acción, un hint de lectura), sin fondo — el caller ya vive sobre el papel/

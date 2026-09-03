@@ -54,7 +54,7 @@ struct MetricDescriptor: Identifiable, Hashable {
         }
     }
 
-    /// Like `format`, but for a DIFFERENCE between two values (e.g. the Δ StatTile). A temperature
+    /// Like `format`, but for a DIFFERENCE between two values (e.g. a Δ tile). A temperature
     /// delta scales by 9/5 with NO +32 offset; mass/distance deltas scale by their plain factor. The
     /// caller supplies the magnitude (sign is rendered separately).
     func formatDelta(_ v: Double, system: UnitSystem, temperature: TemperatureUnit) -> String {

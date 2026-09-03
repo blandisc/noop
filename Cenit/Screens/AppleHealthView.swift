@@ -4,26 +4,15 @@ import StrandAnalytics
 import CenitStore
 import Foundation
 
-// MARK: - Apple Health (per-source page) — Liquid Glass (FER-108)
+// MARK: - Apple Health (página por fuente) — Liquid Glass · El Eje (FER-108)
 //
-// Migration of the per-source Apple Health viewer from the light «Instrumento diurno» paper to
-// Liquid Glass, sibling to Compare/Explore (TND-30/31) and Data Sources (FER-108): the neutral
-// `LiquidSheetFondo`, inset section overlines (Compare's pattern, never a franja a sangre), the
-// range control as `LiquidRangeSelector`, uniform composed metric tiles (this screen has no
-// delta — the hero value + a sparkline replace it), and chart cards built from the shared Liquid
-// chart core with an avg/min/max/points footer.
-//
-// THE MIGRATION IS SKIN, NOT THREAD: the data plumbing is UNCHANGED — everything still reads
-// from the "apple-health" source, all history loads once, the range control windows it
-// client-side relative to the latest point, and sparse series auto-widen exactly as before.
-//
-// CIMIENTOS (FER-108): every hue and canonical name comes from the shared bridge —
-// `MetricIdentity.identity(forIngestKey:)` for color/glyph, `MetricCatalog.descriptor(forIngestKey:)?.canonicalTitle`
-// for the name — never a locally invented label or an ad hoc paper-era accent. Several Apple
-// Health metrics (VO₂ max, weight, body fat, lean mass, BMI, active energy) have no canonical
-// family yet and fall to the catalog's documented default (verdePrimario, no glyph) — that
-// collapse is an accepted, documented gap in the identity bridge itself, not something this
-// screen invents.
+// Visor por fuente en Liquid Glass · El Eje (hermano de Compare/Explore TND-30/31 y Fuentes):
+// `LiquidSheetFondo`, overlines inset, `LiquidRangeSelector`, tiles de métrica (héroe + spark,
+// sin Δ) y cards de gráfica del core Liquid con pie avg/min/max/puntos. Solo piel: lee
+// "apple-health", carga historial una vez, el rango ventanea client-side y las series ralas
+// se ensanchan igual. Color/nombre vía `MetricIdentity.identity(forIngestKey:)` +
+// `MetricCatalog.descriptor(forIngestKey:)?.canonicalTitle` (FER-108); métricas sin familia
+// caen al default documentado (verdePrimario).
 
 struct AppleHealthView: View {
     @EnvironmentObject var repo: Repository
