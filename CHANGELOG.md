@@ -40,7 +40,9 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 - Cuatro programas de fábrica sobre las rutinas que ya vienen incluidas (lineal de novato, cuerpo
   completo 3 días, push/pull/legs 6 días, torso/pierna 4 días), y «al terminar el ciclo» puedes
   repetirlo con los pesos ganados o dejar que el programa se termine solo. Terminar un programa borra
-  solo el programa: tus rutinas y tu calendario quedan intactos.
+  solo el programa: tus rutinas y tu calendario quedan intactos. **Todo esto es el motor**: la pantalla
+  para prender un programa y elegir sus opciones llega con FER-334; hasta entonces no hay dónde
+  activarlo.
 - El formato de importación desde tu IA aprende `semanas`, `semana_ligera`, `al_terminar` y el `dia` de
   cada rutina. Un archivo que trae semanas distintas entre sí no falla: importa la primera y te lo dice.
 
