@@ -1655,7 +1655,9 @@ struct WorkoutSessionDetailScreen: View {
         typealias Group = (exerciseId: String, name: String, sets: [SetEntry])
         return groups.compactMap { (g: Group) -> SeedItem? in
             guard let ex: Exercise = exercisesByID[g.exerciseId] else { return nil }
-            let work: [SetEntry] = g.sets.filter { (s: SetEntry) in s.kind == .work }
+            // Ola 1 (E7 · D2): un escalón de «bajar y seguir» no se repite como serie prescrita — se
+            // OMITE (la rutina nueva refleja el trabajo de verdad, no una reducción de esa sesión).
+            let work: [SetEntry] = g.sets.filter { (s: SetEntry) in s.kind == .work && s.mode != .drop }
             let sets: [RoutineSet] = work.enumerated().map { (i: Int, s: SetEntry) -> RoutineSet in
                 RoutineSet(position: i, kind: .work, reps: s.reps, weightKg: s.weightKg)
             }
@@ -2048,6 +2050,11 @@ struct WorkoutSessionDetailScreen: View {
                          ? "↳ " + String(localized: "Drop and continue")   // catalog: es «Bajar y seguir»
                          : String(localized: "Set \(workNumber)"))
                         .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
+                        // D8 (QA ronda 2): el glifo «↳ » es puramente visual — VoiceOver lee «bajar y
+                        // seguir» sin él.
+                        .accessibilityLabel(set.mode == .drop
+                                            ? Text(String(localized: "Drop and continue"))
+                                            : Text("Set \(workNumber)"))
                     if isPRSet(set, exerciseId: g.exerciseId) {
                         LiquidStatePill(valencia: "PR", tono: LiquidColor.atencionTexto)
                             .accessibilityLabel(Text("Personal record"))
@@ -2061,6 +2068,14 @@ struct WorkoutSessionDetailScreen: View {
                     if idx > 0 { LiquidCapilar(eje: .horizontal) }
                 }
                 .accessibilityElement(children: .combine)
+            }
+            // D7 (ola 1 · FER-327 · E7 · issue): «· N al fallo» — cuántas series de ESTE ejercicio
+            // llegaron a RPE 10, leyendo el dato ya guardado (sin campo nuevo).
+            let failureCount = g.sets.filter { $0.rpe == 10 }.count
+            if failureCount > 0 {
+                Text("· " + String(localized: "\(failureCount) at failure"))
+                    .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
+                    .padding(.top, LiquidSpace.s100)
             }
         }
     }

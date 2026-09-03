@@ -224,10 +224,10 @@ struct HojaTarjetaEjercicioSesion: View {
     private func filaSerie(si: Int, set: StrengthSessionModel.WorkingSet, esPrimera: Bool) -> some View {
         let marca: HojaFilaSerie.Marca = set.done ? .hecha : (si == run.currentSet ? .activa : .fantasma)
         let usesReps = run.type == .weightReps || run.type == .bodyweight
-        // Ola 1 (FER-327 · E7 · Grok H7): el contador de trabajo EXCLUYE los escalones de «bajar y
-        // seguir» — un drop sigue siendo `kind == .work` (cuenta a volumen), pero NO es una serie de
-        // trabajo numerada; pinta «↳» en vez de robarle el número a la siguiente.
-        let workNumber = run.sets.prefix(si + 1).reduce(0) { $0 + (($1.kind == .work && $1.mode != .drop) ? 1 : 0) }
+        // Ola 1 (FER-327 · E7 · D2): el contador de trabajo EXCLUYE los escalones de «bajar y
+        // seguir» (`isNumberedWorkSet`, el único oráculo) — pinta «↳» en vez de robarle el número
+        // a la siguiente serie.
+        let workNumber = run.sets.prefix(si + 1).reduce(0) { $0 + ($1.isNumberedWorkSet ? 1 : 0) }
         let repsText: String
         switch run.type {
         case .weightReps, .bodyweight:
@@ -271,9 +271,13 @@ struct HojaTarjetaEjercicioSesion: View {
             tipoEtiqueta: tipoEtiqueta,
             tipoDetalle: tipoDetalle
         )
-        return HojaFilaSerie(datos: datos, contexto: .sesion, marca: marca) {
-            vivo.confirmOrToggleSet(ei: ei, si: si)
-        }
+        return HojaFilaSerie(
+            datos: datos, contexto: .sesion, marca: marca,
+            onMarcar: { vivo.confirmOrToggleSet(ei: ei, si: si) },
+            // B1 (issue): el chip de marca abre el MISMO menú que la pulsación larga — misma acción,
+            // dos puertas. `HojaFilaSerie` ya lo deja como toque de 44 pt sin agrandar el dibujo.
+            onTipoTap: { vivo.setMenuTarget = HojaSesionViva.SetMenuTarget(runId: run.id, setId: set.id) }
+        )
         // Ola 1 (FER-327 · E7 · ux-B §③): pulsación larga sobre CUALQUIER serie de trabajo (madre o
         // escalón) abre el menú de la serie — el numeral sigue de solo lectura. `simultaneousGesture`
         // (no exclusiva): no le quita el tap a `onMarcar`/las tap-zones de abajo.
@@ -621,13 +625,18 @@ struct HojaTarjetaSuperserieSesion: View {
             let ei = vivo.session.currentIndex
             let run = vivo.session.runs[ei]
             if run.sets.indices.contains(run.currentSet) {
-                let work = run.sets.filter { $0.kind == .work }
-                if let workIdx = work.firstIndex(where: { $0.id == run.sets[run.currentSet].id }) {
+                // Ola 1 (E7 · D2): si el foco cayó en un escalón (mid-cadena de «bajar y seguir»), su
+                // ronda es la de su MADRE — camina hacia atrás hasta la primera serie numerada
+                // (`isNumberedWorkSet`, único oráculo); un escalón nunca tiene índice propio en `work`.
+                var motherIdx = run.currentSet
+                while motherIdx > 0, !run.sets[motherIdx].isNumberedWorkSet { motherIdx -= 1 }
+                let work = run.sets.filter(\.isNumberedWorkSet)
+                if let workIdx = work.firstIndex(where: { $0.id == run.sets[motherIdx].id }) {
                     return min(totalRondas, workIdx + 1)
                 }
             }
         }
-        let maxCerradas = runs.map { r in r.sets.filter { $0.kind == .work && $0.done }.count }.max() ?? 0
+        let maxCerradas = runs.map { r in r.sets.filter { $0.isNumberedWorkSet && $0.done }.count }.max() ?? 0
         return max(1, min(totalRondas, maxCerradas))
     }
 
@@ -640,8 +649,14 @@ struct HojaTarjetaSuperserieSesion: View {
     private var rondaDelDescanso: Int? {
         guard vivo.session.phase == .resting, let ownerId = vivo.session.restOwnerSetId else { return nil }
         for ei in members where vivo.session.runs.indices.contains(ei) {
-            let work = vivo.session.runs[ei].sets.filter { $0.kind == .work }
-            if let workIdx = work.firstIndex(where: { $0.id == ownerId }) { return workIdx + 1 }
+            let sets = vivo.session.runs[ei].sets
+            guard let ownerIdx = sets.firstIndex(where: { $0.id == ownerId }) else { continue }
+            // Ola 1 (E7 · D2): el descanso arranca al palomear el ÚLTIMO escalón (spec), así que el
+            // dueño puede ser un escalón — su ronda es la de su madre, no «no encontrada».
+            var motherIdx = ownerIdx
+            while motherIdx > 0, !sets[motherIdx].isNumberedWorkSet { motherIdx -= 1 }
+            let work = sets.filter(\.isNumberedWorkSet)
+            if let workIdx = work.firstIndex(where: { $0.id == sets[motherIdx].id }) { return workIdx + 1 }
         }
         return nil
     }
@@ -753,7 +768,7 @@ struct HojaTarjetaSuperserieSesion: View {
     /// única forma correcta: el escalón vive colgado de su madre, `filaRonda` lo pinta como sub-fila).
     private func workSetIndex(_ run: StrengthSessionModel.ExerciseRun, round r: Int) -> Int? {
         var seen = 0
-        for (si, set) in run.sets.enumerated() where set.kind == .work && set.mode != .drop {
+        for (si, set) in run.sets.enumerated() where set.isNumberedWorkSet {
             seen += 1
             if seen == r { return si }
         }
@@ -803,9 +818,11 @@ struct HojaTarjetaSuperserieSesion: View {
                 Text(slot.run.name)
                     .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500).lineLimit(1)
                     .accessibilityLabel(Text(verbatim: "\(slot.run.name), \(rondaTexto(ronda))"))
-                HojaFilaSerie(datos: datos, contexto: .sesion, marca: marca) {
-                    vivo.confirmOrToggleSet(ei: slot.ei, si: slot.si)
-                }
+                HojaFilaSerie(
+                    datos: datos, contexto: .sesion, marca: marca,
+                    onMarcar: { vivo.confirmOrToggleSet(ei: slot.ei, si: slot.si) },
+                    onTipoTap: { vivo.setMenuTarget = HojaSesionViva.SetMenuTarget(runId: slot.run.id, setId: set.id) }
+                )
                 .simultaneousGesture(LongPressGesture(minimumDuration: 0.4).onEnded { _ in
                     withAnimation(vivo.reduceMotion ? nil : .snappy) {
                         vivo.setMenuTarget = HojaSesionViva.SetMenuTarget(runId: slot.run.id, setId: set.id)
@@ -861,9 +878,11 @@ struct HojaTarjetaSuperserieSesion: View {
             tipoEtiqueta: "↳ " + String(localized: "Drop and continue"),
             tipoDetalle: drop.done ? nil : String(localized: "No rest, −20%")
         )
-        return HojaFilaSerie(datos: datos, contexto: .sesion, marca: marca) {
-            vivo.confirmOrToggleSet(ei: slot.ei, si: dropSi)
-        }
+        return HojaFilaSerie(
+            datos: datos, contexto: .sesion, marca: marca,
+            onMarcar: { vivo.confirmOrToggleSet(ei: slot.ei, si: dropSi) },
+            onTipoTap: { vivo.setMenuTarget = HojaSesionViva.SetMenuTarget(runId: slot.run.id, setId: drop.id) }
+        )
         .liquidMenu(
             isPresented: Binding(
                 get: { vivo.setMenuTarget == HojaSesionViva.SetMenuTarget(runId: slot.run.id, setId: drop.id) },

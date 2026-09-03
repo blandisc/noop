@@ -504,8 +504,10 @@ struct HojaSesionViva: View {
     }
 
     private func syntheticRE(from run: StrengthSessionModel.ExerciseRun, position: Int) -> RoutineExercise {
+        // Ola 1 (E7 · D2): un escalón de «bajar y seguir» no es una serie prescrita — `targetSets`
+        // solo cuenta series numeradas (`isNumberedWorkSet`, único oráculo).
         RoutineExercise(routineId: session.routineId ?? "", exerciseId: run.exerciseId, position: position,
-                        targetSets: run.sets.filter { $0.kind == .work }.count,
+                        targetSets: run.sets.filter(\.isNumberedWorkSet).count,
                         targetReps: run.sets.first?.reps, targetWeightKg: run.sets.first?.weightKg)
     }
 

@@ -207,9 +207,17 @@ extension HojaSesionViva {
                               subtitle: String(localized: "Only for rep-based sets"),
                               systemImage: "infinity"))
         }
-        rows.append(.init(String(localized: "Drop and continue · −20%"), systemImage: "arrow.down.right") {
-            withAnimation(reduceMotion ? nil : .snappy) { addDrop(ei: ei, si: si) }
-        })
+        // D9 (QA ronda 2): si `addDrop` no haría nada (equipo ya en la barra sola, o ya son 3
+        // escalones), la fila se atenúa con el motivo en vez de fingir que sirvió.
+        if canAddDrop(ei: ei, si: si) {
+            rows.append(.init(String(localized: "Drop and continue · −20%"), systemImage: "arrow.down.right") {
+                withAnimation(reduceMotion ? nil : .snappy) { addDrop(ei: ei, si: si) }
+            })
+        } else {
+            rows.append(.init(String(localized: "Drop and continue · −20%"),
+                              subtitle: String(localized: "No room to drop further"),
+                              systemImage: "arrow.down.right"))
+        }
         let atFailure = set.rpe == 10
         rows.append(.init(String(localized: "Reached failure"),
                           systemImage: atFailure ? "checkmark" : "bolt.fill") {
@@ -250,6 +258,17 @@ extension HojaSesionViva {
                             implement: .from(equipment: equipment),
                             inventory: sheet.model.plates.inventory,
                             barKg: sheet.model.plates.barKg)
+    }
+
+    /// D9 (QA ronda 2): el mismo inventario real que `addDrop` — para que el menú sepa SIN mutar si
+    /// «Bajar y seguir» de verdad haría algo (barra sola en el equipo, o ya son 3 escalones).
+    func canAddDrop(ei: Int, si: Int) -> Bool {
+        guard session.runs.indices.contains(ei) else { return false }
+        let equipment = ExerciseCatalog.byID(session.runs[ei].exerciseId)?.equipment
+        return session.canAddDrop(exercise: ei, set: si,
+                                  implement: .from(equipment: equipment),
+                                  inventory: sheet.model.plates.inventory,
+                                  barKg: sheet.model.plates.barKg)
     }
 
     // MARK: - «Quitar serie» en sesión (B5 · ola 1 · E7)
@@ -316,7 +335,9 @@ extension HojaSesionViva {
                 let oldName = ExerciseCatalog.byID(re.exerciseId).map(StrengthDisplay.name) ?? re.exerciseId
                 parts.append(String(localized: "\(oldName) for \(run.name)"))
             } else if re.targetSets > 0 {
-                let currentWork = run.sets.filter { $0.kind == .work }.count
+                // Ola 1 (E7 · D2): un escalón de «bajar y seguir» NO es una serie prescrita — contarlo
+                // aquí ofrecería guardar `targetSets` inflado en la rutina por algo que nunca se pidió.
+                let currentWork = run.sets.filter(\.isNumberedWorkSet).count
                 if currentWork > 0, currentWork != re.targetSets {
                     parts.append(String(localized: "\(run.name) \(re.targetSets) → \(currentWork) sets"))
                 }
@@ -401,7 +422,9 @@ extension HojaSesionViva {
               let routine = (try? await store.routines())?.first(where: { $0.id == rid }) else { return false }
         for run in session.runs {
             guard let idx = res.firstIndex(where: { $0.id == run.id }) else { continue }
-            let currentWork = run.sets.filter { $0.kind == .work }.count
+            // Ola 1 (E7 · D2): mismo oráculo que `detectRoutineChanges` — un escalón no se escribe
+            // como serie de trabajo prescrita.
+            let currentWork = run.sets.filter(\.isNumberedWorkSet).count
             if currentWork > 0 { res[idx].targetSets = currentWork }
             if run.exerciseId != res[idx].exerciseId { res[idx].exerciseId = run.exerciseId }
         }
@@ -754,13 +777,15 @@ extension HojaSesionViva {
     private func restBandKicker(esRonda: Bool) -> LocalizedStringKey {
         if esRonda { return "REST · ROUND" }
         guard let run = accordionRestRun, let lastDone = run.sets.lastIndex(where: { $0.done }) else { return "REST" }
-        let from = run.sets.prefix(lastDone + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
+        // Ola 1 (E7 · D2): lo último hecho puede ser un escalón (el descanso arranca al palomear el
+        // ÚLTIMO de la cadena) — su número es el de su MADRE, `isNumberedWorkSet` el único oráculo.
+        // «Hasta» siempre es «desde + 1»: un escalón nunca cuenta, así que la siguiente serie
+        // NUMERADA es exactamente la próxima, sin volver a recorrer índices que pueden ser drops.
+        var motherIdx = lastDone
+        while motherIdx > 0, !run.sets[motherIdx].isNumberedWorkSet { motherIdx -= 1 }
+        let from = run.sets.prefix(motherIdx + 1).reduce(0) { $0 + ($1.isNumberedWorkSet ? 1 : 0) }
         guard from > 0 else { return "REST" }
-        let nextIdx = run.sets.index(after: lastDone)
-        let to = run.sets.indices.contains(nextIdx)
-            ? run.sets.prefix(nextIdx + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
-            : from + 1
-        return "REST · SET \(String(from)) → \(String(to))"
+        return "REST · SET \(String(from)) → \(String(from + 1))"
     }
 
     /// O-r2a (ronda 3): el auto-skip (R1) ya NO cuelga de `restBand()` — esa vista solo se monta
@@ -1100,7 +1125,8 @@ extension HojaSesionViva {
     /// «3 × 10 · 145 kg» — receta de una línea para la fila plegada (mismo orden que
     /// `RoutineSheetLogic.recetaSummary`, leyendo el plan de la SESIÓN en vez de `RoutineSet`).
     func recetaSummary(_ run: StrengthSessionModel.ExerciseRun) -> String {
-        let work = run.sets.filter { $0.kind == .work }
+        // Ola 1 (E7 · D2): «3 ×» cuenta series NUMERADAS — un escalón no infla el «3» a «4».
+        let work = run.sets.filter(\.isNumberedWorkSet)
         guard run.type == .weightReps || run.type == .bodyweight, let r = work.first?.reps else {
             return String(localized: "\(work.count) sets")
         }

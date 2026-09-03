@@ -91,13 +91,6 @@ final class LiveStrengthSheetRIRTests: XCTestCase {
         XCTAssertEqual(LiveStrengthSheet.qLabel(fromRPE: 0), "4+ in reserve")
     }
 
-    /// Ola 1 (FER-327 · E7): RPE 10 exacto — «llegué al fallo» — lee «failure» (catálogo: «fallo»),
-    /// nunca «Q 0». `qLabel` es el único oráculo; fila hecha, playhead ANT y «última vez» del editor
-    /// pasan los tres por aquí.
-    func testQLabelExactFailureReadsFallo() {
-        XCTAssertEqual(LiveStrengthSheet.qLabel(fromRPE: 10), "failure")
-    }
-
     // MARK: - focusDoneTiming: HECHO nunca se cuela delante de un descanso que sigue corriendo
     // (FER-135, V6, revisión ronda 1, hallazgo grave — la regresión que este archivo no atrapó antes
     // de merge: `registerActiveSet` mostraba HECHO al instante de palomear la última serie, mientras

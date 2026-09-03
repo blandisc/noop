@@ -468,9 +468,18 @@ extension AppModel {
                 let done = run.sets.filter(\.done)
                 switch run.type {
                 case .weightReps, .bodyweight:
-                    let top = done.map(\.weightKg).max()
-                    return .init(name: run.name, setCount: done.count, topWeightKg: top,
-                                 topTimeS: nil, topDistanceM: nil, trend: trend(top, run.lastWeightKg))
+                    // D7 (ola 1 · FER-327 · E7 · issue): «8 · 8 · 11 máx» lista solo las series
+                    // NUMERADAS; los escalones van aparte («↳ bajar y seguir 64 kg · 9», D2 mismo
+                    // oráculo `isNumberedWorkSet`) y nunca inflan `setCount`/`topWeightKg`.
+                    let numbered = done.filter(\.isNumberedWorkSet)
+                    let drops = done.filter { $0.mode == .drop }
+                    let top = numbered.map(\.weightKg).max()
+                    return .init(name: run.name, setCount: numbered.count, topWeightKg: top,
+                                 topTimeS: nil, topDistanceM: nil, trend: trend(top, run.lastWeightKg),
+                                 repsSequence: numbered.map(\.reps),
+                                 amrapFlags: numbered.map { $0.mode == .amrap },
+                                 dropLines: drops.map { .init(weightKg: $0.weightKg, reps: $0.reps) },
+                                 failureCount: done.filter { $0.rpe == 10 }.count)
                 case .time:
                     let top = done.compactMap(\.timeS).max()
                     return .init(name: run.name, setCount: done.count, topWeightKg: nil,

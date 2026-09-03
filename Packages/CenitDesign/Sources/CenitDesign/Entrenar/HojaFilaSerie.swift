@@ -101,17 +101,23 @@ public struct HojaFilaSerie: View {
     private let contexto: Contexto
     private let marca: Marca
     private let onMarcar: (() -> Void)?
+    /// B1 (ola 1 · FER-327 · E7): el chip de marca (línea de tipo) abre el MISMO menú que la
+    /// pulsación larga sobre la fila — `nil` (default) lo deja informativo, como antes de esta ola,
+    /// así que ningún caller existente cambia de comportamiento sin pasar este parámetro.
+    private let onTipoTap: (() -> Void)?
 
     public init(
         datos: Datos,
         contexto: Contexto,
         marca: Marca,
-        onMarcar: (() -> Void)? = nil
+        onMarcar: (() -> Void)? = nil,
+        onTipoTap: (() -> Void)? = nil
     ) {
         self.datos = datos
         self.contexto = contexto
         self.marca = marca
         self.onMarcar = onMarcar
+        self.onTipoTap = onTipoTap
     }
 
     public var body: some View {
@@ -291,8 +297,7 @@ public struct HojaFilaSerie: View {
             Color.clear
                 .frame(width: HojaMetrics.colNumero + HojaMetrics.filaGap)
             HStack(spacing: LiquidSpace.s150) {
-                LiquidStatePill(valencia: texto,
-                                tono: texto.hasPrefix("↳") ? LiquidColor.ambar : LiquidColor.verdePrimario)
+                chip(texto)
                 if let detalle = datos.tipoDetalle {
                     Text(verbatim: detalle)
                         .font(InstrumentoType.grotesk(HojaMetrics.antSize, weight: .regular, relativeTo: .caption2))
@@ -302,6 +307,24 @@ public struct HojaFilaSerie: View {
             Spacer(minLength: 0)
         }
         .padding(.top, LiquidSpace.s050)
+    }
+
+    /// B1 (ola 1 · E7 · issue): «la marca es un chip tocable de 44 pt que abre el mismo menú» — el
+    /// TOQUE se agranda a 44 pt vía `contentShape` con inset negativo (mismo patrón que `marcaCell`/
+    /// `EntrenarCapsulaPuerta`: agranda el ÁREA, nunca el dibujo), así que el chip sigue viéndose
+    /// igual de compacto. `onTipoTap == nil` (default de todos los callers salvo la sesión) lo deja
+    /// puramente informativo, sin envolverlo en un `Button`.
+    @ViewBuilder private func chip(_ texto: String) -> some View {
+        let pill = LiquidStatePill(valencia: texto,
+                                    tono: texto.hasPrefix("↳") ? LiquidColor.ambar : LiquidColor.verdePrimario)
+        if let onTipoTap {
+            Button(action: onTipoTap) { pill }
+                .buttonStyle(.plain)
+                .contentShape(Rectangle().inset(by: -12))
+                .accessibilityAddTraits(.isButton)
+        } else {
+            pill
+        }
     }
 
     private func playheadAnt(_ ant: String) -> some View {
@@ -348,9 +371,11 @@ public struct HojaFilaSerie: View {
         if datos.esCalentamiento {
             parts.append(String(localized: "Warm-up"))
         } else if datos.numero == "↳" {
-            // Ola 1 (FER-327 · E7): un escalón no tiene número propio — «Bajar y seguir de la
-            // serie N» ya lo dice `tipoEtiqueta`; sin él, un fallback honesto que no lee el glifo.
-            parts.append(datos.tipoEtiqueta ?? String(localized: "Drop set"))
+            // Ola 1 (FER-327 · E7 · D8, QA ronda 2): un escalón no tiene número propio — se lee
+            // «bajar y seguir», NUNCA el glifo «↳» (que `tipoEtiqueta` sí lleva para el chip VISUAL).
+            let etiqueta = (datos.tipoEtiqueta ?? String(localized: "Drop set"))
+                .replacingOccurrences(of: "↳ ", with: "")
+            parts.append(etiqueta)
         } else {
             // `numero` es siempre un entero como texto salvo calentamiento/escalón (cubiertos arriba);
             // el fallback no localizado es defensivo y en la práctica nunca se toma.
@@ -361,7 +386,9 @@ public struct HojaFilaSerie: View {
             parts.append(datos.unidad.isEmpty ? datos.peso : "\(datos.peso) \(datos.unidad)")
         }
         if !datos.reps.isEmpty, datos.reps != "—" {
-            parts.append(datos.reps)
+            // D8 (QA ronda 2): el placeholder visual «máx» se lee «máximo de reps» — no el glifo
+            // abreviado, que VoiceOver pronunciaría ambiguo.
+            parts.append(datos.reps == String(localized: "max") ? String(localized: "Maximum reps") : datos.reps)
         }
         switch marca {
         case .hecha:

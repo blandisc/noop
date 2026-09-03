@@ -69291,7 +69291,60 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quitar serie y drops"
+            "value" : "Quitar serie y sus «bajar y seguir»"
+          }
+        }
+      }
+    }
+,
+    "Maximum reps" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maximum reps"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "máximo de reps"
+          }
+        }
+      }
+    },
+    "%lld at failure" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld at failure"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld al fallo"
+          }
+        }
+      }
+    }
+,
+    "No room to drop further" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No room to drop further"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ya no hay margen para bajar"
           }
         }
       }
