@@ -29,7 +29,7 @@ public enum LiquidTheme {
     /// A3 lo pone en `true` (cambio de default, MISMO PR) para todos los procesos con un solo
     /// interruptor de fuente. En producción no vuelve a cambiar en runtime (la elección
     /// Sistema/Claro/Oscuro es `preferredColorScheme`, no este flag); solo los tests lo alternan.
-    nonisolated(unsafe) public static var oscuroHabilitado = false
+    nonisolated(unsafe) public static var oscuroHabilitado = true   // A3/FER-347: ENCENDIDO. La elección Sistema/Claro/Oscuro es preferredColorScheme; este flag solo dice «la maquinaria oscura está viva». Los tests lo setean explícito.
 
     /// Un `Color` que sigue el modo de la vista. Colapsa a `light` mientras `oscuroHabilitado == false`.
     public static func dynamic(light: Color, dark: Color) -> Color {
