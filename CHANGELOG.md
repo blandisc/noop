@@ -21,6 +21,7 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- Diseño (FER-340): un héroe por pantalla en Intervalos y recibo de fuerza; material solo vía receta (`.dialogo` / `.confirmacion` + `LiquidGlow`); ritmo de sección s700 en Cuerpo y Ajustes; Dynamic Type en RestEditor; `FocoMetrics` alias a `LiquidSpace`.
 - Diseño (FER-339): una pieza por rol en el catálogo (toast de error de guardado, pastilla de estado, selector de periodo, campo de texto `LiquidCampoTexto`, aviso Liquid; sin `NoteStrip`; toolbar de Ajustes al `fondoAlto`).
 
 ### Ola 1 de Entrenar · ritmo «según reps en reserva» (FER-326)

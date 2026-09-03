@@ -270,6 +270,13 @@ public enum LiquidElevation {
         .init(color: tintaSombra.opacity(0.08), radius: 3, y: 2),
     ]
 
+    /// Confirmación anclada abajo (`ConfirmCard` / receta `.confirmacion`): proyecta hacia
+    /// ARRIBA sobre el scrim. `LiquidElevation` modela el resto hacia abajo; este es el
+    /// único nivel con `y` negativa.
+    public static let confirmacionArriba: [LiquidShadowLayer] = [
+        .init(color: tintaSombra.opacity(0.18), radius: 20, y: -12)
+    ]
+
     /// `e/dial` — el sello del dial 24 h es PLANO, no lente (excepción consciente): una sola
     /// sombra de contacto suave, deliberadamente más ligera que `e3`. Nivel nombrado (FER-31)
     /// para que el `LiquidDialSeal` no lleve un arreglo de sombra ad-hoc inline.

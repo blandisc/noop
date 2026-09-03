@@ -71,7 +71,7 @@ public struct LiquidModulo<Content: View>: View {
             ZStack {
                 // La «refracción honesta»: el material muestrea el fondo y lo saturamos 1.28×,
                 // así la plasta se ve más viva a través del vidrio que fuera.
-                shape.fill(.ultraThinMaterial)
+                LiquidGlassBase.ultraFino(shape)
                     .saturation(LiquidColor.vidrioRefraccion)
                 shape.fill(LiquidColor.vidrioSuperficieDensidad(index))
             }

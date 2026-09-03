@@ -88,6 +88,7 @@ struct RestEditorScreen: View {
     @State private var fixedTargetBpm: Int
     @State private var applyToAll: Bool
     @State private var saveToRoutine: Bool
+    @ScaledMetric(relativeTo: .footnote) private var lectura = LiquidType.lecturaHojaBase
 
     init(exerciseName: String, setNumber: Int?, current: RestConfig,
          persistsToRoutine: Bool, restingHR: Double?, maxHR: Double?, defaultApplyToAll: Bool,
@@ -207,7 +208,7 @@ struct RestEditorScreen: View {
     private var hrSection: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.bloqueAjuste) {
             Text("Rest ends when your pulse drops to the threshold. The phone buzzes when you're ready.")
-                .font(.system(size: LiquidType.lecturaHojaBase))
+                .font(.system(size: lectura))
                 .foregroundStyle(LiquidColor.tinta700)
                 .fixedSize(horizontal: false, vertical: true)
             // Owner call 2026-07-15: your OWN resting HR named up front — the anchor every margin
@@ -270,11 +271,11 @@ struct RestEditorScreen: View {
                 }
                 if let resting = restingHR {
                     Text("rest \(Int(resting.rounded())) + margin \(margin) bpm")
-                        .font(.system(size: LiquidType.lecturaHojaBase))
+                        .font(.system(size: lectura))
                         .foregroundStyle(LiquidColor.tinta700)
                 } else {
                     Text("your rest + \(margin) bpm margin")
-                        .font(.system(size: LiquidType.lecturaHojaBase))
+                        .font(.system(size: lectura))
                         .foregroundStyle(LiquidColor.tinta700)
                 }
             }
@@ -305,7 +306,7 @@ struct RestEditorScreen: View {
                         .foregroundStyle(LiquidColor.tinta500)
                 }
                 (Text(verbatim: "\(Int((reserve * 100).rounded()))% ") + Text("of your heart-rate reserve"))
-                    .font(.system(size: LiquidType.lecturaHojaBase))
+                    .font(.system(size: lectura))
                     .foregroundStyle(LiquidColor.tinta700)
             }
             .frame(maxWidth: .infinity)
@@ -336,7 +337,7 @@ struct RestEditorScreen: View {
                         .foregroundStyle(LiquidColor.tinta500)
                 }
                 (Text(verbatim: "\(Int((peakDropFraction * 100).rounded()))% ") + Text("below your peak heart rate"))
-                    .font(.system(size: LiquidType.lecturaHojaBase))
+                    .font(.system(size: lectura))
                     .foregroundStyle(LiquidColor.tinta700)
             }
             .frame(maxWidth: .infinity)
@@ -365,7 +366,7 @@ struct RestEditorScreen: View {
                         .foregroundStyle(LiquidColor.tinta500)
                 }
                 Text("the same bpm every session, not from your resting heart rate")
-                    .font(.system(size: LiquidType.lecturaHojaBase))
+                    .font(.system(size: lectura))
                     .foregroundStyle(LiquidColor.tinta700)
             }
             .frame(maxWidth: .infinity)

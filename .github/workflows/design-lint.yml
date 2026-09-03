@@ -62,6 +62,8 @@ jobs:
         run: python3 Tools/check-design-drift.py --rules no-iphone-tone-on-oled CenitWatch
       - name: Design drift · pieza reinventada (FER-338)
         run: python3 Tools/check-design-drift.py --rules no-capsule-a-mano,no-confirmation-dialog,no-native-menu Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App CenitApp
+      - name: Design drift · Material solo vía liquidGlass (FER-340)
+        run: python3 Tools/check-design-drift.py --rules no-native-material Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App CenitApp Packages/CenitDesign/Sources
       - name: Design-drift linter — token-exempt es deuda, ratchet (FER-263)
         run: python3 Tools/check-design-drift.py --rules token-exempt --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media Packages/CenitDesign/Sources CenitApp
       - name: Sin vidrio dentro de una hoja (papel opaco)

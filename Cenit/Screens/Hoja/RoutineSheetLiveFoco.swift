@@ -515,15 +515,15 @@ struct HojaFoco: View {
 /// viven en `EntrenarTokens`: son geometría propia de ESTA composición, no un molde reusado en otra
 /// pantalla — mismo criterio que `FocoHeroeMetrics`/`FocoCabeceraMetrics` en CenitDesign.
 private enum FocoMetrics {
-    static var contentTop: CGFloat { 26 }
-    static var heroGap: CGFloat { 16 }
-    static var capcionTop: CGFloat { 6 }
+    static let contentTop = LiquidSpace.s700
+    static let heroGap = LiquidSpace.s400
+    static let capcionTop = LiquidSpace.s150
     static var antTracking: CGFloat { 0.4 }
-    static var antTop: CGFloat { 14 }
-    static var capsulasTop: CGFloat { 18 }
-    static var raiseTop: CGFloat { 12 }
-    static var ctaTop: CGFloat { 22 }
-    static var prevNextTop: CGFloat { 18 }
-    static var doneTitleTop: CGFloat { 12 }
+    static let antTop = LiquidSpace.s350
+    static let capsulasTop = LiquidSpace.s450
+    static let raiseTop = LiquidSpace.s300
+    static let ctaTop = LiquidSpace.s550
+    static let prevNextTop = LiquidSpace.s450
+    static let doneTitleTop = LiquidSpace.s300
 }
 #endif

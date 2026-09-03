@@ -137,6 +137,7 @@ Tabla humana (resumen) — la verdad máquina-legible es el bloque JSON de abajo
 | no-weight-on-grotesk (prohibición pura, FER-308) | árbol 8 raíces | árbol 8 raíces | árbol 8 raíces |
 | no-iphone-tone-on-oled (prohibición pura, retro FER-309) | árbol CenitWatch | árbol CenitWatch | árbol CenitWatch |
 | no-capsule-a-mano / no-confirmation-dialog / no-native-menu (pieza reinventada, prohibición pura, FER-338) | árbol 5 raíces | árbol 5 raíces | árbol 5 raíces |
+| no-native-material (vidrio solo vía receta, prohibición pura, FER-340) | árbol 5 raíces + paquete | idem | idem |
 | monotonía del baseline | — (hook delgado) | espejo vs origin/iOS | job `baseline-monotony` |
 
 ¹ divergencia declarada: local corre sobre los archivos tocados (más estricto en Watch); CI usa las
@@ -148,6 +149,7 @@ raíces explícitas donde vive el defecto (incluye el paquete, excluye CenitWatc
   "baseline_path": "Tools/design-drift-baseline.json",
   "tree_roots": {
     "spacing": ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "CenitApp"],
+    "material": ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "CenitApp", "Packages/CenitDesign/Sources"],
     "legacy": ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "CenitApp", "CenitWidgets", "CenitWatch"],
     "exempt": ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "Packages/CenitDesign/Sources", "CenitApp"],
     "dtcap": ["Cenit/Screens", "Cenit/Onboarding", "Cenit/System", "Cenit/App", "Cenit/Data", "Cenit/LiveActivity", "Cenit/Media", "CenitWidgets", "CenitWatch", "CenitApp"],
@@ -175,7 +177,8 @@ raíces explícitas donde vive el defecto (incluye el paquete, excluye CenitWatc
     "no-iphone-tone-on-oled": {"pre-commit": "tree:CenitWatch", "verify-quick": "tree:CenitWatch", "design-lint": "tree:CenitWatch"},
     "no-capsule-a-mano":      {"pre-commit": "tree:spacing", "verify-quick": "tree:spacing", "design-lint": "tree:spacing"},
     "no-confirmation-dialog": {"pre-commit": "tree:spacing", "verify-quick": "tree:spacing", "design-lint": "tree:spacing"},
-    "no-native-menu":         {"pre-commit": "tree:spacing", "verify-quick": "tree:spacing", "design-lint": "tree:spacing"}
+    "no-native-menu":         {"pre-commit": "tree:spacing", "verify-quick": "tree:spacing", "design-lint": "tree:spacing"},
+    "no-native-material":     {"pre-commit": "tree:material", "verify-quick": "tree:material", "design-lint": "tree:material"}
   }
 }
 ```

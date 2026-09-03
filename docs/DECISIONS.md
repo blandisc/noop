@@ -203,3 +203,10 @@ adversarial (`docs/specs/ola1-entrenar/`):
     el invariante es el opuesto y sigue: un escalón huérfano conserva `mode = drop`, nunca se promueve
     y nada se borra al guardar. En superserie el escalón va ANTES del salto al compañero: «bajar y
     seguir» pertenece a la misma serie. Un escalón que no baja (madre en la barra sola) no se inserta.
+
+## 2026-09-04 · Loop 4 (FER-339/340/341) · decisiones del director
+
+- **Material solo vía receta (FER-340).** Un `.ultraThinMaterial`/`.regularMaterial` suelto es vidrio fuera de sistema. Regla `no-native-material` en las tres patas del gate; la única casa legítima es `LiquidGlassRecipes.swift`. Diálogos y tarjetas de captura ya pasan por receta.
+- **Sin exenciones nuevas en loop 4.** `FocoMetrics.contentTop` (26 pt, sin escalón exacto) pasa a `LiquidSpace.s700` (28 pt) en vez de abrir `token-exempt(falta-pieza)`: la escala manda, no el píxel heredado. Misma línea que la decisión de loop 3 (AppMap queda en baseline, no en exención).
+- **Halo/glow es pieza (`LiquidGlow`).** Blur + fill a mano en pantallas queda prohibido por criterio; la pieza entra al catálogo.
+

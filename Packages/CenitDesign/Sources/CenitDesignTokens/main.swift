@@ -645,6 +645,11 @@ public let catalogEntries: [CatalogEntry] = [
                  archivo: "LiquidGlass/LiquidBarraProgreso.swift",
                  cuandoUsarlo: "Cualquier riel de avance 0…1 (calibración, dosis, sesión, volumen): pista + relleno Capsule con tono/altura; opcional marca/contorno.",
                  cuandoNo: "No para barra con rótulo/delta/promedio (`LiquidBarraMarca`); no conteo en ventana (`LiquidBarraConteo`); no etapas de sueño (`LiquidStageBar`); no chrome de acción (`OutlineCapsule`)."),
+    // —— FER-340 · glow geométrico (mata blur + fill ad-hoc) ——
+    CatalogEntry(rol: "Halo / glow geométrico", simbolo: "LiquidGlow · LiquidGlowDisco",
+                 archivo: "LiquidGlass/LiquidGlow.swift",
+                 cuandoUsarlo: "Contorno que late (aviso, filo con aura) o disco radial desenfocado (orbe de respiración): la pantalla pasa color/fase y el blur vive en la pieza.",
+                 cuandoNo: "No para sombra de elevación (`liquidShadow`); no vidrio (`liquidGlass(_:)`); no `.blur` + fill a mano en pantallas."),
 ]
 
 func catalogoTable() -> String {
