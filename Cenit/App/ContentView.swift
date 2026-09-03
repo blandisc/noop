@@ -19,6 +19,8 @@ enum EntradaDeArranque {
 struct ContentView: View {
     @AppStorage("noop.onboarded") private var onboarded = false
     @AppStorage("noop.acceptedTermsVersion") private var acceptedTerms = ""
+    /// A4/FER-348: apariencia elegida por el usuario — "sistema" (default) · "claro" · "oscuro".
+    @AppStorage("noop.apariencia") private var apariencia = "sistema"
     /// FER-41: la entrada sigue puesta hasta que su coreografía termina (o el usuario la toca).
     @State private var entradaLista = false
     /// El frame REAL del orbe del héroe en pantalla (para que la entrada aterrice sin costura).
@@ -183,11 +185,16 @@ struct ContentView: View {
     /// reveal can transform into the hero without the background jumping colour). Once inside the app
     /// the scheme follows the active tab: Today is light paper (dark-ink status bar), every other tab
     /// is the dark instrument panel.
-    private var resolvedColorScheme: ColorScheme {
+    private var resolvedColorScheme: ColorScheme? {
         if mostrandoEntrada { return .light }                        // la entrada es blanca (FER-41)
         if acceptedTerms != Terms.currentVersion { return .light }   // Terms gate (paper) is on top
-        guard onboarded else { return .light }                       // onboarding (FER-109) es papel claro
-        return isTodayTab ? .light : .dark
+        guard onboarded else { return .light }                       // onboarding (FER-109) es papel claro (D3→C3)
+        // A3/FER-347: ya dentro, la app respeta la preferencia del usuario. `sistema` = seguir al OS.
+        switch apariencia {
+        case "oscuro": return .dark
+        case "claro":  return .light
+        default:       return nil   // sistema
+        }
     }
 
     /// La entrada se pinta mientras no haya terminado Y no haya corrido ya en este proceso.

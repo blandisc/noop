@@ -82,6 +82,7 @@ private struct AjustesLanding: View {
 
     // Imperial/Metric display preference (D#103). Stored data is always SI; this only changes how
     // distances/weights/heights/temperatures are SHOWN — and lets the profile fields take imperial entry.
+    @AppStorage("noop.apariencia") private var apariencia = "sistema"   // A4/FER-348
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     @AppStorage(UnitPrefs.temperatureKey) private var temperatureRaw = ""
     private var unitSystem: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
@@ -229,6 +230,23 @@ private struct AjustesLanding: View {
     /// hand-builds the same row geometry (padding, bottom hairline) so it seams into the same card.
     /// Ronda 2 #10: three segments + `.fixedSize()` truncated Male/Female/Non-binary at 390 pt —
     /// a menu never truncates and needs no width hack.
+    /// A4/FER-348: selector de apariencia (Sistema/Claro/Oscuro) — mismo geometría de fila que sexRow.
+    private var aparienciaRow: some View {
+        HStack(spacing: LiquidSpace.s300) {
+            Text(String(localized: "settings.appearance", defaultValue: "Appearance")).font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Picker(String(localized: "settings.appearance", defaultValue: "Appearance"), selection: $apariencia) {
+                Text(String(localized: "settings.appearance.system", defaultValue: "System")).tag("sistema")
+                Text(String(localized: "settings.appearance.light", defaultValue: "Light")).tag("claro")
+                Text(String(localized: "settings.appearance.dark", defaultValue: "Dark")).tag("oscuro")
+            }
+            .labelsHidden().pickerStyle(.menu).tint(LiquidColor.tinta700)
+            .accessibilityLabel(String(localized: "settings.appearance", defaultValue: "Appearance"))
+        }
+        .padding(.vertical, LiquidSpace.s300)
+        .padding(.horizontal, LiquidSpace.s100)
+    }
+
     private var sexRow: some View {
         HStack(spacing: LiquidSpace.s300) {
             Text(String(localized: "Sex")).font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
@@ -269,7 +287,8 @@ private struct AjustesLanding: View {
             section(String(localized: "App")) {
                 VStack(spacing: .zero) {
                     LiquidListRow(title: String(localized: "Units & format"), subtitle: unitsSubtitle,
-                                  divider: false) { showUnits = true }
+                                  divider: true) { showUnits = true }
+                    aparienciaRow
                 }
                 .liquidTarjetaSeccion(padding: LiquidSpace.s300)
             }
