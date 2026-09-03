@@ -894,7 +894,7 @@ extension CenitStore {
         // - strengthSession.strainSource ('hr'|'rpe'; NULL with a strain = legacy = measured), sessionRpe
         //   (6–10, NULL = never answered, never a defaulted 7), sessionRpeSource ('answered'|'prefill'),
         //   trimpPerAU (the estimate's scale, so a recalibration can recompute in one write) — E2/E3.
-        // - strengthSession.source ('strong'|'hevy'|'cenit-csv'; NULL = Cénit) and title — E8.
+        // - strengthSession.source ('strong'|'hevy'|'cenit'; NULL = Cénit) and title — E8.
         // - strengthSession.programWeek / deload (1 = served in a light week = progression boundary) — E10.
         // - routineExercise.progressionUseRPE (DEFAULT 0: no existing routine changes behavior) — E4.
         // - routineSet.mode / setEntry.mode ('standard'|'amrap'|'drop'; NULL = standard) — E6.

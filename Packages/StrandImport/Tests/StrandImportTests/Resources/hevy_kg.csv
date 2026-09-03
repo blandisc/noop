@@ -1,0 +1,11 @@
+title,start_time,end_time,description,exercise_title,superset_id,exercise_notes,set_index,set_type,weight_kg,reps,distance_km,duration_seconds,rpe
+"Piernas A","15 Sep 2025, 07:48","15 Sep 2025, 09:13","","Seated Leg Curl (Machine)",,"",0,warmup,40,10,,,6
+"Piernas A","15 Sep 2025, 07:48","15 Sep 2025, 09:13","","Seated Leg Curl (Machine)",,"",1,warmup,50,6,,,6
+"Piernas A","15 Sep 2025, 07:48","15 Sep 2025, 09:13","","Seated Leg Curl (Machine)",,"",2,normal,80,12,,,8
+"Piernas A","15 Sep 2025, 07:48","15 Sep 2025, 09:13","","Seated Leg Curl (Machine)",,"",3,failure,80,10,,,
+"Piernas A","15 Sep 2025, 07:48","15 Sep 2025, 09:13","","Squat (Barbell)",,"",0,warmup,40,8,,,6
+"Piernas A","15 Sep 2025, 07:48","15 Sep 2025, 09:13","","Squat (Barbell)",,"",1,normal,100,5,,,8.5
+"Piernas A","15 Sep 2025, 07:48","15 Sep 2025, 09:13","","Squat (Barbell)",,"",2,dropset,60,8,,,9
+"Antebrazos","3 May 2025, 10:20","3 May 2025, 10:55","","Seated Palms Down Wrist Curl",,"",0,normal,8,12,,,9
+"Antebrazos","3 May 2025, 10:20","3 May 2025, 10:55","","Seated Palms Down Wrist Curl",,"",1,dropset,4,11,,,10
+"Cardio","24 Mar 2026, 08:00","24 Mar 2026, 08:30","","Running",,"",0,normal,,,5,1500,

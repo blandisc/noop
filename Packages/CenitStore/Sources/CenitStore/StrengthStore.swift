@@ -466,60 +466,107 @@ extension CenitStore {
                             progressionOptOuts: Set<String> = [],
                             notes: [ExerciseNote] = []) async throws {
         try syncWrite { db in
-            let sArgs: [DatabaseValueConvertible?] = [
-                session.id, session.routineId, session.startTs, session.endTs,
-                session.deviceId, session.strain, session.avgHr, session.notes,
-                session.energyKcal, session.energySource?.rawValue,
-                session.strainSource?.rawValue, session.sessionRpe, session.sessionRpeSource?.rawValue,
-                session.trimpPerAU, session.source, session.title, session.programWeek,
-                session.deload.map { $0 ? 1 : 0 }
+            try Self.persistSession(db, session: session, sets: sets,
+                                    progressionOptOuts: progressionOptOuts, notes: notes)
+        }
+    }
+
+    /// Batch upsert for CSV import (FER-328 · E8): one `syncWrite` / one BEGIN for N sessions.
+    /// Re-importing the same ids is idempotent (`ON CONFLICT` + replace sets). Each session still
+    /// runs `updatePersonalRecords` with the set's original `ts` so a 2022 PR is not celebrated as new.
+    public func saveSessions(_ batch: [(session: StrengthSession, sets: [SetEntry])]) async throws {
+        guard !batch.isEmpty else { return }
+        try syncWrite { db in
+            for item in batch {
+                try Self.persistSession(db, session: item.session, sets: item.sets)
+            }
+        }
+    }
+
+    /// Which of `ids` already exist in `strengthSession` — the «Ya estaban» set for re-import.
+    public func existingSessionIds(_ ids: [String]) async throws -> Set<String> {
+        guard !ids.isEmpty else { return [] }
+        return try syncRead { db in
+            // Chunk to stay under SQLite's variable limit on very large re-imports.
+            var found = Set<String>()
+            let chunkSize = 400
+            var start = ids.startIndex
+            while start < ids.endIndex {
+                let end = ids.index(start, offsetBy: chunkSize, limitedBy: ids.endIndex) ?? ids.endIndex
+                let chunk = Array(ids[start..<end])
+                let placeholders = Array(repeating: "?", count: chunk.count).joined(separator: ",")
+                let rows = try String.fetchAll(
+                    db, sql: "SELECT id FROM strengthSession WHERE id IN (\(placeholders))",
+                    arguments: StatementArguments(chunk))
+                found.formUnion(rows)
+                start = end
+            }
+            return found
+        }
+    }
+
+    /// Compact provenance for «Posibles duplicados» (±30 min across origins).
+    public func sessionSummariesForImportOverlap() async throws -> [(id: String, source: String?, title: String?, startTs: Int)] {
+        try syncRead { db in
+            try Row.fetchAll(db, sql: "SELECT id, source, title, startTs FROM strengthSession")
+                .map { (id: $0["id"], source: $0["source"], title: $0["title"], startTs: $0["startTs"]) }
+        }
+    }
+
+    /// Shared body of `saveSession` / `saveSessions` — one session inside an open write transaction.
+    private static func persistSession(_ db: Database, session: StrengthSession, sets: [SetEntry],
+                                       progressionOptOuts: Set<String> = [],
+                                       notes: [ExerciseNote] = []) throws {
+        let sArgs: [DatabaseValueConvertible?] = [
+            session.id, session.routineId, session.startTs, session.endTs,
+            session.deviceId, session.strain, session.avgHr, session.notes,
+            session.energyKcal, session.energySource?.rawValue,
+            session.strainSource?.rawValue, session.sessionRpe, session.sessionRpeSource?.rawValue,
+            session.trimpPerAU, session.source, session.title, session.programWeek,
+            session.deload.map { $0 ? 1 : 0 }
+        ]
+        try db.execute(sql: """
+            INSERT INTO strengthSession
+                (id, routineId, startTs, endTs, deviceId, strain, avgHr, notes, energyKcal, energySource,
+                 strainSource, sessionRpe, sessionRpeSource, trimpPerAU, source, title, programWeek, deload)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                routineId = excluded.routineId, endTs = excluded.endTs, deviceId = excluded.deviceId,
+                strain = excluded.strain, avgHr = excluded.avgHr, notes = excluded.notes,
+                energyKcal = excluded.energyKcal, energySource = excluded.energySource,
+                strainSource = excluded.strainSource, sessionRpe = excluded.sessionRpe,
+                sessionRpeSource = excluded.sessionRpeSource, trimpPerAU = excluded.trimpPerAU,
+                source = excluded.source, title = excluded.title,
+                programWeek = excluded.programWeek, deload = excluded.deload
+            """, arguments: StatementArguments(sArgs))
+
+        try db.execute(sql: "DELETE FROM setEntry WHERE sessionId = ?", arguments: [session.id])
+        // Ola 1 · FER-327: los drops se escriben pegados a su madre (ver `enforcingDropAdjacency`).
+        for s in enforcingDropAdjacency(sets) {
+            let args: [DatabaseValueConvertible?] = [
+                s.id, s.sessionId, s.exerciseId, s.position, s.kind.rawValue,
+                s.weightKg, s.reps, s.timeS, s.distanceM, s.done ? 1 : 0, s.ts, s.rpe, s.restTakenS,
+                s.mode == .standard ? nil : s.mode.rawValue
             ]
             try db.execute(sql: """
-                INSERT INTO strengthSession
-                    (id, routineId, startTs, endTs, deviceId, strain, avgHr, notes, energyKcal, energySource,
-                     strainSource, sessionRpe, sessionRpeSource, trimpPerAU, source, title, programWeek, deload)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(id) DO UPDATE SET
-                    routineId = excluded.routineId, endTs = excluded.endTs, deviceId = excluded.deviceId,
-                    strain = excluded.strain, avgHr = excluded.avgHr, notes = excluded.notes,
-                    energyKcal = excluded.energyKcal, energySource = excluded.energySource,
-                    strainSource = excluded.strainSource, sessionRpe = excluded.sessionRpe,
-                    sessionRpeSource = excluded.sessionRpeSource, trimpPerAU = excluded.trimpPerAU,
-                    source = excluded.source, title = excluded.title,
-                    programWeek = excluded.programWeek, deload = excluded.deload
-                """, arguments: StatementArguments(sArgs))
-
-            try db.execute(sql: "DELETE FROM setEntry WHERE sessionId = ?", arguments: [session.id])
-            // Ola 1 · FER-327: los drops se escriben pegados a su madre (ver `enforcingDropAdjacency`).
-            for s in Self.enforcingDropAdjacency(sets) {
-                let args: [DatabaseValueConvertible?] = [
-                    s.id, s.sessionId, s.exerciseId, s.position, s.kind.rawValue,
-                    s.weightKg, s.reps, s.timeS, s.distanceM, s.done ? 1 : 0, s.ts, s.rpe, s.restTakenS,
-                    s.mode == .standard ? nil : s.mode.rawValue
-                ]
-                try db.execute(sql: """
-                    INSERT INTO setEntry
-                        (id, sessionId, exerciseId, position, kind, weightKg, reps, timeS, distanceM, done, ts, rpe, restTakenS, mode)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, arguments: StatementArguments(args))
-            }
-            // Replace this session's opt-out rows (delete-first keeps a re-save idempotent, like setEntry).
-            try db.execute(sql: "DELETE FROM progressionOptOut WHERE sessionId = ?", arguments: [session.id])
-            for exerciseId in progressionOptOuts.sorted() {
-                try db.execute(sql: "INSERT INTO progressionOptOut (sessionId, exerciseId) VALUES (?, ?)",
-                               arguments: [session.id, exerciseId])
-            }
-            // Replace this session's exercise notes (delete-first keeps a re-save idempotent, like setEntry).
-            // Only non-empty text is stored — a cleared note simply doesn't come back.
-            try db.execute(sql: "DELETE FROM strengthExerciseNote WHERE sessionId = ?", arguments: [session.id])
-            for n in notes where !n.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                try db.execute(sql: """
-                    INSERT INTO strengthExerciseNote (id, sessionId, exerciseId, setPosition, text, ts)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                    """, arguments: [n.id, n.sessionId, n.exerciseId, n.setPosition, n.text, n.ts])
-            }
-            try Self.updatePersonalRecords(db, sets: sets)
+                INSERT INTO setEntry
+                    (id, sessionId, exerciseId, position, kind, weightKg, reps, timeS, distanceM, done, ts, rpe, restTakenS, mode)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, arguments: StatementArguments(args))
         }
+        try db.execute(sql: "DELETE FROM progressionOptOut WHERE sessionId = ?", arguments: [session.id])
+        for exerciseId in progressionOptOuts.sorted() {
+            try db.execute(sql: "INSERT INTO progressionOptOut (sessionId, exerciseId) VALUES (?, ?)",
+                           arguments: [session.id, exerciseId])
+        }
+        try db.execute(sql: "DELETE FROM strengthExerciseNote WHERE sessionId = ?", arguments: [session.id])
+        for n in notes where !n.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            try db.execute(sql: """
+                INSERT INTO strengthExerciseNote (id, sessionId, exerciseId, setPosition, text, ts)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """, arguments: [n.id, n.sessionId, n.exerciseId, n.setPosition, n.text, n.ts])
+        }
+        try updatePersonalRecords(db, sets: sets)
     }
 
     /// Edit a saved session: replace its row + sets, then recompute PRs *exactly* for every exercise

@@ -81,7 +81,7 @@ Packages/                       Cross-platform Swift packages (base `.iOS(.v16)`
 ├── CenitStore/                 GRDB/SQLite persistence (actor)
 ├── StrandTraining/             strength domain types + bundled exercise catalog (free-exercise-db, FER-923; pure, no DB)
 ├── StrandAnalytics/            HRV/recovery/strain/sleep/correlation math
-├── StrandImport/               Apple Health importer (export.xml, streaming)
+├── StrandImport/               Apple Health importer (export.xml, streaming) + StrengthCSVImporter (Strong/Hevy/Cénit CSV)
 └── CenitDesign/               SwiftUI design system (palette, components, charts)
 
 CenitApp/                       iOS SwiftUI app shell (App/Health/System/Widgets/Resources)
@@ -516,7 +516,7 @@ in the Frente D dead-code sweep (FER-1003). No column, no migration.
   `programWeek` / `deload` (v42, ola 1 · FER-324) — where the session's strain came from (`hr` measured,
   `rpe` estimated: the label the receipt and Tendencias must show), the one-tap session effort (6–10,
   NULL = never answered, never defaulted), whether it was tapped or accepted as the suggested prefill, the
-  estimate's scale, the import provenance (`strong`/`hevy`/`cenit-csv`, NULL = Cénit), and the program
+  estimate's scale, the import provenance (`strong`/`hevy`/`cenit`, NULL = Cénit), and the program
   week / light-week flag (1 = a progression boundary). All nullable, appended via `addColumnIfMissing`.
 - `routineExercise.progressionUseRPE` (v42, DEFAULT 0) — the «Según reps en reserva» rhythm; off in every
   pre-existing routine by construction.
