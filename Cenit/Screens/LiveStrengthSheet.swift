@@ -1862,21 +1862,31 @@ struct LiveStrengthSheet: View {
         .liquidGlass(.superficieSolida)
     }
 
-    /// «Por ejercicio»: one quiet row per exercise — sets · top datum · trend vs «la última vez».
+    /// «Por ejercicio»: nombre + gramática de la serie (D7, ola 1 · FER-327 · E7 · issue) — «80 kg ·
+    /// 8 · 8 · 11 máx» (+ «· N al fallo» si aplica) + tendencia; sus escalones de «bajar y seguir», si
+    /// los hubo, en líneas propias debajo, tinta más tenue (son extra, no la serie prescrita).
     private func receiptExercises(_ lines: [StrengthSummary.ExerciseLine]) -> some View {
         VStack(alignment: .leading, spacing: .zero) {
             Text("By exercise").liquidKicker().foregroundStyle(LiquidColor.tinta700)
                 .padding(.bottom, LiquidSpace.s050)
                 ForEach(Array(lines.enumerated()), id: \.element.id) { i, line in
-                HStack(spacing: LiquidSpace.s300) {
-                    Text(line.name).font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta900)
-                        .lineLimit(1).minimumScaleFactor(0.8)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    Text(exerciseLineDetail(line))
-                        .font(LiquidType.caption).monospacedDigit().foregroundStyle(LiquidColor.tinta700)
-                    exerciseTrendGlyph(line.trend)
+                VStack(alignment: .leading, spacing: LiquidSpace.s050) {
+                    HStack(spacing: LiquidSpace.s300) {
+                        Text(line.name).font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta900)
+                            .lineLimit(1).minimumScaleFactor(0.8)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Text(exerciseLineDetail(line))
+                            .font(LiquidType.caption).monospacedDigit().foregroundStyle(LiquidColor.tinta700)
+                        exerciseTrendGlyph(line.trend)
+                    }
+                    ForEach(Array(line.dropLines.enumerated()), id: \.offset) { _, drop in
+                        Text(dropLineDetail(drop))
+                            .font(LiquidType.caption).monospacedDigit().foregroundStyle(LiquidColor.tinta500)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                    }
                 }
                 .frame(minHeight: 40)
+                .padding(.vertical, LiquidSpace.s050)
                 .overlay(alignment: .bottom) {
                     if i < lines.count - 1 { Rectangle().fill(LiquidColor.tinta10).frame(height: 1) }
                 }
@@ -1885,15 +1895,39 @@ struct LiveStrengthSheet: View {
         }
     }
 
+    /// D7: series con reps (weightReps/bodyweight) listan «peso · rep1 · rep2 · …», cada AMRAP con
+    /// «máx» pegado a su número; «· N al fallo» al final si alguna llegó a RPE 10. Sin reps
+    /// (tiempo/distancia, o una reimpresión sin este detalle) cae al «N sets · dato» de siempre.
     private func exerciseLineDetail(_ line: StrengthSummary.ExerciseLine) -> String {
-        let top: String? = {
-            if let w = line.topWeightKg, w > 0 { return massText(w) }
-            if let t = line.topTimeS, t > 0 { return Self.clock(t) }
-            if let d = line.topDistanceM, d > 0 { return distanceText(d) }
-            return nil
-        }()
-        guard let top else { return String(localized: "\(line.setCount) sets") }
-        return String(localized: "\(line.setCount) sets · \(top)")
+        guard !line.repsSequence.isEmpty else {
+            let top: String? = {
+                if let w = line.topWeightKg, w > 0 { return massText(w) }
+                if let t = line.topTimeS, t > 0 { return Self.clock(t) }
+                if let d = line.topDistanceM, d > 0 { return distanceText(d) }
+                return nil
+            }()
+            guard let top else { return String(localized: "\(line.setCount) sets") }
+            return String(localized: "\(line.setCount) sets · \(top)")
+        }
+        var parts: [String] = []
+        if let w = line.topWeightKg, w > 0 { parts.append(massText(w)) }
+        for (i, reps) in line.repsSequence.enumerated() {
+            let repsStr = reps.map(String.init) ?? "—"
+            let isAmrap = line.amrapFlags.indices.contains(i) && line.amrapFlags[i]
+            parts.append(isAmrap ? repsStr + " " + String(localized: "max") : repsStr)
+        }
+        var text = parts.joined(separator: " · ")
+        if line.failureCount > 0 {
+            text += " · " + String(localized: "\(line.failureCount) at failure")
+        }
+        return text
+    }
+
+    /// D7: «↳ bajar y seguir 64 kg · 9» — un escalón, con su propio peso (ya reducido) y sus reps.
+    private func dropLineDetail(_ drop: StrengthSummary.ExerciseLine.DropLine) -> String {
+        let weightStr = massText(drop.weightKg)
+        let repsStr = drop.reps.map(String.init) ?? "—"
+        return "↳ " + String(localized: "Drop and continue") + " \(weightStr) · \(repsStr)"
     }
 
     @ViewBuilder private func exerciseTrendGlyph(_ trend: Int?) -> some View {

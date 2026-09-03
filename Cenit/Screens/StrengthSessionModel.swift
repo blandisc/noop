@@ -116,6 +116,20 @@ struct StrengthSummary: Equatable {
         let topTimeS: Int?
         let topDistanceM: Double?
         let trend: Int?
+        /// D7 (ola 1 · FER-327 · E7 · issue): las reps de cada serie de trabajo NUMERADA, en el
+        /// mismo orden que se hicieron — «8 · 8 · 11 máx» en el recibo/detalle. Vacío para
+        /// tiempo/distancia (ya tienen `topTimeS`/`topDistanceM`) y para sesiones reconstruidas sin
+        /// este detalle (reimpresión, `ReceiptMapping.summary`). Paralelo a `amrapFlags`.
+        var repsSequence: [Int?] = []
+        /// `true` en la posición de una serie AMRAP («las que puedas») — agrega «máx» a su número.
+        var amrapFlags: [Bool] = []
+        /// Un escalón de «bajar y seguir» de este ejercicio.
+        struct DropLine: Equatable { let weightKg: Double; let reps: Int? }
+        /// Los escalones de este ejercicio, en orden — «↳ bajar y seguir 64 kg · 9» cada uno. Nunca
+        /// se cuentan en `setCount`/`topWeightKg` (D2): un escalón no es una serie numerada.
+        var dropLines: [DropLine] = []
+        /// Cuántas series de este ejercicio llegaron a RPE 10 («al fallo») — agrega «· N al fallo».
+        var failureCount: Int = 0
     }
 }
 
@@ -162,9 +176,20 @@ final class StrengthSessionModel: ObservableObject {
         var restTakenS: Int? = nil
         /// Cómo se hace la serie (ola 1 · FER-327): `.standard`, `.amrap` («las que puedas») o `.drop`
         /// (el escalón de «bajar y seguir», una serie propia que cuelga de la anterior por ORDEN, sin
-        /// FK). Sigue siendo `kind == .work`: los ~60 filtros de «¿es serie de trabajo?» del app no se
-        /// tocan; solo las cuatro reglas (volumen/progresión/récords/1RM) leen el modo.
+        /// FK). Sigue siendo `kind == .work`: los filtros de «¿es serie de trabajo?» (volumen/sesión
+        /// activa) no se tocan; solo las cuatro reglas (volumen/progresión/récords/1RM) leen el modo
+        /// directamente. PERO cualquier conteo que se lea como «serie N» o «N series» a un humano —
+        /// numerales, «Serie N de M», rondas de superserie, `targetSets` que se ofrece guardar en la
+        /// rutina, «repetir del historial» — SÍ debe excluir un escalón (D2, QA FER-332 ronda 1: media
+        /// docena de estos conteos lo colaban como si fuera trabajo prescrito). `isNumberedWorkSet`
+        /// abajo es ese ÚNICO oráculo — no relees `kind == .work && mode != .drop` a mano.
         var mode: SetMode = .standard
+
+        /// Ola 1 (FER-327 · E7 · D2): ¿esta serie cuenta como UNA serie de trabajo NUMERADA? Un
+        /// escalón de «bajar y seguir» sigue siendo `kind == .work` (cuenta a volumen), pero no es una
+        /// serie que un humano cuenta como tal — no avanza «Serie N de M», no es una ronda propia de
+        /// superserie, y no se ofrece como serie prescrita al guardar/repetir la rutina.
+        var isNumberedWorkSet: Bool { kind == .work && mode != .drop }
     }
 
     /// One exercise's run: its plan, the editable sets, which set the Foco is on, and whether it was skipped.
@@ -405,10 +430,13 @@ final class StrengthSessionModel: ObservableObject {
         return String(letters[idx])
     }
 
-    /// How many `.work` series the run at `index` carries — the "rounds" a superset member cycles through.
+    /// How many `.work` series the run at `index` carries — the "rounds" a superset member cycles
+    /// through. Ola 1 (FER-327 · E7): EXCLUYE los escalones de «bajar y seguir» — un drop no es una
+    /// ronda propia (rompería «una fila por miembro por ronda» entre los demás miembros del bloque);
+    /// vive como sub-fila de su madre (`RoutineSheetLiveTarjeta.filaRonda`).
     func supersetRounds(at index: Int) -> Int {
         guard runs.indices.contains(index) else { return 0 }
-        return runs[index].sets.filter { $0.kind == .work }.count
+        return runs[index].sets.filter(\.isNumberedWorkSet).count
     }
 
     /// FER-170 (F5, ronda 2 del gate · R7): cuántas rondas de este bloque de superserie están
@@ -426,7 +454,8 @@ final class StrengthSessionModel: ObservableObject {
         for r in 1...total {
             var slots = 0, done = 0
             for ei in members where runs.indices.contains(ei) {
-                let work = runs[ei].sets.filter { $0.kind == .work }
+                // Ola 1 (FER-327 · E7 · D2): mismo oráculo que `supersetRounds` — un escalón no es una ronda.
+                let work = runs[ei].sets.filter(\.isNumberedWorkSet)
                 guard r <= work.count else { continue }
                 slots += 1
                 if work[r - 1].done { done += 1 }
@@ -910,14 +939,16 @@ final class StrengthSessionModel: ObservableObject {
     /// porque el modelo no resuelve el catálogo. Devuelve `false` cuando no había nada que colgar o
     /// cuando la cadena ya llegó al tope (`SetVariants.maxDropSteps`), para que la interfaz se calle en
     /// vez de fingir que insertó algo.
-    @discardableResult
-    func addDrop(exercise ei: Int, set si: Int, implement: PlateMath.Implement = .barbell,
-                 inventory: [PlateMath.PlateStock] = PlateMath.defaultInventory,
-                 barKg: Double = PlateMath.defaultBarKg,
-                 fixedStepKg: Double = 2.5) -> Bool {
+    /// ¿Colgar un escalón de `si` (o de su madre, si `si` ya es un escalón) SERÍA posible? Misma
+    /// cadena de invariantes que `addDrop`, sin mutar nada — D9 (QA FER-332 ronda 2): el menú de la
+    /// serie la usa para deshabilitar «Bajar y seguir» en vez de fingir que sirvió (barra sola en el
+    /// equipo, o ya son 3 escalones). `addDrop` LLAMA a esta misma función, no repite la cuenta.
+    func canAddDrop(exercise ei: Int, set si: Int, implement: PlateMath.Implement = .barbell,
+                    inventory: [PlateMath.PlateStock] = PlateMath.defaultInventory,
+                    barKg: Double = PlateMath.defaultBarKg,
+                    fixedStepKg: Double = 2.5) -> Bool {
         guard runs.indices.contains(ei), runs[ei].sets.indices.contains(si) else { return false }
         guard runs[ei].sets[si].kind == .work else { return false }
-        // La madre es la serie tocada, o —si se tocó un escalón— la no-drop de la que cuelga.
         var motherIndex = si
         while motherIndex > 0 && runs[ei].sets[motherIndex].mode == .drop { motherIndex -= 1 }
         guard runs[ei].sets[motherIndex].mode != .drop else { return false }   // huérfano: no cuelga nada
@@ -927,14 +958,31 @@ final class StrengthSessionModel: ObservableObject {
             tail += 1; steps += 1
         }
         guard steps < SetVariants.maxDropSteps else { return false }
-
         let from = runs[ei].sets[tail]
         let target = SetVariants.dropTargetKg(fromKg: from.weightKg)
         let weight = PlateMath.snap(targetKg: target, implement: implement, barKg: barKg,
                                     inventory: inventory, fixedStepKg: fixedStepKg)
         // Si lo construible no queda por DEBAJO de donde venimos (madre en la barra sola, rack en su
         // mínimo), no hay bajada que hacer: no se inserta un escalón que miente (H8).
-        guard weight < from.weightKg else { return false }
+        return weight < from.weightKg
+    }
+
+    @discardableResult
+    func addDrop(exercise ei: Int, set si: Int, implement: PlateMath.Implement = .barbell,
+                 inventory: [PlateMath.PlateStock] = PlateMath.defaultInventory,
+                 barKg: Double = PlateMath.defaultBarKg,
+                 fixedStepKg: Double = 2.5) -> Bool {
+        guard canAddDrop(exercise: ei, set: si, implement: implement, inventory: inventory,
+                         barKg: barKg, fixedStepKg: fixedStepKg) else { return false }
+        // La madre es la serie tocada, o —si se tocó un escalón— la no-drop de la que cuelga.
+        var motherIndex = si
+        while motherIndex > 0 && runs[ei].sets[motherIndex].mode == .drop { motherIndex -= 1 }
+        var tail = motherIndex
+        while tail + 1 < runs[ei].sets.count && runs[ei].sets[tail + 1].mode == .drop { tail += 1 }
+        let from = runs[ei].sets[tail]
+        let target = SetVariants.dropTargetKg(fromKg: from.weightKg)
+        let weight = PlateMath.snap(targetKg: target, implement: implement, barKg: barKg,
+                                    inventory: inventory, fixedStepKg: fixedStepKg)
         let drop = WorkingSet(id: UUID().uuidString, weightKg: weight,
                               reps: runs[ei].sets[motherIndex].reps, done: false,
                               rest: nil, mode: .drop)

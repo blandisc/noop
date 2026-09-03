@@ -719,6 +719,12 @@ struct ExerciseDetailScreen: View {
                                valueFormat: { StrengthDisplay.weight($0, system: system) })
                     .padding(.top, LiquidSpace.s400)
                     .accessibilityLabel(Text("Est. 1RM") + Text(verbatim: " trend"))
+                // Ola 1 (FER-327 · E7): un AMRAP hecho puede pasar de las 12 reps que el estimado
+                // usa de tope (`OneRepMax.maxReps`, ambas fórmulas degradan por encima de eso) — el
+                // pie evita que el número se lea como si contara cada rep de más.
+                Text("The estimated 1RM uses a maximum of \(OneRepMax.maxReps) reps")
+                    .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
+                    .padding(.top, LiquidSpace.s150)
             }
         }
     }

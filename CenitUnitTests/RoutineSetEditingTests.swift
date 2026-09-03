@@ -150,4 +150,32 @@ final class RoutineSetEditingTests: XCTestCase {
         XCTAssertEqual(sets[3].reps, 8)
         XCTAssertEqual(sets[0].weightKg, 40, "el calentamiento queda intacto")
     }
+
+    // MARK: - editorRepsLabel (N16 · ola 1 · E7): la palabra de INTERFAZ del editor, distinta del
+    // dato crudo `RoutineSet.repsRangeLabel` («8+») que StrandTraining deja a propósito sin la
+    // palabra «máx» (ver su doc). Truena si alguien vuelve a leer `repsRangeLabel` directo en la
+    // celda del editor.
+
+    /// Un AMRAP en el editor lee «8 a máx» (clave «%lld to max») — nunca el «8+» del dato crudo.
+    func testEditorRepsLabelReadsAToMaxForAmrap() {
+        var amrap = workSet(80, 8); amrap.mode = .amrap
+        XCTAssertEqual(RoutineSetEditing.editorRepsLabel(amrap), "8 to max")
+    }
+
+    /// Un rango normal (piso-techo) no cambia — sigue siendo «8-10».
+    func testEditorRepsLabelKeepsRangeForStandard() {
+        var ranged = workSet(80, 8)
+        ranged.repsRangeTop = 10
+        XCTAssertEqual(RoutineSetEditing.editorRepsLabel(ranged), "8-10")
+    }
+
+    /// Un piso fijo sin techo sigue siendo solo el piso.
+    func testEditorRepsLabelKeepsFloorOnly() {
+        XCTAssertEqual(RoutineSetEditing.editorRepsLabel(workSet(80, 8)), "8")
+    }
+
+    /// Sin piso (tipo sin reps) no hay nada que leer.
+    func testEditorRepsLabelNilWithoutFloor() {
+        XCTAssertNil(RoutineSetEditing.editorRepsLabel(workSet(80, nil)))
+    }
 }

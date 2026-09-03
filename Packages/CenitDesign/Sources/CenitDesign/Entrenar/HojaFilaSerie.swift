@@ -56,6 +56,15 @@ public struct HojaFilaSerie: View {
         /// (`.trow:first-child{border-top:0}` del mock). El init sellado obligaba al caller a
         /// recortar con padding negativo; ahora el propio dato lo declara.
         public let esPrimera: Bool
+        /// Ola 1 (FER-327 · E7 · mock `ola1-pantallas.html` §③ `.marca.z`): la etiqueta del tipo de
+        /// serie — «Las que puedas» / «↳ Bajar y seguir» — en su PROPIA línea bajo la fila, nunca
+        /// dentro del numeral (el numeral solo pinta «↳» para un escalón; el nombre va aquí). `nil` =
+        /// serie estándar, sin línea.
+        public let tipoEtiqueta: String?
+        /// El texto libre junto al chip del tipo («anota cuántas salieron» · «sin descanso, −20 %»,
+        /// mock §③) — `nil` = sin detalle (p. ej. una vez hecha la serie, ya no hace falta instruir).
+        /// Se ignora si `tipoEtiqueta` es `nil`.
+        public let tipoDetalle: String?
 
         public init(
             numero: String,
@@ -68,7 +77,9 @@ public struct HojaFilaSerie: View {
             anterior: String? = nil,
             ant: String? = nil,
             arrastrable: Bool = false,
-            esPrimera: Bool = false
+            esPrimera: Bool = false,
+            tipoEtiqueta: String? = nil,
+            tipoDetalle: String? = nil
         ) {
             self.numero = numero
             self.esCalentamiento = esCalentamiento
@@ -81,6 +92,8 @@ public struct HojaFilaSerie: View {
             self.ant = ant
             self.arrastrable = arrastrable
             self.esPrimera = esPrimera
+            self.tipoEtiqueta = tipoEtiqueta
+            self.tipoDetalle = tipoDetalle
         }
     }
 
@@ -88,22 +101,31 @@ public struct HojaFilaSerie: View {
     private let contexto: Contexto
     private let marca: Marca
     private let onMarcar: (() -> Void)?
+    /// B1 (ola 1 · FER-327 · E7): el chip de marca (línea de tipo) abre el MISMO menú que la
+    /// pulsación larga sobre la fila — `nil` (default) lo deja informativo, como antes de esta ola,
+    /// así que ningún caller existente cambia de comportamiento sin pasar este parámetro.
+    private let onTipoTap: (() -> Void)?
 
     public init(
         datos: Datos,
         contexto: Contexto,
         marca: Marca,
-        onMarcar: (() -> Void)? = nil
+        onMarcar: (() -> Void)? = nil,
+        onTipoTap: (() -> Void)? = nil
     ) {
         self.datos = datos
         self.contexto = contexto
         self.marca = marca
         self.onMarcar = onMarcar
+        self.onTipoTap = onTipoTap
     }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             filaPrincipal
+            if let tipo = datos.tipoEtiqueta {
+                lineaTipo(tipo)
+            }
             if contexto == .sesion, marca == .activa, let ant = datos.ant {
                 playheadAnt(ant)
             }
@@ -266,6 +288,45 @@ public struct HojaFilaSerie: View {
         .frame(width: HojaMetrics.marcaDiametro, height: HojaMetrics.marcaDiametro)
     }
 
+    /// Ola 1 (FER-327 · E7): la línea del tipo — chip `LiquidStatePill(valencia:)` (catálogo, sin
+    /// pieza nueva) + detalle libre, indentada bajo peso/reps (mismo margen que el playhead ANT) para
+    /// que NUNCA se lea como parte del numeral. Un escalón usa ámbar (mismo tono que calentamiento:
+    /// «menos carga»); AMRAP usa verde (mismo tono que la marca ✓: «rindió al máximo»).
+    private func lineaTipo(_ texto: String) -> some View {
+        HStack(spacing: HojaMetrics.filaGap) {
+            Color.clear
+                .frame(width: HojaMetrics.colNumero + HojaMetrics.filaGap)
+            HStack(spacing: LiquidSpace.s150) {
+                chip(texto)
+                if let detalle = datos.tipoDetalle {
+                    Text(verbatim: detalle)
+                        .font(InstrumentoType.grotesk(HojaMetrics.antSize, weight: .regular, relativeTo: .caption2))
+                        .foregroundStyle(LiquidColor.tinta500)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.top, LiquidSpace.s050)
+    }
+
+    /// B1 (ola 1 · E7 · issue): «la marca es un chip tocable de 44 pt que abre el mismo menú» — el
+    /// TOQUE se agranda a 44 pt vía `contentShape` con inset negativo (mismo patrón que `marcaCell`/
+    /// `EntrenarCapsulaPuerta`: agranda el ÁREA, nunca el dibujo), así que el chip sigue viéndose
+    /// igual de compacto. `onTipoTap == nil` (default de todos los callers salvo la sesión) lo deja
+    /// puramente informativo, sin envolverlo en un `Button`.
+    @ViewBuilder private func chip(_ texto: String) -> some View {
+        let pill = LiquidStatePill(valencia: texto,
+                                    tono: texto.hasPrefix("↳") ? LiquidColor.ambar : LiquidColor.verdePrimario)
+        if let onTipoTap {
+            Button(action: onTipoTap) { pill }
+                .buttonStyle(.plain)
+                .contentShape(Rectangle().inset(by: -12))
+                .accessibilityAddTraits(.isButton)
+        } else {
+            pill
+        }
+    }
+
     private func playheadAnt(_ ant: String) -> some View {
         HStack(spacing: 0) {
             Color.clear
@@ -309,16 +370,25 @@ public struct HojaFilaSerie: View {
         var parts: [String] = []
         if datos.esCalentamiento {
             parts.append(String(localized: "Warm-up"))
+        } else if datos.numero == "↳" {
+            // Ola 1 (FER-327 · E7 · D8, QA ronda 2): un escalón no tiene número propio — se lee
+            // «bajar y seguir», NUNCA el glifo «↳» (que `tipoEtiqueta` sí lleva para el chip VISUAL).
+            let etiqueta = (datos.tipoEtiqueta ?? String(localized: "Drop set"))
+                .replacingOccurrences(of: "↳ ", with: "")
+            parts.append(etiqueta)
         } else {
-            // `numero` es siempre un entero como texto salvo calentamiento (ya cubierto arriba);
+            // `numero` es siempre un entero como texto salvo calentamiento/escalón (cubiertos arriba);
             // el fallback no localizado es defensivo y en la práctica nunca se toma.
             parts.append(Int(datos.numero).map { String(localized: "Set \($0)") } ?? "Set \(datos.numero)")
+            if let tipo = datos.tipoEtiqueta { parts.append(tipo) }
         }
         if !datos.peso.isEmpty, datos.peso != "—" {
             parts.append(datos.unidad.isEmpty ? datos.peso : "\(datos.peso) \(datos.unidad)")
         }
         if !datos.reps.isEmpty, datos.reps != "—" {
-            parts.append(datos.reps)
+            // D8 (QA ronda 2): el placeholder visual «máx» se lee «máximo de reps» — no el glifo
+            // abreviado, que VoiceOver pronunciaría ambiguo.
+            parts.append(datos.reps == String(localized: "max") ? String(localized: "Maximum reps") : datos.reps)
         }
         switch marca {
         case .hecha:
@@ -408,6 +478,21 @@ private struct HojaFilaSerieA11y: ViewModifier {
                 numero: "3", esCalentamiento: false,
                 peso: "82.5", unidad: "kg", conSubida: true, reps: "8"),
             contexto: .sesion, marca: .fantasma)
+        // Ola 1 (FER-327 · E7): AMRAP pendiente («máx» en tinta, sin número) + su escalón de
+        // «bajar y seguir» — mock `ola1-pantallas.html` §③.
+        HojaFilaSerie(
+            datos: .init(
+                numero: "4", esCalentamiento: false,
+                peso: "80", unidad: "kg", conSubida: false, reps: "máx",
+                anterior: nil, ant: "ANT 80 × 11 · Q1", esPrimera: false,
+                tipoEtiqueta: "Las que puedas", tipoDetalle: "anota cuántas salieron"),
+            contexto: .sesion, marca: .activa)
+        HojaFilaSerie(
+            datos: .init(
+                numero: "↳", esCalentamiento: false,
+                peso: "64", unidad: "kg", conSubida: false, reps: "9",
+                tipoEtiqueta: "↳ Bajar y seguir", tipoDetalle: "sin descanso, −20 %"),
+            contexto: .sesion, marca: .pendiente)
     }
     .padding(16)
     .background(LiquidColor.fondoGradient)
