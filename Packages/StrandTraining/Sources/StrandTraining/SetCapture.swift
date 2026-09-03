@@ -17,13 +17,16 @@ public enum SetCapture {
     /// - `bodyweight`: reps, plus the optional added load («lastre») when > 0.
     /// - `time`: elapsed seconds only.
     /// - `distance`: meters + elapsed seconds.
-    public static func fields(type: ExerciseType, weightKg: Double, reps: Int,
+    ///
+    /// Ola 1 (FER-327): `reps` es OPCIONAL — `nil` = un AMRAP todavía pendiente. Se persiste igual que un
+    /// 0: como `nil` («sin capturar»), nunca como un cero que fingiría una serie de volumen cero.
+    public static func fields(type: ExerciseType, weightKg: Double, reps: Int?,
                               timeS: Int?, distanceM: Double?)
         -> (weightKg: Double?, reps: Int?, timeS: Double?, distanceM: Double?) {
         switch type {
         case .weightReps, .bodyweight:
             // Both store reps + weight; for bodyweight the weight is the optional lastre (nil when 0).
-            return (weightKg > 0 ? weightKg : nil, reps > 0 ? reps : nil, nil, nil)
+            return (weightKg > 0 ? weightKg : nil, (reps ?? 0) > 0 ? reps : nil, nil, nil)
         case .time:
             return (nil, nil, timeS.map(Double.init), nil)
         case .distance:

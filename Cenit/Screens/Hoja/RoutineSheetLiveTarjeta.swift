@@ -227,7 +227,8 @@ struct HojaTarjetaEjercicioSesion: View {
         let workNumber = run.sets.prefix(si + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
         let repsText: String
         switch run.type {
-        case .weightReps, .bodyweight: repsText = "\(set.reps)"
+        // FER-327: `nil` = AMRAP pendiente — la celda va VACÍA (Q7), nunca un 0 que fingiría un dato.
+        case .weightReps, .bodyweight: repsText = set.reps.map(String.init) ?? ""
         case .time: repsText = (set.timeS ?? 0) > 0 ? SessionClock.format(set.timeS ?? 0) : "—"
         case .distance: repsText = (set.distanceM ?? 0) > 0 ? String(format: "%.1f", (set.distanceM ?? 0) / 1000) : "—"
         }
@@ -699,7 +700,7 @@ struct HojaTarjetaSuperserieSesion: View {
             peso: usesReps ? vivo.plateNumber(vivo.displayWeight(set.weightKg)) : "—",
             unidad: slot.run.type == .weightReps ? vivo.weightUnit() : "",
             conSubida: false,
-            reps: usesReps ? "\(set.reps)" : "—",
+            reps: usesReps ? (set.reps.map(String.init) ?? "") : "—",   // nil = AMRAP pendiente (FER-327)
             // N4 (spec F3, «filas ssrow … reps(+Q)»): el sufijo Q solo en filas HECHAS, mismo
             // patrón que `HojaTarjetaEjercicioSesion.filaSerie`. Sin playhead ANT: el mock P5 no lo
             // dibuja para miembros de superserie (decisión documentada en el reporte).
@@ -758,7 +759,7 @@ struct HojaTarjetaSuperserieSesion: View {
             peso: usesReps ? vivo.plateNumber(vivo.displayWeight(slot.set.weightKg)) : "—",
             unidad: slot.run.type == .weightReps ? vivo.weightUnit() : "",
             conSubida: false,
-            reps: usesReps ? "\(slot.set.reps)" : "—",
+            reps: usesReps ? (slot.set.reps.map(String.init) ?? "") : "—",   // nil = AMRAP pendiente (FER-327)
             q: marca == .hecha ? slot.set.rpe.map(LiveStrengthSheet.qLabel(fromRPE:)) : nil,
             ant: nil, esPrimera: esPrimera
         )

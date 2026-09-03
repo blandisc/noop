@@ -26,7 +26,8 @@ extension RoutineSheet {
                     // R4: subir el piso puede invalidar un techo ya puesto — re-normaliza los dos
                     // juntos, no solo la celda que se acaba de teclear.
                     items[idx].re.sets[si].repsRangeTop = RoutineSet.normalizedRepsRangeTop(
-                        reps: items[idx].re.sets[si].reps, top: items[idx].re.sets[si].repsRangeTop)
+                        reps: items[idx].re.sets[si].reps, top: items[idx].re.sets[si].repsRangeTop,
+                        mode: items[idx].re.sets[si].mode)
                     dirty = true
                     mirrorAcrossRoundsIfSuperset(idx: idx, si: si)
                 })
@@ -39,13 +40,8 @@ extension RoutineSheet {
     /// NO es una ronda — el espejo lo salta, nunca lo pisa ni lo clona. Las series SOLO (fuera de
     /// superserie) no pasan por aquí — cada una sigue siendo independiente.
     func mirrorAcrossRoundsIfSuperset(idx: Int, si: Int) {
-        guard RoutineSetEditing.inSuperset(items.map(\.re), idx), items[idx].re.sets[si].kind == .work else { return }
-        let src = items[idx].re.sets[si]
-        for i in items[idx].re.sets.indices where i != si && items[idx].re.sets[i].kind == .work {
-            items[idx].re.sets[i].weightKg = src.weightKg
-            items[idx].re.sets[i].reps = src.reps
-            items[idx].re.sets[i].repsRangeTop = src.repsRangeTop
-        }
+        guard RoutineSetEditing.inSuperset(items.map(\.re), idx) else { return }
+        RoutineSetEditing.mirrorWorkSets(&items[idx].re.sets, from: si)
     }
 
     /// R8 (QA D10, adjudicado): si esta serie pertenece a una superserie cuyas rondas YA son
@@ -60,12 +56,12 @@ extension RoutineSheet {
 
     /// N3: compara solo series de TRABAJO — un calentamiento (40-80 % rampeado, distinto por
     /// diseño) no debe disparar el confirm de «rondas desiguales» en cada edición.
+    ///
+    /// Ola 1 · FER-327: era una COPIA carácter por carácter de `RoutineSetEditing.workSetsAreEqual`, y
+    /// al agregar `mode` a la igualdad (v5 N15) hubo que tocarla dos veces — la señal de que eran dos
+    /// oráculos de la misma regla. Ahora delega: «rondas parejas» ES «series iguales».
     func roundsAreEven(_ idx: Int) -> Bool {
-        let work = items[idx].re.sets.filter { $0.kind == .work }
-        guard let first = work.first else { return true }
-        return work.allSatisfy {
-            $0.weightKg == first.weightKg && $0.reps == first.reps && $0.repsRangeTop == first.repsRangeTop
-        }
+        RoutineSetEditing.workSetsAreEqual(items[idx].re.sets)
     }
 
     /// Libera un `pendingMirror`: escribe el valor que había quedado en espera y espeja normal.
@@ -86,10 +82,12 @@ extension RoutineSheet {
         case .repsFloor:
             items[p.idx].re.sets[p.si].reps = Int(p.value.filter(\.isNumber))
             items[p.idx].re.sets[p.si].repsRangeTop = RoutineSet.normalizedRepsRangeTop(
-                reps: items[p.idx].re.sets[p.si].reps, top: items[p.idx].re.sets[p.si].repsRangeTop)
+                reps: items[p.idx].re.sets[p.si].reps, top: items[p.idx].re.sets[p.si].repsRangeTop,
+                mode: items[p.idx].re.sets[p.si].mode)
         case .repsTop:
             items[p.idx].re.sets[p.si].repsRangeTop = RoutineSet.normalizedRepsRangeTop(
-                reps: items[p.idx].re.sets[p.si].reps, top: Int(p.value.filter(\.isNumber)))
+                reps: items[p.idx].re.sets[p.si].reps, top: Int(p.value.filter(\.isNumber)),
+                mode: items[p.idx].re.sets[p.si].mode)
         }
         dirty = true
         mirrorAcrossRoundsIfSuperset(idx: p.idx, si: p.si)
@@ -107,7 +105,8 @@ extension RoutineSheet {
                     guard !holdForMirrorConfirm(idx: idx, si: si, field: .repsTop, raw: raw) else { return }
                     let candidate = Int(raw.filter(\.isNumber))
                     items[idx].re.sets[si].repsRangeTop = RoutineSet.normalizedRepsRangeTop(
-                        reps: items[idx].re.sets[si].reps, top: candidate)
+                        reps: items[idx].re.sets[si].reps, top: candidate,
+                        mode: items[idx].re.sets[si].mode)
                     dirty = true
                     mirrorAcrossRoundsIfSuperset(idx: idx, si: si)
                 })

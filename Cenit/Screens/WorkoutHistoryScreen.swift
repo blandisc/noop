@@ -1914,7 +1914,8 @@ struct WorkoutSessionDetailScreen: View {
     /// Whether a work set matches this exercise's stored best (weight or single-set volume) — a personal
     /// record. Compared on the physical values, so an equal-best set still reads as a PR.
     private func isPRSet(_ set: SetEntry, exerciseId: String) -> Bool {
-        guard set.kind == .work, let w = set.weightKg, w > 0, let reps = set.reps else { return false }
+        // Mismo oráculo que `bestPRs` / `checkForPR`: un escalón nunca enciende la insignia (FER-327).
+        guard set.counts(for: .records), let w = set.weightKg, w > 0, let reps = set.reps else { return false }
         let prs = prsByExercise[exerciseId] ?? []
         for pr in prs {
             switch pr.metric {

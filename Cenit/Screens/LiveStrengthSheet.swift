@@ -1266,7 +1266,7 @@ struct LiveStrengthSheet: View {
     /// real routine exists.
     private func syntheticRE(from run: StrengthSessionModel.ExerciseRun, position: Int) -> RoutineExercise {
         let planned = run.sets.enumerated().map { i, set in
-            RoutineSet(position: i, kind: set.kind, reps: set.reps, weightKg: set.weightKg)
+            RoutineSet(position: i, kind: set.kind, reps: set.reps, weightKg: set.weightKg, mode: set.mode)
         }
         return RoutineExercise(routineId: session.routineId ?? "adhoc", exerciseId: run.exerciseId,
                                position: position, targetSets: max(1, planned.count),

@@ -213,6 +213,42 @@ final class StrengthSessionSnapshotTests: XCTestCase {
         XCTAssertNil(snap.deload)
     }
 
+    /// FER-327 · E6: un AMRAP nace con las repeticiones PENDIENTES (`reps == nil`). La ida y vuelta
+    /// tiene que conservar el nil — si el snapshot lo convirtiera en 0, un crash a mitad de sesión
+    /// devolvería una serie que dice «0 repeticiones» (registrable en falso) en vez de una pendiente.
+    func testAmrapWithPendingRepsRoundTripsAsNil() throws {
+        let pending = StrengthSessionSnapshot.SetSnapshot(id: "a", weightKg: 80, reps: nil, mode: .amrap)
+        let run = StrengthSessionSnapshot.RunSnapshot(id: "r1", exerciseId: "press", name: "Press",
+                                                      type: .weightReps, restSeconds: 90, restMode: .fixed,
+                                                      hrRestReference: .restingMargin, hrRestValue: 0,
+                                                      sets: [pending], currentSet: 0, skipped: false)
+        let snap = StrengthSessionSnapshot(id: "s1", routineId: nil, routineName: "Empuje", startTs: 1000,
+                                           runs: [run], currentIndex: 0, updatedTs: 1001)
+        let data = try JSONEncoder().encode(snap)
+        XCTAssertFalse(String(data: data, encoding: .utf8)!.contains("\"reps\""),
+                       "reps pendiente = clave ausente, nunca un 0 inventado")
+        let back = try JSONDecoder().decode(StrengthSessionSnapshot.self, from: data)
+        XCTAssertNil(back.runs[0].sets[0].reps)
+        XCTAssertEqual(back.runs[0].sets[0].mode, .amrap)
+        XCTAssertEqual(back, snap)
+    }
+
+    /// FER-327 · E6: `reps` pasó a opcional, pero TODO JSON escrito antes de ola 1 la trae siempre —
+    /// un snapshot viejo sigue decodificando con su número intacto.
+    func testLegacySnapshotWithRepsPresentStillDecodes() throws {
+        let json = """
+        {"id":"s1","routineName":"Empuje","startTs":1000,
+         "runs":[{"id":"r1","exerciseId":"press","name":"Press","type":"weightReps","restSeconds":90,
+                  "restMode":"fixed","hrRestReference":"restingMargin","hrRestValue":0,
+                  "sets":[{"id":"a","weightKg":80,"reps":8,"done":true,"kind":"work"}],
+                  "currentSet":0,"skipped":false}],
+         "currentIndex":0,"currentRestMode":"fixed","paused":false,"pausedAccumulatedS":0,"updatedTs":1001}
+        """
+        let snap = try JSONDecoder().decode(StrengthSessionSnapshot.self, from: Data(json.utf8))
+        XCTAssertEqual(snap.runs[0].sets[0].reps, 8)
+        XCTAssertNil(snap.runs[0].sets[0].mode)
+    }
+
     func testPreservesModeAndProgramWeek() throws {
         let set = StrengthSessionSnapshot.SetSnapshot(id: "a", weightKg: 80, reps: 0, mode: .amrap)
         let run = StrengthSessionSnapshot.RunSnapshot(id: "r1", exerciseId: "press", name: "Press",

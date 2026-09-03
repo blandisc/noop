@@ -152,8 +152,18 @@ public struct RoutineSet: Codable, Sendable, Identifiable, Equatable {
     /// de esta fase, en E7/FER-88).
     public var repsRangeLabel: String? {
         guard let reps else { return nil }
+        // AMRAP (ola 1 · FER-327): «las que puedas» a partir del piso — «8+», nunca un rango con techo
+        // (un AMRAP no tiene techo por definición; `normalizedRepsRangeTop` ya lo fuerza a nil).
+        // Solo el formato del DATO vive aquí; la palabra «máx» de la interfaz es de /ux (E7).
+        if mode == .amrap { return "\(reps)+" }
         guard let top = repsRangeTop, top > reps else { return "\(reps)" }
         return "\(reps)-\(top)"
+    }
+
+    /// ¿Esta serie PLANEADA feeds `rule`? El gemelo de `SetEntry.counts(for:)` sin `done` (un plan no se
+    /// ha hecho todavía). Mismo oráculo: `SetKind` decide el calentamiento, `SetMode` las cuatro reglas.
+    public func counts(for rule: SetRule) -> Bool {
+        kind == .work && mode.counts(for: rule)
     }
 
     /// La invariante piso ≤ techo (E13/FER-94, R4 — FER-166 ronda 2): un techo inválido nunca se
@@ -163,7 +173,12 @@ public struct RoutineSet: Codable, Sendable, Identifiable, Equatable {
     /// legados al cargar (`RoutineSheet.load()`) llamen la MISMA regla: un techo que no supera al
     /// piso, o un techo sin piso con qué compararse, se normaliza a `nil` (piso único) — nunca un
     /// rango invertido como "10-8".
-    public static func normalizedRepsRangeTop(reps: Int?, top: Int?) -> Int? {
+    /// Ola 1 (FER-327): un AMRAP no tiene techo — «las que puedas» es exactamente eso — así que el
+    /// modo entra a la MISMA normalización en vez de dejar un techo huérfano que la receta pintaría
+    /// como «8-12» sobre una serie que dice «8+». El parámetro tiene default, así que los call sites
+    /// que no conocen el modo (datos legados, limpieza al cargar) siguen compilando y comportándose igual.
+    public static func normalizedRepsRangeTop(reps: Int?, top: Int?, mode: SetMode = .standard) -> Int? {
+        guard mode != .amrap else { return nil }
         guard let top, let reps, top > reps else { return nil }
         return top
     }
@@ -370,15 +385,52 @@ public enum SetKind: String, Codable, Sendable {
     case warmup
 }
 
+/// The four rules a logged set can (or cannot) feed — the ONLY axes `SetMode` changes (FER-327).
+/// Anything else about a set (does it get numbered? does it seed the next session's table?) keeps
+/// deciding by `SetKind`, untouched.
+public enum SetRule: String, Sendable, CaseIterable {
+    /// Σ weight × reps — «cuánto moviste».
+    case volume
+    /// The double-progression cycle (`ProgressionMath`): does this set gate the next raise?
+    case progression
+    /// Personal records (max weight / max reps / max volume).
+    case records
+    /// The estimated 1RM trend (`OneRepMax`).
+    case oneRepMax
+}
+
 /// How a WORK set is performed (ola 1, v42). Deliberately an axis ORTHOGONAL to `SetKind`: an AMRAP
 /// («las que puedas») and a drop («bajar y seguir») are still `kind == .work`, so the ~60 `kind == .work`
 /// filters across the app stay correct untouched — only the four rule sites (volume / progression /
-/// records / e1RM) read `mode`. A NULL column reads back as `.standard`. The rules themselves
-/// (`SetMode.counts(for:)`) land with E6 (FER-327); this is the storage contract only.
+/// records / e1RM) read `mode`. A NULL column reads back as `.standard`.
 public enum SetMode: String, Codable, Sendable, CaseIterable {
     case standard
     case amrap
     case drop
+
+    /// THE table (FER-327 · E6) — the single oracle for what each mode counts toward. Written once,
+    /// here, so no call site re-derives it (and so `CenitStore` can generate its SQL filter from it
+    /// instead of hand-writing `mode <> 'drop'` four times):
+    ///
+    /// | mode      | volume | progression | records | 1RM |
+    /// |-----------|--------|-------------|---------|-----|
+    /// | standard  |   sí   |     sí      |   sí    | sí  |
+    /// | amrap     |   sí   |     sí      |   sí    | sí  |
+    /// | drop      |   sí   |     no      |   no    | no  |
+    ///
+    /// Why a drop only counts toward VOLUME: «bajar y seguir» is extra work done at a load the athlete
+    /// could no longer hold — it moved real kilos (so it belongs in volume and in the day's effort), but
+    /// it is not a performance at the working weight, so letting it gate the next raise, set a record or
+    /// anchor an estimated 1RM would read the session as weaker (progression/records) or as a different
+    /// lift than the one that was trained. AMRAP is the opposite case: it IS a performance at the
+    /// working weight — «las que puedas» just removes the ceiling — so it counts everywhere, and
+    /// `ProgressionMath.metGoal` (reps ≥ target) already reads it correctly with no formula change.
+    public func counts(for rule: SetRule) -> Bool {
+        switch self {
+        case .standard, .amrap: return true
+        case .drop:             return rule == .volume
+        }
+    }
 }
 
 /// A single logged set. Which measure is filled depends on the exercise's `ExerciseType`
@@ -417,6 +469,14 @@ public struct SetEntry: Codable, Sendable, Identifiable, Equatable {
         self.restTakenS = restTakenS
         self.mode = mode
     }
+
+    /// Does this logged set feed `rule`? The composition of the two axes, in ONE place (FER-327 · E6):
+    /// a warm-up never counts (that is `SetKind`'s job, unchanged), a set that isn't done never counts,
+    /// and beyond that the answer is `SetMode.counts(for:)`. The four rule sites call this instead of
+    /// re-writing `kind == .work && done` plus a mode check of their own.
+    public func counts(for rule: SetRule) -> Bool {
+        kind == .work && done && mode.counts(for: rule)
+    }
 }
 
 /// A durable snapshot of a strength session **in progress** (FER-798) — everything the app needs to
@@ -430,7 +490,11 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
     public struct SetSnapshot: Codable, Sendable, Equatable {
         public var id: String
         public var weightKg: Double
-        public var reps: Int
+        /// Repeticiones capturadas. Ola 1 (FER-327): OPCIONAL — `nil` = «pendiente», el estado en que
+        /// nace un AMRAP («las que puedas»: nadie sabe el número hasta que la serie termina). El ✓ está
+        /// bloqueado mientras siga en nil y nunca se guarda un 0 en su lugar. Todo JSON escrito antes de
+        /// ola 1 SIEMPRE trae la clave, así que sigue decodificando idéntico.
+        public var reps: Int?
         public var timeS: Int?
         public var distanceM: Double?
         public var done: Bool
@@ -452,7 +516,7 @@ public struct StrengthSessionSnapshot: Codable, Sendable, Equatable {
         /// (= `.standard`), same pattern as `rpe`.
         public var mode: SetMode?
 
-        public init(id: String, weightKg: Double, reps: Int, timeS: Int? = nil,
+        public init(id: String, weightKg: Double, reps: Int?, timeS: Int? = nil,
                     distanceM: Double? = nil, done: Bool = false, doneTs: Int? = nil,
                     rest: RestConfig? = nil, kind: SetKind = .work, rpe: Double? = nil,
                     note: String? = nil, touched: Bool? = nil, restTakenS: Int? = nil,

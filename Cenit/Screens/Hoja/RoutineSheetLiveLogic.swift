@@ -106,7 +106,8 @@ extension HojaSesionViva {
         // guardaba una serie «hecha» de volumen cero que sí contaba en «N de M» y en el acta. El
         // candado real vive en el motor (`registerCurrentSet`, Nancy · ronda 2); aquí la piel solo
         // manda a escribir el número en vez de tragarse el tap.
-        if !set.done, session.runs[ei].type == .weightReps || session.runs[ei].type == .bodyweight, set.reps <= 0 {
+        if !set.done, session.runs[ei].type == .weightReps || session.runs[ei].type == .bodyweight,
+           (set.reps ?? 0) <= 0 {   // FER-327: nil (AMRAP pendiente) manda a escribir, igual que un 0
             beginEditing(.reps(ei, si))
             return
         }
@@ -522,7 +523,11 @@ extension HojaSesionViva {
     /// NUNCA lo que el guard de B10 acaba de rechazar — un 825 que «SÍ» guardó no puede además
     /// destellar como récord numérico, sería la misma mentira por otra puerta.
     private func checkForPR(ei: Int, set: StrengthSessionModel.WorkingSet) {
-        guard set.kind == .work, session.runs.indices.contains(ei) else { return }
+        // Ola 1 · FER-327: el destello de récord lee la MISMA tabla que la base (`SetMode.counts`) —
+        // un drop movió kilos de verdad, pero a un peso que el cuerpo ya no aguantaba: no es marca.
+        // Si destellara aquí y `StrengthStore` no lo guardara como PR, la sesión prometería un récord
+        // que al cerrar no existe.
+        guard set.kind == .work, set.mode.counts(for: .records), session.runs.indices.contains(ei) else { return }
         let run = session.runs[ei]
         // Nancy · ronda 2: sin los PR de ESTE ejercicio leídos, no se opina — ni destello falso
         // (ronda 1) ni silencio sobre un récord real que solo no se alcanzó a consultar.
@@ -530,7 +535,7 @@ extension HojaSesionViva {
         guard !CaptureGuard.isAbsurd(weightKg: set.weightKg, referenceKg: absurdCaptureReference(run)) else { return }
         let exId = run.exerciseId
         let prs = personalRecords[exId] ?? [:]
-        let volume = set.weightKg * Double(set.reps)
+        let volume = set.weightKg * Double(set.reps ?? 0)
         let priorWeight = prs[.maxWeight]?.valueKg
         let priorReps = prs[.maxReps]?.reps
         // El PR de volumen guarda el peso × reps de LA SERIE que lo puso, no el volumen ya multiplicado
@@ -542,7 +547,7 @@ extension HojaSesionViva {
         // movimiento destellaba un récord sobre nada — y el copy no puede prometer un «antes» que no
         // existe. Sin prior, no destella.
         let beatsWeight = priorWeight.map { set.weightKg > $0 } ?? false
-        let beatsReps = priorReps.map { set.reps > $0 } ?? false
+        let beatsReps = priorReps.map { (set.reps ?? 0) > $0 } ?? false
         let beatsVolume = priorVolume.map { volume > $0 } ?? false
         // Prioridad de copy cuando bate más de un tipo a la vez (mapa B11 muestra una sola línea):
         // peso máx primero (el más legible), luego volumen, luego reps.
@@ -976,7 +981,8 @@ extension HojaSesionViva {
         guard run.type == .weightReps || run.type == .bodyweight, let r = work.first?.reps else {
             return String(localized: "\(work.count) sets")
         }
-        var head = "\(work.count) × \(r)"
+        // FER-327: un AMRAP se lee «8+», nunca «8» (mismo criterio que `RoutineSheetLogic`).
+        var head = "\(work.count) × \(r)" + (work.first?.mode == .amrap ? "+" : "")
         if run.type == .weightReps, let w = work.first?.weightKg, w > 0 {
             head += " · \(plateNumber(displayWeight(w))) \(weightUnit())"
         }
@@ -1016,7 +1022,8 @@ extension HojaSesionViva {
         let run = session.runs[ei]
         let set = run.sets[si]
         rpeTarget = LiveStrengthSheet.RPETarget(id: set.id, runId: run.id, setNumber: si + 1,
-                                                weightKg: displayWeight(set.weightKg), reps: set.reps, currentRPE: set.rpe)
+                                                weightKg: displayWeight(set.weightKg), reps: set.reps ?? 0,
+                                                currentRPE: set.rpe)
     }
 
     func usesBarbell(_ ei: Int) -> Bool {

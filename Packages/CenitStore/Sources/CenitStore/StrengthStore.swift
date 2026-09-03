@@ -36,9 +36,14 @@ public struct WorkSetHistoryRow: Sendable, Equatable {
     public var optedOut: Bool
     public var rpe: Double?
     public var routineName: String?
+    /// Cómo se hizo la serie (ola 1 · FER-327). El SQL ya excluye los drops de esta consulta (no
+    /// alimentan progresión ni 1RM), así que aquí solo llegan `.standard` y `.amrap` — se proyecta de
+    /// todas formas para que quien lea la historia pueda distinguir un «las que puedas» de una serie
+    /// fija sin volver a la base.
+    public var mode: SetMode
 
     public init(sessionId: String, startTs: Int, weightKg: Double, reps: Int, optedOut: Bool = false,
-                rpe: Double? = nil, routineName: String? = nil) {
+                rpe: Double? = nil, routineName: String? = nil, mode: SetMode = .standard) {
         self.sessionId = sessionId
         self.startTs = startTs
         self.weightKg = weightKg
@@ -46,6 +51,7 @@ public struct WorkSetHistoryRow: Sendable, Equatable {
         self.optedOut = optedOut
         self.rpe = rpe
         self.routineName = routineName
+        self.mode = mode
     }
 }
 
@@ -484,7 +490,8 @@ extension CenitStore {
                 """, arguments: StatementArguments(sArgs))
 
             try db.execute(sql: "DELETE FROM setEntry WHERE sessionId = ?", arguments: [session.id])
-            for s in sets {
+            // Ola 1 · FER-327: los drops se escriben pegados a su madre (ver `enforcingDropAdjacency`).
+            for s in Self.enforcingDropAdjacency(sets) {
                 let args: [DatabaseValueConvertible?] = [
                     s.id, s.sessionId, s.exerciseId, s.position, s.kind.rawValue,
                     s.weightKg, s.reps, s.timeS, s.distanceM, s.done ? 1 : 0, s.ts, s.rpe, s.restTakenS,
@@ -554,7 +561,8 @@ extension CenitStore {
                 """, arguments: StatementArguments(sArgs))
 
             try db.execute(sql: "DELETE FROM setEntry WHERE sessionId = ?", arguments: [session.id])
-            for s in sets {
+            // Ola 1 · FER-327: los drops se escriben pegados a su madre (ver `enforcingDropAdjacency`).
+            for s in Self.enforcingDropAdjacency(sets) {
                 let args: [DatabaseValueConvertible?] = [
                     s.id, s.sessionId, s.exerciseId, s.position, s.kind.rawValue,
                     s.weightKg, s.reps, s.timeS, s.distanceM, s.done ? 1 : 0, s.ts, s.rpe, s.restTakenS,
@@ -708,6 +716,11 @@ extension CenitStore {
     }
 
     /// The most recent *work* sets for an exercise, newest first — powers "la última vez" pre-fill.
+    ///
+    /// Ola 1 · FER-327: excluye los DROPS, con el mismo filtro que la progresión (`modesCounting`), y
+    /// por la misma razón: esta consulta es la semilla del peso de la próxima sesión. Un drop es el
+    /// escalón de −20 % que se hizo cuando la serie ya no daba; si contara, la siguiente sesión abriría
+    /// −20 % abajo y el ciclo leería una bajada que nadie decidió.
     public func lastWorkSets(exerciseId: String, limit: Int = 12) async throws -> [SetEntry] {
         try syncRead { db in
             // FER-169 · B10: a confirmed-absurd capture (the athlete answered «SÍ, 825») is still
@@ -718,6 +731,7 @@ extension CenitStore {
             // recent legitimate set.
             let buffered = try Row.fetchAll(db, sql: """
                 SELECT * FROM setEntry WHERE exerciseId = ? AND kind = 'work' AND done = 1
+                  AND \(Self.modesCounting(for: .progression))
                 ORDER BY ts DESC LIMIT ?
                 """, arguments: [exerciseId, limit + Self.absurdGuardBuffer]).map(Self.setEntry)
             let priorMaxKg = try Self.existingMaxWeightPR(db, exerciseId: exerciseId)
@@ -744,12 +758,14 @@ extension CenitStore {
             let rows = try Row.fetchAll(db, sql: """
                 SELECT * FROM (
                     SELECT s.id AS sessionId, s.startTs AS startTs, e.weightKg AS weightKg, e.reps AS reps,
-                           (o.exerciseId IS NOT NULL) AS optedOut, e.rpe AS rpe, r.name AS routineName
+                           (o.exerciseId IS NOT NULL) AS optedOut, e.rpe AS rpe, r.name AS routineName,
+                           e.mode AS mode
                     FROM setEntry e JOIN strengthSession s ON e.sessionId = s.id
                     LEFT JOIN progressionOptOut o ON o.sessionId = e.sessionId AND o.exerciseId = e.exerciseId
                     LEFT JOIN routine r ON s.routineId = r.id
                     WHERE e.exerciseId = ? AND e.kind = 'work' AND e.done = 1
                       AND e.weightKg IS NOT NULL AND e.reps IS NOT NULL
+                      AND \(Self.modesCounting(for: .progression, column: "e.mode"))
                     ORDER BY s.startTs DESC
                     LIMIT ?
                 ) ORDER BY startTs ASC
@@ -757,7 +773,8 @@ extension CenitStore {
                     WorkSetHistoryRow(sessionId: row["sessionId"], startTs: row["startTs"],
                                       weightKg: row["weightKg"], reps: row["reps"],
                                       optedOut: row["optedOut"], rpe: row["rpe"],
-                                      routineName: row["routineName"])
+                                      routineName: row["routineName"],
+                                      mode: (row["mode"] as String?).flatMap(SetMode.init(rawValue:)) ?? .standard)
                 }
             // FER-169 · B10: this feeds `ProgressionPlanner.evaluate` (via `sessionSeed`) — the "siembra"
             // consumer of the guard. Already oldest→newest, so the fold runs straight over it.
@@ -884,6 +901,71 @@ extension CenitStore {
 
     // MARK: - PR derivation
 
+    // MARK: - `SetMode` en SQL y la invariante de adyacencia del drop (ola 1 · FER-327)
+
+    /// El fragmento SQL que deja pasar solo los modos que SÍ alimentan `rule` — **derivado de
+    /// `SetMode.counts(for:)`, no escrito a mano**. Es lo que mantiene UN solo oráculo cuando la regla
+    /// tiene que aplicarse dentro de la consulta (por el LIMIT: filtrar en Swift después de truncar
+    /// devolvería menos filas de las pedidas). Si mañana un modo nuevo deja de contar para progresión,
+    /// el SQL cambia solo. `NULL` = `.standard` (la convención de la columna desde v42).
+    ///
+    /// Interpolar aquí es seguro y no es una inyección: los valores salen de `SetMode.allCases`, un
+    /// enum del código, nunca de datos del usuario.
+    static func modesCounting(for rule: SetRule, column: String = "mode") -> String {
+        let excluded = SetMode.allCases.filter { !$0.counts(for: rule) }
+        guard !excluded.isEmpty else { return "1" }
+        let list = excluded.map { "'\($0.rawValue)'" }.joined(separator: ", ")
+        return "(\(column) IS NULL OR \(column) NOT IN (\(list)))"
+    }
+
+    /// La invariante de adyacencia del drop, aplicada AL GUARDAR (FER-327 · E6).
+    ///
+    /// Un drop no tiene FK a su madre: la relación es el ORDEN — «pertenece a la serie no-drop
+    /// inmediatamente anterior del mismo ejercicio». Para que esa relación no pueda mentir, el store
+    /// normaliza el orden antes de escribir: cada drop queda pegado a su madre (detrás de los escalones
+    /// que ya colgaban de ella), y las posiciones se renumeran 0…n−1 en ese orden final.
+    ///
+    /// Tres cosas que esta función NO hace, a propósito (v3 · N4):
+    /// - **No promueve huérfanos.** Un drop sin ninguna no-drop antes en su ejercicio (quedó en la
+    ///   posición 0 porque su madre se borró) CONSERVA `mode = .drop`: cuenta solo para volumen y se
+    ///   pinta «↳». Convertirlo en serie de trabajo lo metería al ciclo y a los récords a un peso que
+    ///   nunca fue de trabajo — exactamente lo que el modo existe para evitar.
+    /// - **No borra nada.** Ninguna fila se pierde por estar mal ordenada.
+    /// - **No toca una sesión sin drops.** Sin un solo `.drop` devuelve la entrada TAL CUAL (misma
+    ///   identidad de orden y de posiciones), así que ninguna sesión anterior a la ola 1 cambia.
+    static func enforcingDropAdjacency(_ sets: [SetEntry]) -> [SetEntry] {
+        guard sets.contains(where: { $0.mode == .drop }) else { return sets }
+        // Orden estable por posición (los empates conservan el orden de entrada).
+        let ordered = sets.enumerated()
+            .sorted { ($0.element.position, $0.offset) < ($1.element.position, $1.offset) }
+            .map(\.element)
+
+        // Por ejercicio: a qué madre (id de la no-drop anterior) cuelga cada drop. nil = huérfano.
+        var motherOfDrop: [String: String] = [:]          // id del drop → id de la madre
+        var dropsOfMother: [String: [SetEntry]] = [:]      // id de la madre → sus escalones, en orden
+        var lastNonDropPerExercise: [String: String] = [:]
+        for set in ordered {
+            guard set.mode == .drop else {
+                lastNonDropPerExercise[set.exerciseId] = set.id
+                continue
+            }
+            if let mother = lastNonDropPerExercise[set.exerciseId] {
+                motherOfDrop[set.id] = mother
+                dropsOfMother[mother, default: []].append(set)
+            }
+            // Sin madre: huérfano. Se queda donde está, con su modo intacto.
+        }
+
+        var out: [SetEntry] = []
+        for set in ordered {
+            if set.mode == .drop, motherOfDrop[set.id] != nil { continue }   // sale con su madre
+            out.append(set)
+            for drop in dropsOfMother[set.id] ?? [] { out.append(drop) }
+        }
+        for i in out.indices { out[i].position = i }
+        return out
+    }
+
     /// FER-169 · B10 — how many EXTRA rows `lastWorkSets` fetches beyond `limit` so an absurd capture
     /// within the window can be dropped and still leave `limit` real rows to return. Absurd captures
     /// are rare (one fat-finger event, not a pattern), so a small fixed cushion is plenty.
@@ -929,7 +1011,13 @@ extension CenitStore {
     /// spans every session, so the chronological fold alone is a complete reference.
     private static func bestPRs(_ work: [SetEntry], exerciseId: String, priorMaxKg: Double? = nil)
         -> (maxWeight: PersonalRecord?, maxReps: PersonalRecord?, maxVolume: PersonalRecord?) {
-        let eligible = excludingAbsurdCaptures(work, priorMaxKg: priorMaxKg)
+        // Ola 1 · FER-327: el ÚNICO punto donde se decide qué serie puede ser récord — los tres call
+        // sites (guardar, recomputar tras un borrado, «el de antes») pasan por aquí, así que la regla
+        // se escribe una vez. `counts(for: .records)` ya incluye `kind == .work && done`, de modo que
+        // los filtros que los llamadores ya traían siguen intactos (redundantes, no editados): un drop
+        // es trabajo de verdad, pero a un peso que el cuerpo ya no aguantaba — no es un récord.
+        let eligible = excludingAbsurdCaptures(work.filter { $0.counts(for: .records) },
+                                               priorMaxKg: priorMaxKg)
         let maxWeight = eligible.compactMap { s in s.weightKg.map { (v: $0, ts: s.ts) } }.max { $0.v < $1.v }
             .map { PersonalRecord(exerciseId: exerciseId, metric: .maxWeight, valueKg: $0.v, ts: $0.ts) }
         let maxReps = eligible.compactMap { s in s.reps.map { (v: $0, ts: s.ts) } }.max { $0.v < $1.v }

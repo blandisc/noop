@@ -1037,7 +1037,7 @@ final class StrengthSessionModelTests: XCTestCase {
         let slot = StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 2, reps: 0),
                                                  exercise: ex("bench", "Bench"), lastSets: [])
         let s = make([slot])
-        XCTAssertTrue(s.runs[0].sets.allSatisfy { $0.reps >= 1 })
+        XCTAssertTrue(s.runs[0].sets.allSatisfy { ($0.reps ?? 0) >= 1 })
         XCTAssertTrue(s.canRegisterCurrentSet)
     }
 
@@ -1225,5 +1225,155 @@ final class StrengthSessionModelTests: XCTestCase {
         s.registerCurrentSet(now: Date(timeIntervalSince1970: 5000), restingHR: 60, hasLivePulse: false)
         XCTAssertEqual(s.currentRestMode, .fixed,
                        "espejo sin watchBpm debe degradar a fijo (no asumir hasLivePulse: true)")
+    }
+    // MARK: - Ola 1 · FER-327 — «bajar y seguir» (drop) y el AMRAP pendiente
+
+    /// «Agregar drop» inserta una serie PROPIA justo detrás de su madre: 80 % del peso, redondeado a
+    /// un peso construible (`PlateMath.snap`), las reps de la madre y sin descanso propio.
+    func testAddDropInsertsAfterMotherAtEightyPercentSnapped() {
+        let s = make([StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 3, reps: 8, weight: 80),
+                                                    exercise: ex("bench", "Bench"), lastSets: [])])
+        XCTAssertTrue(s.addDrop(exercise: 0, set: 0, implement: .barbell))
+        XCTAssertEqual(s.runs[0].sets.count, 4)
+        XCTAssertEqual(s.runs[0].sets[1].mode, .drop)
+        XCTAssertEqual(s.runs[0].sets[1].weightKg, 62.5, accuracy: 0.0001,
+                       "0,8 × 80 = 64 → 62,5, el peso construible con el inventario default")
+        XCTAssertEqual(s.runs[0].sets[1].reps, s.runs[0].sets[0].reps)
+        XCTAssertNil(s.runs[0].sets[1].rest)
+        XCTAssertEqual(s.runs[0].sets[1].kind, .work, "un drop SIGUE siendo serie de trabajo")
+    }
+
+    /// La cadena tiene tope (`SetVariants.maxDropSteps`): al cuarto escalón ya no inserta nada.
+    func testDropChainStopsAtThreeSteps() {
+        let s = make([StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 1, reps: 8, weight: 80),
+                                                    exercise: ex("bench", "Bench"), lastSets: [])])
+        for _ in 0..<SetVariants.maxDropSteps { XCTAssertTrue(s.addDrop(exercise: 0, set: 0)) }
+        XCTAssertFalse(s.addDrop(exercise: 0, set: 0), "el cuarto escalón se rechaza")
+        XCTAssertEqual(s.runs[0].sets.filter { $0.mode == .drop }.count, SetVariants.maxDropSteps)
+        // Cada escalón baja desde el ANTERIOR, no desde la madre.
+        let pesos = s.runs[0].sets.map(\.weightKg)
+        XCTAssertEqual(pesos[0], 80, accuracy: 0.0001)
+        for i in 1..<pesos.count { XCTAssertLessThan(pesos[i], pesos[i - 1]) }
+    }
+
+    /// Borrar la madre se lleva sus escalones contiguos; borrar un escalón suelto no toca a los demás.
+    func testRemovingMotherCascadesItsDrops() {
+        let s = make([StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 2, reps: 8, weight: 80),
+                                                    exercise: ex("bench", "Bench"), lastSets: [])])
+        XCTAssertTrue(s.addDrop(exercise: 0, set: 0))
+        XCTAssertTrue(s.addDrop(exercise: 0, set: 0))
+        XCTAssertEqual(s.runs[0].sets.count, 4)   // madre + 2 escalones + la 2ª serie
+        s.removeSet(exercise: 0, set: 0)
+        XCTAssertEqual(s.runs[0].sets.count, 1, "la madre se lleva sus dos escalones")
+        XCTAssertEqual(s.runs[0].sets[0].mode, .standard)
+
+        // Y borrar un escalón suelto solo se borra a sí mismo.
+        XCTAssertTrue(s.addDrop(exercise: 0, set: 0))
+        XCTAssertTrue(s.addDrop(exercise: 0, set: 0))
+        s.removeSet(exercise: 0, set: 1)
+        XCTAssertEqual(s.runs[0].sets.count, 2)
+        XCTAssertEqual(s.runs[0].sets[1].mode, .drop)
+    }
+
+    /// «Bajar y seguir» es literal: cerrar una serie que tiene un drop pegado detrás NO abre descanso
+    /// y no deja un `restTakenS` inventado — se pasa directo al escalón.
+    func testRegisteringASetWithADropAfterOpensNoRest() {
+        let s = make([StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 2, reps: 8, weight: 80),
+                                                    exercise: ex("bench", "Bench"), lastSets: [])])
+        XCTAssertTrue(s.addDrop(exercise: 0, set: 0))
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 5000))
+        XCTAssertEqual(s.phase, .capturing, "sin descanso entre la serie y su escalón")
+        XCTAssertNil(s.restEndsAt)
+        XCTAssertNil(s.runs[0].sets[0].restTakenS, "sin descanso medido no se guarda un 0")
+        XCTAssertEqual(s.runs[0].currentSet, 1, "el foco pasa al escalón")
+        XCTAssertTrue(s.runs[0].sets[0].done)
+    }
+
+    /// H6: en superserie el escalón va ANTES del salto al compañero — «bajar y seguir» es de la misma serie.
+    func testDropBeatsTheSupersetJump() {
+        let s = make([StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 2, reps: 8, weight: 80, superset: 1),
+                                                    exercise: ex("bench", "Bench"), lastSets: []),
+                      StrengthSessionModel.PlanSlot(re: re("b", exerciseId: "row", sets: 2, reps: 8, weight: 60, superset: 1),
+                                                    exercise: ex("row", "Row"), lastSets: [])])
+        XCTAssertTrue(s.addDrop(exercise: 0, set: 0))
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 5000))
+        XCTAssertEqual(s.currentIndex, 0, "el foco se queda en el ejercicio del escalón, no salta al compañero")
+        XCTAssertEqual(s.runs[0].currentSet, 1)
+        XCTAssertEqual(s.phase, .capturing)
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 5100))
+        XCTAssertEqual(s.currentIndex, 1, "cerrado el escalón, ahora sí toca el compañero")
+    }
+
+    /// H5: «Agregar serie» después de un escalón clona a la MADRE, no al escalón rebajado.
+    func testAddSetAfterADropClonesTheMother() {
+        let s = make([StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 1, reps: 8, weight: 80),
+                                                    exercise: ex("bench", "Bench"), lastSets: [])])
+        XCTAssertTrue(s.addDrop(exercise: 0, set: 0))
+        s.addSet()
+        let added = s.runs[0].sets.last!
+        XCTAssertEqual(added.mode, .standard)
+        XCTAssertEqual(added.weightKg, 80, accuracy: 0.0001, "nace al peso de trabajo, no al del escalón")
+    }
+
+    /// H3: «−» sobre una serie pendiente no fabrica una rep; «+» la arranca en el piso.
+    func testMinusOnAPendingSetKeepsItPending() {
+        var slot = re("a", exerciseId: "bench", sets: 1, reps: 8, weight: 80)
+        slot.sets = [RoutineSet(id: "p0", position: 0, kind: .work, reps: 8, weightKg: 80, mode: .amrap)]
+        let s = make([StrengthSessionModel.PlanSlot(re: slot, exercise: ex("bench", "Bench"), lastSets: [])])
+        s.bumpReps(-1)
+        XCTAssertNil(s.runs[0].sets[0].reps)
+        XCTAssertFalse(s.canRegisterCurrentSet)
+        s.bumpReps(1)
+        XCTAssertEqual(s.runs[0].sets[0].reps, 1)
+    }
+
+    /// H8: si lo construible no baja (madre en la barra sola), no se inserta un escalón.
+    func testDropFromTheBareBarIsRefused() {
+        let s = make([StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 1, reps: 8, weight: 20),
+                                                    exercise: ex("bench", "Bench"), lastSets: [])])
+        XCTAssertFalse(s.addDrop(exercise: 0, set: 0))
+        XCTAssertEqual(s.runs[0].sets.count, 1)
+    }
+
+    /// Un AMRAP planeado nace con la celda VACÍA (Q7) y el ✓ bloqueado hasta que se escriba un número.
+    func testAmrapSeedsPendingAndBlocksTheCheck() {
+        var slot = re("a", exerciseId: "bench", sets: 1, reps: 8, weight: 80)
+        slot.sets = [RoutineSet(id: "p0", position: 0, kind: .work, reps: 8, weightKg: 80, mode: .amrap)]
+        let s = make([StrengthSessionModel.PlanSlot(re: slot, exercise: ex("bench", "Bench"),
+                                                    lastSets: [lastSet("bench", weight: 80, reps: 8)])])
+        XCTAssertEqual(s.runs[0].sets[0].mode, .amrap)
+        XCTAssertNil(s.runs[0].sets[0].reps, "«las que puedas» no se prellena con la última vez")
+        XCTAssertFalse(s.canRegisterCurrentSet, "el ✓ está bloqueado mientras siga pendiente")
+        s.setReps(exercise: 0, set: 0, reps: 11)
+        XCTAssertTrue(s.canRegisterCurrentSet)
+        // Y al guardar nunca sale un 0: la serie va con sus 11 repeticiones.
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 5000))
+        let (_, entries, _, _) = s.buildForSave(deviceId: nil, endTs: 6000)
+        XCTAssertEqual(entries.count, 1)
+        XCTAssertEqual(entries[0].reps, 11)
+        XCTAssertEqual(entries[0].mode, .amrap)
+    }
+
+    /// El modo viaja hasta el `SetEntry` que se guarda — es lo que hace que la base pueda excluir el
+    /// drop de progresión/récords/1RM.
+    func testModeTravelsToTheSavedSetEntries() {
+        let s = make([StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 1, reps: 8, weight: 80),
+                                                    exercise: ex("bench", "Bench"), lastSets: [])])
+        XCTAssertTrue(s.addDrop(exercise: 0, set: 0))
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 5000))
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 5100))
+        let (_, entries, _, _) = s.buildForSave(deviceId: nil, endTs: 6000)
+        XCTAssertEqual(entries.map(\.mode), [SetMode.standard, .drop])
+        XCTAssertEqual(entries.map(\.position), [0, 1])
+    }
+
+    /// El modo sobrevive al snapshot de recuperación (un crash a mitad de un drop no lo convierte en
+    /// serie de trabajo normal, que sí contaría para récords).
+    func testDropSurvivesTheCrashSnapshot() {
+        let s = make([StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 1, reps: 8, weight: 80),
+                                                    exercise: ex("bench", "Bench"), lastSets: [])])
+        XCTAssertTrue(s.addDrop(exercise: 0, set: 0))
+        let restored = StrengthSessionModel.restore(from: s.snapshot(now: 1234))
+        XCTAssertEqual(restored.runs[0].sets.map(\.mode), [SetMode.standard, .drop])
     }
 }

@@ -116,7 +116,8 @@ extension HojaSesionViva {
         let set = session.runs[ei].sets[si]
         switch ref {
         case .weight: return set.weightKg > 0 ? plateNumber(displayWeight(set.weightKg)) : ""
-        case .reps: return set.reps > 0 ? "\(set.reps)" : ""
+        // Ola 1 (E6): `reps` es opcional — un AMRAP pendiente (nil) abre vacío, igual que un 0.
+        case .reps: if let r = set.reps, r > 0 { return "\(r)" } else { return "" }
         }
     }
 
@@ -153,7 +154,7 @@ extension HojaSesionViva {
         case .weight:
             newValue = plateNumber(displayWeight(set.weightKg) + (imperial ? Double(sign) * 5 : Double(sign) * weightStepKg))
         case .reps:
-            newValue = "\(max(0, set.reps + sign))"
+            newValue = "\(max(0, (set.reps ?? 0) + sign))"
         }
         activeCell = cell
         buffer = newValue

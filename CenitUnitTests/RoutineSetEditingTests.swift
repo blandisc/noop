@@ -92,4 +92,62 @@ final class RoutineSetEditingTests: XCTestCase {
         let sets = [workSet(80, 8), workSet(80, 8)]   // repsRangeTop nil en ambas
         XCTAssertTrue(RoutineSetEditing.workSetsAreEqual(sets))
     }
+    // MARK: - Ola 1 · FER-327 (v5 N15): el MODO entra a la igualdad de receta
+
+    /// Un AMRAP en la ÚLTIMA serie abre la receta, aunque el peso y el piso de reps coincidan: «8+»
+    /// no es «8». Truena con el código de antes de FER-327 (la comparación ignoraba `mode`).
+    func testAmrapInLastSetOpensTheReceta() {
+        var amrap = workSet(80, 8); amrap.mode = .amrap
+        let sets = [workSet(80, 8), workSet(80, 8), amrap]
+        XCTAssertFalse(RoutineSetEditing.workSetsAreEqual(sets))
+    }
+
+    /// Y el CONTADOR está de acuerdo con el detector: si la receta se abre, no puede decir «1».
+    /// Truena si la clave de igualdad del contador olvida `mode` mientras el detector sí lo mira —
+    /// exactamente el estado incoherente («2 recetas» plegadas en una línea) que esto previene.
+    func testRecetaCountIsNotOneWhenOnlyModeDiffers() {
+        var amrap = workSet(80, 8); amrap.mode = .amrap
+        let sets = [workSet(80, 8), workSet(80, 8), amrap]
+        XCTAssertEqual(RoutineSetEditing.recetaCount(sets), 2)
+        XCTAssertNotEqual(RoutineSetEditing.recetaCount(sets), 1)
+        // Mismo modo en todas → una sola receta, comportamiento de siempre.
+        XCTAssertEqual(RoutineSetEditing.recetaCount([workSet(80, 8), workSet(80, 8)]), 1)
+    }
+
+    /// El calentamiento no cuenta como receta (ni antes ni ahora).
+    func testRecetaCountIgnoresWarmups() {
+        XCTAssertEqual(RoutineSetEditing.recetaCount([warmupSet(40, 10), workSet(80, 8), workSet(80, 8)]), 1)
+    }
+
+    /// «Igualar todas» propaga TAMBIÉN el modo — si no, después de igualar la receta seguiría abierta.
+    func testEqualizeAllPropagatesMode() {
+        var amrap = workSet(80, 8); amrap.mode = .amrap
+        var sets = [amrap, workSet(80, 8), workSet(75, 6)]
+        RoutineSetEditing.equalizeWorkSets(&sets)
+        XCTAssertEqual(sets.map(\.mode), [SetMode.amrap, .amrap, .amrap])
+        XCTAssertTrue(RoutineSetEditing.workSetsAreEqual(sets), "igualar debe cerrar la receta")
+        XCTAssertEqual(RoutineSetEditing.recetaCount(sets), 1)
+    }
+
+    /// «Igualar todas» no toca los calentamientos.
+    func testEqualizeAllLeavesWarmupsAlone() {
+        var amrap = workSet(80, 8); amrap.mode = .amrap
+        var sets = [warmupSet(40, 10), amrap, workSet(75, 6)]
+        RoutineSetEditing.equalizeWorkSets(&sets)
+        XCTAssertEqual(sets[0].weightKg, 40)
+        XCTAssertEqual(sets[0].reps, 10)
+        XCTAssertEqual(sets[0].mode, .standard)
+    }
+
+    /// El espejo de superserie propaga el modo a todas las rondas de trabajo del miembro.
+    func testMirrorAcrossRoundsPropagatesMode() {
+        var amrap = workSet(80, 8); amrap.mode = .amrap
+        var sets = [warmupSet(40, 10), workSet(70, 6), amrap, workSet(70, 6)]
+        RoutineSetEditing.mirrorWorkSets(&sets, from: 2)
+        XCTAssertEqual(sets.map(\.mode), [SetMode.standard, .amrap, .amrap, .amrap],
+                       "el calentamiento no es una ronda: no se espeja")
+        XCTAssertEqual(sets[1].weightKg, 80)
+        XCTAssertEqual(sets[3].reps, 8)
+        XCTAssertEqual(sets[0].weightKg, 40, "el calentamiento queda intacto")
+    }
 }

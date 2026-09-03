@@ -144,6 +144,36 @@ public enum PlateMath {
         }
     }
 
+    /// **El único «redondea a lo construible»** (FER-327 · E6). Toda regla que produce un peso CRUDO —
+    /// el escalón de un drop (0,8 × la madre), la semana ligera (0,9 × el peso) — pasa por aquí antes de
+    /// llegar a una celda, para no proponer nunca una carga que el usuario no puede armar.
+    ///
+    /// Dos mecanismos, según con qué se mueve el peso, y ninguno inventa kilos:
+    /// - **Barra**: se resuelve con los discos que el usuario TIENE (`perSide`) y se devuelve el total
+    ///   realmente alcanzable (`achievedKg`), que redondea HACIA ABAJO — con 20/15/10/5/2,5/1,25 kg,
+    ///   64 kg cae en 62,5.
+    /// - **Mancuerna / máquina / otro**: no hay discos que resolver, sino un rack con su paso fijo, así
+    ///   que el peso cae al múltiplo inferior de `minimumIncrement` (16 kg con paso 2,5 → 15).
+    ///
+    /// Nunca devuelve más que `targetKg` (proponer de más sería pedir una carga que no se pidió) ni un
+    /// número negativo — con UNA excepción explícita: un objetivo por debajo de lo mínimo construible
+    /// devuelve la barra sola (barra, aunque pese más que el objetivo: es el peso mínimo que existe) o
+    /// 0 (rack). Sin discos en el inventario, la barra sola es todo lo construible. Quien pida una
+    /// BAJADA (drop) debe comprobar que el resultado quede por debajo de donde viene.
+    public static func snap(targetKg: Double, implement: Implement, barKg: Double = defaultBarKg,
+                            inventory: [PlateStock] = defaultInventory,
+                            fixedStepKg: Double = 2.5) -> Double {
+        guard targetKg > 0 else { return 0 }
+        switch implement {
+        case .barbell:
+            return perSide(targetKg: targetKg, barKg: barKg, inventory: inventory).achievedKg
+        case .dumbbell, .machine, .other:
+            let step = minimumIncrement(for: implement, inventory: inventory, fixedStepKg: fixedStepKg)
+            guard step > 0 else { return targetKg }
+            return max(0, ((targetKg + epsilon) / step).rounded(.down) * step)
+        }
+    }
+
     /// A warm-up ramp UP TO `workKg`: for each scheme step, the target percentage snapped DOWN to a
     /// buildable weight (bar-only for the 0% step). Steps that would snap to the bar or below the prior
     /// step are dropped, so the ramp is strictly increasing and never suggests an unbuildable load.

@@ -143,12 +143,61 @@ enum RoutineSetEditing {
     /// mismo peso/reps pero distinto techo de rango cuentan como DISTINTAS. El campo aterrizó en
     /// `Training.swift` con E13/FER-94; esta extensión estaba bloqueada hasta entonces (ver
     /// `RoutineSetEditingTests`).
+    /// Ola 1 (FER-327 · v5 N15): la comparación cubre también `RoutineSet.mode` — un AMRAP en la
+    /// última serie hace que la receta NO se pliegue, aunque su peso y su piso de reps coincidan con
+    /// las demás. Plegar «3 × 8 · 80 kg» sobre una serie que en realidad dice «8+» sería una receta
+    /// que miente sobre lo que se va a hacer.
     static func workSetsAreEqual(_ sets: [RoutineSet]) -> Bool {
         let work = sets.filter { $0.kind == .work }
         guard let first = work.first else { return true }
         return work.allSatisfy {
             $0.weightKg == first.weightKg && $0.reps == first.reps
-                && $0.repsRangeTop == first.repsRangeTop
+                && $0.repsRangeTop == first.repsRangeTop && $0.mode == first.mode
+        }
+    }
+
+    /// La CLAVE de igualdad de una receta: los mismos cuatro campos que compara `workSetsAreEqual`,
+    /// en forma de cadena para contar recetas distintas. Una sola definición de «misma receta» para
+    /// el detector (¿se pliega?) y para el contador (¿cuántas?) — antes vivían separadas y podían
+    /// divergir: el detector abría la receta y el contador seguía diciendo «1».
+    static func recetaKey(_ s: RoutineSet) -> String {
+        "\(s.weightKg ?? -1)-\(s.reps ?? -1)-\(s.repsRangeTop ?? -1)-\(s.mode.rawValue)"
+    }
+
+    /// A3 (pirámide sin castigo): cuántas recetas DISTINTAS hay entre las series de TRABAJO. Mínimo 1
+    /// (un ejercicio sin series de trabajo no tiene «0 recetas», tiene una vacía).
+    static func recetaCount(_ sets: [RoutineSet]) -> Int {
+        var seen: [String] = []
+        for s in sets where s.kind == .work {
+            let key = recetaKey(s)
+            if !seen.contains(key) { seen.append(key) }
+        }
+        return max(seen.count, 1)
+    }
+
+    /// «Igualar todas»: copia la receta de la PRIMERA serie de trabajo a todas las demás — peso, piso,
+    /// techo y modo (ola 1 · FER-327 · v5 N15). Los calentamientos no se tocan.
+    static func equalizeWorkSets(_ sets: inout [RoutineSet]) {
+        guard let first = sets.first(where: { $0.kind == .work }) else { return }
+        for si in sets.indices where sets[si].kind == .work {
+            sets[si].weightKg = first.weightKg
+            sets[si].reps = first.reps
+            sets[si].repsRangeTop = first.repsRangeTop
+            sets[si].mode = first.mode
+        }
+    }
+
+    /// C2: el espejo de superserie — la serie `si` se refleja a TODAS las demás rondas de TRABAJO del
+    /// mismo miembro (el mock muestra una fila por miembro, no una por ronda). Propaga los mismos
+    /// cuatro campos que la igualdad, `mode` incluido (v5 N15). N3: un calentamiento no es una ronda.
+    static func mirrorWorkSets(_ sets: inout [RoutineSet], from si: Int) {
+        guard sets.indices.contains(si), sets[si].kind == .work else { return }
+        let src = sets[si]
+        for i in sets.indices where i != si && sets[i].kind == .work {
+            sets[i].weightKg = src.weightKg
+            sets[i].reps = src.reps
+            sets[i].repsRangeTop = src.repsRangeTop
+            sets[i].mode = src.mode
         }
     }
 }
