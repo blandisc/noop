@@ -28,6 +28,10 @@ extension AppModel {
         lastAcceptedHrTs = nil
         strengthSession = StrengthSessionModel.make(routineId: routineId, routineName: routineName,
                                                     slots: slots, startTs: Int(Date().timeIntervalSince1970))
+        // P0-3: seal the cross-process inbox to THIS session as early as possible — any lock-screen
+        // action enqueued from now on carries this id, so a stale one sealed for whatever ran before (or
+        // for no session at all) can never be mistaken for belonging to this one (see `applyRestAction`).
+        RestActivityBridge.setCurrentSession(strengthSession?.id)
         strengthSession?.programWeek = programWeek
         strengthSession?.deload = deload
         // Ola 1 · E11 (P8): «· la semana ligera llega en la N» para el chip de estancamiento — ya
@@ -172,6 +176,11 @@ extension AppModel {
         // FER-798: idempotent against a duplicate `.end` (the watch has been seen to ack twice) — once the
         // session has a receipt it's already saved, so a second end is a no-op (no re-save/re-mirror/re-Health).
         guard session.summary == nil else { return }
+        // P0-3: this session is ending now — save or discard, both paths below — so clear the
+        // cross-process seal. Placed AFTER the idempotency guard above so a duplicate/no-op `.end` call
+        // (already-saved session) can never clobber a NEWER session's seal; covers both branches below
+        // in one place because `startStrengthSession` never lets two sessions coexist.
+        RestActivityBridge.setCurrentSession(nil)
         // FER-823: the saved duration excludes time spent paused, so the receipt, the calorie estimate and
         // the Apple Health workout all reflect active time. `endTs` is the active end (wall clock minus pauses).
         let endTs = session.startTs + session.elapsedSeconds()

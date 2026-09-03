@@ -28,17 +28,26 @@ enum RestActivityBridge {
     static let darwinNotification = "com.feriracheta.cenit.rest.action"
 
     private static let inboxKey = "rest.activity.pendingActions"
+    private static let currentSessionKey = "rest.activity.currentSessionId"
 
     private static var defaults: UserDefaults? { UserDefaults(suiteName: appGroup) }
 
     /// One queued action with the time it was requested (so the app can ignore stale ones if it wants).
-    struct PendingAction: Codable { var action: Action; var ts: Date }
+    /// P0-3: `sessionId` seals the action to whichever strength session was live when it was enqueued —
+    /// OPTIONAL so a payload written before this field existed decodes as `nil` (Swift's synthesized
+    /// `Decodable` treats a missing key on an `Optional` property as `nil`, no migration needed). The
+    /// app treats `nil` as an old payload and falls back to the pre-existing `lastRestStartedAt` guard,
+    /// same as before this fix.
+    struct PendingAction: Codable { var action: Action; var ts: Date; var sessionId: String? }
 
-    /// Append an action to the inbox and wake the app. Called from the intent (any process).
+    /// Append an action to the inbox and wake the app. Called from the intent (any process). Sealed with
+    /// whatever session the app last recorded as current (see `setCurrentSession`), so a late drain can
+    /// never misapply the action to a DIFFERENT session that happens to be live by the time it's read
+    /// (P0-3: a stale ±30/Saltar/Completar/Terminar from session A landing on session B).
     static func enqueue(_ action: Action, now: Date = Date()) {
         guard let defaults else { return }
         var queue = readQueue()
-        queue.append(PendingAction(action: action, ts: now))
+        queue.append(PendingAction(action: action, ts: now, sessionId: currentSessionId()))
         if let data = try? JSONEncoder().encode(queue) {
             defaults.set(data, forKey: inboxKey)
         }
@@ -58,6 +67,25 @@ enum RestActivityBridge {
               let queue = try? JSONDecoder().decode([PendingAction].self, from: data) else { return [] }
         return queue
     }
+
+    // MARK: Current session (P0-3)
+
+    /// The strength session the app considers live right now, written by the app only — the extension
+    /// has no access to the in-memory `StrengthSessionModel`, so this is how `enqueue` (running in the
+    /// widget process) still seals its action with the right id. `nil` means no session is running
+    /// (cleared on end/discard) — the honest state to seal a stray tap with.
+    static func setCurrentSession(_ id: String?) {
+        guard let defaults else { return }
+        if let id {
+            defaults.set(id, forKey: currentSessionKey)
+        } else {
+            defaults.removeObject(forKey: currentSessionKey)
+        }
+    }
+
+    /// The id that gets sealed onto a freshly enqueued action, or nil if the app hasn't recorded one
+    /// (no session running, or an unentitled App Group).
+    static func currentSessionId() -> String? { defaults?.string(forKey: currentSessionKey) }
 
     // MARK: Darwin notification
 
