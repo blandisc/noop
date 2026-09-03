@@ -15,6 +15,10 @@
 #
 # GUARDIANES (un worktree se conserva si cualquiera aplica):
 #   - es el worktree de esta sesión, o el checkout canónico, o la rama `iOS`
+#   - es el directorio de trabajo (cwd) de CUALQUIER proceso vivo — otra sesión de
+#     Claude Code, una terminal, Xcode. Borrarlo mata esa sesión: el loop FER-309 se
+#     podó a sí mismo al cerrar y el daemon lo dio por muerto («working directory no
+#     longer exists»), y la web quedó en «Remote Control disconnected» (FER-322).
 #   - está `locked`
 #   - tiene cambios sin commitear
 #   - su rama NUNCA tuvo upstream  → trabajo local que nadie empujó
@@ -44,6 +48,16 @@ git -C "$MAIN" fetch --prune --quiet origin 2>/dev/null || echo "aviso: no se pu
 podados=0
 conservados=0
 
+# cwd de todos los procesos vivos del usuario (una línea por ruta). lsof puede tardar
+# unos segundos; si falla, la lista queda vacía y el guardián simplemente no aplica.
+VIVOS="$(lsof -a -d cwd -Fn 2>/dev/null | sed -n 's/^n//p' | sort -u || true)"
+
+# ¿$1 es el cwd de un proceso vivo, o lo contiene (p.ej. un `swift build` en Packages/X)?
+cwd_vivo() {
+  [ -n "$VIVOS" ] || return 1
+  awk -v wt="$1" 'index($0, wt) == 1 && (length($0) == length(wt) || substr($0, length(wt) + 1, 1) == "/") { f = 1 } END { exit !f }' <<< "$VIVOS"
+}
+
 while read -r wt ref; do
   br="${ref##refs/heads/}"
 
@@ -51,6 +65,9 @@ while read -r wt ref; do
   [ "$br" = "iOS" ]                                   && motivo="es la rama iOS"
   [ "$wt" = "$SELF" ]                                 && motivo="es el worktree de esta sesión"
   [ "$wt" = "$MAIN" ]                                 && motivo="es el checkout canónico"
+  if [ -z "$motivo" ] && cwd_vivo "$wt"; then
+    motivo="es el directorio de trabajo de un proceso vivo (otra sesión)"
+  fi
   if [ -z "$motivo" ] && [ -f "$(git -C "$MAIN" rev-parse --git-common-dir)/worktrees/$(basename "$wt")/locked" ]; then
     motivo="está locked"
   fi
