@@ -443,9 +443,22 @@ struct LiquidChartPlot: View {
             // ven afectados salvo que ambos muten en el MISMO update.
             .transaction(value: puntos.map(\.fecha)) { $0.animation = nil }
             .contentShape(Rectangle())
-            // El gesto público de TrendChart:642 — drag `minimumDistance: 0` en iOS (gana
-            // el touch al ScrollView de la hoja), hover en macOS; limpia al soltar.
-            .scrubGesture(enabled: puntos.count > 1, hoverX: $hoverX)
+            // Scrub que NO roba el scroll vertical de la hoja: `liquidScrubPan` discrimina dirección
+            // (gestureRecognizerShouldBegin: abs(vx) > abs(vy), igual que la Matriz) en vez del viejo
+            // `scrubGesture` (highPriorityGesture DragGesture minimumDistance:0) que ganaba TODO el
+            // touch —incluido el vertical— y trababa el scroll cuando el dedo arrancaba sobre la
+            // gráfica. El scrub horizontal se mantiene idéntico; el arrastre vertical pasa al scroll.
+            .liquidScrubPan(
+                enabled: puntos.count > 1,
+                onChange: { p in
+                    var tx = Transaction(); tx.disablesAnimations = true
+                    withTransaction(tx) { hoverX = p.x }
+                },
+                onEnd: {
+                    var tx = Transaction(); tx.disablesAnimations = true
+                    withTransaction(tx) { hoverX = nil }
+                }
+            )
             .onChange(of: iHover) { _, nuevo in
                 // Háptica solo al caer en un punto NUEVO (no al soltar) — paridad GraficaRangos.
                 if nuevo != nil { ChartHaptics.datumChanged() }

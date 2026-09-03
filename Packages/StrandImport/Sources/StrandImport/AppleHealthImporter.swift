@@ -410,7 +410,10 @@ final class HealthXMLDelegate: NSObject, XMLParserDelegate {
             return
         }
 
-        var numeric = rawValue.flatMap { Double($0) }
+        // Guarda de finitud y magnitud: un value="nan"/"inf" o un número absurdo en cualquier <Record>
+        // envenenaba el agregado del día (NaN+x=NaN) y luego hacía de `Int(...)` un trap fatal que
+        // tumbaba TODO el import (paridad con DietPlan/WorkoutProgram). Valor no-finito/absurdo → nil.
+        var numeric = rawValue.flatMap { Double($0) }.flatMap { $0.isFinite && abs($0) < 1e12 ? $0 : nil }
         // OxygenSaturation is a 0–1 fraction → percent.
         if type == "OxygenSaturation", let v = numeric {
             numeric = v * 100.0

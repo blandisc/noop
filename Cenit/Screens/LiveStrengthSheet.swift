@@ -1418,7 +1418,7 @@ struct LiveStrengthSheet: View {
 
             // copy.md «Acta»: «Imprimir recibo» — el handoff manda, sustituye a «Compartir…». El
             // destino no cambia: el recibo térmico ya existente (`ReceiptPrinterScreen`).
-            LiquidGlassButton("Print receipt", variant: .solida, expands: true, systemImage: "printer") {
+            LiquidGlassButton(String(localized: "Print receipt"), variant: .solida, expands: true, systemImage: "printer") {
                 shareReceipt = ShareRef(sessionId: session.id)
             }
             .padding(.top, LiquidSpace.s150)
@@ -1646,7 +1646,7 @@ struct LiveStrengthSheet: View {
             } else if seleccion == nil, receiptEffortPrefill == nil || receiptEffortCleared {
                 Text("Without an answer it isn't estimated.")
                     .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
-                LiquidGlassButton("Leave unrated", variant: .quiet, expands: true) {
+                LiquidGlassButton(String(localized: "Leave unrated"), variant: .quiet, expands: true) {
                     receiptEffortAnswer = nil
                     receiptEffortCleared = true
                     Task { await model.updateStrengthSessionEffort(rpe: nil, source: nil) }
