@@ -359,6 +359,19 @@ extension Repository {
                                             trimpPerAU: trimpPerAU)
     }
 
+    /// Ola 1 · E3: how many finished strength sessions in the last `daysBack` days are estimated
+    /// (`strainSource == .rpe`) vs trained-without-a-load (`strain == nil`). Feeds the Carga pie;
+    /// `strengthEstimatedDays` remains the day-key set the overlay published.
+    func strengthEffortProvenance(daysBack: Int = 28) async -> (estimated: Int, unrated: Int) {
+        let sessions = await recentSessions(limit: 400)
+        let cutoffDate = Calendar.current.date(byAdding: .day, value: -daysBack, to: Date()) ?? Date()
+        let cutoff = Int(cutoffDate.timeIntervalSince1970)
+        let window = sessions.filter { $0.endTs != nil && $0.startTs >= cutoff }
+        let estimated = window.filter { $0.strainSource == .rpe }.count
+        let unrated = window.filter { $0.strain == nil }.count
+        return (estimated, unrated)
+    }
+
     // MARK: - History (per exercise)
 
     /// Completed work sets for one exercise with their session start time, oldest→newest — the raw

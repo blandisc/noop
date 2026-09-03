@@ -18,6 +18,12 @@ public struct EntrenarFilaEsfuerzo: View {
     /// Índice marcado como sugerencia (borde punteado). Ignorado si coincide con `seleccion`.
     private let sugerida: Int?
     private let tono: LiquidTono
+    /// VoiceOver label for the whole row as one adjustable control (nil = per-cell buttons only).
+    private let a11yEtiqueta: String?
+    /// Spoken qualifier after the number («sugerido» / «estimado»); nil omits it.
+    private let a11yCalificador: String?
+    /// Spoken value when nothing is selected or suggested («sin calificar»).
+    private let a11ySinCalificar: String?
     private let onSelect: (Int) -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -27,28 +33,69 @@ public struct EntrenarFilaEsfuerzo: View {
     ///   - seleccion: el índice elegido; `nil` = ninguna celda marcada como respuesta.
     ///   - sugerida: índice del valor sugerido (punteado); `nil` = sin sugerencia.
     ///   - tono: rellena la celda seleccionada (ámbar de esfuerzo por default).
+    ///   - a11yEtiqueta: when set, the row is one adjustable control (receipt / detail).
+    ///   - a11yCalificador: «sugerido» / «estimado» appended to the spoken value when relevant.
+    ///   - a11ySinCalificar: spoken when there is no selection and no suggestion.
     public init(opciones: [String], seleccion: Int?, sugerida: Int? = nil,
                 tono: LiquidTono = .ambar,
+                a11yEtiqueta: String? = nil,
+                a11yCalificador: String? = nil,
+                a11ySinCalificar: String? = nil,
                 onSelect: @escaping (Int) -> Void) {
         self.opciones = opciones
         self.seleccion = seleccion
         self.sugerida = sugerida
         self.tono = tono
+        self.a11yEtiqueta = a11yEtiqueta
+        self.a11yCalificador = a11yCalificador
+        self.a11ySinCalificar = a11ySinCalificar
         self.onSelect = onSelect
     }
 
     public var body: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: LiquidSpace.s200),
-                                  count: columnCount),
-                  spacing: LiquidSpace.s200) {
+        let grid = LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: LiquidSpace.s200),
+                                             count: columnCount),
+                             spacing: LiquidSpace.s200) {
             ForEach(Array(opciones.enumerated()), id: \.offset) { index, texto in
                 celda(texto,
                       seleccionada: index == seleccion,
-                      sugerida: index == sugerida && index != seleccion) {
+                      sugerida: index == sugerida && index != seleccion,
+                      a11yHidden: a11yEtiqueta != nil) {
                     onSelect(index)
                 }
             }
         }
+        if let a11yEtiqueta {
+            grid
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: a11yEtiqueta))
+                .accessibilityValue(Text(verbatim: a11yValor))
+                .accessibilityAdjustableAction { direction in
+                    guard !opciones.isEmpty else { return }
+                    let actual = seleccion ?? sugerida ?? -1
+                    switch direction {
+                    case .increment:
+                        let next = min(opciones.count - 1, actual + 1)
+                        if next != actual { onSelect(next) }
+                    case .decrement:
+                        let prev = max(0, actual < 0 ? 0 : actual - 1)
+                        if prev != actual { onSelect(prev) }
+                    @unknown default: break
+                    }
+                }
+        } else {
+            grid
+        }
+    }
+
+    private var a11yValor: String {
+        if let i = seleccion ?? sugerida, opciones.indices.contains(i) {
+            if let a11yCalificador, !a11yCalificador.isEmpty {
+                return "\(opciones[i]), \(a11yCalificador)"
+            }
+            return opciones[i]
+        }
+        return a11ySinCalificar ?? ""
     }
 
     /// Desde AX1 la fila de 6 pasa a 2 renglones de 3 (A9 / a11y del recibo).
@@ -60,6 +107,7 @@ public struct EntrenarFilaEsfuerzo: View {
     }
 
     private func celda(_ texto: String, seleccionada: Bool, sugerida: Bool,
+                       a11yHidden: Bool,
                        action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(texto)
@@ -72,6 +120,7 @@ public struct EntrenarFilaEsfuerzo: View {
         }
         .buttonStyle(EntrenarPressStyle())
         .accessibilityAddTraits(seleccionada ? [.isSelected] : [])
+        .accessibilityHidden(a11yHidden)
     }
 
     @ViewBuilder

@@ -23,6 +23,9 @@ public enum SessionRPE {
     public static let min: Double = 6
     public static let max: Double = 10
 
+    /// The six stops the receipt / detail row shows (owner trim: 7.5 / 8.5 dropped, 9.5 kept).
+    public static let row: [Double] = [6, 7, 8, 9, 9.5, 10]
+
     /// The suggested session effort: mean of the RATED, DONE, non-warm-up, non-drop sets, rounded to
     /// the nearest half step and clamped into the row. `nil` when no such set carries a rating.
     ///

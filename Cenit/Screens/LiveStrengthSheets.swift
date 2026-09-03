@@ -141,6 +141,71 @@ struct RPESheet: View {
     }
 }
 
+// MARK: - Session effort sheet (ola 1 · E3 · detail «Calificar esfuerzo…»)
+//
+// Same six-stop row as the receipt question. Header: «¿Qué tan duro estuvo?» · «Sesión · N min».
+// Tapping persists immediately via the caller's `onPick`; tapping the selected cell again clears.
+
+struct SessionEffortRateSheet: View {
+    let minutes: Int
+    let current: Double?
+    let onPick: (Double?) -> Void
+    let onClose: () -> Void
+
+    @State private var selected: Double?
+
+    init(minutes: Int, current: Double?,
+         onPick: @escaping (Double?) -> Void, onClose: @escaping () -> Void) {
+        self.minutes = minutes
+        self.current = current
+        self.onPick = onPick
+        self.onClose = onClose
+        _selected = State(initialValue: current)
+    }
+
+    @ObserveInjection private var inject
+    var body: some View {
+        VStack(spacing: .zero) {
+            EntrenarHojaCabecera(
+                glifo: .llama,
+                titulo: String(localized: "How hard was it?"),
+                subtitulo: String(localized: "Session · \(minutes) min"),
+                tono: .ambar, salida: .cerrar, onSalir: onClose)
+                .padding(.top, LiquidSpace.s700)
+                .padding(.bottom, LiquidSpace.s200)
+            VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                EntrenarFilaEsfuerzo(
+                    opciones: SessionRPE.row.map { LiveStrengthSheet.formatDecimalComma($0) },
+                    seleccion: selected.flatMap { SessionRPE.row.firstIndex(of: $0) },
+                    tono: .ambar,
+                    a11yEtiqueta: String(localized: "Session effort"),
+                    a11yCalificador: selected == nil ? nil : String(localized: "Estimated"),
+                    a11ySinCalificar: String(localized: "unrated")
+                ) { index in
+                    guard SessionRPE.row.indices.contains(index) else { return }
+                    let value = SessionRPE.row[index]
+                    EntrenarHaptic.serieCompletada.play()
+                    if selected == value {
+                        selected = nil
+                        onPick(nil)
+                    } else {
+                        selected = value
+                        onPick(value)
+                    }
+                }
+                Text("Load recalculates on its own")
+                    .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
+            }
+            .padding(.top, LiquidSpace.s400)
+            Spacer(minLength: LiquidSpace.s300)
+        }
+        .padding(.horizontal, LiquidSpace.s600)
+        .padding(.bottom, LiquidSpace.s600)
+        .entrenarHojaFondo(tono: .ambar)
+        .enableInjection()
+    }
+}
+
 // MARK: - Note sheet (FER-932)
 //
 // Preview v3 aprobado del handoff («Nota con color de vuelta»): editor con borde/caret ámbar

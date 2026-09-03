@@ -517,34 +517,49 @@ extension AppModel {
                                comparison: comparison, exercises: exerciseLines)
     }
 
-    /// Ola 1 · E3: the receipt (or detail «Calificar esfuerzo…») just changed the session rating.
-    /// Re-resolve the load, patch the row, and refresh the live summary numeral. Passing `rpe == nil`
-    /// clears the answer (deselect / «Sin calificar») and falls back to a measured pulse when one
-    /// covered the session.
+    /// Ola 1 · E3: the receipt just changed the live session's rating. Re-resolves load and patches
+    /// the summary numeral in place.
     func updateStrengthSessionEffort(rpe: Double?, source: SessionRpeSource?) async {
-        guard let session = strengthSession, var summary = session.summary else { return }
-        let elapsedS = summary.durationS
-        let resolved = Self.resolveStrengthLoad(hrSamples: session.hrSamples, elapsedSeconds: elapsedS,
+        guard let session = strengthSession, let summary = session.summary else { return }
+        await updateStoredSessionEffort(sessionId: session.id, durationS: summary.durationS,
+                                        rpe: rpe, source: source, hrSamples: session.hrSamples)
+    }
+
+    /// Ola 1 · E3: write a session-effort answer for ANY finished strength session (receipt or
+    /// detail «Calificar esfuerzo…»). Passing `rpe == nil` clears the rating and falls back to a
+    /// measured pulse when one covered the session. When `hrSamples` is nil, loads them from the store.
+    func updateStoredSessionEffort(sessionId: String, durationS: Int,
+                                   rpe: Double?, source: SessionRpeSource?,
+                                   hrSamples: [HRSample]? = nil) async {
+        let samples: [HRSample]
+        if let hrSamples {
+            samples = hrSamples
+        } else if let store = await repo.storeHandle() {
+            samples = (try? await store.strengthHRSamples(sessionId: sessionId)) ?? []
+        } else {
+            samples = []
+        }
+        let resolved = Self.resolveStrengthLoad(hrSamples: samples, elapsedSeconds: durationS,
                                                 sessionRpe: rpe,
                                                 trimpPerAU: StrengthLoadCalibration.current,
                                                 hrMax: Double(profile.hrMax), sex: profile.sex)
         do {
-            try await repo.updateSessionEffort(sessionId: session.id,
+            try await repo.updateSessionEffort(sessionId: sessionId,
                                                sessionRpe: rpe,
                                                sessionRpeSource: rpe == nil ? nil : source,
                                                strain: resolved.strain,
                                                strainSource: resolved.source,
                                                trimpPerAU: resolved.trimpPerAU)
         } catch {
-            // Keep the on-screen numeral where it was; the existing save-error toast path is for the
-            // initial save. A mid-receipt write failure is rare (disk full) — leave state unchanged.
             return
         }
-        summary.sessionRpe = rpe
-        summary.sessionRpeSource = rpe == nil ? nil : source
-        summary.strain = resolved.strain
-        summary.strainSource = resolved.source
-        session.summary = summary
+        if let session = strengthSession, session.id == sessionId, var summary = session.summary {
+            summary.sessionRpe = rpe
+            summary.sessionRpeSource = rpe == nil ? nil : source
+            summary.strain = resolved.strain
+            summary.strainSource = resolved.source
+            session.summary = summary
+        }
         if let store = await repo.storeHandle() {
             Task { [weak self] in await self?.recalibrateStrengthLoadIfNeeded(store: store) }
         }
