@@ -106,7 +106,7 @@ struct EntrenarHubSemana: View {
 
     private func teselaTextColor(_ day: EntrenarDayToken) -> Color {
         switch day {
-        case .done: return .white
+        case .done: return LiquidColor.papelTarjeta
         default:    return LiquidColor.tinta500
         }
     }

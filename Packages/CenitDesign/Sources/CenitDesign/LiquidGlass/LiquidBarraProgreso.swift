@@ -23,11 +23,15 @@ public struct LiquidBarraProgreso: View {
     private let altura: CGFloat
     private let animada: Bool
     private let marca: Double?
+    private let marcasMudas: [Double]
+    private let tonoMarcaMuda: Color
     private let contorno: Color?
     private let anchoMinimoRelleno: CGFloat
 
     /// Grosor del tick de marca (paridad con `LiquidBarraMarca`).
     private static let anchoMarca: CGFloat = 2
+    /// Grosor de una marca muda (paridad con los ticks del hub Entrenar).
+    private static let anchoMarcaMuda: CGFloat = 1.5
     /// Alto del tick: sobresale 3 pt arriba y abajo de la cápsula de 8 pt típica.
     private static let altoMarcaExtra: CGFloat = 6
 
@@ -39,6 +43,9 @@ public struct LiquidBarraProgreso: View {
     ///   - animada: si el relleno anima al cambiar la fracción (respeta Reduce Motion vía
     ///     `strandAnimation`).
     ///   - marca: posición 0…1 del tick de referencia; `nil` = sin tick.
+    ///   - marcasMudas: ticks de referencia SIN texto que viven dentro de la cápsula (50 %, tope…);
+    ///     se recortan con ella, así la pantalla no necesita `clipShape(Capsule())` (FER-358).
+    ///   - tonoMarcaMuda: color de esas marcas (`tinta10` por defecto).
     ///   - contorno: color de `strokeBorder` a 1 pt; `nil` = sin contorno.
     ///   - anchoMinimoRelleno: piso del relleno en pt cuando hay dato (`fraccion > 0`).
     public init(fraccion: Double,
@@ -47,6 +54,8 @@ public struct LiquidBarraProgreso: View {
                 altura: CGFloat = LiquidSpace.s150,
                 animada: Bool = true,
                 marca: Double? = nil,
+                marcasMudas: [Double] = [],
+                tonoMarcaMuda: Color = LiquidColor.tinta10,
                 contorno: Color? = nil,
                 anchoMinimoRelleno: CGFloat = 0) {
         self.fraccion = fraccion
@@ -55,6 +64,8 @@ public struct LiquidBarraProgreso: View {
         self.altura = altura
         self.animada = animada
         self.marca = marca
+        self.marcasMudas = marcasMudas
+        self.tonoMarcaMuda = tonoMarcaMuda
         self.contorno = contorno
         self.anchoMinimoRelleno = anchoMinimoRelleno
     }
@@ -82,6 +93,20 @@ public struct LiquidBarraProgreso: View {
                     .fill(tono)
                     .frame(width: relleno)
                     .strandAnimation(animada ? .easeInOut(duration: 0.35) : nil, value: f)
+                if !marcasMudas.isEmpty {
+                    ZStack(alignment: .leading) {
+                        ForEach(Array(marcasMudas.enumerated()), id: \.offset) { _, m in
+                            let pos = Self.enRango(m)
+                            Rectangle()
+                                .fill(tonoMarcaMuda)
+                                .frame(width: Self.anchoMarcaMuda, height: altura)
+                                .offset(x: min(w - Self.anchoMarcaMuda,
+                                               max(0, w * CGFloat(pos) - Self.anchoMarcaMuda / 2)))
+                        }
+                    }
+                    .frame(width: w, height: altura, alignment: .leading)
+                    .clipShape(Capsule(style: .continuous))
+                }
                 if let marca {
                     let pos = Self.enRango(marca)
                     if pos > 0 {
@@ -110,6 +135,7 @@ public struct LiquidBarraProgreso: View {
         LiquidBarraProgreso(fraccion: 0.25)
         LiquidBarraProgreso(fraccion: 0.60, tono: LiquidColor.cian)
         LiquidBarraProgreso(fraccion: 0.90, tono: LiquidColor.ambar, marca: 0.55)
+        LiquidBarraProgreso(fraccion: 0.70, tono: LiquidColor.cian, marcasMudas: [0.5, 1.0])
     }
     .padding(LiquidSpace.s600)
     .frame(width: 280)

@@ -37,6 +37,7 @@ struct ProgressionSetupScreen: View {
     @State private var incrementKg: Double
     @State private var deload: DeloadPolicy
     @State private var ignoreRecovery: Bool
+    @ScaledMetric(relativeTo: .footnote) private var lectura = LiquidType.lecturaHojaBase
 
     init(exercise: RoutineExercise, exerciseName: String,
          currentWeightKg: Double?, derivedIncrementKg: Double,
@@ -85,7 +86,7 @@ struct ProgressionSetupScreen: View {
                                      subtitulo: String(localized: "Progression"),
                                      tono: .verde, salida: .guardar(String(localized: "Save")), onSalir: saveAndClose)
                 Text("Cénit proposes the raise when you earn it. You can always edit the cell in session.")
-                    .font(.system(size: LiquidType.lecturaHojaBase))
+                    .font(.system(size: lectura))
                     .foregroundStyle(LiquidColor.tinta700)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, LiquidSpace.s150)

@@ -260,7 +260,9 @@ RE_IPHONE_TONE_ON_OLED = re.compile(r"\bLiquidColor\.(?:rosa|negativo|ambar|aten
 # en la línea del `Capsule()` o en la del modifier. `Capsule(style: .continuous)` cuenta igual
 # (Grok lo usó para esquivar la primera versión de la regla, FER-338).
 # FER-342: `.background(color, in: Capsule())` y `.clipShape(Capsule())` sobre un fill son la misma cápsula a mano.
-RE_CAPSULE_INLINE = re.compile(r"\bCapsule\([^)]*\)\s*\.(?:fill|stroke|strokeBorder)\(|\bin:\s*Capsule\(")
+# FER-358: `.clipShape(Capsule())` sobre un fondo de color es la misma cápsula a mano (las piezas del catálogo
+# viven en el paquete, que esta regla no vigila).
+RE_CAPSULE_INLINE = re.compile(r"\bCapsule\([^)]*\)\s*\.(?:fill|stroke|strokeBorder)\(|\bin:\s*Capsule\(|\.clipShape\(\s*Capsule\(")
 RE_CAPSULE_ALONE = re.compile(r"\bCapsule\([^)]*\)\s*$")
 RE_CAPSULE_MODIFIER = re.compile(r"^\s*\.(?:fill|stroke|strokeBorder)\(")
 RE_CONFIRMATION_DIALOG = re.compile(r"\.confirmationDialog\(")

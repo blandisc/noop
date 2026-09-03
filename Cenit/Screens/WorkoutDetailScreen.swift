@@ -48,6 +48,7 @@ struct WorkoutDetailScreen: View {
     /// Drives the HRR block's staggered entrance (overline static; number → verdict → baseline →
     /// disclaimer rise+fade, 70 ms apart, no bounce — handoff «HRR-60s»). Set true on the block's appear.
     @State private var hrrRevealed = false
+    @ScaledMetric(relativeTo: .footnote) private var lectura = LiquidType.lecturaHojaBase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// Strength-tracker volume (kg) for a session that time-overlaps this workout row, if any.
@@ -201,7 +202,7 @@ struct WorkoutDetailScreen: View {
 
     private var contextLine: some View {
         Text(contextText)
-            .font(Font.system(size: LiquidType.lecturaHojaBase))
+            .font(.system(size: lectura))
             .foregroundStyle(LiquidColor.tinta700)
             .fixedSize(horizontal: false, vertical: true)
     }
@@ -299,7 +300,7 @@ struct WorkoutDetailScreen: View {
         VStack(alignment: .leading, spacing: LiquidSpace.s150) {
             Text("Notes").liquidLabel().foregroundStyle(LiquidColor.tinta500)
             Text(notes)
-                .font(Font.system(size: LiquidType.lecturaHojaBase))
+                .font(.system(size: lectura))
                 .foregroundStyle(LiquidColor.tinta900)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -435,7 +436,7 @@ struct WorkoutDetailScreen: View {
             VStack(alignment: .leading, spacing: LiquidSpace.s150) {
                 Text("Cardiac recovery · 60 s").liquidLabel().foregroundStyle(LiquidColor.tinta500)
                 Text("No clean recovery reading for this session.")
-                    .font(Font.system(size: LiquidType.lecturaHojaBase))
+                    .font(.system(size: lectura))
                     .foregroundStyle(LiquidColor.tinta500)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -459,7 +460,7 @@ struct WorkoutDetailScreen: View {
                     }
                     hrrRise(1) {
                         Text(hrrNote(trend))
-                            .font(Font.system(size: LiquidType.lecturaHojaBase))
+                            .font(.system(size: lectura))
                             .foregroundStyle(LiquidColor.tinta700)
                             .fixedSize(horizontal: false, vertical: true)
                     }

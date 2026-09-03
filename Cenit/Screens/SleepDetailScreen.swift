@@ -1173,8 +1173,9 @@ struct SleepDetailScreen: View {
 // One bottom sheet explaining all four sleep stages + why they're approximate, opened from the ⓘ next
 // to "Last night". It mirrors the Liquid metric-sheet language (title, lede, rows, footnote) but its
 // content is a list of stages rather than a banded value, so it's its own small view, not a
-// contorted `MetricInfo`. No nested `NavigationStack` (FER-171). The stage hues are the fixed
-// `StrandPalette` sleep colors, the same dots the legend uses (color only in the datum).
+// contorted `MetricInfo`. No nested `NavigationStack` (FER-171). The stage hues are the indigo
+// ramp in `SleepDetailScreen.coloresEtapa` (`LiquidColor.indigo` graduado + `oro` despierto), the
+// same dots the legend uses (color only in the datum).
 
 /// «Etapas de sueño en detalle» — la hoja que abre desde el pie del método.
 ///

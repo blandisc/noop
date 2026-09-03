@@ -307,6 +307,15 @@ class Fer271CommentGaps(unittest.TestCase):
             ])
             self.assertEqual([i for _p, i, _r, _s in drift.check([src], ["no-capsule-a-mano"])], [1, 2])
 
+    def test_capsule_clipshape(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src = _swift(tmp, "Cenit/Screens/K.swift", [
+                ".clipShape(Capsule())",                                  # 1 sí (FER-358)
+                ".contentShape(Capsule())",                               # no: área de toque, no chrome
+                ".clipShape(Capsule())  // token-exempt(chrome): pieza del catálogo",  # no
+            ])
+            self.assertEqual([i for _p, i, _r, _s in drift.check([src], ["no-capsule-a-mano"])], [1])
+
 if __name__ == "__main__":
     unittest.main()
 

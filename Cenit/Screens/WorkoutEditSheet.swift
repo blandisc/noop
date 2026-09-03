@@ -48,6 +48,7 @@ struct WorkoutEditSheet: View {
     @State private var buffers: [CellRef: String] = [:]
     @State private var reassignGroup: ReassignTarget?
     @State private var showDiscard = false
+    @ScaledMetric(relativeTo: .footnote) private var lectura = LiquidType.lecturaHojaBase
     @State private var saveError = false
     @State private var showRoutineMenu = false
 
@@ -324,12 +325,12 @@ struct WorkoutEditSheet: View {
             case .weightReps, .bodyweight:
                 if type == .bodyweight {
                     Text("+")
-                        .font(Font.system(size: LiquidType.lecturaHojaBase))
+                        .font(.system(size: lectura))
                         .foregroundStyle(LiquidColor.tinta500)
                 }
                 numberField(.init(g: gi, s: si, field: .weight), isInt: false)
                 Text("×")
-                    .font(Font.system(size: LiquidType.lecturaHojaBase))
+                    .font(.system(size: lectura))
                     .foregroundStyle(LiquidColor.tinta500)
                 numberField(.init(g: gi, s: si, field: .reps), isInt: true)
             case .time, .distance:
