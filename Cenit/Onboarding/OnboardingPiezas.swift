@@ -188,9 +188,11 @@ enum OnbCopy {
         String(localized: "onb.4.titular.lectura", defaultValue: "I've read it. This is what it says today.")
     }
     static func lecturaHistoria(dias: Int, noches: Int) -> String {
-        String(format: String(localized: "onb.4.historia",
-                              defaultValue: "I already have your %lld days of history, and %lld nights with the watch on."),
-               dias, noches)
+        // Interpolación (NO `String(format:)`): el catálogo usa sustituciones `%#@days@`/`%#@nights@`
+        // que solo se resuelven pasando los args por `String(localized:)`. Con `String(format:)` los
+        // tokens `%1$#@days@` salían CRUDOS en pantalla — la primera lectura de cada usuario nuevo.
+        String(localized: "onb.4.historia",
+               defaultValue: "I already have your \(dias) days of history, and \(noches) nights with the watch on.")
     }
     static var lecturaRotuloInfo: String {
         String(localized: "onb.4.rotulo.info",
@@ -200,18 +202,16 @@ enum OnbCopy {
         String(localized: "onb.4.titular.calibrando", defaultValue: "I can't read you yet")
     }
     static func calibrandoCuerpo(dias: Int, noches: Int, meta: Int) -> String {
-        String(format: String(localized: "onb.4.calibrando.cuerpo",
-                              defaultValue: "I already have your %lld days of history, but I've got %lld nights with the watch on. Your word arrives as soon as I gather %lld."),
-               dias, noches, meta)
+        String(localized: "onb.4.calibrando.cuerpo",
+               defaultValue: "I already have your \(dias) days of history, but I've got \(noches) nights with the watch on. Your word arrives as soon as I gather \(meta).")
     }
     /// El otro `.calibrando`: la base YA está (`faltan == 0`) y aun así el motor no se atreve —
     /// típicamente porque todavía no existe la fila de HOY. Decirle «tu palabra llega en cuanto
     /// junte 60 noches» a quien ya tiene 60 es prometerle algo que ya ocurrió, y es el estado
     /// normal de quien abre la app en la mañana antes de que Apple publique su FC en reposo.
     static func calibrandoCuerpoSinHoy(dias: Int, noches: Int) -> String {
-        String(format: String(localized: "onb.4.calibrando.cuerpo.sinhoy",
-                              defaultValue: "I already have your %lld days of history and your %lld nights. What I still don't have is today: your watch hasn't published this morning's resting heart rate yet."),
-               dias, noches)
+        String(localized: "onb.4.calibrando.cuerpo.sinhoy",
+               defaultValue: "I already have your \(dias) days of history and your \(noches) nights. What I still don't have is today: your watch hasn't published this morning's resting heart rate yet.")
     }
     static var calibrandoPie: String {
         String(localized: "onb.4.calibrando.pie", defaultValue: "I'm not going to make up a verdict in the meantime.")
@@ -628,13 +628,23 @@ struct OnbShell<Content: View, Pie: View>: View {
     @ViewBuilder
     private var pieAnclado: some View {
         if let pie {
-            VStack(alignment: .leading, spacing: .zero) {
-                pie()
+            VStack(spacing: .zero) {
+                // Entrada: el velo sube de transparente a opaco ARRIBA del pie, para que el texto
+                // que sigue scrolleando se funda en el papel en vez de aparecer de golpe.
+                velo
+                    .frame(height: LiquidSpace.s600)
+                VStack(alignment: .leading, spacing: .zero) {
+                    pie()
+                }
+                .padding(.horizontal, LiquidSpace.s600)
+                .padding(.top, LiquidSpace.s150)
+                .padding(.bottom, LiquidSpace.s250)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                // Fondo OPACO detrás del contenido del pie: OCLUYE lo que scrollea por debajo. Antes
+                // `.background(velo)` arrancaba transparente detrás del toggle y, a xxxLarge, el texto
+                // del disclaimer se le encimaba Y le robaba el tap (onboarding bloqueado). FER-stress #2.
+                .background(LiquidColor.fondoBajo)
             }
-            .padding(.horizontal, LiquidSpace.s600)
-            .padding(.top, LiquidSpace.s400)
-            .padding(.bottom, LiquidSpace.s250)
-            .background(velo)
         }
     }
 

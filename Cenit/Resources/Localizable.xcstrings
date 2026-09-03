@@ -1621,6 +1621,12 @@
     },
     "%@ days · %@ routines" : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ días · %2$@ rutinas"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -1664,7 +1670,14 @@
       }
     },
     "%@ exercises" : {
-
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ejercicios"
+          }
+        }
+      }
     },
     "%@ exercises · %@ sets · %@ done" : {
       "localizations" : {
@@ -1719,6 +1732,12 @@
     },
     "%@ kg, %@ pairs" : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ kg, %2$@ pares"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -1795,7 +1814,14 @@
       }
     },
     "%@ nights" : {
-
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ noches"
+          }
+        }
+      }
     },
     "%@ of %@" : {
       "extractionState" : "manual",
@@ -1853,6 +1879,12 @@
     },
     "%@ of ~%@ nights" : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ de ~%2$@ noches"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -1863,6 +1895,12 @@
     },
     "%@ of ~%@ nights learned" : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ de ~%2$@ noches aprendidas"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -1987,13 +2025,34 @@
       }
     },
     "%@ receipts · tap one to reprint" : {
-
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ recibos · toca uno para reimprimir"
+          }
+        }
+      }
     },
     "%@ receipts · today's on top" : {
-
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ recibos · el de hoy arriba"
+          }
+        }
+      }
     },
     "%@ records" : {
-
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ registros"
+          }
+        }
+      }
     },
     "%@ registros" : {
 
@@ -2029,13 +2088,34 @@
       }
     },
     "%@ sessions without hitting the goal at this weight." : {
-
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ sesiones sin llegar a la meta con este peso."
+          }
+        }
+      }
     },
     "%@ sessions · 90 days" : {
-
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ sesiones · 90 días"
+          }
+        }
+      }
     },
     "%@ sessions · tap another bar to switch" : {
-
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ sesiones · toca otra barra para cambiar"
+          }
+        }
+      }
     },
     "%@ sets" : {
       "localizations" : {
@@ -2889,6 +2969,12 @@
     },
     "%@–%@%@ · step %@" : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@–%2$@%3$@ · paso %4$@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -5603,7 +5689,14 @@
       }
     },
     ", typical %@%%" : {
-
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ", típico %@%%"
+          }
+        }
+      }
     },
     ", typical %lld%%" : {
       "extractionState" : "manual",
@@ -8011,6 +8104,12 @@
     },
     "Active session: %@, %@, heart rate %@" : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sesión activa: %1$@, %2$@, frecuencia cardiaca %3$@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -9086,7 +9185,14 @@
       }
     },
     "An estimate with a ±%@-year margin." : {
-
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una estimación con margen de ±%@ años."
+          }
+        }
+      }
     },
     "An estimate with a ±%lld-year margin." : {
       "extractionState" : "manual",
@@ -9330,7 +9436,14 @@
       }
     },
     "Apple Health · backup" : {
-
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Salud · respaldo"
+          }
+        }
+      }
     },
     "Apple Health · last 28 days" : {
       "extractionState" : "manual",
@@ -16697,6 +16810,12 @@
     },
     "Downloading %@/%@…" : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descargando %1$@/%2$@…"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -28886,6 +29005,14 @@
       }
     },
     "Not a medical device." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No es un dispositivo médico."
+          }
+        }
+      },
       "comment" : "A disclaimer that the app is not a medical device.",
       "isCommentAutoGenerated" : true
     },
@@ -31221,7 +31348,14 @@
       }
     },
     "Overriding the automatic estimate (%@)." : {
-
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sobrescribiendo la estimación automática (%@)."
+          }
+        }
+      }
     },
     "Overriding the automatic estimate (%lld)." : {
       "extractionState" : "manual",
@@ -31811,6 +31945,12 @@
     },
     "Peak %@ bpm · %@" : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pico %1$@ lpm · %2$@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -35250,7 +35390,14 @@
       }
     },
     "Resting %@" : {
-
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En reposo %@"
+          }
+        }
+      }
     },
     "Resting %lld" : {
       "extractionState" : "stale",
@@ -35940,6 +36087,12 @@
     },
     "Round %@ of %@" : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ronda %1$@ de %2$@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -37445,6 +37598,12 @@
     },
     "Set %@ · %@ × %@ reps" : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Serie %1$@ · %2$@ × %3$@ reps"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -38030,7 +38189,14 @@
       }
     },
     "Showing the last %@ days" : {
-
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrando los últimos %@ días"
+          }
+        }
+      }
     },
     "Showing the last %lld days" : {
       "extractionState" : "manual",
@@ -38539,6 +38705,12 @@
     },
     "Sleep stages: deep %@ percent, light %@ percent, REM %@ percent, awake %@ percent" : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Etapas de sueño: profundo %1$@ por ciento, ligero %2$@ por ciento, REM %3$@ por ciento, despierto %4$@ por ciento"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -39408,7 +39580,14 @@
       }
     },
     "Step %@ of 4" : {
-
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paso %@ de 4"
+          }
+        }
+      }
     },
     "Step %lld of 4" : {
       "extractionState" : "manual",
@@ -40334,6 +40513,14 @@
       }
     },
     "Sync the last few weeks, on-device: Cénit reads your Apple Health HR, HRV, sleep, SpO₂ and steps. Nothing leaves your iPhone; your strength workouts are saved back to Apple Health when you allow it. (For a one-time bulk history, use the export import above.)" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sincroniza las últimas semanas, en el dispositivo: Cénit lee tu FC, VFC, sueño, SpO₂ y pasos de Apple Salud. Nada sale de tu iPhone; tus entrenamientos de fuerza se guardan de vuelta en Apple Salud cuando lo permites. (Para un historial masivo de una vez, usa el import/export de arriba.)"
+          }
+        }
+      },
       "comment" : "A description of the Apple Health sync feature.",
       "isCommentAutoGenerated" : true
     },
@@ -42566,7 +42753,14 @@
       }
     },
     "Timing, %@ seconds" : {
-
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiempo, %@ segundos"
+          }
+        }
+      }
     },
     "Timing, %lld seconds" : {
       "extractionState" : "manual",
@@ -46731,6 +46925,12 @@
     },
     "With this plan: %@×%@ with %@ kg %@ → next time you train with **%@**." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Con este plan: %1$@×%2$@ con %3$@ kg %4$@ → la próxima vez entrenas con **%5$@**."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -47107,7 +47307,14 @@
       }
     },
     "YOUR INVENTORY · PER SIDE" : {
-
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TU INVENTARIO · POR LADO"
+          }
+        }
+      }
     },
     "YOUR PLAN" : {
       "extractionState" : "stale",
@@ -47543,6 +47750,12 @@
     },
     "You're %@ of %@ sessions in with %@." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vas %1$@ de %2$@ sesiones con %3$@."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -49056,6 +49269,12 @@
     },
     "Your plates can't hit %@ kg exactly, closest is %@ kg" : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus discos no llegan a %1$@ kg exacto; lo más cerca es %2$@ kg"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -50254,7 +50473,14 @@
       }
     },
     "Zones as a percentage of your max heart rate (%@ bpm, Tanaka). The rest of the day you were resting or very light." : {
-
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zonas como porcentaje de tu FC máxima (%@ lpm, Tanaka). El resto del día estuviste en reposo o muy ligero."
+          }
+        }
+      }
     },
     "Zones as a percentage of your max heart rate (%lld bpm, Tanaka). The rest of the day you were resting or very light." : {
       "extractionState" : "stale",
@@ -51245,7 +51471,14 @@
       }
     },
     "applies to all %@ work sets" : {
-
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "aplica a todas las %@ series de trabajo"
+          }
+        }
+      }
     },
     "applies to all %lld work sets" : {
       "extractionState" : "stale",
@@ -59964,6 +60197,12 @@
             "state" : "translated",
             "value" : "I have read and accept these terms, and I'm using Cénit with my own device and my own data, at my own risk."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leí y acepto estos términos, y uso Cénit con mi propio equipo y mis propios datos, bajo mi propio riesgo."
+          }
         }
       }
     },
@@ -59974,6 +60213,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Accept & Continue"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aceptar y continuar"
           }
         }
       }
@@ -59986,6 +60231,12 @@
             "state" : "translated",
             "value" : "The full terms are in TERMS.md, shipped with Cénit. This is not legal advice."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los términos completos están en TERMS.md, incluido con Cénit. Esto no es asesoría legal."
+          }
         }
       }
     },
@@ -59996,6 +60247,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Please read and accept the points below."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lee y acepta los puntos de abajo."
           }
         }
       }
@@ -60008,6 +60265,12 @@
             "state" : "translated",
             "value" : "Cénit reads your health and fitness data directly from Apple Health, on your iPhone — no separate hardware pairing required."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit lee tus datos de salud y actividad directo de Apple Salud, en tu iPhone. No necesita vincular ningún dispositivo aparte."
+          }
         }
       }
     },
@@ -60018,6 +60281,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Reads your data from Apple Health, on your device"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lee tus datos de Apple Salud, en tu equipo"
           }
         }
       }
@@ -60030,6 +60299,12 @@
             "state" : "translated",
             "value" : "Every metric is processed and stored only on your device. There is no Cénit server, no Cénit account, and no telemetry — the maintainers cannot see your data and never receive it."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada métrica se procesa y guarda solo en tu equipo. No hay servidor de Cénit, ni cuenta, ni telemetría. Quienes mantienen la app no ven tus datos ni los reciben."
+          }
         }
       }
     },
@@ -60040,6 +60315,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Offline and local — no account, no server"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin conexión y local: sin cuenta, sin servidor"
           }
         }
       }
@@ -60052,6 +60333,12 @@
             "state" : "translated",
             "value" : "Cénit is not a medical device and provides no medical advice. Every metric is an unvalidated approximation — don't use Cénit to diagnose, treat, or make any health decision. Always consult a qualified professional."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit no es un dispositivo médico y no da consejo médico. Cada métrica es una aproximación sin validar. No uses Cénit para diagnosticar, tratar ni tomar decisiones de salud. Consulta siempre a un profesional calificado."
+          }
         }
       }
     },
@@ -60062,6 +60349,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "General wellness only — not a medical device"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solo bienestar general: no es un dispositivo médico"
           }
         }
       }
@@ -60074,6 +60367,12 @@
             "state" : "translated",
             "value" : "Cénit is free and provided \"as is\", with no warranty. Liability is limited to the maximum extent the law that applies to you allows, and nothing here removes protections your local law won't let us remove."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit es gratis y se ofrece \"tal cual\", sin garantía. La responsabilidad se limita al máximo que permita la ley que te aplica, y nada aquí quita las protecciones que tu ley local no nos deje quitar."
+          }
         }
       }
     },
@@ -60085,6 +60384,12 @@
             "state" : "translated",
             "value" : "No warranty; liability limited"
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin garantía; responsabilidad limitada"
+          }
         }
       }
     },
@@ -60095,6 +60400,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Before you use Cénit"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Antes de usar Cénit"
           }
         }
       }
@@ -62442,6 +62753,12 @@
       "comment" : "A subheading that displays the resting HR and the margin.",
       "isCommentAutoGenerated" : true,
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "descanso %1$@ + margen %2$@ lpm"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -64379,6 +64696,12 @@
     },
     "vs your normal · ~%@ bpm · %@ sessions" : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "vs tu normal · ~%1$@ lpm · %2$@ sesiones"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -65029,6 +65352,14 @@
       }
     },
     "your rest + %@ bpm margin" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tu descanso + %@ lpm de margen"
+          }
+        }
+      },
       "comment" : "A label that says \"your resting HR + margin\" in the HRV",
       "isCommentAutoGenerated" : true
     },

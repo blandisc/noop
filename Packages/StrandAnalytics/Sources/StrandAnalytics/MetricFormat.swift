@@ -95,6 +95,10 @@ public struct MetricFormat: Sendable, Equatable {
     }
 
     private static func render(_ value: Double, style: Style) -> String {
+        // Última línea de defensa: este es el ÚNICO formateador que leen héroe/eje/scrub/tablas en
+        // muchas pantallas. Un valor no-finito (NaN/±Inf) hacía de `Int(value.rounded())` un trap en
+        // las ramas enteras y pintaba "nan"/"+nan °C" en las decimales. Ante no-finito → «—», nunca crash.
+        guard value.isFinite else { return "—" }
         switch style {
         case .integer:
             return String(Int(value.rounded()))

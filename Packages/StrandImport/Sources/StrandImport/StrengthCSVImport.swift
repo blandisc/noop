@@ -692,7 +692,11 @@ private struct ColumnIndex {
         return Double(s.replacingOccurrences(of: ",", with: "."))
     }
     func int(_ name: String, in row: [String]) -> Int? {
-        guard let d = double(name, in: row) else { return nil }
+        // Guarda de finitud y rango: una celda "nan"/"inf"/"1e999"/gigante en un CSV de terceros
+        // hacía de `Int(d)` un trap fatal que tumbaba TODA la importación. Paridad con
+        // WorkoutProgram/DietPlan (que ya guardan isFinite). Celda mala → nil (se ignora), no crash.
+        guard let d = double(name, in: row), d.isFinite,
+              d >= Double(Int.min), d <= Double(Int.max) else { return nil }
         return Int(d)
     }
 }
