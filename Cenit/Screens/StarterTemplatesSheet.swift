@@ -52,6 +52,13 @@ struct StarterTemplatesSheet: View {
     /// «Ya tienes un programa en la semana N de M. Empezar otro lo termina.»).
     @State private var programaActivo: ProgramServing.Context?
     @State private var confirmReemplazoPrograma = false
+    /// Ola 1 · E12, capa 4: enlace terciario «¿Qué es una semana ligera?» → el glosario del «?».
+    @State private var showGlossary = false
+    /// Fix QA D2 (AC#5, FER-335): la línea de porqué + el enlace al glosario son la guía de 3
+    /// pasos, y el issue la pide «solo la primera vez que se crea un programa» — no en cada visita
+    /// a este paso. `false` = todavía sin una primera creación completa (se muestran); se marca
+    /// `true` justo cuando `instalarPrograma` termina bien la PRIMERA vez, y ya no vuelven.
+    @AppStorage("entrenar.programa.primeraGuiaVista") private var primeraGuiaVista = false
 
     /// Catálogo completo (`grupo == nil`) o acotado a un programa. En modo grupo abre SIEMPRE con
     /// la primera rutina en preview (ronda 2 del gate FER-251: el CTA «Usar este plan» nunca es
@@ -109,6 +116,12 @@ struct StarterTemplatesSheet: View {
             }
         } message: {
             Text(programaActivoAviso)
+        }
+        // Ola 1 · E12, capa 4: el enlace terciario «¿Qué es una semana ligera?» abre el glosario
+        // del «?» en una hoja propia — esta hoja ya no trae NavigationStack (FER-171), así que el
+        // glosario trae el suyo.
+        .sheet(isPresented: $showGlossary) {
+            NavigationStack { WorkshopTricksScreen() }
         }
         .enableInjection()
     }
@@ -365,9 +378,19 @@ struct StarterTemplatesSheet: View {
                     Text("When it ends").font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
                     LiquidListaPalomita(endModeOpciones, seleccion: $programaEndMode)
                 }
-                Text("The last week is active recovery: you'll see it marked from today.")
-                    .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
-                    .fixedSize(horizontal: false, vertical: true)
+                // Fix QA D2 (AC#5): la línea de porqué + el enlace al glosario, SOLO la primera
+                // vez que se crea un programa (issue 12, capa 4) — de la segunda en adelante, la
+                // guía ya se enseñó y esta sección desaparece por completo.
+                if !primeraGuiaVista {
+                    Text("The last week is active recovery: you'll see it marked from today.")
+                        .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button { showGlossary = true } label: {
+                        Text("What's a light week?")
+                            .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
 
             CenitCTAButton("Start program") { startProgram(motor) }
@@ -427,6 +450,7 @@ struct StarterTemplatesSheet: View {
         Task {
             do {
                 try await repo.installProgram(materialized)
+                primeraGuiaVista = true   // fix QA D2: la guía ya se enseñó, no vuelve a mostrarse
                 await onAdded()
                 // «Programa listo · semana 1 de N» (ola 1 · E11): mismo canal que `applyTemplateGroup`
                 // ya usa para avisar tras cerrar — el toast vive en quien presenta la hoja, porque la

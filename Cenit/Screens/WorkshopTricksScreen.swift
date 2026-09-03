@@ -50,6 +50,45 @@ struct WorkshopTricksScreen: View {
               body: "Every session prints its receipt. Save them and compare them in History."),
     ]
 
+    /// Capa 3 del tutorial sin tour (ola 1 · E12, issue 12-vocabulario-tutorial): «Palabras del
+    /// gym», detrás del «?» que ya existía. Reusa `Trick` (mismo dibujo que arriba) — un término
+    /// nuevo aquí es una fila más, no una pieza nueva. Copy fiel al artefacto `ola1-pantallas.html`
+    /// §4 aprobado por el dueño.
+    private let gymWords: [Trick] = [
+        .init(id: "amrap", systemImage: "infinity",
+              tint: LiquidColor.verdePrimario,
+              title: "As many as you can · AMRAP",
+              body: "Every rep that comes out. It counts for records and to raise."),
+        .init(id: "drop", systemImage: "arrow.down.right",
+              tint: LiquidColor.cian,
+              title: "Drop and continue · drop",
+              body: "No rest, less weight. It counts as volume."),
+        .init(id: "rir", systemImage: "battery.50",
+              tint: LiquidColor.indigo,
+              title: "Reps in reserve · RIR",
+              body: "However many you still had. 0 means you hit failure."),
+        .init(id: "light-week", systemImage: "leaf",
+              tint: LiquidColor.ambar,
+              title: "Light week",
+              body: "The last week of the cycle: half the sets, same weight."),
+        .init(id: "estimated-effort", systemImage: "gauge",
+              tint: LiquidColor.rosa,
+              title: "Estimated effort",
+              body: "Minutes times how hard it was. Without a watch, it's your load."),
+        .init(id: "rest-ways", systemImage: "timer",
+              tint: LiquidColor.tinta900,
+              title: "Rest · five ways",
+              body: "By the clock or by your pulse."),
+        .init(id: "program", systemImage: "calendar",
+              tint: LiquidColor.verdePrimario,
+              title: "Program",
+              body: "Weeks with a rhythm: it tracks your cycle and marks the light week for you."),
+        .init(id: "1rm", systemImage: "trophy",
+              tint: LiquidColor.cian,
+              title: "Estimated one-rep max",
+              body: "The heaviest single lift the app estimates from your sets, to track your strength."),
+    ]
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: LiquidSpace.s100) {
@@ -63,6 +102,18 @@ struct WorkshopTricksScreen: View {
                     ForEach(tricks) { t in
                         trickRow(t)
                         if t.id != tricks.last?.id { Divider().overlay(LiquidColor.tinta10) }
+                    }
+                }
+                .padding(.top, LiquidSpace.s300)
+
+                // Capa 3 del tutorial (ola 1 · E12): «Palabras del gym» — su propio kicker, misma
+                // fila que los trucos de arriba.
+                Text("Gym words").liquidKicker().foregroundStyle(LiquidColor.tinta500)
+                    .padding(.top, LiquidSpace.s600)
+                VStack(alignment: .leading, spacing: .zero) {
+                    ForEach(gymWords) { t in
+                        trickRow(t)
+                        if t.id != gymWords.last?.id { Divider().overlay(LiquidColor.tinta10) }
                     }
                 }
                 .padding(.top, LiquidSpace.s300)

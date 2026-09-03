@@ -23,6 +23,33 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 - Diseño (FER-358 · loop 6): `LiquidBarraProgreso` con marcas mudas dentro de la pieza y `.pastillaSolida` en vez de `.clipShape(Capsule())` a mano; Dynamic Type (`@ScaledMetric`) en detalle/edición de workout, ejercicio y progresión; `.white`/velo a tokens `LiquidColor`; comentario de etapas de sueño honesto.
 
+### Ola 1 de Entrenar · vocabulario y tutorial (FER-335)
+- Barrido final del vocabulario: la hoja de esfuerzo por serie («RPE») ya no dice «Te quedaban ~2
+  reps» — dice «~2 reps más», igual que sus seis vecinas en la misma escala.
+- Seis consejos de una sola vez (TipKit, iOS 17): «las que puedas» y «bajar y seguir» en la fila de
+  la sesión, «reps en reserva» en el teclado, «esfuerzo estimado» en el primer recibo con la
+  pregunta, «ritmo de subida» en el ajuste de progresión, y «semana ligera» en Tu Plan. Cada uno
+  aparece una vez, se cierra con «Entendido» y no vuelve; estilo tinta sobre vidrio
+  (`CenitDesign.LiquidConsejoTipStyle`).
+- El «?» de Entrenar gana «Palabras del gym»: ocho términos (las que puedas, bajar y seguir, reps en
+  reserva, semana ligera, esfuerzo estimado, descansos, programa, 1RM estimado) con una línea cada
+  uno.
+- «Nuevo programa» gana el enlace «¿Qué es una semana ligera?» hacia ese glosario, junto a la línea
+  de porqué que ya traía FER-334 — ambos SOLO en la primera creación de un programa
+  (`entrenar.programa.primeraGuiaVista`); de la segunda en adelante, la guía ya no vuelve (fix QA
+  D2, AC#5 — antes se repetía en cada creación).
+- Sin tour: la enseñanza vive en el lugar donde el concepto aparece, nunca en un modal que bloquea.
+- GAP de backlog (QA D1, AC#2): el test del ciclo del consejo (aparece una vez / «Entendido» lo
+  cierra / `Tips.resetDatastore` lo revive) no tiene una costura testeable hoy. No hay infraestructura
+  de navegación (`ScreenshotNav`) hacia las 6 pantallas ancla ni hacia el glosario, y la suite de
+  screenshots ya es frágil por tocar UI en vivo (histórico del repo) — construir esa infra queda
+  fuera de este cambio por decisión del director. Se probó además una costura sin simulador
+  (`Tip.status` en un test de `swift test`, sin UI): `status` queda en `.pending` incluso justo
+  después de `Tips.configure()` + `invalidate()` — TipKit lo resuelve por un motor async
+  (`statusUpdates`), no de forma síncrona, así que una aserción inmediata sería un test frágil por
+  diseño. Sin costura razonable: el test del ciclo TipKit queda como issue de backlog, no algo que
+  este cambio deba resolver.
+
 ### Ola 1 de Entrenar · pantallas de programa (FER-334)
 - El motor de programas de FER-329 ya tiene dónde prenderse: «Programa · 4 a 6 semanas» en Tu Plan
   (junto a Plantillas e Importar) abre los 4 motores de fábrica y, en tres pasos, arma semanas ·

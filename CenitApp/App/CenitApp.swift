@@ -2,6 +2,7 @@
 import SwiftUI
 import UIKit
 import CenitDesign
+import TipKit
 
 /// iOS entry point. A single `WindowGroup`; the glanceable role is filled by the Home/Lock-Screen
 /// widget.
@@ -23,6 +24,7 @@ struct CenitApp: App {
         // PendingIntents) can mask it. Logs a fault on device, asserts in the Simulator.
         AppGroup.warnIfGroupUnprovisioned()
         configureInstrumentoControlAppearance()   // FER-408: warm the native segmented control once at launch
+        EntrenarTips.configure()   // ola 1 · E12: TipKit datastore, 100% on-device (sin red)
         // Inject/InjectionNext: carga el puente de recarga en caliente SOLO en Debug (inerte en Release).
         // Con InjectionNext.app abierta (y Xcode lanzado DESDE ella) corriendo en el Simulador, intercambia
         // el código de las pantallas al guardar, sin recompilar. InjectionNext es el sucesor de InjectionIII,
@@ -89,6 +91,10 @@ struct CenitApp: App {
                 // text-size setting, but we don't promise the 5 giant Accessibility sizes (they'd
                 // break the dense glanceable layouts). Sheets inherit this clamp.
                 .dynamicTypeSize(...DynamicTypeSize.xxxLarge)  // token-exempt(unico): tope global de la app (FER-394); distinto del cap bendecido por pantalla (.accessibility5)
+                // Ola 1 · E12: estilo «tinta sobre vidrio» de los consejos TipKit, UNA sola vez en la
+                // raíz — cada sitio de anclaje (EntrenarTips.swift) solo escribe `.popoverTip(_:)`/
+                // `TipView(_:)` y hereda este estilo del entorno.
+                .tipViewStyle(LiquidConsejoTipStyle())
                 .environment(model)
                 .environmentObject(model.repo)
                 .environmentObject(model.profile)
