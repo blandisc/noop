@@ -271,9 +271,13 @@ final class WorkoutMirroringBridge: NSObject, ObservableObject {
         guard session.activationState == .activated else { return }
         if session.isReachable {
             session.sendMessageData(data, replyHandler: nil) { [weak self] error in
-                // Not reachable right now → queue it so it arrives on reconnect (scenario: end out of range).
-                self?.transferData(data)
-                self?.log.error("WC send failed, queued: \(error.localizedDescription, privacy: .public)")
+                // errorHandler runs on WatchConnectivity's private queue, not the main actor — hop before
+                // touching `self` (Sev-4, mina de Swift 6; mismo patrón que los delegates nonisolated abajo).
+                Task { @MainActor in
+                    // Not reachable right now → queue it so it arrives on reconnect (scenario: end out of range).
+                    self?.transferData(data)
+                    self?.log.error("WC send failed, queued: \(error.localizedDescription, privacy: .public)")
+                }
             }
         } else {
             transferData(data)
