@@ -1428,6 +1428,7 @@ struct WorkoutSessionDetailScreen: View {
     @State private var showEdit = false
     @State private var showDeleteConfirm = false
     @State private var showMoreMenu = false
+    @State private var showEffortRate = false
     @State private var saveError = false
     /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
     @ObserveInjection private var inject
@@ -1438,6 +1439,17 @@ struct WorkoutSessionDetailScreen: View {
     private var dispEnd: Int? { fullSession.map(\.endTs) ?? route.endTs }
     private var dispStrain: Double? { fullSession.map(\.strain) ?? route.strain }
     private var dispAvgHr: Int? { fullSession.map(\.avgHr) ?? route.avgHr }
+    private var dispStrainSource: StrainSource? { fullSession?.strainSource }
+    private var dispSessionRpe: Double? { fullSession?.sessionRpe }
+    /// Ola 1 · E3 A5: rate from detail when estimated or unrated — never on a measured (`.hr`) session.
+    private var canRateEffort: Bool {
+        guard fullSession != nil else { return false }
+        if SessionEffortDisplay.isEstimated(strainSource: dispStrainSource) { return true }
+        return dispStrain == nil
+    }
+    private var dispDurationMinutes: Int {
+        StrengthHistoryFormat.durationMinutes(start: dispStart, end: dispEnd) ?? 0
+    }
     /// Energy is only on the full row (the route doesn't carry it). nil for a pre-v26 session (FER-715/718).
     private var dispEnergyKcal: Double? { fullSession?.energyKcal }
     private var dispRoutineName: String {
@@ -1510,15 +1522,23 @@ struct WorkoutSessionDetailScreen: View {
                     Image(systemName: "ellipsis").foregroundStyle(LiquidColor.tinta900)
                 }
                 .accessibilityLabel(Text("More options"))
-                .liquidMenu(isPresented: $showMoreMenu, items: [
-                    // Both actions wait for the full row to load.
-                    .init(String(localized: "Edit"), systemImage: "pencil") {
-                        if fullSession != nil { showEdit = true }
-                    },
-                    .init(String(localized: "Delete workout"), systemImage: "trash", isDestructive: true) {
-                        if fullSession != nil { showDeleteConfirm = true }
+                .liquidMenu(isPresented: $showMoreMenu, items: {
+                    var items: [LiquidMenuItem] = [
+                        .init(String(localized: "Edit"), systemImage: "pencil") {
+                            if fullSession != nil { showEdit = true }
+                        }
+                    ]
+                    if canRateEffort {
+                        items.append(.init(String(localized: "Rate effort…"), systemImage: "flame") {
+                            showEffortRate = true
+                        })
                     }
-                ])
+                    items.append(.init(String(localized: "Delete workout"), systemImage: "trash",
+                                       isDestructive: true) {
+                        if fullSession != nil { showDeleteConfirm = true }
+                    })
+                    return items
+                }())
             }
         }
         .liquidConfirm(
@@ -1548,9 +1568,31 @@ struct WorkoutSessionDetailScreen: View {
                     .environmentObject(repo).preferredColorScheme(.light)
             }
         }
+        .sheet(isPresented: $showEffortRate) {
+            SessionEffortRateSheet(
+                minutes: max(1, dispDurationMinutes),
+                current: dispSessionRpe,
+                onPick: { value in
+                    Task { await rateEffort(value) }
+                },
+                onClose: { showEffortRate = false }
+            )
+            .preferredColorScheme(.light)
+        }
         .saveErrorToast(isPresented: $duplicateError)
         .task { await load() }
         .enableInjection()
+    }
+
+    /// Ola 1 · E3: persist a detail-screen effort answer and reload the hero.
+    private func rateEffort(_ rpe: Double?) async {
+        guard let s = fullSession else { return }
+        let duration = max(1, (s.endTs ?? s.startTs) - s.startTs)
+        await model.updateStoredSessionEffort(sessionId: s.id, durationS: duration,
+                                              rpe: rpe,
+                                              source: rpe == nil ? nil : .answered)
+        await load()
+        coordinator.bumpReload()
     }
 
     // MARK: - Parity actions (v3 · 2A) — «Duplicar como rutina» + «Repetir hoy»
@@ -1701,28 +1743,68 @@ struct WorkoutSessionDetailScreen: View {
 
     // Effort (strain) is the hero in the effort hue, or duration in ink when the session had no
     // strain — the same rule as the post-session receipt (FER-409), formalized as
-    // `SessionEffortDisplay` (FER-226): a session too short for strain but with a captured watch
-    // average says so («Avg HR {n} bpm. Too short to score effort.») instead of the flatly wrong
-    // «No heart rate this session.» when the watch WAS there.
+    // `SessionEffortDisplay` (FER-226). Ola 1 · E3: estimated loads say «estimado» once (chip) and
+    // are tappable to re-rate; unrated sessions offer «Calificar ›».
     @ViewBuilder
     private var hero: some View {
+        let estimated = SessionEffortDisplay.isEstimated(strainSource: dispStrainSource)
         switch SessionEffortDisplay.resolve(strain: dispStrain, avgHr: dispAvgHr) {
         case .effort(let strain):
-            // quisquilloso ronda 4: «/21» — el MISMO sufijo que la fila de Historial pinta para el
-            // mismo esfuerzo, para que las dos pantallas lean el número con el mismo formato.
-            heroStat("Effort", StrengthHistoryFormat.strain(strain), unit: "/21",
-                     color: LiquidColor.ambar, caption: "What this session cost your body.")
+            let numeral = estimated
+                ? SessionEffortDisplay.estimatedNumeral(StrengthHistoryFormat.strain(strain))
+                : StrengthHistoryFormat.strain(strain)
+            VStack(alignment: .leading, spacing: LiquidSpace.s150) {
+                heroStat("Effort", numeral, unit: "/21",
+                         color: LiquidColor.ambar,
+                         caption: estimated ? "Tap to change it" : "What this session cost your body.")
+                if estimated {
+                    HStack(spacing: LiquidSpace.s200) {
+                        // Una sola vez «estimado» por superficie (A6): importada → la pastilla lo dice todo.
+                        LiquidStatePill(valencia: fullSession?.source != nil
+                                            ? String(localized: "Estimated from your imported history")
+                                            : String(localized: "Estimated"),
+                                        tono: LiquidColor.atencionTexto)
+                        Spacer(minLength: 0)
+                    }
+                }
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                if canRateEffort { showEffortRate = true }
+            }
         case .durationWithHR(let bpm):
-            if let mins = StrengthHistoryFormat.durationMinutes(start: dispStart, end: dispEnd) {
+            if canRateEffort {
+                unratedEffortHero
+            } else if let mins = StrengthHistoryFormat.durationMinutes(start: dispStart, end: dispEnd) {
                 heroStat("Duration", "\(mins)", unit: "min", color: LiquidColor.tinta900,
                          caption: "Avg HR \(bpm) bpm. Too short to score effort.")
             }
         case .durationOnly:
-            if let mins = StrengthHistoryFormat.durationMinutes(start: dispStart, end: dispEnd) {
+            if canRateEffort {
+                unratedEffortHero
+            } else if let mins = StrengthHistoryFormat.durationMinutes(start: dispStart, end: dispEnd) {
                 heroStat("Duration", "\(mins)", unit: "min",
                          color: LiquidColor.tinta900, caption: "No heart rate this session.")
             }
         }
+    }
+
+    private var unratedEffortHero: some View {
+        Button { showEffortRate = true } label: {
+            HStack(spacing: LiquidSpace.s200) {
+                Text("Effort unrated")
+                    .font(LiquidType.tituloGemela).foregroundStyle(LiquidColor.tinta900)
+                Spacer(minLength: 0)
+                Text("Rate ›")
+                    .font(LiquidType.boton).foregroundStyle(LiquidColor.ambar)
+            }
+            .padding(.vertical, LiquidSpace.s200)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text("Effort unrated"))
+        .accessibilityHint(Text("Rate effort…"))
     }
 
     private func heroStat(_ label: LocalizedStringKey, _ value: String, unit: String?,
@@ -1845,19 +1927,23 @@ struct WorkoutSessionDetailScreen: View {
             tono: LiquidColor.tinta10)
     }
 
-    /// «FUENTE» — measured with the band (journal join) vs estimated; honest, quiet, never a guess.
-    private var sourceBadge: some View {
-        HStack(spacing: LiquidSpace.s200) {
-            Text("Source").liquidLabel().foregroundStyle(LiquidColor.tinta500)
-            if journalRow != nil {
+    /// «FUENTE» — measured (journal join, or a pulse that covered the session) vs nothing. An effort-
+    /// estimated session says «estimado» ONCE, in its own pill, so the badge stays out (ola 1 · E3, A6).
+    @ViewBuilder private var sourceBadge: some View {
+        if Self.sourceBadgeIsMeasured(journal: journalRow != nil, strainSource: fullSession?.strainSource) {
+            HStack(spacing: LiquidSpace.s200) {
+                Text("Source").liquidLabel().foregroundStyle(LiquidColor.tinta500)
                 LiquidOrigenBadge(String(localized: "Measured on device"),
                                   tono: LiquidColor.verdePrimario)
-            } else {
-                LiquidOrigenBadge(String(localized: "Estimated"), tono: nil)
+                Spacer(minLength: 0)
             }
-            Spacer(minLength: 0)
+            .accessibilityElement(children: .combine)
         }
-        .accessibilityElement(children: .combine)
+    }
+
+    /// The single rule behind the FUENTE badge: shown only when the number was MEASURED.
+    static func sourceBadgeIsMeasured(journal: Bool, strainSource: StrainSource?) -> Bool {
+        journal || strainSource == .hr
     }
 
     /// Match this strength session to a journal workout by interval overlap

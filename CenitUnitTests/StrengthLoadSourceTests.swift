@@ -78,4 +78,13 @@ final class StrengthLoadSourceTests: XCTestCase {
         XCTAssertNil(AppModel.measuredStrain(hrSamples: pulse(seconds: 60), elapsedSeconds: 3000,
                                              hrMax: hrMax, sex: "male"))
     }
+
+    /// Ola 1 · E3 (A6): «estimado» una sola vez por superficie — el badge FUENTE solo aparece cuando el
+    /// número fue MEDIDO; una sesión estimada por esfuerzo lo dice en su propia pastilla.
+    func testSourceBadgeOnlyWhenMeasured() {
+        XCTAssertTrue(WorkoutSessionDetailScreen.sourceBadgeIsMeasured(journal: true, strainSource: StrainSource?.none))
+        XCTAssertTrue(WorkoutSessionDetailScreen.sourceBadgeIsMeasured(journal: false, strainSource: .hr))
+        XCTAssertFalse(WorkoutSessionDetailScreen.sourceBadgeIsMeasured(journal: false, strainSource: .rpe))
+        XCTAssertFalse(WorkoutSessionDetailScreen.sourceBadgeIsMeasured(journal: false, strainSource: StrainSource?.none))
+    }
 }

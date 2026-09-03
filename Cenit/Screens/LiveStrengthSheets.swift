@@ -126,6 +126,37 @@ struct RPESheet: View {
         default:  return ""   // 7.5 / 8.5: no descriptor of their own, just the subtitle
         }
     }
+    /// The spoken form of a rating for VoiceOver (ola 1 · E3, A9): «esfuerzo duro, te sobraban ~2 reps».
+    /// Same keys as `descriptor`/`subtitle`, resolved through the catalog; empty pieces are skipped.
+    static func spoken(_ v: Double) -> String {
+        let d: String = {
+            switch v {
+            case 6:   return String(localized: "Comfortable")
+            case 7:   return String(localized: "Moderate effort")
+            case 8:   return String(localized: "Hard effort")
+            case 9:   return String(localized: "Very hard")
+            case 9.5: return String(localized: "Near failure")
+            case 10:  return String(localized: "Maximum")
+            default:  return ""
+            }
+        }()
+        let s: String = {
+            switch v {
+            case 6:   return String(localized: "You could've done 4+ more reps")
+            case 7:   return String(localized: "~3 more reps")
+            case 7.5: return String(localized: "~2-3 more reps")
+            case 8:   return String(localized: "You had ~2 reps left")
+            case 8.5: return String(localized: "~1-2 more reps")
+            case 9:   return String(localized: "~1 more rep")
+            case 9.5: return String(localized: "Near failure")
+            case 10:  return String(localized: "To failure")
+            default:  return ""
+            }
+        }()
+        var parts: [String] = []
+        for piece in [d, s] where !piece.isEmpty && !parts.contains(piece) { parts.append(piece) }
+        return parts.joined(separator: ", ")
+    }
     private static func subtitle(_ v: Double) -> LocalizedStringKey {
         switch v {
         case 6:   return "You could've done 4+ more reps"
@@ -138,6 +169,74 @@ struct RPESheet: View {
         case 10:  return "To failure"
         default:  return ""
         }
+    }
+}
+
+// MARK: - Session effort sheet (ola 1 · E3 · detail «Calificar esfuerzo…»)
+//
+// Same six-stop row as the receipt question. Header: «¿Qué tan duro estuvo?» · «Sesión · N min».
+// Tapping persists immediately via the caller's `onPick`; tapping the selected cell again clears.
+
+struct SessionEffortRateSheet: View {
+    let minutes: Int
+    let current: Double?
+    let onPick: (Double?) -> Void
+    let onClose: () -> Void
+
+    @State private var selected: Double?
+
+    init(minutes: Int, current: Double?,
+         onPick: @escaping (Double?) -> Void, onClose: @escaping () -> Void) {
+        self.minutes = minutes
+        self.current = current
+        self.onPick = onPick
+        self.onClose = onClose
+        _selected = State(initialValue: current)
+    }
+
+    @ObserveInjection private var inject
+    var body: some View {
+        VStack(spacing: .zero) {
+            EntrenarHojaCabecera(
+                glifo: .llama,
+                titulo: String(localized: "How hard was it?"),
+                subtitulo: String(localized: "Session · \(minutes) min"),
+                tono: .ambar, salida: .cerrar, onSalir: onClose)
+                .padding(.top, LiquidSpace.s700)
+                .padding(.bottom, LiquidSpace.s200)
+            VStack(alignment: .leading, spacing: LiquidSpace.s300) {
+                EntrenarFilaEsfuerzo(
+                    opciones: SessionRPE.row.map { LiveStrengthSheet.formatDecimalComma($0) },
+                    seleccion: selected.flatMap { SessionRPE.row.firstIndex(of: $0) },
+                    tono: .ambar,
+                    a11yEtiqueta: String(localized: "Session effort"),
+                    a11yCalificador: selected.map { v in
+                        [String(localized: "of 10"), RPESheet.spoken(v), String(localized: "Estimated").lowercased()]
+                            .filter { !$0.isEmpty }.joined(separator: ", ")
+                    },
+                    a11ySinCalificar: String(localized: "unrated")
+                ) { index in
+                    guard SessionRPE.row.indices.contains(index) else { return }
+                    let value = SessionRPE.row[index]
+                    EntrenarHaptic.serieCompletada.play()
+                    if selected == value {
+                        selected = nil
+                        onPick(nil)
+                    } else {
+                        selected = value
+                        onPick(value)
+                    }
+                }
+                Text("Load recalculates on its own")
+                    .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
+            }
+            .padding(.top, LiquidSpace.s400)
+            Spacer(minLength: LiquidSpace.s300)
+        }
+        .padding(.horizontal, LiquidSpace.s600)
+        .padding(.bottom, LiquidSpace.s600)
+        .entrenarHojaFondo(tono: .ambar)
+        .enableInjection()
     }
 }
 

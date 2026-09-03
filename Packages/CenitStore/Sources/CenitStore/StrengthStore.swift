@@ -788,6 +788,32 @@ extension CenitStore {
         }
     }
 
+    /// Ola 1 · E3 (FER-330): patch the session-effort answer and the load it implies, without
+    /// rewriting sets. Used by the receipt (tap / deselect) and by «Calificar esfuerzo…» in detail.
+    /// Passing `sessionRpe == nil` clears the rating and whatever load the rating owned — the caller
+    /// re-resolves whether a measured pulse remains.
+    public func updateSessionEffort(sessionId: String,
+                                    sessionRpe: Double?,
+                                    sessionRpeSource: SessionRpeSource?,
+                                    strain: Double?,
+                                    strainSource: StrainSource?,
+                                    trimpPerAU: Double?) async throws {
+        try syncWrite { db in
+            try db.execute(sql: """
+                UPDATE strengthSession
+                SET sessionRpe = ?, sessionRpeSource = ?, strain = ?, strainSource = ?, trimpPerAU = ?
+                WHERE id = ?
+                """, arguments: [
+                    sessionRpe,
+                    sessionRpeSource?.rawValue,
+                    strain,
+                    strainSource?.rawValue,
+                    trimpPerAU,
+                    sessionId
+                ])
+        }
+    }
+
     /// Re-scale every ESTIMATED session onto a new `trimpPerAU`, in ONE write. Only rows whose load
     /// came from the rating (`strainSource == 'rpe'`) are touched — a measured session is a
     /// measurement and never moves. `strain` is supplied by the caller (the map lives in

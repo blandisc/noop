@@ -76,6 +76,16 @@ struct LiveStrengthSheet: View {
     /// Whether the receipt numerals show their final values (FER-716). Starts false so the first
     /// appearance rolls 0 → value; `playReceiptCountUp` flips it (animated only the first time).
     @State private var receiptCountUp = false
+    /// Ola 1 · E3: confirmed session-effort answer on the receipt (`nil` = not confirmed yet).
+    @State private var receiptEffortAnswer: Double? = nil
+    /// Ola 1 · E3 (gate /qa O3): dos toques rápidos no compiten por el store — el anterior se cancela.
+    @State private var receiptEffortWrite: Task<Void, Never>? = nil
+    /// Prefill shown as sugerida (dotted) until the user confirms, changes, or clears.
+    @State private var receiptEffortPrefill: Double? = nil
+    /// User explicitly deselected — do not resurrect the prefill suggestion.
+    @State private var receiptEffortCleared = false
+    /// Seed the receipt effort UI once per summary appearance.
+    @State private var receiptEffortSeeded = false
     /// The plate calculator (FER-720 · 3a), opened from the keypad's «⛓ discos» for a weight cell. nil = closed.
     @State private var platesTarget: PlatesTarget?
     /// The share-receipt screen (FER-720 · 3c), opened from the 1l receipt. nil = closed.
@@ -1491,62 +1501,166 @@ struct LiveStrengthSheet: View {
         return String(localized: "\(s.setCount) sets logged.")
     }
 
-    /// The receipt's dominant numeral (FER-87): promotes Effort/21 to a hero — same
-    /// `MetricFormat.forMetric(.strain)` grammar as the Hoy hero/sheet (never a bespoke
-    /// `String(format:)`), colored `LiquidColor.ambar` — never the RPE hue (a different datum; see
-    /// the enfoque's RPE door in `RoutineSheetLiveFoco.swift` for that one). Without cardiac data
-    /// (no Watch, no HR permission, or a session too short) it falls back to the session's duration in
-    /// plain `LiquidColor.tinta900` — never invents a strain. `SessionRecoveryCost.cost(sessionStrain:)` (unchanged,
-    /// called with no `meanHRRPct` fallback in `AppModel+Strength.swift`) already guarantees
-    /// `s.costBand == nil` whenever `s.strain == nil`, so the COST block below stays correctly
-    /// hidden with no extra guard.
-    ///
-    /// FER-226 round 2 (D1): the effort-vs-duration CHOICE is `SessionEffortDisplay.resolve` — this view
-    /// only renders whichever case it returns, never re-derives the precedence with its own `if let
-    /// strain`. `.durationWithHR`'s avgHr isn't shown IN the hero (it already has its own home in
-    /// `receiptStatsThirdSlot`/`receiptStats` below); both duration cases render identically here.
+    /// The receipt's dominant numeral + the always-asked session-effort question (ola 1 · E3 / D-Q13).
+    /// Effort/21 stays the hero when there is a load; «estimado» appears exactly once when
+    /// `strainSource == .rpe`. Without a load the hero shows «—» (still asks) or duration when the
+    /// question has nothing left to resolve (legacy path). The question row is always present.
     private func receiptHero(_ s: StrengthSummary) -> some View {
-        Group {
-            switch SessionEffortDisplay.resolve(strain: s.strain, avgHr: s.avgHr) {
-            case .effort(let strain):
-                let format = MetricFormat.forMetric(.strain)
-                let value = format.numeral(strain)
-                let zero = format.numeral(0)
-                let numeral = Text(receiptCountUp ? value : zero)
-                    .font(LiquidType.displayXL).tracking(LiquidType.displayXLTracking)
-                    .monospacedDigit().contentTransition(.numericText())
-                    .foregroundStyle(LiquidColor.ambar)
-                    .lineLimit(1).minimumScaleFactor(0.6)
-                VStack(alignment: .leading, spacing: LiquidSpace.s050) {
-                    Text("Effort").liquidLabel().foregroundStyle(LiquidColor.tinta500)
-                    if reflow, let suffix = format.scaleSuffix {
+        let estimated = SessionEffortDisplay.isEstimated(strainSource: s.strainSource)
+        return VStack(alignment: .leading, spacing: LiquidSpace.s400) {
+            receiptEffortNumeral(s, estimated: estimated)
+            receiptEffortQuestion(s, estimated: estimated)
+        }
+        .padding(LiquidSpace.s400)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .liquidGlass(.superficieSolida)
+        .onAppear { seedReceiptEffort(s) }
+    }
+
+    @ViewBuilder
+    private func receiptEffortNumeral(_ s: StrengthSummary, estimated: Bool) -> some View {
+        let format = MetricFormat.forMetric(.strain)
+        if let strain = s.strain {
+            let raw = format.numeral(strain)
+            let value = estimated ? SessionEffortDisplay.estimatedNumeral(raw) : raw
+            let zero = estimated ? SessionEffortDisplay.estimatedNumeral(format.numeral(0)) : format.numeral(0)
+            let numeral = Text(receiptCountUp ? value : zero)
+                .font(LiquidType.displayXL).tracking(LiquidType.displayXLTracking)
+                .monospacedDigit()
+                .contentTransition(reduceMotion ? .identity : .numericText())
+                .foregroundStyle(LiquidColor.ambar)
+                .lineLimit(1).minimumScaleFactor(0.6)
+            VStack(alignment: .leading, spacing: LiquidSpace.s050) {
+                Text(estimated ? "Effort · estimated" : "Effort")
+                    .liquidLabel().foregroundStyle(LiquidColor.tinta500)
+                if reflow, let suffix = format.scaleSuffix {
+                    numeral
+                    Text(suffix).font(LiquidType.boton).foregroundStyle(LiquidColor.ambar)
+                } else {
+                    HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s075) {
                         numeral
-                        Text(suffix).font(LiquidType.boton).foregroundStyle(LiquidColor.ambar)
-                    } else {
-                        HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s075) {
-                            numeral
-                            if let suffix = format.scaleSuffix {
-                                Text(suffix).font(LiquidType.boton).foregroundStyle(LiquidColor.ambar)
-                            }
+                        if let suffix = format.scaleSuffix {
+                            Text(suffix).font(LiquidType.boton).foregroundStyle(LiquidColor.ambar)
                         }
                     }
                 }
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Text("Effort"))
-                .accessibilityValue(Text(Self.strainAccessibilityValue(value, scaleSuffix: format.scaleSuffix)))
-            case .durationWithHR, .durationOnly:
-                VStack(alignment: .leading, spacing: LiquidSpace.s050) {
-                    Text("Duration").liquidLabel().foregroundStyle(LiquidColor.tinta500)
-                    Text(receiptCountUp ? Self.clock(s.durationS) : "0:00")
-                        .font(LiquidType.displayXL).tracking(LiquidType.displayXLTracking)
-                        .monospacedDigit().contentTransition(.numericText())
-                        .foregroundStyle(LiquidColor.tinta900)
-                        .lineLimit(1).minimumScaleFactor(0.6)
+                if estimated, let rpe = s.sessionRpe ?? receiptEffortAnswer ?? receiptEffortPrefill {
+                    let mins = max(1, s.durationS / 60)
+                    Text("From \(mins) min at effort \(LiveStrengthSheet.formatDecimalComma(rpe))")
+                        .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
+                    Text("Counts toward your load from tomorrow")
+                        .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                 }
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Text("Duration"))
-                .accessibilityValue(Text(Self.clock(s.durationS)))
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(estimated
+                ? String(localized: "Estimated effort, \(raw) of \(String(Int(StrainScorer.maxStrain)))")
+                : String(localized: "Effort")))
+            .accessibilityValue(Text(estimated ? "" : Self.strainAccessibilityValue(value, scaleSuffix: format.scaleSuffix)))
+        } else if receiptShowsDashHero(s) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s050) {
+                Text("Effort").liquidLabel().foregroundStyle(LiquidColor.tinta500)
+                Text(verbatim: "—")
+                    .font(LiquidType.displayXL).tracking(LiquidType.displayXLTracking)
+                    .foregroundStyle(LiquidColor.ambar)
+                    .lineLimit(1).minimumScaleFactor(0.6)
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text("Effort"))
+            .accessibilityValue(Text("unrated"))
+        } else {
+            VStack(alignment: .leading, spacing: LiquidSpace.s050) {
+                Text("Duration").liquidLabel().foregroundStyle(LiquidColor.tinta500)
+                Text(receiptCountUp ? Self.clock(s.durationS) : "0:00")
+                    .font(LiquidType.displayXL).tracking(LiquidType.displayXLTracking)
+                    .monospacedDigit().contentTransition(reduceMotion ? .identity : .numericText())
+                    .foregroundStyle(LiquidColor.tinta900)
+                    .lineLimit(1).minimumScaleFactor(0.6)
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text("Duration"))
+            .accessibilityValue(Text(Self.clock(s.durationS)))
+        }
+    }
+
+    /// Dash hero when there is no load yet and the question is still open (no measured fallback).
+    private func receiptShowsDashHero(_ s: StrengthSummary) -> Bool {
+        s.strain == nil
+    }
+
+    private func receiptEffortQuestion(_ s: StrengthSummary, estimated: Bool) -> some View {
+        let scale = SessionRPE.row
+        let labels = scale.map { LiveStrengthSheet.formatDecimalComma($0) }
+        let seleccion: Int? = receiptEffortAnswer.flatMap { v in scale.firstIndex(of: v) }
+        let sugerida: Int? = {
+            guard receiptEffortAnswer == nil, !receiptEffortCleared,
+                  let p = receiptEffortPrefill else { return nil }
+            return scale.firstIndex(of: p)
+        }()
+        // VoiceOver (A9): «8, de 10, esfuerzo duro, te sobraban ~2 reps, sugerido/estimado».
+        let calificador: String? = {
+            let spokenFor: Double? = receiptEffortAnswer ?? (sugerida != nil ? receiptEffortPrefill : nil)
+            guard let v = spokenFor else { return nil }
+            var parts = [String(localized: "of 10"), RPESheet.spoken(v)].filter { !$0.isEmpty }
+            if seleccion != nil, estimated { parts.append(String(localized: "Estimated").lowercased()) }
+            if seleccion == nil, sugerida != nil { parts.append(String(localized: "suggested")) }
+            return parts.joined(separator: ", ")
+        }()
+        return VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+            Text("How hard was it?")
+                .font(LiquidType.tituloGemela).foregroundStyle(LiquidColor.tinta900)
+            EntrenarFilaEsfuerzo(
+                opciones: labels,
+                seleccion: seleccion,
+                sugerida: sugerida,
+                tono: .ambar,
+                a11yEtiqueta: String(localized: "Session effort"),
+                a11yCalificador: calificador,
+                a11ySinCalificar: String(localized: "unrated")
+            ) { index in
+                guard scale.indices.contains(index) else { return }
+                let value = scale[index]
+                EntrenarHaptic.serieCompletada.play()
+                receiptEffortWrite?.cancel()
+                if receiptEffortAnswer == value {
+                    receiptEffortAnswer = nil
+                    receiptEffortCleared = true
+                    receiptEffortWrite = Task { await model.updateStrengthSessionEffort(rpe: nil, source: nil) }
+                } else {
+                    receiptEffortAnswer = value
+                    receiptEffortCleared = false
+                    receiptEffortWrite = Task { await model.updateStrengthSessionEffort(rpe: value, source: .answered) }
+                }
+            }
+            if sugerida != nil {
+                Text("Suggested from your sets. Tap to confirm or change.")
+                    .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else if seleccion == nil, receiptEffortPrefill == nil || receiptEffortCleared {
+                Text("Without an answer it isn't estimated.")
+                    .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
+                LiquidGlassButton("Leave unrated", variant: .quiet, expands: true) {
+                    receiptEffortAnswer = nil
+                    receiptEffortCleared = true
+                    Task { await model.updateStrengthSessionEffort(rpe: nil, source: nil) }
+                }
+            }
+        }
+    }
+
+    private func seedReceiptEffort(_ s: StrengthSummary) {
+        guard !receiptEffortSeeded else { return }
+        receiptEffortSeeded = true
+        switch s.sessionRpeSource {
+        case .answered:
+            receiptEffortAnswer = s.sessionRpe
+            receiptEffortPrefill = nil
+        case .prefill:
+            receiptEffortAnswer = nil
+            receiptEffortPrefill = s.sessionRpe
+        case nil:
+            receiptEffortAnswer = nil
+            receiptEffortPrefill = nil
         }
     }
 

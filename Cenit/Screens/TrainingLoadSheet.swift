@@ -61,6 +61,10 @@ struct TrainingLoadSheet: View {
     var onSeeTrends: (() -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
+    /// Ola 1 · E3: la procedencia de la fuerza en el pie (sesiones estimadas por esfuerzo y sesiones
+    /// sin esfuerzo que NO entran a la carga). Opcional: la hoja también se monta en previews sin app.
+    @Environment(AppModel.self) private var app: AppModel?
+    @State private var provenance: (estimated: Int, unrated: Int)?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.liquidMotionDisabled) private var motionDisabled
 
@@ -123,6 +127,7 @@ struct TrainingLoadSheet: View {
         }
         .task {
             levelsHost.load(rows: chartSeriesPairs)
+            if let app { provenance = await app.repo.strengthEffortProvenance() }
         }
     }
 
@@ -418,6 +423,19 @@ struct TrainingLoadSheet: View {
     // MARK: - Pie (método + chip de origen + ver más)
 
     @ViewBuilder private var pie: some View {
+        // Ola 1 · E3 (A7): cuántas sesiones de fuerza entraron ESTIMADAS por esfuerzo y cuántas se
+        // quedaron fuera por no tener esfuerzo — la carga no inventa; lo dice, y a la vista (no dentro
+        // del plegable del método; gate /qa O4). Singular y plural con su propia clave (D3).
+        if let provenance, provenance.estimated > 0 {
+            LiquidNotaLine(provenance.estimated == 1
+                ? String(localized: "Includes \(provenance.estimated) session with estimated effort")
+                : String(localized: "Includes \(provenance.estimated) sessions with estimated effort"))
+        }
+        if let provenance, provenance.unrated > 0 {
+            LiquidNotaLine(provenance.unrated == 1
+                ? String(localized: "\(provenance.unrated) session without effort: not in your load")
+                : String(localized: "\(provenance.unrated) sessions without effort: not in your load"))
+        }
         LiquidMetodo(title: String(localized: "How it's calculated"),
                      mostrar: String(localized: "Show method"),
                      ocultar: String(localized: "Hide method")) {

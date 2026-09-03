@@ -13,4 +13,16 @@ final class SessionEffortDisplayTests: XCTestCase {
     func testDurationOnlyWhenNeither() {
         XCTAssertEqual(SessionEffortDisplay.resolve(strain: nil, avgHr: nil), .durationOnly)
     }
+
+    /// Ola 1 · E3: only `.rpe` is estimated; nil (legacy) and `.hr` are measured.
+    func testIsEstimatedOnlyForRpeSource() {
+        XCTAssertTrue(SessionEffortDisplay.isEstimated(strainSource: .rpe))
+        XCTAssertFalse(SessionEffortDisplay.isEstimated(strainSource: .hr))
+        XCTAssertFalse(SessionEffortDisplay.isEstimated(strainSource: nil))
+    }
+
+    func testEstimatedNumeralAddsTildeOnce() {
+        XCTAssertEqual(SessionEffortDisplay.estimatedNumeral("11.4"), "~11.4")
+        XCTAssertEqual(SessionEffortDisplay.estimatedNumeral("~11.4"), "~11.4")
+    }
 }
