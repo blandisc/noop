@@ -116,6 +116,18 @@ el mismo PR** que la implementa (una línea basta: fecha, decisión, por qué).
   blanco, vía el componente compartido `pantallaFondo` (`CenitColor.pantalla`). El papel cálido
   (`InstrumentoTheme.paper`) sigue vivo para tarjetas, hojas y toolbars; Hoy conserva sus
   partículas (`LiquidAtmosfera`) sobre el mismo blanco. Orden del dueño en sesión /inject.
+- **2026-09-03 · Modo oscuro: se REABRE «lienzo canónico blanco» (revierte parcialmente la decisión de arriba).**
+  Cénit tendrá tres estados de apariencia — Seguir al sistema (default) · Claro · Oscuro — épico **FER-343**
+  (sub-issues FER-344…FER-357). El modo oscuro NO es un volteo de color: rediseña lienzo, vidrio, sombras
+  (`LiquidElevation`), héroe Metal y gráficas para suelo negro, con contraste AA verificado por prueba (host
+  macOS). `CenitColor.pantalla` y el stack `LiquidColor` pasan a resolver por modo (contrato de A1/FER-345);
+  `OKLab.darkened`/`tonoCampo` son algoritmos solo-para-claro y se re-encaminan por un helper mode-aware.
+  Decisiones del dueño: **D1** = tonos de dato oscuros SOLO en el iPhone (el Apple Watch no se toca; acota
+  «el dato no cambia por pantalla» a «no cambia dentro de un mismo aparato/modo»); **D2** = widgets y Live
+  Activity siguen el modo del sistema (delta a la regla 2026-09-03 que los anclaba a `fondoAlto`; la Dynamic
+  Island se queda en `LiquidOLED`); **D3** = onboarding/entrada/Términos también en oscuro. Plan blindado con
+  Grok (8 rondas adversariales → CONVERGED). Por qué: uso nocturno/OLED y paridad con el resto de iOS; el
+  arranque probado es `LiquidOLED` + su arnés de contraste (`LiquidOLEDContrasteTests`).
 - **2026-08-29 · Distancia y sombra de tarjeta unificadas a un token cada una:** todo elemento tipo
   tarjeta usa `CenitMetrics.cardGap` para su separación y `LiquidElevation.tarjeta` para su sombra
   (las tarjetas teñidas conservan su sombra de color). Un solo lugar por cada cosa. Orden del dueño.
