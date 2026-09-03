@@ -645,6 +645,10 @@ private extension StrengthCSVImporter {
     static func normalizeText(_ text: String) -> String {
         var s = text
         if s.hasPrefix("\u{FEFF}") { s.removeFirst() }
+        // CRLF (RFC 4180, Excel, Windows) is ONE `Character` in Swift, so a char-by-char scanner that
+        // tests "\r" and "\n" separately never sees a line break and the whole file collapses into a
+        // single header row — zero sessions, zero issues (gate /qa FER-328 D1). Normalize once here.
+        s = s.replacingOccurrences(of: "\r\n", with: "\n")
         // UTF-16 BOM as decoded by String sometimes appears as the replacement for raw bytes —
         // callers typically already decoded; handle the common UTF-8 BOM above.
         // Semicolon-delimited (Excel locales): rewrite the first line's separator if needed is

@@ -169,6 +169,18 @@ final class StrengthCSVImportTests: XCTestCase {
 
     // MARK: - Cénit round-trip
 
+    /// RFC 4180 / Excel / Windows line endings read exactly like LF — never a silent empty import.
+    func testCRLFParsesLikeLF() throws {
+        let lf = try fixture("hevy_kg")
+        let crlf = lf.replacingOccurrences(of: "\n", with: "\r\n")
+        XCTAssertEqual(StrengthCSVImporter.detectDialect(header: String(crlf.split(separator: "\r\n").first ?? "")), .hevy)
+        let a = try StrengthCSVImporter.parse(text: lf, dialect: .hevy)
+        let b = try StrengthCSVImporter.parse(text: crlf, dialect: .hevy)
+        XCTAssertFalse(b.sessions.isEmpty, "a CRLF file must not vanish into zero sessions")
+        XCTAssertEqual(a.sessions, b.sessions)
+        XCTAssertEqual(a.skipped.count, b.skipped.count)
+    }
+
     func testCenitRoundTripLossless() throws {
         let history = try StrengthCSVImporter.parse(text: fixture("cenit_roundtrip"), dialect: .cenit)
         let session = try XCTUnwrap(history.sessions.first)

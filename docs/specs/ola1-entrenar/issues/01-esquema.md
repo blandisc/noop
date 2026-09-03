@@ -11,7 +11,7 @@ Ninguno visible. Todo append-only; una base vieja migra sin perder filas; una ba
 
 ## Reglas y lógica
 - **v42**, todo por `CenitStore.addColumnIfMissing`:
-  - `strengthSession`: `strainSource TEXT` ('hr'|'rpe'; NULL con strain no-nil = legado hr) · `sessionRpe REAL` (6–10, NULL = sin calificar) · `sessionRpeSource TEXT` ('answered'|'prefill') · `trimpPerAU REAL` · `source TEXT` ('strong'|'hevy'|'cenit-csv'; NULL = Cénit) · `title TEXT` · `programWeek INTEGER` · `deload INTEGER`.
+  - `strengthSession`: `strainSource TEXT` ('hr'|'rpe'; NULL con strain no-nil = legado hr) · `sessionRpe REAL` (6–10, NULL = sin calificar) · `sessionRpeSource TEXT` ('answered'|'prefill') · `trimpPerAU REAL` · `source TEXT` ('strong'|'hevy'|'cenit'; NULL = Cénit) · `title TEXT` · `programWeek INTEGER` · `deload INTEGER`.
   - `routineExercise.progressionUseRPE INTEGER NOT NULL DEFAULT 0` (semántica: ritmo «Según reps en reserva»).
   - `routineSet.mode TEXT` · `setEntry.mode TEXT` (NULL = standard; valores 'standard'|'amrap'|'drop').
 - **v43** (`endMode` amplía la tabla canónica de v2 §C: es pulido post-taller del dueño, «Al terminar el ciclo», ver E10/E11): tabla `program` (`id TEXT PK` = 'active', `name TEXT NOT NULL`, `weeks INTEGER NOT NULL`, `startTs INTEGER NOT NULL`, `deloadRule TEXT NOT NULL` ('volumeOnly'|'volumeAndLoad'|'none'), `endMode TEXT NOT NULL` ('repeat'|'single'), `templateId TEXT NULL`, `createdTs INTEGER NOT NULL`), creada con guard `tableExists`.
