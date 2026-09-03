@@ -177,6 +177,66 @@ extension HojaSesionViva {
     /// Descarta el aviso sin registrar nada — la fila queda pendiente, tal como estaba antes del tap.
     func dismissAbsurdCapture() { absurdCapture = nil }
 
+    // MARK: - El menú de 4 opciones de una serie en sesión (ola 1 · FER-327 · E7 · ux-B §③)
+    //
+    // Pulsación larga sobre la fila (o su chip de marca) abre este `LiquidMenu` — mismo patrón que
+    // `exerciseMenuItems`. Sobre un escalón (`mode == .drop`) el menú se reduce a «Quitar serie»: un
+    // escalón no es AMRAP, no cuelga otro escalón de sí mismo, y «al fallo» no aplica a una bajada.
+
+    func setMenuItems(ei: Int, si: Int) -> [LiquidMenuItem] {
+        guard session.runs.indices.contains(ei), session.runs[ei].sets.indices.contains(si) else { return [] }
+        let run = session.runs[ei]
+        let set = run.sets[si]
+        if set.mode == .drop {
+            return [.init(String(localized: "Remove set"), systemImage: "trash", isDestructive: true) {
+                removeSetAskingIfNeeded(ei: ei, si: si)
+            }]
+        }
+        var rows: [LiquidMenuItem] = []
+        let usesReps = run.type == .weightReps || run.type == .bodyweight
+        let isAmrap = set.mode == .amrap
+        if usesReps {
+            rows.append(.init(String(localized: "However many you can"),
+                              systemImage: isAmrap ? "checkmark" : "infinity") {
+                toggleAmrap(ei: ei, si: si)
+            })
+        } else {
+            // Q7/mock §④: AMRAP no existe en tiempo/distancia — la fila se queda atenuada (con el
+            // subtítulo que lo explica) en vez de desaparecer, para que el menú no salte de tamaño.
+            rows.append(.init(String(localized: "However many you can"),
+                              subtitle: String(localized: "Only for rep-based sets"),
+                              systemImage: "infinity"))
+        }
+        rows.append(.init(String(localized: "Drop and continue · −20%"), systemImage: "arrow.down.right") {
+            withAnimation(reduceMotion ? nil : .snappy) { addDrop(ei: ei, si: si) }
+        })
+        let atFailure = set.rpe == 10
+        rows.append(.init(String(localized: "Reached failure"),
+                          systemImage: atFailure ? "checkmark" : "bolt.fill") {
+            // Al fallo == QUEDABAN «0» (ya vivo desde antes de esta ola) — el MISMO dato, la misma
+            // escritura (`setRPE`), solo una segunda puerta. Togglear lo quita (RPE nil), nunca 0.
+            session.setRPE(exercise: run.id, set: set.id, rpe: atFailure ? nil : 10)
+        })
+        rows.append(.init(String(localized: "Remove set"), systemImage: "trash", isDestructive: true) {
+            removeSetAskingIfNeeded(ei: ei, si: si)
+        })
+        return rows
+    }
+
+    /// «Las que puedas» en sesión: marca/desmarca AMRAP sobre la serie que se está capturando (no
+    /// prescribiendo, como en el editor). Activarlo en una serie AÚN pendiente vacía su celda de reps
+    /// («máx» reemplaza cualquier semilla fantasma o «tocar ANTERIOR») para que el ✓ quede bloqueado
+    /// hasta que el usuario escriba lo que de verdad salió (issue B1/B3) — una serie YA hecha conserva
+    /// su número real: marcarla AMRAP retroactivamente no debe borrar un dato que ya se registró.
+    func toggleAmrap(ei: Int, si: Int) {
+        guard session.runs.indices.contains(ei), session.runs[ei].sets.indices.contains(si) else { return }
+        let wasAmrap = session.runs[ei].sets[si].mode == .amrap
+        session.runs[ei].sets[si].mode = wasAmrap ? .standard : .amrap
+        if !wasAmrap, !session.runs[ei].sets[si].done {
+            session.runs[ei].sets[si].reps = nil
+        }
+    }
+
     // MARK: - «Bajar y seguir» en sesión (ola 1 · FER-327 · E7)
 
     /// Cuelga un escalón de la serie `si` con el inventario REAL de discos del usuario — la piel solo
@@ -190,6 +250,54 @@ extension HojaSesionViva {
                             implement: .from(equipment: equipment),
                             inventory: sheet.model.plates.inventory,
                             barKg: sheet.model.plates.barKg)
+    }
+
+    // MARK: - «Quitar serie» en sesión (B5 · ola 1 · E7)
+    //
+    // `StrengthSessionModel.removeSet` ya se lleva los escalones contiguos de una madre (E6) — esta
+    // capa solo decide SI hace falta preguntar antes: con escalones YA HECHOS, el borrado se lleva
+    // trabajo real que no vuelve (edge case 4, v3); con escalones pendientes (o sin escalones), se
+    // quita en el acto, como cualquier otra serie.
+
+    /// Los escalones colgados DETRÁS de `si` — mismo criterio de adyacencia que `hasDropAfter`/`addDrop`.
+    private func dropStepsAfter(ei: Int, si: Int) -> [StrengthSessionModel.WorkingSet] {
+        guard session.runs.indices.contains(ei) else { return [] }
+        var result: [StrengthSessionModel.WorkingSet] = []
+        var i = si + 1
+        while session.runs[ei].sets.indices.contains(i), session.runs[ei].sets[i].mode == .drop {
+            result.append(session.runs[ei].sets[i]); i += 1
+        }
+        return result
+    }
+
+    func removeSetAskingIfNeeded(ei: Int, si: Int) {
+        guard session.runs.indices.contains(ei), session.runs[ei].sets.indices.contains(si) else { return }
+        let run = session.runs[ei]
+        let set = run.sets[si]
+        let doneDrops = dropStepsAfter(ei: ei, si: si).filter(\.done).count
+        if set.mode != .drop, doneDrops > 0 {
+            confirmRemoveSetTarget = RemoveSetTarget(runId: run.id, setId: set.id, doneDropCount: doneDrops)
+        } else {
+            withAnimation(reduceMotion ? nil : .snappy) { session.removeSet(exercise: ei, set: si) }
+            EntrenarHaptic.borrado.play()
+        }
+    }
+
+    /// B5: el copy exacto del issue, con el conteo real de escalones que se pierden.
+    var removeSetMessage: String {
+        guard let target = confirmRemoveSetTarget else { return "" }
+        return String(localized: "This set has \(target.doneDropCount) logged “drop and continue” steps. Removing it deletes them too.")
+    }
+
+    /// Libera `confirmRemoveSetTarget`: resuelve la fila VIGENTE por identidad (regla dura) — B8 pudo
+    /// reordenar/saltar ejercicios mientras la pregunta seguía en pantalla.
+    func confirmRemoveSet() {
+        guard let target = confirmRemoveSetTarget else { return }
+        confirmRemoveSetTarget = nil
+        guard let ei = session.runs.firstIndex(where: { $0.id == target.runId }),
+              let si = session.runs[ei].sets.firstIndex(where: { $0.id == target.setId }) else { return }
+        withAnimation(reduceMotion ? nil : .snappy) { session.removeSet(exercise: ei, set: si) }
+        EntrenarHaptic.borrado.play()
     }
 
     // MARK: - B16b · «¿La rutina se queda así?» (FER-169)

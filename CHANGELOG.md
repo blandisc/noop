@@ -79,19 +79,26 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
   keypad dice «máx» — quita el techo y marca la serie «las que puedas» sin un gesto nuevo. El «···»
   del ejercicio gana el atajo «Última serie: las que puedas» para el caso más común. La receta abierta
   ahora lee «8 a máx» en vez del dato crudo «8+».
-- Sesión en vivo: pulsación larga sobre una serie de trabajo o «las que puedas» cuelga un escalón de
-  «bajar y seguir» al 80 % de peso, redondeado a los discos reales del usuario (también alcanzable
-  desde el rotor de VoiceOver). La fila gana una línea propia con el tipo de serie («Las que puedas» /
-  «↳ Bajar y seguir»); el contador de series excluye los escalones y un escalón pinta «↳» en vez de
-  robarle el número a la siguiente. Una serie «las que puedas» pendiente lee «máx» en tinta.
+- Sesión en vivo: pulsación larga sobre cualquier serie de trabajo (ejercicio suelto o miembro de
+  superserie) abre el menú de la serie con sus 4 opciones — «Las que puedas» (marca la serie,
+  celda de reps vacía/«máx», ✓ bloqueado hasta escribir; una serie ya hecha conserva su número real),
+  «Bajar y seguir · −20 %» (cuelga un escalón al 80 % de peso, redondeado a los discos reales del
+  usuario), «Llegué al fallo» (la misma escritura que QUEDABAN «0», ahora también desde aquí) y
+  «Quitar serie». Sobre un escalón, el menú se reduce a «Quitar serie». Las 4 opciones (o 1 sobre un
+  escalón) también viven en el rotor de VoiceOver; los chips de la fila son solo informativos, el menú
+  es la acción. La fila gana una línea propia con el tipo de serie («Las que puedas» / «↳ Bajar y
+  seguir»); el contador de series excluye los escalones y un escalón pinta «↳» en vez de robarle el
+  número a la siguiente — también en superseries, donde el escalón vive como sub-fila de su madre
+  (nunca como una ronda propia: desalinearía la numeración entre los demás miembros del bloque). Quitar
+  una madre con escalones YA HECHOS pide confirmación con el conteo exacto; con escalones pendientes o
+  sin escalones, se quita en el acto.
 - Detalle del entrenamiento: el contador por ejercicio también excluye los escalones («↳ Bajar y
   seguir»); un AMRAP hecho lee «× N máx». Una serie al fallo (RPE 10) lee «· fallo» en vez de «· Q0» en
   toda la sesión y el historial. Live Activity y Watch: «al volver» dice «80 kg × máx» / «↳ 64 kg × 9».
 - Detalle de ejercicio: pie nuevo bajo la gráfica de 1RM estimado — «El 1RM estimado usa máximo 12
   reps» (`OneRepMax.maxReps`).
-- GAP: el menú de 4 opciones de la sesión (las que puedas / bajar y seguir / llegué al fallo / quitar
-  serie) y la confirmación al quitar una madre con escalones hechos quedan fuera de este lote — «al
-  fallo» ya se captura con QUEDABAN «0» (sin cambios) y «quitar serie» en sesión sigue sin UI.
+- GAP: el modo Foco de superserie (`RoutineSheetLiveFoco.swift`) no gana la sub-fila del escalón —
+  solo se beneficia del conteo de rondas corregido.
 
 ### Ola 1 de Entrenar · ritmo «según reps en reserva» (FER-326)
 - La regla de subida gana un ritmo: en un ejercicio con el interruptor encendido, terminar la sesión con

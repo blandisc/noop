@@ -849,6 +849,21 @@ final class StrengthSessionModelTests: XCTestCase {
         XCTAssertEqual(s.closedSupersetRounds(members: members), 3, "B no tener 3.ª fila no bloquea la cuenta de A")
     }
 
+    /// Ola 1 (FER-327 · E7): un escalón de «bajar y seguir» colgado de la ronda 0 de A NO cuenta como
+    /// una ronda propia — ni en `supersetRounds` (A seguiría reportando las mismas 2 rondas de
+    /// siempre) ni en `closedSupersetRounds` (cerrar ronda 0 en A y B sigue contando 1, no se atora
+    /// esperando que el escalón también se marque). De lo contrario «ronda 2» de A apuntaría al
+    /// escalón, no a su segunda serie real, desalineándola de la ronda 2 de B.
+    func testDropStepDoesNotCountAsItsOwnSupersetRound() {
+        let s = supersetSession(rounds: 2)
+        XCTAssertTrue(s.addDrop(exercise: 0, set: 0, implement: .barbell), "el escalón cuelga de la ronda 0 de A")
+        XCTAssertEqual(s.supersetRounds(at: 0), 2, "A sigue reportando 2 rondas, no 3, con el escalón colgado")
+        let members = s.supersetMembers(at: 0)
+        s.runs[0].sets[0].done = true; s.runs[1].sets[0].done = true   // ronda 0 de A y B (el escalón sigue pendiente)
+        XCTAssertEqual(s.closedSupersetRounds(members: members), 1,
+                       "la ronda 0 cierra sin esperar al escalón, que no es una ronda")
+    }
+
     /// `addExercise` (ad-hoc, FER-762) and `replaceExercise` (swap mid-session, FER-894) both always seed
     /// `supersetGroup = nil` — neither auto-joins a superset it wasn't authored into.
     func testAddExerciseAndReplaceExerciseLeaveSupersetGroupNil() {

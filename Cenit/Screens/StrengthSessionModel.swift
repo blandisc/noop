@@ -405,10 +405,13 @@ final class StrengthSessionModel: ObservableObject {
         return String(letters[idx])
     }
 
-    /// How many `.work` series the run at `index` carries — the "rounds" a superset member cycles through.
+    /// How many `.work` series the run at `index` carries — the "rounds" a superset member cycles
+    /// through. Ola 1 (FER-327 · E7): EXCLUYE los escalones de «bajar y seguir» — un drop no es una
+    /// ronda propia (rompería «una fila por miembro por ronda» entre los demás miembros del bloque);
+    /// vive como sub-fila de su madre (`RoutineSheetLiveTarjeta.filaRonda`).
     func supersetRounds(at index: Int) -> Int {
         guard runs.indices.contains(index) else { return 0 }
-        return runs[index].sets.filter { $0.kind == .work }.count
+        return runs[index].sets.filter { $0.kind == .work && $0.mode != .drop }.count
     }
 
     /// FER-170 (F5, ronda 2 del gate · R7): cuántas rondas de este bloque de superserie están
@@ -426,7 +429,8 @@ final class StrengthSessionModel: ObservableObject {
         for r in 1...total {
             var slots = 0, done = 0
             for ei in members where runs.indices.contains(ei) {
-                let work = runs[ei].sets.filter { $0.kind == .work }
+                // Ola 1 (FER-327 · E7): mismo filtro que `supersetRounds` — un escalón no es una ronda.
+                let work = runs[ei].sets.filter { $0.kind == .work && $0.mode != .drop }
                 guard r <= work.count else { continue }
                 slots += 1
                 if work[r - 1].done { done += 1 }
