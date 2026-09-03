@@ -115,7 +115,12 @@ extension Repository {
         let trained = ProgramCalendar.trainedWeekStarts(sessionStartTs: starts, calendar: calendar)
         let position = ProgramCalendar.position(of: program, trainedWeekStarts: trained,
                                                 now: now, calendar: calendar)
-        return ProgramServing.Context(program: program, position: position)
+        // Ola 1 · E11 (P7): «la semana pasada quedó en blanco» — mismo insumo (`trained`) que ya
+        // calculó `position`, ninguna segunda consulta al store.
+        let lastWeekBlank = ProgramServing.lastWeekWasBlank(startTs: program.startTs,
+                                                            trainedWeekStarts: trained,
+                                                            now: now, calendar: calendar)
+        return ProgramServing.Context(program: program, position: position, lastWeekBlank: lastWeekBlank)
     }
 
     /// Alta/actualización y baja del programa activo. «Terminar programa» borra solo la fila: las
@@ -123,6 +128,14 @@ extension Repository {
     func setProgram(_ program: Program) async throws {
         guard let store = await storeHandle() else { return }
         try await store.setProgram(program)
+    }
+
+    /// Instala un motor materializado (rutinas + calendario + `program`) en UNA transacción — la
+    /// puerta de «Empezar programa» (ola 1 · E11). Nunca N awaits desde la pantalla: si el teléfono se
+    /// cierra a la mitad, o queda el programa completo o no queda nada nuevo.
+    func installProgram(_ materialized: ProgramTemplate.Materialized) async throws {
+        guard let store = await storeHandle() else { return }
+        try await store.installProgram(materialized)
     }
 
     func endProgram() async throws {

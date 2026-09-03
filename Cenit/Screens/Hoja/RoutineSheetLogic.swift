@@ -189,7 +189,8 @@ extension RoutineSheet {
         }
         model.startStrengthSession(routineId: r.id, routineName: r.name, slots: slots,
                                    programWeek: serving.flatMap(\.stampWeek),
-                                   deload: serving.flatMap(\.stampDeload))
+                                   deload: serving.flatMap(\.stampDeload),
+                                   lightWeekHint: ProgramServing.stalledHint(context: serving))
     }
 
     // MARK: - Set + exercise mutations

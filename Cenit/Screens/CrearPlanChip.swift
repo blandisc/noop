@@ -13,6 +13,9 @@ import CenitDesign
 struct CrearPlanChip: View {
     var onTemplates: () -> Void
     var onImport: () -> Void
+    /// «Programa · 4 a 6 semanas» (ola 1 · E11). `nil` la esconde — D-Q8: fuera del primer uso, antes
+    /// de que exista una semana que convertir. El caller decide cuándo pasar un closure real.
+    var onProgram: (() -> Void)? = nil
 
     @State private var showMenu = false
 
@@ -20,10 +23,20 @@ struct CrearPlanChip: View {
         EntrenarChipHerramienta(systemImage: "rectangle.stack.badge.plus", label: Text("Create plan")) {
             showMenu = true
         }
-        .liquidMenu(isPresented: $showMenu, items: [
-            .init(String(localized: "Template"), systemImage: "square.stack.3d.up", action: onTemplates),
-            .init(String(localized: "Import"), systemImage: "square.and.arrow.down", action: onImport)
-        ])
+        .liquidMenu(isPresented: $showMenu, items: menuItems)
+    }
+
+    private var menuItems: [LiquidMenuItem] {
+        var items = [
+            LiquidMenuItem(String(localized: "Template"), systemImage: "square.stack.3d.up", action: onTemplates),
+            LiquidMenuItem(String(localized: "Import"), systemImage: "square.and.arrow.down", action: onImport)
+        ]
+        if let onProgram {
+            items.append(LiquidMenuItem(String(localized: "Program"),
+                                        subtitle: String(localized: "4 to 6 weeks"),
+                                        systemImage: "calendar.badge.clock", action: onProgram))
+        }
+        return items
     }
 }
 

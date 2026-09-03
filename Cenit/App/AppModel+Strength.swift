@@ -21,7 +21,8 @@ extension AppModel {
     /// había programa.
     func startStrengthSession(routineId: String?, routineName: String,
                               slots: [StrengthSessionModel.PlanSlot],
-                              programWeek: Int? = nil, deload: Bool? = nil) {
+                              programWeek: Int? = nil, deload: Bool? = nil,
+                              lightWeekHint: String? = nil) {
         guard strengthSession == nil else { strengthSheetPresented = true; return }
         pendingHrFlush.removeAll()
         lastAcceptedHrTs = nil
@@ -29,6 +30,10 @@ extension AppModel {
                                                     slots: slots, startTs: Int(Date().timeIntervalSince1970))
         strengthSession?.programWeek = programWeek
         strengthSession?.deload = deload
+        // Ola 1 · E11 (P8): «· la semana ligera llega en la N» para el chip de estancamiento — ya
+        // calculado por quien arrancó la sesión (el mismo `ProgramServing.Context` que sembró los
+        // slots), nunca una segunda consulta al store desde dentro de la sesión viva.
+        strengthSession?.lightWeekHint = lightWeekHint
         // r22 (owner): un ejercicio con calentamiento ACTIVADO nace con su rampa «C» puesta — la de
         // PlateMath sobre el peso de trabajo del día (solo barra, como la hoja de discos). Insertar
         // la rampa una vez lo activó; quitar su última «C» en sesión lo apaga (LiveStrengthSheet).
