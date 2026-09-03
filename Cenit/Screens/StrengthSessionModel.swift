@@ -20,6 +20,12 @@ struct StrengthSummary: Equatable {
     var volumeKg: Double
     var setCount: Int
     var strain: Double?
+    /// Where `strain` came from (ola 1 · E3). Drives the single «estimado» label on the receipt hero.
+    var strainSource: StrainSource? = nil
+    /// The session-effort answer currently stored (6–10). `nil` = sin calificar.
+    var sessionRpe: Double? = nil
+    /// Whether that answer was tapped (`.answered`) or accepted as the suggested prefill (`.prefill`).
+    var sessionRpeSource: SessionRpeSource? = nil
     /// Average HR captured this session (≥2 samples), shown when the session was too short for an
     /// effort score (`strain == nil`) so the receipt proves HR was recorded instead of claiming none (FER-498).
     var avgHr: Int?

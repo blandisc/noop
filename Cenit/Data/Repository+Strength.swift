@@ -343,6 +343,22 @@ extension Repository {
         try await store.updateSession(session, sets: sets)
     }
 
+    /// Ola 1 · E3: write the session-effort answer (and the load it implies) without touching sets.
+    func updateSessionEffort(sessionId: String,
+                             sessionRpe: Double?,
+                             sessionRpeSource: SessionRpeSource?,
+                             strain: Double?,
+                             strainSource: StrainSource?,
+                             trimpPerAU: Double?) async throws {
+        guard let store = await storeHandle() else { return }
+        try await store.updateSessionEffort(sessionId: sessionId,
+                                            sessionRpe: sessionRpe,
+                                            sessionRpeSource: sessionRpeSource,
+                                            strain: strain,
+                                            strainSource: strainSource,
+                                            trimpPerAU: trimpPerAU)
+    }
+
     // MARK: - History (per exercise)
 
     /// Completed work sets for one exercise with their session start time, oldest→newest — the raw

@@ -22,6 +22,16 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 ## Unreleased
 
 - Diseño (FER-342 · loop 5): tipografía de hoja en Interval Timer; `LiquidAviso` / `SegmentedPillControl` en vez de `Capsule()` a mano; tokens `LiquidColor` por `.white`; se borra `TodayBanner`; `LiquidCampoTexto` en import; `liquidTarjetaSeccion` en ShareCard; comentarios Instrumento alineados al código Liquid.
+### Ola 1 de Entrenar · esfuerzo al cerrar (FER-330)
+### ES
+- Al terminar una sesión de fuerza, el recibo pregunta «¿Qué tan duro estuvo?» — siempre, también con reloj. Si marcaste esfuerzo por serie, la celda llega sugerida (punteada); un toque confirma, otro cambia, tocarla de nuevo deja sin calificar.
+- El esfuerzo estimado se ve con «estimado» una sola vez por superficie (recibo, detalle, Tendencias › Carga). Sin respuesta y sin reloj suficiente, la sesión no entra a la carga.
+- Desde el detalle puedes calificar o corregir después; la Carga recalcula sola. El entrenamiento manual gana la misma pregunta opcional bajo Duración.
+### EN
+- When you finish a strength session, the receipt asks «How hard was it?» — always, watch or not. If you rated sets, the cell opens suggested (dotted); one tap confirms, another changes, tapping again leaves it unrated.
+- Estimated effort shows the word «estimated» once per surface (receipt, detail, Trends › Load). With no answer and no usable watch, the session stays out of your load.
+- From the session detail you can rate or correct later; Load recalculates on its own. Manual workouts get the same optional question under Duration.
+
 - Diseño (FER-340): un héroe por pantalla en Intervalos y recibo de fuerza; material solo vía receta (`.dialogo` / `.confirmacion` + `LiquidGlow`); ritmo de sección s700 en Cuerpo y Ajustes; Dynamic Type en RestEditor; `FocoMetrics` alias a `LiquidSpace`.
 - Diseño (FER-339): una pieza por rol en el catálogo (toast de error de guardado, pastilla de estado, selector de periodo, campo de texto `LiquidCampoTexto`, aviso Liquid; sin `NoteStrip`; toolbar de Ajustes al `fondoAlto`).
 

@@ -204,13 +204,12 @@ extension AppModel {
             let hrMean: Double = hrSum / Double(hrSamples.count)
             record.avgHr = Int(hrMean.rounded())
         }
-        // Ola 1 · E2 — the session's EFFORT is what the user ANSWERS in the receipt (E3, D-Q13: the
-        // question is asked always, even with a watch). Until that question ships nothing is written
-        // here: `sessionRpe` stays nil, the load keeps coming from the pulse (`.hr`) or stays unknown,
-        // exactly as before v42. `SessionRPE.prefill` is the SUGGESTION E3 shows — it is never
-        // recorded as an answer on the user's behalf (gate /qa + /cso FER-325, 2026-09-02).
-        // The LOAD is resolved in `attemptStrengthSave`, where the personal TRIMP-per-AU scale is
-        // reachable: ONE source per session (`resolveStrengthLoad`), never a sum of pulse and effort.
+        // Ola 1 · E3 (FER-330) — the receipt asks «¿qué tan duro estuvo?» ALWAYS (D-Q13). If the
+        // work sets already carry RPE, seed the SUGGESTED answer as `.prefill` so closing the receipt
+        // without a tap still estimates the load (A1). The receipt draws it dotted — Sweet 2004: the
+        // per-set mean sits above the session rating — and never presents it as a confirmed answer.
+        // Tapping in the receipt upgrades to `.answered` (or clears to nil); see
+        // `updateStrengthSessionEffort`. The LOAD is resolved in `attemptStrengthSave`.
         let hrMax = profile.hrMax
         // Snapshot the profile on the main actor for the calorie estimate before hopping off it.
         let userProfile = UserProfile(weightKg: profile.weightKg, heightCm: profile.heightCm,
@@ -260,6 +259,13 @@ extension AppModel {
         // finds nil and no-ops instead of racing a duplicate post-save flow. Re-stashed on failure.
         guard var pending = pendingStrengthSave else { return }
         pendingStrengthSave = nil
+        // Ola 1 · E3: seed the suggested session effort BEFORE resolving load, so a receipt closed
+        // without a tap still stores `.prefill` (A1). No rated work sets → leave nil (A2).
+        if pending.record.sessionRpe == nil,
+           let prefill = SessionRPE.prefill(sets: pending.sets) {
+            pending.record.sessionRpe = prefill
+            pending.record.sessionRpeSource = .prefill
+        }
         // Ola 1 · E2 — where this session's LOAD comes from, decided ONCE, right before it is stored.
         let elapsedS = (pending.record.endTs ?? pending.record.startTs) - pending.record.startTs
         let resolved = Self.resolveStrengthLoad(hrSamples: pending.hrSamples, elapsedSeconds: elapsedS,
@@ -499,6 +505,9 @@ extension AppModel {
         return StrengthSummary(routineName: session.routineName,
                                endTs: record.endTs ?? record.startTs, durationS: durationS,
                                volumeKg: volumeKg, setCount: work.count, strain: record.strain,
+                               strainSource: record.strainSource,
+                               sessionRpe: record.sessionRpe,
+                               sessionRpeSource: record.sessionRpeSource,
                                avgHr: record.avgHr,
                                costBand: SessionRecoveryCost.cost(sessionStrain: cardiovascularStrain)?.band,
                                costTomorrowPct: costTomorrowPct,
@@ -506,6 +515,40 @@ extension AppModel {
                                prs: prs, muscles: Array(muscles.prefix(8)),
                                isFirstTime: prior.allSatisfy { $0.value.isEmpty },
                                comparison: comparison, exercises: exerciseLines)
+    }
+
+    /// Ola 1 · E3: the receipt (or detail «Calificar esfuerzo…») just changed the session rating.
+    /// Re-resolve the load, patch the row, and refresh the live summary numeral. Passing `rpe == nil`
+    /// clears the answer (deselect / «Sin calificar») and falls back to a measured pulse when one
+    /// covered the session.
+    func updateStrengthSessionEffort(rpe: Double?, source: SessionRpeSource?) async {
+        guard let session = strengthSession, var summary = session.summary else { return }
+        let elapsedS = summary.durationS
+        let resolved = Self.resolveStrengthLoad(hrSamples: session.hrSamples, elapsedSeconds: elapsedS,
+                                                sessionRpe: rpe,
+                                                trimpPerAU: StrengthLoadCalibration.current,
+                                                hrMax: Double(profile.hrMax), sex: profile.sex)
+        do {
+            try await repo.updateSessionEffort(sessionId: session.id,
+                                               sessionRpe: rpe,
+                                               sessionRpeSource: rpe == nil ? nil : source,
+                                               strain: resolved.strain,
+                                               strainSource: resolved.source,
+                                               trimpPerAU: resolved.trimpPerAU)
+        } catch {
+            // Keep the on-screen numeral where it was; the existing save-error toast path is for the
+            // initial save. A mid-receipt write failure is rare (disk full) — leave state unchanged.
+            return
+        }
+        summary.sessionRpe = rpe
+        summary.sessionRpeSource = rpe == nil ? nil : source
+        summary.strain = resolved.strain
+        summary.strainSource = resolved.source
+        session.summary = summary
+        if let store = await repo.storeHandle() {
+            Task { [weak self] in await self?.recalibrateStrengthLoadIfNeeded(store: store) }
+        }
+        Task { await repo.refresh() }
     }
 
     // MARK: - Ola 1 · E2 · where a strength session's load comes from
