@@ -69,6 +69,129 @@ public enum SourceFusion {
         return out
     }
 
+    // MARK: - Strength load overlay (ola 1 · E2)
+
+    /// One Cénit strength session, projected onto primitives the fusion can read. The app resolves
+    /// `day` (`DayKey.local(startTs)`, so a session crossing midnight keys to the day it STARTED) —
+    /// StrandAnalytics never imports StrandTraining.
+    public struct StrengthDayLoad: Sendable, Equatable {
+        public var day: String
+        public var startTs: Int
+        public var endTs: Int
+        /// The session's load on the 0–21 scale, measured or estimated. `nil` = the user trained and
+        /// we don't know how hard (no pulse, no rating) — that is a HOLD, never a zero.
+        public var strain: Double?
+        /// `true` when `strain` came from minutes × effort (`StrainSource.rpe`), so Tendencias can
+        /// label the day «estimada».
+        public var estimated: Bool
+        public init(day: String, startTs: Int, endTs: Int, strain: Double?, estimated: Bool) {
+            self.day = day; self.startTs = startTs; self.endTs = endTs
+            self.strain = strain; self.estimated = estimated
+        }
+    }
+
+    /// The wall-clock span of an Apple workout already folded into Apple's own day strain.
+    public struct WorkoutInterval: Sendable, Equatable {
+        public var startTs: Int
+        public var endTs: Int
+        public init(startTs: Int, endTs: Int) { self.startTs = startTs; self.endTs = endTs }
+    }
+
+    /// How far back a strength session may SYNTHESIZE a day row when there is no Apple/strap history
+    /// at all to anchor it (days). See `overlayStrengthLoad` — H7.
+    static let strengthOverlayFallbackWindowDays = 56
+
+    /// Fold Cénit strength sessions into the daily strain series — IN READING, never persisted
+    /// (`dailyMetric.strain` stays Apple's/the strap's). Without this a session logged without a
+    /// watch is invisible to ACWR and monotony, and the day reads `.rest` = 0: a false zero that
+    /// pulls the acute leg DOWN on a day the user actually trained.
+    ///
+    /// Rules, each with its reason:
+    /// 1. **Closed days only** (`day < today`). Today still belongs to the live Apple estimate.
+    /// 2. **TRIMP space.** Loads are added on the linear axis (`StrainScorer.strainToTrimp`) and
+    ///    mapped back once — adding two 0–21 logs would be meaningless.
+    /// 3. **Sum when disjoint, max when overlapping.** A session whose span overlaps an Apple workout
+    ///    is probably the SAME training (the Watch recorded it), so the day takes the larger of the
+    ///    two rather than double-counting; a session that overlaps nothing is extra work and adds
+    ///    (gate estadístico H5 — `max` alone made a run + a lifting session read as just the run).
+    /// 4. **Trained, load unknown → hold.** A day with a session but no usable load turns a base 0
+    ///    into `nil`: the EWMA holds instead of folding a zero that says «rested» (H6).
+    /// 5. **Synthesis floor.** A day with no base row gets a synthetic strain-only row ONLY from the
+    ///    first day that HAS a base strain (or, with no base at all, inside the last
+    ///    `strengthOverlayFallbackWindowDays`). In an imported era there are no rest zeros, so every
+    ///    gap holds and the chronic leg would be seeded with per-session load instead of a daily
+    ///    dose — a false «Easing off» for ~4 weeks after an import (H7).
+    ///
+    /// Returns the days (rows replaced/synthesized, ordered by day) and the days whose load an
+    /// ESTIMATED session contributed to.
+    public static func overlayStrengthLoad(days: [DailyMetric], loads: [StrengthDayLoad],
+                                           workouts: [WorkoutInterval], today: String)
+        -> (days: [DailyMetric], estimatedDays: Set<String>) {
+        guard !loads.isEmpty else { return (days, []) }
+        let floorDay = strengthOverlayFloor(days: days, today: today)
+        var byDay: [String: DailyMetric] = [:]
+        for d in days { byDay[d.day] = d }
+        var grouped: [String: [StrengthDayLoad]] = [:]
+        for l in loads where l.day < today && l.day >= floorDay { grouped[l.day, default: []].append(l) }
+        guard !grouped.isEmpty else { return (days, []) }
+
+        var estimatedDays = Set<String>()
+        var changed = false
+        for (day, sessions) in grouped {
+            let base = byDay[day]?.strain
+            let baseTrimp = StrainScorer.strainToTrimp(base ?? 0)
+            var overlapTrimp = 0.0, disjointTrimp = 0.0
+            var overlapEstimated = false, disjointEstimated = false
+            var anyLoad = false
+            for s in sessions {
+                guard let st = s.strain, st > 0 else { continue }
+                anyLoad = true
+                let t = StrainScorer.strainToTrimp(st)
+                if workouts.contains(where: { $0.startTs <= s.endTs && $0.endTs >= s.startTs }) {
+                    overlapTrimp += t
+                    if s.estimated { overlapEstimated = true }
+                } else {
+                    disjointTrimp += t
+                    if s.estimated { disjointEstimated = true }
+                }
+            }
+            guard anyLoad else {
+                // Rule 4: trained, load unknown. A base zero becomes a hold; anything else is left
+                // alone (a real measured day keeps its number, a missing day stays missing).
+                if let row = byDay[day], let b = row.strain, b <= 0 {
+                    byDay[day] = row.with(strain: .set(nil))
+                    changed = true
+                }
+                continue
+            }
+            let combined = StrainScorer.trimpToStrain(max(baseTrimp, overlapTrimp) + disjointTrimp)
+            if disjointEstimated || (overlapEstimated && overlapTrimp > baseTrimp) {
+                estimatedDays.insert(day)
+            }
+            if let row = byDay[day] {
+                byDay[day] = row.with(strain: .set(combined))
+            } else {
+                byDay[day] = DailyMetric(day: day, totalSleepMin: nil, efficiency: nil, deepMin: nil,
+                                         remMin: nil, lightMin: nil, disturbances: nil, restingHr: nil,
+                                         avgHrv: nil, recovery: nil, strain: combined, exerciseCount: nil)
+            }
+            changed = true
+        }
+        guard changed else { return (days, estimatedDays) }
+        return (byDay.values.sorted { $0.day < $1.day }, estimatedDays)
+    }
+
+    /// The earliest day the overlay may touch (rule 5): the first day that already carries a base
+    /// strain, or — with no base history at all — `today − strengthOverlayFallbackWindowDays`.
+    static func strengthOverlayFloor(days: [DailyMetric], today: String) -> String {
+        if let first = days.lazy.filter({ $0.strain != nil }).map(\.day).min() { return first }
+        guard let t = DayKey.parseUTC(today),
+              let back = DayKey.utcCalendar.date(byAdding: .day,
+                                                 value: -strengthOverlayFallbackWindowDays, to: t)
+        else { return today }
+        return DayKey.utc(back)
+    }
+
     /// FER-670: build the per-day single-construct fusion map from the mode-filtered per-source rows.
     /// Three metrics only — steps, sleep total, active kcal (`MetricArbitrationPolicy` refuses the rest):
     ///   • "steps"           — Apple's pedometer count (`appleAgg.steps`) vs the strap's on-device figure

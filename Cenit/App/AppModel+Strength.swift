@@ -195,8 +195,15 @@ extension AppModel {
             let hrSum: Double = hrSamples.reduce(0.0) { $0 + Double($1.bpm) }
             let hrMean: Double = hrSum / Double(hrSamples.count)
             record.avgHr = Int(hrMean.rounded())
-            record.strain = StrainScorer.strain(hrSamples, maxHR: Double(profile.hrMax), sex: profile.sex)
         }
+        // Ola 1 · E2 — the session's EFFORT. The receipt's question is E3; until it ships, the rating
+        // is whatever the sets themselves carried (`SessionRPE.prefill`) — nil, never a defaulted 7.
+        if record.sessionRpe == nil, let suggested = SessionRPE.prefill(sets: sets) {
+            record.sessionRpe = suggested
+            record.sessionRpeSource = .prefill
+        }
+        // The LOAD is resolved in `attemptStrengthSave`, where the personal TRIMP-per-AU scale is
+        // reachable: ONE source per session (`resolveStrengthLoad`), never a sum of pulse and effort.
         let hrMax = profile.hrMax
         // Snapshot the profile on the main actor for the calorie estimate before hopping off it.
         let userProfile = UserProfile(weightKg: profile.weightKg, heightCm: profile.heightCm,
@@ -244,8 +251,17 @@ extension AppModel {
         }
         // QA D4: TAKE the payload before the first await after this point — a second Retry tap
         // finds nil and no-ops instead of racing a duplicate post-save flow. Re-stashed on failure.
-        guard let pending = pendingStrengthSave else { return }
+        guard var pending = pendingStrengthSave else { return }
         pendingStrengthSave = nil
+        // Ola 1 · E2 — where this session's LOAD comes from, decided ONCE, right before it is stored.
+        let elapsedS = (pending.record.endTs ?? pending.record.startTs) - pending.record.startTs
+        let resolved = Self.resolveStrengthLoad(hrSamples: pending.hrSamples, elapsedSeconds: elapsedS,
+                                                sessionRpe: pending.record.sessionRpe,
+                                                trimpPerAU: StrengthLoadCalibration.current,
+                                                hrMax: Double(pending.hrMax), sex: pending.userProfile.sex)
+        pending.record.strain = resolved.strain
+        pending.record.strainSource = resolved.source
+        pending.record.trimpPerAU = resolved.trimpPerAU
         // Prior PRs (BEFORE save) so the receipt can tell which records are NEW this session.
         let prior = await priorStrengthPRs(store: store, ids: Set(pending.sets.map(\.exerciseId)))
         // FER-226: flush whatever the 30-sample threshold hasn't drained yet — the last partial batch
@@ -277,6 +293,9 @@ extension AppModel {
         // Surface the receipt on the live session — the sheet renders summaryPhase (session stays alive).
         session.summary = await buildStrengthSummary(session: session, record: pending.record,
                                                      sets: pending.sets, prior: prior, store: store)
+        // Ola 1 · E2: this session may have completed a calibration pair. Off the receipt's path —
+        // the user is looking at the summary, not waiting for a re-fit.
+        Task { [weak self] in await self?.recalibrateStrengthLoadIfNeeded(store: store) }
         // FER-223: la sesión cerró y guardó — no tenía ningún háptico. Mismo patrón de éxito
         // ascendente que `prNuevo` (ambos son un cierre, nunca coinciden en el mismo segundo).
         EntrenarHaptic.sesionTerminada.play()
@@ -354,6 +373,13 @@ extension AppModel {
             return acc + (w * r)
         }
         let durationS: Int = max(0, (record.endTs ?? record.startTs) - record.startTs)
+        // Ola 1 · E2: the recovery COST is cardiovascular, so it reads the pulse whenever the pulse
+        // covered the session — even when the day's LOAD was estimated from effort. Without a usable
+        // pulse it falls back to whatever the session stored, exactly as before.
+        let cardiovascularStrain = Self.measuredStrain(hrSamples: session.hrSamples,
+                                                       elapsedSeconds: durationS,
+                                                       hrMax: Double(profile.hrMax), sex: profile.sex)
+            ?? record.strain
 
         // Resolve exercises (bundled catalog + user-created) for names + muscles.
         let custom = (try? await store.customExercises()) ?? []
@@ -465,11 +491,92 @@ extension AppModel {
                                endTs: record.endTs ?? record.startTs, durationS: durationS,
                                volumeKg: volumeKg, setCount: work.count, strain: record.strain,
                                avgHr: record.avgHr,
-                               costBand: SessionRecoveryCost.cost(sessionStrain: record.strain)?.band,
+                               costBand: SessionRecoveryCost.cost(sessionStrain: cardiovascularStrain)?.band,
                                costTomorrowPct: costTomorrowPct,
                                energyKcal: record.energyKcal, energySource: record.energySource,
                                prs: prs, muscles: Array(muscles.prefix(8)),
                                isFirstTime: prior.allSatisfy { $0.value.isEmpty },
                                comparison: comparison, exercises: exerciseLines)
+    }
+
+    // MARK: - Ola 1 · E2 · where a strength session's load comes from
+
+    /// The pulse-measured load, or nil when the pulse didn't cover enough of the session
+    /// (`HRCoverage`, gate estadístico H1). Pure so the matrix is testable without a store.
+    nonisolated static func measuredStrain(hrSamples: [HRSample], elapsedSeconds: Int,
+                                           hrMax: Double, sex: String) -> Double? {
+        guard HRCoverage.isMeasured(hrSamples, elapsedSeconds: elapsedSeconds) else { return nil }
+        return StrainScorer.strain(hrSamples, maxHR: hrMax, sex: sex)
+    }
+
+    /// THE rule for a strength session's load — one source, never a sum:
+    /// 1. a rating → minutes × effort (`SessionRPELoad`), `strainSource == .rpe`. The rating wins
+    ///    because heart rate does not discriminate intensity in strength work (Falk Neto 2020) while
+    ///    perceived effort does (Day 2004, Sweet 2004, Haddad 2017);
+    /// 2. no rating but a pulse that actually covered the session → Edwards TRIMP, `.hr` — the same
+    ///    number this path has always stored;
+    /// 3. neither → `nil`. «Entrenaste, carga sin estimar» is a hold, never a zero.
+    /// The pulse keeps feeding `avgHr` and the recovery cost in every case: only the LOAD is single-sourced.
+    nonisolated static func resolveStrengthLoad(hrSamples: [HRSample], elapsedSeconds: Int,
+                                                sessionRpe: Double?, trimpPerAU: Double,
+                                                hrMax: Double, sex: String)
+        -> (strain: Double?, source: StrainSource?, trimpPerAU: Double?) {
+        if let rpe = sessionRpe,
+           let s = SessionRPELoad.strain(durationS: elapsedSeconds, rpe: rpe, trimpPerAU: trimpPerAU) {
+            return (s, .rpe, trimpPerAU)
+        }
+        if let s = measuredStrain(hrSamples: hrSamples, elapsedSeconds: elapsedSeconds,
+                                  hrMax: hrMax, sex: sex) {
+            return (s, .hr, nil)
+        }
+        return (nil, nil, nil)
+    }
+
+    /// Re-fit the personal TRIMP-per-AU scale from the sessions that carry BOTH a rating and a pulse
+    /// good enough to measure, and — only when the fit is accepted (`SessionRPELoad.shouldAcceptRefit`:
+    /// the evidence doubled AND the scale really moved) — rewrite every estimated session onto it in
+    /// one write, so the receipt, the history and Tendencias never disagree about the same session.
+    func recalibrateStrengthLoadIfNeeded(store: CenitStore) async {
+        guard let candidates = try? await store.strengthCalibrationPairs() else { return }
+        let hrMax = Double(profile.hrMax), sex = profile.sex
+        let pairs: [(au: Double, trimp: Double)] = candidates.compactMap { c in
+            let elapsed = c.endTs - c.startTs
+            guard let au = SessionRPELoad.arbitraryUnits(durationS: elapsed, rpe: c.sessionRpe),
+                  let measured = Self.measuredStrain(hrSamples: c.hrSamples, elapsedSeconds: elapsed,
+                                                     hrMax: hrMax, sex: sex)
+            else { return nil }
+            return (au, StrainScorer.strainToTrimp(measured))
+        }
+        guard let candidate = SessionRPELoad.fitTrimpPerAU(pairs: pairs),
+              SessionRPELoad.shouldAcceptRefit(pairCount: pairs.count,
+                                               lastFitPairCount: StrengthLoadCalibration.lastFitPairCount,
+                                               currentTrimpPerAU: StrengthLoadCalibration.current,
+                                               candidateTrimpPerAU: candidate)
+        else { return }
+        StrengthLoadCalibration.accept(candidate, pairCount: pairs.count)
+        _ = try? await store.recomputeEstimatedStrain(trimpPerAU: candidate) { durationS, rpe in
+            SessionRPELoad.strain(durationS: durationS, rpe: rpe, trimpPerAU: candidate)
+        }
+    }
+}
+
+/// The personal TRIMP-per-AU scale for estimated strength load (ola 1 · E2). Two numbers, on device:
+/// the scale in use and how many pairs fitted it — the second one is what makes the refit wait for the
+/// evidence to DOUBLE instead of drifting band by band on noise (gate estadístico H4). No schema: this
+/// is a preference of the estimate, not data about the body.
+enum StrengthLoadCalibration {
+    static let scaleKey = "strength.trimpPerAU"
+    static let pairsKey = "strength.trimpPerAU.pairs"
+
+    /// The scale in use — the calibration default until a fit has been accepted.
+    static var current: Double {
+        UserDefaults.standard.object(forKey: scaleKey) as? Double ?? SessionRPELoad.defaultTrimpPerAU
+    }
+    /// How many pairs produced the scale in use; nil = never fitted.
+    static var lastFitPairCount: Int? { UserDefaults.standard.object(forKey: pairsKey) as? Int }
+
+    static func accept(_ trimpPerAU: Double, pairCount: Int) {
+        UserDefaults.standard.set(trimpPerAU, forKey: scaleKey)
+        UserDefaults.standard.set(pairCount, forKey: pairsKey)
     }
 }

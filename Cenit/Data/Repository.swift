@@ -97,6 +97,9 @@ final class Repository: ObservableObject {
         /// `autonomicTrend` in the off-main `assembleDashboard` hop (FER-1040). Surfaced via
         /// `todayPreparedness`; the hero reads it.
         var preparedness: Preparedness.Read? = nil
+        /// Ola 1 · E2: the closed days whose strain an ESTIMATED strength session (minutes × effort)
+        /// contributed to, so Tendencias can label them «estimada». Never persisted.
+        var strengthEstimatedDays: Set<String> = []
         var loaded = false
         /// True once a FULL refresh pass (whole stored history) has published. The launch first-paint
         /// pass (~90 days) publishes `loaded == true` with this still false. RULE: anything that
@@ -154,6 +157,9 @@ final class Repository: ObservableObject {
     func isStrainEstimated(_ day: String) -> Bool { dashboard.strainEstimates[day] != nil }
     /// The estimated strain (0–21) for a band-less day; nil unless it's an Apple estimate.
     func estimatedStrain(_ day: String) -> Double? { dashboard.strainEstimates[day] }
+    /// Ola 1 · E2: the closed days whose strain an ESTIMATED strength session (minutes × effort)
+    /// contributed to — every surface that shows the number must say «estimada».
+    var strengthEstimatedDays: Set<String> { dashboard.strengthEstimatedDays }
 
     init(deviceId: String) { self.deviceId = deviceId }
 
@@ -510,7 +516,8 @@ final class Repository: ObservableObject {
             perf: perf, cons: cons, need: need, debt: debt, baselineEpoch: baselineEpoch,
             strainHRmax: strainHRmax, strainSex: strainSex,
             nightRows: nightRows.map { (day: $0.day, rmssdMs: $0.value) }, asOf: asOf, full: full, recentCutoff: recentCutoff,
-            nocturnalRestingHr: nocturnalRestingHr))
+            nocturnalRestingHr: nocturnalRestingHr,
+            strengthLoads: snap.strengthLoads, appleWorkouts: snap.appleWorkouts))
 
         // Back on the main actor: publish only if this is still the newest refresh, and never let a
         // first-paint pass overwrite a fully loaded dashboard.
@@ -570,6 +577,10 @@ final class Repository: ObservableObject {
         var full: Bool = false
         var recentCutoff: String = ""
         var nocturnalRestingHr: [String: Double] = [:]
+        /// Ola 1 · E2: the finished Cénit strength sessions in the window and the Apple workout spans
+        /// the overlay needs to tell «the same training» from «extra work».
+        var strengthLoads: [StrengthSessionLoad] = []
+        var appleWorkouts: [WorkoutSpan] = []
     }
 
     /// Pure assembly of the dashboard from rows already read — the EXACT merge pipeline `refresh()`
@@ -621,6 +632,31 @@ final class Repository: ObservableObject {
                                                         eligibleDays: daysNeedingStrainEstimate,
                                                         restingHRByDay: restingHRByDayApple,
                                                         maxHR: inputs.strainHRmax, sex: inputs.strainSex)
+        // Ola 1 · E2: the Cénit strength sessions enter the daily series IN READING — `dailyMetric`
+        // is never written. Applied AFTER `daysNeedingStrainEstimate` (so Apple's live estimate for
+        // band-less days is still decided on the untouched merge) and BEFORE `days`/`displayDays` are
+        // published, so the four consumers of the series read the same numbers.
+        let strengthLoads: [SourceFusion.StrengthDayLoad] = inputs.strengthLoads.map {
+            SourceFusion.StrengthDayLoad(
+                day: DayKey.local(Date(timeIntervalSince1970: TimeInterval($0.startTs))),
+                startTs: $0.startTs, endTs: $0.endTs, strain: $0.strain,
+                estimated: $0.strainSource == .rpe)
+        }
+        let appleWorkouts = inputs.appleWorkouts.map {
+            SourceFusion.WorkoutInterval(startTs: $0.startTs, endTs: $0.endTs)
+        }
+        let overlaid = Self.overlayStrengthLoad(days: merged.days, loads: strengthLoads,
+                                                workouts: appleWorkouts, today: inputs.asOf)
+        let overlaidDisplay = Self.overlayStrengthLoad(days: merged.displayDays, loads: strengthLoads,
+                                                       workouts: appleWorkouts, today: inputs.asOf).days
+        // D-Q12: the load does NOT vote. Today's session only marks the `load` axis as PRESENT — the
+        // same thing an Apple workout does — so «Preparación» stops reading a training day as a rest
+        // day. `strainEstimates` itself is untouched: it is the Apple-estimate map the UI labels.
+        var strainByDayForVerdict = strainEstimates
+        if strainByDayForVerdict[inputs.asOf] == nil,
+           let todayLoad = strengthLoads.last(where: { $0.day == inputs.asOf }) {
+            strainByDayForVerdict[inputs.asOf] = todayLoad.strain ?? 0   // presence only; never read as a value
+        }
         // FER-485: stored per-source coverage from the UNFILTERED raws (the always-Combined truth), so the
         // diagnostic coverage shows what's stored even when the mode hides a source from the dashboard.
         let storedStrap = Set(inputs.importedRaw.map(\.day)).union(inputs.computedRaw.map(\.day))
@@ -660,15 +696,15 @@ final class Repository: ObservableObject {
         // mañana. Preferimos no decir nada a decir algo que nos desdecimos — un «preliminar» con un
         // número que luego se contradice entrena desconfianza.
         let preparedness: Preparedness.Read? = inputs.full
-            ? Preparedness.evaluate(.init(days: merged.days, strainByDay: strainEstimates,
+            ? Preparedness.evaluate(.init(days: overlaid.days, strainByDay: strainByDayForVerdict,
                                           trend: autonomicTrend, asOf: inputs.asOf,
                                           nocturnalRestingHr: inputs.nocturnalRestingHr,
                                           cyclePhase: cyclePhase,
                                           nocturnalRmssd: denseRmssd))
             : nil
         return DashboardData(
-            days: merged.days,
-            displayDays: merged.displayDays,
+            days: overlaid.days,
+            displayDays: overlaidDisplay,
             sleeps: strapSleeps,
             appleSleeps: appleSleeps,
             importedSleep: fig,
@@ -679,7 +715,8 @@ final class Repository: ObservableObject {
             strainEstimates: strainEstimates,
             fusion: fusion,
             autonomicTrend: autonomicTrend,
-            preparedness: preparedness
+            preparedness: preparedness,
+            strengthEstimatedDays: overlaid.estimatedDays
         )
     }
 
@@ -734,6 +771,15 @@ final class Repository: ObservableObject {
                            apple: [DailyMetric]) -> (days: [DailyMetric], appleDays: Set<String>,
                                                      displayDays: [DailyMetric]) {
         SourceFusion.mergeDaily(imported: imported, computed: computed, apple: apple)
+    }
+
+    /// Ola 1 · E2: fold the Cénit strength sessions into the daily strain series (read-only overlay).
+    /// Forwards to `SourceFusion` — single policy copy, like `mergeDaily`.
+    nonisolated static func overlayStrengthLoad(days: [DailyMetric],
+                                                loads: [SourceFusion.StrengthDayLoad],
+                                                workouts: [SourceFusion.WorkoutInterval],
+                                                today: String) -> (days: [DailyMetric], estimatedDays: Set<String>) {
+        SourceFusion.overlayStrengthLoad(days: days, loads: loads, workouts: workouts, today: today)
     }
 
     /// FER-883: per-day cardiovascular-load estimate from Apple workout HR, for days whose MEASURED

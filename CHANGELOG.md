@@ -22,6 +22,18 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 ## Unreleased
 
 - Diseño (FER-339): una pieza por rol en el catálogo (toast de error de guardado, pastilla de estado, selector de periodo, campo de texto `LiquidCampoTexto`, aviso Liquid; sin `NoteStrip`; toolbar de Ajustes al `fondoAlto`).
+### Ola 1 de Entrenar · la carga sin reloj (FER-325)
+- Una sesión de fuerza sin reloj ya cuenta. Antes, un día en el que entrenaste sin pulso se leía como
+  descanso — un cero — y tiraba tu carga hacia abajo; ahora los minutos y el esfuerzo de la sesión se
+  convierten a la misma escala 0–21 y entran a Carga y al ACWR, etiquetados como estimados.
+- Si entrenaste y no hay con qué estimar la carga, el día se queda **sin dato** en vez de contarse como
+  descanso: no sabemos cuánto, pero sabemos que no descansaste.
+- El pulso ya no cuenta como «medido» solo por durar: hace falta que cubra al menos el 80 % de la
+  sesión. Con el reloj a medias, la sesión se estima por esfuerzo en vez de guardar un número corto.
+- La escala del estimado se calibra sola contra tus sesiones con pulso, y solo se cambia cuando hay el
+  doble de evidencia y el cambio es real (>15 %); al cambiar, todas las sesiones estimadas se
+  recalculan de una sola vez para que el recibo y Tendencias digan lo mismo.
+- El veredicto **no cambia** por una sesión: la carga todavía no vota (D-Q12).
 
 ### Ola 1 de Entrenar · esquema (FER-324)
 - Base de datos v42/v43: columnas para el esfuerzo de sesión y su origen, la procedencia de sesiones
