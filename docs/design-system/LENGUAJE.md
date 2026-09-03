@@ -32,9 +32,12 @@ Tres rasgos que la definen:
    «señal de», «asociación, no causa», «contexto, no una predicción». Los números cargan su origen
    (`n=…`, «calculado a partir del esfuerzo de tu banda»).
 
-La promesa de marca recurre como firma: **«todo se queda en tu iPhone · sin cuenta · sin servidor ·
-sin nube».** El éxito, cuando aplica, dobla como tranquilidad de privacidad («en tu iPhone, cifrado
-del sistema»).
+La promesa de marca recurre como firma: **«sin cuenta · sin servidor · Cénit no sube nada».** Cénit no
+hace llamadas de red propias y todo se calcula en tu iPhone. NO afirmamos el absoluto «nada sale de tu
+dispositivo / sin nube»: el dueño decidió mantener el respaldo por iCloud (2026-09-03, ver DECISIONS),
+así que una copia sí vive en el backup de iCloud del propio usuario (cifrado del sistema) — la firma
+habla del comportamiento de Cénit (sin servidor, sin cuenta, no sube nada), que es cierto tengas o no
+el respaldo.
 
 ---
 
