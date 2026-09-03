@@ -108,6 +108,9 @@ Migrations are registered in `Packages/CenitStore/Sources/CenitStore/Database.sw
 | **v16** | Diet option (FER-401): adds nullable `optionIndex` (INTEGER) to `dietAdherence` — the 0-based index into the plan meal's `opciones` array (which equivalent was eaten); NULL = not recorded. Registro only — does not change the apego %. Append-only `ALTER ADD COLUMN`. |
 | **v17–v25** | *(not yet documented row-by-row — this table has a gap; v17 created `routineSet`, later migrations covered routine folders, HR-rest references, the weekly split, exercise-type overrides, DB compaction, and the circadian-phase table.)* |
 | **v26** | Per-set rest + persisted session energy (FER-715): four nullable rest columns on `routineSet` (`restMode`/`restSeconds`/`hrRestReference`/`hrRestValue`; NULL = inherit the exercise's rest at runtime), back-filled by copying each `routineExercise`'s rest onto ALL its sets (old data keeps today's behavior). Plus nullable `energyKcal`/`energySource` on `strengthSession` (NULL = a pre-v26 session). Append-only. |
+| **v42** | Ola 1 · FER-324 (one schema PR for five pieces). `strengthSession`: `strainSource` TEXT (`hr`\|`rpe`), `sessionRpe` REAL, `sessionRpeSource` TEXT (`answered`\|`prefill`), `trimpPerAU` REAL, `source` TEXT (`strong`\|`hevy`\|`cenit-csv`), `title` TEXT, `programWeek` INTEGER, `deload` INTEGER — all NULL on old rows. `routineExercise.progressionUseRPE` INTEGER NOT NULL DEFAULT 0. `routineSet.mode` / `setEntry.mode` TEXT (`standard`\|`amrap`\|`drop`, NULL = standard). Every ADD COLUMN via `addColumnIfMissing`. Append-only. |
+| **v43** | Ola 1 · FER-324: table `program` (singleton, PK `id = 'active'`): `name`, `weeks`, `startTs`, `deloadRule`, `endMode`, `templateId`, `createdTs`. `ifNotExists`. Append-only. |
+| _v27–v41_ | _Documented in `Database.swift` comments; the table entries here are pending (FER-337)._ |
 
 ### The vestigial `synced` column
 

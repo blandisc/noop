@@ -6,9 +6,9 @@ import BiometricStreams
 
 final class MigrationTests: XCTestCase {
     func testMigratorRegistersContiguousVersions() {
-        XCTAssertEqual(CenitStore.makeMigrator().migrations, (1...41).map { "v\($0)" })
-        XCTAssertEqual(CenitStoreInfo.schemaVersion, 41)
-        XCTAssertEqual(CenitStoreInfo.latestMigration, "v41")
+        XCTAssertEqual(CenitStore.makeMigrator().migrations, (1...43).map { "v\($0)" })
+        XCTAssertEqual(CenitStoreInfo.schemaVersion, 43)
+        XCTAssertEqual(CenitStoreInfo.latestMigration, "v43")
     }
 
     /// v41 (FER-226): `strengthHrSample` doesn't exist at v40 and does at v41; re-migrating past HEAD
@@ -1441,5 +1441,169 @@ final class MigrationTests: XCTestCase {
             XCTAssertTrue(try migrator.appliedIdentifiers(db).contains("v40"),
                           "v40 must be recorded so it never re-runs and wedges startup")
         }
+    }
+
+    // MARK: - v42 / v43 (ola 1 · FER-324)
+
+    /// v42 must be append-only: rows written before it survive with the new columns NULL (and
+    /// `progressionUseRPE` = 0, so no existing routine changes behavior).
+    func testV42AddsOla1ColumnsAppendOnly() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = CenitStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v41")
+
+        try await dbQueue.write { db in
+            try db.execute(sql: "INSERT INTO strengthSession (id, startTs) VALUES ('s1', 1000)")
+            try db.execute(sql: """
+                INSERT INTO routineExercise
+                    (id, routineId, exerciseId, position, targetSets, warmupPercents, restMode, restSeconds)
+                VALUES ('re1', 'r1', 'bench-press', 0, 3, '[]', 'fixed', 90)
+                """)
+            try db.execute(sql: """
+                INSERT INTO routineSet (id, routineExerciseId, position, kind) VALUES ('rs1', 're1', 0, 'work')
+                """)
+            try db.execute(sql: """
+                INSERT INTO setEntry (id, sessionId, exerciseId, position, kind, ts)
+                VALUES ('se1', 's1', 'bench-press', 0, 'work', 1000)
+                """)
+        }
+
+        try migrator.migrate(dbQueue)   // → v43
+
+        try await dbQueue.read { db in
+            let sessionCols = try db.columns(in: "strengthSession").map(\.name)
+            for c in ["strainSource", "sessionRpe", "sessionRpeSource", "trimpPerAU", "source", "title",
+                      "programWeek", "deload"] {
+                XCTAssertTrue(sessionCols.contains(c), "v42 must add strengthSession.\(c)")
+            }
+            XCTAssertTrue(try db.columns(in: "routineExercise").map(\.name).contains("progressionUseRPE"))
+            XCTAssertTrue(try db.columns(in: "routineSet").map(\.name).contains("mode"))
+            XCTAssertTrue(try db.columns(in: "setEntry").map(\.name).contains("mode"))
+
+            let s = try Row.fetchOne(db, sql: "SELECT * FROM strengthSession WHERE id='s1'")
+            XCTAssertNotNil(s, "the pre-v42 session must survive")
+            XCTAssertNil(s?["strainSource"] as String?, "new columns default to NULL")
+            XCTAssertNil(s?["sessionRpe"] as Double?, "never a defaulted 7")
+            XCTAssertNil(s?["deload"] as Int?)
+            let re = try Row.fetchOne(db, sql: "SELECT * FROM routineExercise WHERE id='re1'")
+            XCTAssertEqual(re?["progressionUseRPE"] as Int?, 0, "existing routines keep the old rhythm")
+            let rs = try Row.fetchOne(db, sql: "SELECT * FROM routineSet WHERE id='rs1'")
+            XCTAssertNil(rs?["mode"] as String?, "NULL mode = standard")
+            let se = try Row.fetchOne(db, sql: "SELECT * FROM setEntry WHERE id='se1'")
+            XCTAssertNil(se?["mode"] as String?)
+            XCTAssertEqual(se?["ts"] as Int?, 1000, "existing columns untouched")
+        }
+    }
+
+    /// v42 must be idempotent (FER-791/792 discipline): all 11 columns already present but v42
+    /// unrecorded → re-running records it without a "duplicate column" crash.
+    func testV42IsIdempotentWhenColumnsAlreadyExist() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = CenitStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v41")
+
+        try await dbQueue.write { db in
+            try db.alter(table: "strengthSession") { t in
+                t.add(column: "strainSource", .text); t.add(column: "sessionRpe", .double)
+                t.add(column: "sessionRpeSource", .text); t.add(column: "trimpPerAU", .double)
+                t.add(column: "source", .text); t.add(column: "title", .text)
+                t.add(column: "programWeek", .integer); t.add(column: "deload", .integer)
+            }
+            try db.alter(table: "routineExercise") { t in
+                t.add(column: "progressionUseRPE", .integer).notNull().defaults(to: 0)
+            }
+            try db.alter(table: "routineSet") { t in t.add(column: "mode", .text) }
+            try db.alter(table: "setEntry") { t in t.add(column: "mode", .text) }
+        }
+
+        try migrator.migrate(dbQueue)   // → v43; must not throw
+
+        try await dbQueue.read { db in
+            XCTAssertTrue(try migrator.appliedIdentifiers(db).contains("v42"),
+                          "v42 must be recorded so it never re-runs and wedges startup")
+        }
+    }
+
+    /// v43 creates the singleton `program` table with its 8 columns; a pre-v43 DB keeps everything else.
+    func testV43CreatesProgramTableAppendOnly() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = CenitStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v42")
+        try await dbQueue.write { db in
+            try db.execute(sql: "INSERT INTO strengthSession (id, startTs) VALUES ('s1', 1000)")
+        }
+
+        try migrator.migrate(dbQueue)   // → v43
+
+        try await dbQueue.read { db in
+            XCTAssertTrue(try db.tableExists("program"))
+            let cols = try db.columns(in: "program").map(\.name)
+            XCTAssertEqual(Set(cols), ["id", "name", "weeks", "startTs", "deloadRule", "endMode", "templateId", "createdTs"])
+            XCTAssertEqual(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM strengthSession"), 1)
+        }
+    }
+
+    /// v43 must be idempotent: the table already there but v43 unrecorded → re-running records it.
+    func testV43IsIdempotentWhenTableAlreadyExists() async throws {
+        let dbQueue = try DatabaseQueue()
+        let migrator = CenitStore.makeMigrator()
+        try migrator.migrate(dbQueue, upTo: "v42")
+        try await dbQueue.write { db in
+            try db.create(table: "program") { t in
+                t.column("id", .text).primaryKey(); t.column("name", .text).notNull()
+                t.column("weeks", .integer).notNull(); t.column("startTs", .integer).notNull()
+                t.column("deloadRule", .text).notNull(); t.column("endMode", .text).notNull()
+                t.column("templateId", .text); t.column("createdTs", .integer).notNull()
+            }
+        }
+
+        try migrator.migrate(dbQueue)   // must not throw
+
+        try await dbQueue.read { db in
+            XCTAssertTrue(try migrator.appliedIdentifiers(db).contains("v43"))
+        }
+    }
+
+    /// The v42 storage contract round-trips through the store: `mode` writes NULL for standard and the
+    /// raw value otherwise, and reads back `.standard` for NULL; the session provenance columns survive.
+    func testOla1ColumnsRoundTripThroughStore() async throws {
+        let store = try await CenitStore.inMemory()
+        let routine = Routine(id: "r1", name: "Empuje", createdTs: 0, updatedTs: 0)
+        let re = RoutineExercise(id: "re1", routineId: "r1", exerciseId: "bench-press", position: 0,
+                                 targetSets: 3, sets: [
+                                    RoutineSet(id: "a", position: 0, reps: 8, weightKg: 80),
+                                    RoutineSet(id: "b", position: 1, reps: 8, weightKg: 80, mode: .amrap)
+                                 ], progressionUseRPE: true)
+        try await store.saveRoutine(routine, exercises: [re])
+        let back = try await store.routineExercises(routineId: "r1")
+        XCTAssertEqual(back.first?.progressionUseRPE, true)
+        XCTAssertEqual(back.first?.sets.map(\.mode) ?? [], [SetMode.standard, .amrap])
+
+        let session = StrengthSession(id: "s1", routineId: "r1", startTs: 1000, endTs: 4120, strain: 11.4,
+                                      strainSource: .rpe, sessionRpe: 8, sessionRpeSource: .prefill,
+                                      trimpPerAU: 0.29, source: "hevy", title: "Push Day",
+                                      programWeek: 5, deload: true)
+        let sets = [
+            SetEntry(id: "e1", sessionId: "s1", exerciseId: "bench-press", position: 0, weightKg: 80, reps: 8, done: true, ts: 1100),
+            SetEntry(id: "e2", sessionId: "s1", exerciseId: "bench-press", position: 1, weightKg: 64, reps: 9, done: true, ts: 1200, mode: .drop)
+        ]
+        try await store.saveSession(session, sets: sets)
+        let saved = try await store.session(id: "s1")
+        XCTAssertEqual(saved?.strainSource, .rpe)
+        XCTAssertEqual(saved?.sessionRpe, 8)
+        XCTAssertEqual(saved?.sessionRpeSource, .prefill)
+        XCTAssertEqual(saved?.trimpPerAU, 0.29)
+        XCTAssertEqual(saved?.source, "hevy")
+        XCTAssertEqual(saved?.title, "Push Day")
+        XCTAssertEqual(saved?.programWeek, 5)
+        XCTAssertEqual(saved?.deload, true)
+        let savedSets = try await store.setEntries(sessionId: "s1")
+        XCTAssertEqual(savedSets.map(\.mode), [SetMode.standard, .drop])
+        // The storage contract is «NULL = standard»: a standard set must persist as NULL, never as the
+        // literal 'standard', so a pre-ola-1 reader and a future writer agree on the same byte.
+        let rawModes = try await store.dbWriter.read { db in
+            try String?.fetchAll(db, sql: "SELECT mode FROM setEntry WHERE sessionId = 's1' ORDER BY position")
+        }
+        XCTAssertEqual(rawModes, [nil, "drop"])
     }
 }

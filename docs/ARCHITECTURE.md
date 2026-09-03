@@ -308,7 +308,7 @@ download already fetched.
 
 ## 7. Storage model (CenitStore / SQLite)
 
-GRDB drives a migrator (the migrator currently reaches `v41`; see `Database.swift` — the source of
+GRDB drives a migrator (the migrator currently reaches `v43`; see `Database.swift` — the source of
 truth is the migration list, not a constant). The schema groups into four
 concerns:
 
@@ -512,6 +512,20 @@ in the Frente D dead-code sweep (FER-1003). No column, no migration.
 `gravity`), a `UserProfile`, and personal `ProfileBaselines`, it runs the analyzers and returns a
 `DayResult`:
 
+- `strengthSession.strainSource` / `sessionRpe` / `sessionRpeSource` / `trimpPerAU` / `source` / `title` /
+  `programWeek` / `deload` (v42, ola 1 · FER-324) — where the session's strain came from (`hr` measured,
+  `rpe` estimated: the label the receipt and Tendencias must show), the one-tap session effort (6–10,
+  NULL = never answered, never defaulted), whether it was tapped or accepted as the suggested prefill, the
+  estimate's scale, the import provenance (`strong`/`hevy`/`cenit-csv`, NULL = Cénit), and the program
+  week / light-week flag (1 = a progression boundary). All nullable, appended via `addColumnIfMissing`.
+- `routineExercise.progressionUseRPE` (v42, DEFAULT 0) — the «Según reps en reserva» rhythm; off in every
+  pre-existing routine by construction.
+- `routineSet.mode` / `setEntry.mode` (v42) — `SetMode` (`standard`|`amrap`|`drop`), NULL = standard; an
+  axis ORTHOGONAL to `SetKind` so the app's `kind == .work` filters stay untouched. A drop is its own
+  `setEntry` right after its mother set by `position`, no FK.
+- `program` (v43) — the one active program (PK `id = 'active'`): `name`, `weeks`, `startTs`, `deloadRule`,
+  `endMode`, `templateId`, `createdTs`. The current week is DERIVED from `startTs` and the weeks actually
+  trained (`ProgramCalendar`, E10), never stored. Deleting the row leaves routines and the weekly schedule.
 - **`SleepStager`** detects in-bed sessions and stages them (deep/REM/light), producing per-session
   efficiency, resting HR, average HRV, and a hypnogram.
 - **`HRVFreqDomain`** (FER-669) computes frequency-domain HRV (LF/HF/total power, ms²) from an R-R

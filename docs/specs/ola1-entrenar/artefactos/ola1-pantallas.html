@@ -1,0 +1,532 @@
+<title>Ola 1 en pantalla</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;700;800&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root{
+    --fondo:#FEFEFD; --fondo-bajo:#F3F4F2; --tarjeta:#FFFFFF;
+    --tinta:#221D16; --tinta-700:#5C5648; --tinta-500:#6F6857;
+    --tinta-10:rgba(34,29,22,.10); --tinta-7:rgba(34,29,22,.07); --tinta-4:rgba(34,29,22,.04);
+    --verde:#0C8F62; --verde-profundo:#00774B; --verde-suave:rgba(12,143,98,.12); --verde-boton:#12A06E;
+    --ambar:#C4631F; --ambar-texto:#8F4712; --ambar-suave:rgba(196,99,31,.13);
+    --negativo:#B3402A; --negativo-suave:rgba(179,64,42,.11);
+    --azul:#3B6FA0; --azul-suave:rgba(59,111,160,.12); --indigo:#5D5A9E;
+    --display:"Schibsted Grotesk",-apple-system,"SF Pro Display",Helvetica,Arial,sans-serif;
+    --cuerpo:"Instrument Sans",-apple-system,"SF Pro Text",Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--fondo);color:var(--tinta);font-family:var(--cuerpo);font-size:15.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  a{color:var(--verde-profundo)}
+  .pagina{max-width:1080px;margin:0 auto;padding:40px 28px 80px}
+  h1,h2,h3,h4{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-.01em}
+  h1{font-size:clamp(30px,4.5vw,44px);font-weight:800;line-height:1.05}
+  h2{font-size:26px;font-weight:800;margin-top:64px;padding-top:22px;border-top:1px solid var(--tinta-10);display:flex;gap:14px;align-items:baseline}
+  h2 .n{color:var(--verde-profundo);font-variant-numeric:tabular-nums}
+  h3{font-size:14.5px;font-weight:700;margin-top:26px;color:var(--tinta-700);text-transform:uppercase;letter-spacing:.08em}
+  h4{font-size:15.5px;font-weight:700;margin-top:14px}
+  p{max-width:70ch;margin:10px 0}
+  .eyebrow{font-size:11.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--tinta-500)}
+  .tesis{font-size:18px;line-height:1.45;max-width:62ch;margin-top:14px}
+  .chip{display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;font-size:11.5px;font-weight:600;white-space:nowrap;margin-right:6px}
+  .chip.v{background:var(--verde-suave);color:var(--verde-profundo)} .chip.a{background:var(--ambar-suave);color:var(--ambar-texto)} .chip.z{background:var(--azul-suave);color:var(--azul)} .chip.g{background:var(--tinta-7);color:var(--tinta-700)} .chip.r{background:var(--negativo-suave);color:var(--negativo)}
+  .analogia{border-left:3px solid var(--verde);padding:6px 16px;margin:14px 0;color:var(--tinta-700);font-style:italic;max-width:66ch}
+  .caja{background:var(--tarjeta);border:1px solid var(--tinta-10);border-radius:14px;padding:14px 18px;margin-top:14px}
+  .caja.ojo{border-left:3px solid var(--ambar)} .caja.verde{border-left:3px solid var(--verde)} .caja.rojo{border-left:3px solid var(--negativo)}
+  .caja h4{margin-top:0} .caja ul{padding-left:18px;margin:6px 0} .caja li{margin:5px 0;font-size:14px}
+  ul.lista{max-width:72ch;padding-left:20px;margin:8px 0} ul.lista li{margin:6px 0}
+  .marco{overflow-x:auto;border:1px solid var(--tinta-10);border-radius:14px;background:var(--tarjeta);margin-top:14px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px}
+  th{font-family:var(--display);font-size:12px;text-align:left;padding:10px 12px;background:var(--fondo-bajo);color:var(--tinta-700);border-bottom:1px solid var(--tinta-10)}
+  td{padding:9px 12px;border-bottom:1px solid var(--tinta-7);vertical-align:top} tr:last-child td{border-bottom:0}
+  .nota{font-size:13px;color:var(--tinta-700)}
+  .copy{font-family:var(--display);font-weight:600;background:var(--fondo-bajo);border-radius:8px;padding:2px 8px;white-space:nowrap}
+  /* ---- teléfonos ---- */
+  .fila-tel{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px;margin-top:16px;align-items:start}
+  .tel{background:#F7F7F5;border:1px solid var(--tinta-10);border-radius:28px;padding:10px;box-shadow:0 8px 30px rgba(34,29,22,.06)}
+  .tel .pantalla{background:linear-gradient(180deg,#FEFEFD,#F3F4F2);border-radius:20px;padding:14px 14px 16px;min-height:420px;position:relative;overflow:hidden}
+  .tel .estado{display:flex;justify-content:space-between;font-size:10.5px;color:var(--tinta-500);font-weight:600;margin-bottom:10px}
+  .tel .pie{font-size:12px;color:var(--tinta-700);text-align:center;margin-top:10px;padding:0 6px;line-height:1.35}
+  .kicker{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--tinta-500)}
+  .titular{font-family:var(--display);font-weight:800;font-size:22px;line-height:1.08;margin:6px 0 4px}
+  .titular.xl{font-size:34px}
+  .sub{font-size:12.5px;color:var(--tinta-700);line-height:1.35}
+  .vidrio{background:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,.9);box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 2px 10px rgba(34,29,22,.05);border-radius:16px;padding:12px;margin-top:10px}
+  .vidrio.verde{background:rgba(12,143,98,.08);border-color:rgba(12,143,98,.18)}
+  .vidrio.ambar{background:rgba(196,99,31,.07);border-color:rgba(196,99,31,.18)}
+  .vidrio.azul{background:rgba(59,111,160,.07);border-color:rgba(59,111,160,.18)}
+  .boton{display:block;text-align:center;background:var(--verde-boton);color:#F4F1E8;border-radius:999px;padding:10px 14px;font-size:13.5px;font-weight:700;margin-top:12px}
+  .boton.suave{background:#fff;color:var(--tinta);border:1px solid var(--tinta-10)}
+  .boton.terciario{background:transparent;color:var(--tinta-500);font-weight:600;padding:4px;font-size:12px;margin-top:6px}
+  .escala{display:flex;gap:4px;margin-top:8px}
+  .escala span{flex:1;height:30px;border-radius:8px;background:#fff;border:1px solid var(--tinta-10);display:flex;align-items:center;justify-content:center;font-size:12.5px;font-variant-numeric:tabular-nums;font-weight:600}
+  .escala span.on{background:var(--verde);color:#F4F1E8;border-color:var(--verde)}
+  .escala span.sug{background:var(--verde-suave);color:var(--verde-profundo);border:1px dashed var(--verde)}
+  .fila{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--tinta-7);font-size:13px;gap:8px}
+  .fila:last-child{border-bottom:0}
+  .fila b{font-weight:600} .fila .num{font-variant-numeric:tabular-nums;color:var(--tinta-700);white-space:nowrap}
+  .marca{display:inline-block;border-radius:6px;padding:1px 6px;font-size:10.5px;font-weight:700;letter-spacing:.03em}
+  .marca.v{background:var(--verde-suave);color:var(--verde-profundo)} .marca.a{background:var(--ambar-suave);color:var(--ambar-texto)} .marca.z{background:var(--azul-suave);color:var(--azul)} .marca.g{background:var(--tinta-7);color:var(--tinta-700)}
+  .serie{display:grid;grid-template-columns:26px 1fr 1fr 28px;gap:6px;align-items:center;padding:7px 4px;border-bottom:1px solid var(--tinta-7);font-size:13px;font-variant-numeric:tabular-nums}
+  .serie .n{color:var(--tinta-500);font-size:11px;font-weight:700;text-align:center}
+  .serie .tipo{grid-column:1 / -1;display:flex;gap:6px;align-items:center;font-size:11px;color:var(--tinta-700);padding-left:2px;margin-top:-2px}
+  .serie .c{background:#fff;border:1px solid var(--tinta-10);border-radius:8px;padding:4px 8px;text-align:center}
+  .serie .c.on{border-color:var(--verde);box-shadow:0 0 0 2px var(--verde-suave)}
+  .serie .c.ph{color:var(--tinta-500);font-style:italic}
+  .serie .ok{width:24px;height:24px;border-radius:7px;border:1.5px solid var(--tinta-10);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--verde-profundo)}
+  .serie .ok.hecho{background:var(--verde);border-color:var(--verde);color:#F4F1E8}
+  .serie.drop{padding-left:14px;background:var(--tinta-4);border-radius:8px}
+  .serie.drop .n{color:var(--azul)}
+  .menu{position:absolute;left:14px;right:14px;bottom:16px;background:rgba(255,255,255,.96);border:1px solid var(--tinta-10);border-radius:16px;padding:6px;box-shadow:0 8px 24px rgba(34,29,22,.12)}
+  .menu div{padding:9px 12px;font-size:13.5px;border-bottom:1px solid var(--tinta-7);display:flex;justify-content:space-between}
+  .menu div:last-child{border-bottom:0} .menu div.rojo{color:var(--negativo)}
+  .semana{display:flex;gap:5px;margin-top:8px}
+  .semana span{flex:1;height:34px;border-radius:9px;background:#fff;border:1px solid var(--tinta-10);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11.5px;font-weight:700;line-height:1}
+  .semana span small{font-size:8.5px;font-weight:600;color:var(--tinta-500);margin-top:2px;letter-spacing:.04em}
+  .semana span.hecha{background:var(--verde-suave);color:var(--verde-profundo);border-color:transparent}
+  .semana span.hoy{background:var(--verde);color:#F4F1E8;border-color:var(--verde)}
+  .semana span.ligera{background:var(--azul-suave);color:var(--azul);border-color:transparent}
+  .keypad{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:10px}
+  .keypad span{height:34px;border-radius:9px;background:#fff;border:1px solid var(--tinta-10);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+  .keypad span.accion{background:var(--verde);color:#F4F1E8;border-color:var(--verde)}
+  .keypad span.dim{color:var(--tinta-500)}
+  .toggle{display:inline-block;width:40px;height:24px;border-radius:999px;background:var(--verde);position:relative;vertical-align:middle}
+  .toggle::after{content:"";position:absolute;right:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff}
+  .toggle.off{background:var(--tinta-10)} .toggle.off::after{right:auto;left:3px}
+  /* selector corto: un solo riel, segmentos iguales, etiquetas de una palabra */
+  .segmento{display:flex;gap:2px;margin-top:8px;background:var(--tinta-7);border-radius:999px;padding:3px}
+  .segmento span{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;min-height:32px;padding:0 8px;border-radius:999px;font-size:12.5px;font-weight:600;line-height:1.15;text-align:center;white-space:nowrap;color:var(--tinta-700)}
+  .segmento span.on{background:#fff;color:var(--tinta);box-shadow:0 1px 3px rgba(34,29,22,.12)}
+  /* lista de opciones: para elecciones que necesitan explicación */
+  .opciones{margin-top:6px}
+  .opciones .op{display:grid;grid-template-columns:1fr 22px;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--tinta-7)}
+  .opciones .op:last-child{border-bottom:0}
+  .opciones .op b{font-size:13.5px;font-weight:600;display:block}
+  .opciones .op .sub{font-size:12px}
+  .opciones .op .chk{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--tinta-10)}
+  .opciones .op.on .chk{background:var(--verde);border-color:var(--verde);position:relative}
+  .opciones .op.on .chk::after{content:"✓";color:#F4F1E8;font-size:12px;font-weight:800;position:absolute;left:5px;top:2px}
+  .opciones .op.on b{color:var(--tinta)}
+  .acciones{display:flex;gap:6px;margin-top:8px}
+  .acciones span{flex:1 1 0;min-width:0;text-align:center;padding:8px 0;border-radius:999px;background:#fff;border:1px solid var(--tinta-10);font-size:12.5px;font-weight:600;white-space:nowrap}
+  .tip{position:absolute;left:14px;right:14px;bottom:16px;background:var(--tinta);color:#F4F1E8;border-radius:14px;padding:12px 14px;font-size:12.5px;line-height:1.35;box-shadow:0 8px 24px rgba(34,29,22,.25)}
+  .tip b{display:block;font-family:var(--display);font-size:13.5px;margin-bottom:3px}
+  .tip .x{position:absolute;right:12px;top:10px;opacity:.7}
+  .tip .ok{display:inline-block;margin-top:8px;background:#fff;color:var(--tinta);border-radius:999px;padding:4px 10px;font-weight:700;font-size:12px}
+  /* diagrama y decisiones */
+  .diagrama{margin-top:16px;background:var(--tarjeta);border:1px solid var(--tinta-10);border-radius:16px;padding:14px;overflow-x:auto}
+  .diagrama svg{width:100%;max-width:900px;display:block;margin:0 auto}
+  .decisiones{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-top:16px}
+  .dec{background:var(--tarjeta);border:1px solid var(--tinta-10);border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+  .dec .q{font-family:var(--display);font-weight:800;font-size:16px}
+  .dec .g{background:var(--fondo-bajo);border-radius:12px;padding:10px;min-height:96px;display:flex;align-items:center;justify-content:center}
+  .dec .g svg{width:100%;max-width:260px;height:auto;display:block}
+  .dec .r{font-size:13.5px} .dec .r b{color:var(--verde-profundo)}
+  .dec .c{font-size:12px;color:var(--tinta-500)}
+  .dec.hecha{border-color:rgba(12,143,98,.35);background:rgba(12,143,98,.04)}
+  @media (max-width:760px){.pagina{padding:28px 14px 60px}}
+</style>
+
+<div class="pagina">
+  <header>
+    <div class="eyebrow">Cénit · Entrenar · ola 1 · cómo se ve, cómo se aprende, qué decides</div>
+    <h1>La ola 1 en pantalla</h1>
+    <p class="tesis">Cuatro respuestas: qué dice la ciencia de preguntar el esfuerzo aunque traigas reloj (y qué cambia por eso), cómo se ve cada pieza en la app, cómo el esfuerzo se monta sobre la progresión que ya tienes, y cómo le enseñamos todo esto a alguien que no sabe qué es AMRAP. Al final, los programas pulidos y tus decisiones, cada una con un dibujo.</p>
+    <div class="chip v">Ciencia verificada por el gate de ciencia</div><div class="chip z">Pantallas fieles a Liquid Glass</div><div class="chip a">Decisión tomada: la carga no vota en esta ola</div>
+  </header>
+
+  <!-- ===== 1 CIENCIA ===== -->
+  <h2><span class="n">1</span>Preguntar «¿qué tan duro estuvo?» aunque traigas reloj</h2>
+  <p class="tesis" style="font-size:16.5px">Tienes razón, y la ciencia también te la da. Cambiamos la regla: <b>se pregunta siempre</b>, prellenada, de un toque, saltable. Y con reloj, para la fuerza <b>manda tu esfuerzo</b>; la frecuencia cardiaca se queda como lo que es: el costo para tu corazón.</p>
+  <h3>Qué encontró el gate de ciencia</h3>
+  <ul class="lista">
+    <li><b>La frecuencia cardiaca no distingue bien qué tan duro fue un entreno de fuerza.</b> Entre series el pulso baja, y al empujar pesado el pulso sube por presión, no por demanda real. En un estudio de 2020 el esfuerzo percibido separó una sesión «a tope» de una controlada; el método por pulso no pudo (Falk Neto y col., <i>Frontiers in Physiology</i> 11:919).</li>
+    <li><b>El esfuerzo percibido sí funciona en fuerza.</b> Distingue 90 % de 70 % de 50 % del máximo con buena fiabilidad (Day y col. 2004, <i>JSCR</i> 18(2)); es «viable» y comparable al método en cardio (Sweet y col. 2004, <i>JSCR</i> 18(4)); una revisión de 2017 lo declara válido como método autónomo (Haddad y col., <i>Frontiers in Neuroscience</i> 11:612).</li>
+    <li><b>Apple hace exactamente eso.</b> En watchOS 11 estima el Esfuerzo solo en cardio; en fuerza «los usuarios pueden ingresar una calificación de esfuerzo al final de cada entreno» (Apple Newsroom, junio 2024). Lo pide aunque haya reloj porque no lo puede estimar con pulso.</li>
+    <li><b>Un detalle que nos corrige:</b> el promedio del esfuerzo por serie tiende a salir <b>más alto</b> que el esfuerzo de la sesión completa (Sweet 2004; Singh 2007). Por eso el prellenado se muestra como <b>sugerido</b>, no como respuesta: un toque lo confirma, otro lo cambia. Preguntarlo al cerrar, en vez de 30 minutos después, es aceptable según estudios posteriores (Kraft 2014, Christen 2016), y siempre se puede corregir desde el detalle, como en Apple.</li>
+  </ul>
+  <div class="caja verde"><h4>La regla nueva de ①, en tres líneas</h4><ul>
+    <li><b>Siempre se pregunta</b> al cerrar una sesión de fuerza, dentro del recibo, con la celda sugerida en punteado. Cerrar guarda lo que quedó seleccionado; nada más.</li>
+    <li><b>Con reloj:</b> la carga de fuerza sale de tu esfuerzo; el pulso alimenta el «costo cardiovascular» (Ligero / Moderado / Alto) que el recibo ya muestra. No se toma «el mayor de los dos»: son unidades distintas y el máximo siempre infla.</li>
+    <li><b>Sin respuesta y sin esfuerzo por serie:</b> la sesión queda sin carga. Nunca un 7 por defecto.</li>
+  </ul></div>
+  <div class="caja ojo"><h4>Lo que no vamos a decir</h4><ul><li>«Carga medida»: es <b>estimada</b> a partir de tu esfuerzo percibido.</li><li>«Igual que el Training Load de Apple»: Apple no publica su fórmula.</li><li>«La FC subestima tu carga en X %»: no hay cifra verificada; solo «no la refleja bien».</li></ul></div>
+  <p class="nota">Esto reabre la regla R1 del taller y pasa por el gate estadístico otra vez: hay que alinear la escala del esfuerzo con la del pulso antes de mezclarlas en la Carga. Es trabajo de calibración, no de ciencia nueva.</p>
+
+  <!-- ===== 2 PANTALLAS ===== -->
+  <h2><span class="n">2</span>Cómo se ve cada pieza</h2>
+  <p class="nota">Bocetos fieles al lenguaje de la app (lienzo blanco, tinta, verde primario, vidrio). Son de experiencia y copy; el pixel final lo cierra /ui contigo en el canvas.</p>
+
+  <h3>① El recibo con la pregunta</h3>
+  <div class="fila-tel">
+    <div class="tel"><div class="pantalla">
+      <div class="estado"><span>9:41</span><span>Sesión guardada</span></div>
+      <div class="kicker">Tirón A · 52 min</div>
+      <div class="vidrio verde">
+        <div class="kicker">Esfuerzo · estimado</div>
+        <div class="titular xl">~11.4 <span style="font-size:14px;font-weight:600;color:var(--tinta-500)">/21</span></div>
+        <div class="sub">¿Qué tan duro estuvo?</div>
+        <div class="escala"><span>6</span><span>7</span><span class="sug">8</span><span>9</span><span>9.5</span><span>10</span></div>
+        <div class="sub" style="margin-top:8px">Sugerido por tus series. Toca para confirmar o cambiar.</div>
+      </div>
+      <div class="vidrio"><div class="fila"><b>Series</b><span class="num">18 · 4 880 kg</span></div><div class="fila"><b>Récord</b><span class="num">Remo 80 kg × 8</span></div><div class="fila"><b>Cuenta en tu carga</b><span class="num">desde mañana</span></div></div>
+      <span class="boton">Listo</span>
+    </div><div class="pie">Sin reloj. La celda 8 viene <b>sugerida</b> (punteada); un toque la confirma, otro la cambia, tocarla de nuevo la deja sin calificar.</div></div>
+    <div class="tel"><div class="pantalla">
+      <div class="estado"><span>9:41</span><span>Sesión guardada</span></div>
+      <div class="kicker">Tirón A · 52 min · Apple Watch</div>
+      <div class="vidrio verde">
+        <div class="kicker">Esfuerzo · estimado</div>
+        <div class="titular xl">~12.1 <span style="font-size:14px;font-weight:600;color:var(--tinta-500)">/21</span></div>
+        <div class="sub">¿Qué tan duro estuvo?</div>
+        <div class="escala"><span>6</span><span>7</span><span>8</span><span class="on">9</span><span>9.5</span><span>10</span></div>
+      </div>
+      <div class="vidrio"><div class="fila"><b>Costo cardiovascular</b><span class="marca a">Moderado</span></div><div class="fila"><b>FC media</b><span class="num">128 bpm</span></div><div class="fila"><b>Kcal</b><span class="num">~410 · estimadas</span></div></div>
+      <span class="boton">Listo</span>
+    </div><div class="pie">Con reloj. Se pregunta igual. Tu esfuerzo manda la carga; el pulso se queda como <b>costo cardiovascular</b>, que ya existía.</div></div>
+    <div class="tel"><div class="pantalla">
+      <div class="estado"><span>9:41</span><span>Tendencias</span></div>
+      <div class="kicker">Carga de entrenamiento</div>
+      <div class="titular">Carga en rango</div>
+      <div class="sub">Semana con 3 sesiones de fuerza, 1 con reloj.</div>
+      <div class="vidrio"><div style="display:flex;align-items:flex-end;gap:4px;height:70px">
+        <span style="flex:1;height:40%;background:var(--verde);border-radius:4px 4px 0 0;opacity:.55"></span><span style="flex:1;height:8%;background:var(--tinta-10);border-radius:4px"></span><span style="flex:1;height:55%;background:var(--verde);border-radius:4px 4px 0 0;opacity:.55"></span><span style="flex:1;height:8%;background:var(--tinta-10);border-radius:4px"></span><span style="flex:1;height:62%;background:var(--verde);border-radius:4px 4px 0 0"></span><span style="flex:1;height:8%;background:var(--tinta-10);border-radius:4px"></span><span style="flex:1;height:8%;background:var(--tinta-10);border-radius:4px"></span></div>
+        <div class="sub" style="margin-top:6px">L · M · M · J · V · S · D</div></div>
+      <div class="sub" style="margin-top:10px">Incluye 2 sesiones con esfuerzo estimado (barras claras) y 1 medida con reloj.</div>
+    </div><div class="pie">Los días sin Watch ya no son huecos. El pie dice cuántas son estimadas.</div></div>
+  </div>
+
+  <h3>② Subir según lo que te quedaba</h3>
+  <div class="fila-tel">
+    <div class="tel"><div class="pantalla">
+      <div class="estado"><span>9:41</span><span>Entrenar</span></div>
+      <div class="kicker">Hoy · tu sesión</div>
+      <div class="titular">Empuje A</div>
+      <div class="sub">~50 min · 6 ejercicios · 18 series</div>
+      <div class="vidrio verde"><div class="kicker" style="color:var(--verde-profundo)">Hoy subes</div><div style="font-weight:700;font-size:14px;margin-top:2px">Press banca · 62.5 kg</div><div class="sub">Llegaste a las reps y te sobraban 3. Una sesión bastó.</div></div>
+      <span class="boton">Empezar</span>
+      <div class="sub" style="text-align:center;margin-top:8px">Otra forma ▾</div>
+    </div><div class="pie">El héroe de siempre. Solo gana una línea de porqué cuando las reps en reserva cambiaron algo.</div></div>
+    <div class="tel"><div class="pantalla">
+      <div class="estado"><span>9:41</span><span>Entrenar</span></div>
+      <div class="kicker">Hoy · tu sesión</div>
+      <div class="titular">Pierna B</div>
+      <div class="sub">~55 min · 5 ejercicios · 16 series</div>
+      <div class="vidrio ambar"><div class="kicker" style="color:var(--ambar-texto)">Hoy mantienes</div><div style="font-weight:700;font-size:14px;margin-top:2px">Sentadilla · 100 kg</div><div class="sub">Llegaste, pero al fallo. Una sesión más holgada y cuenta para subir.</div></div>
+      <span class="boton">Empezar</span>
+    </div><div class="pie">Cumpliste las reps, pero al fallo: mantienes. Tres veces así seguidas y subes de todos modos.</div></div>
+    <div class="tel"><div class="pantalla">
+      <div class="estado"><span>9:41</span><span>Progresión · Press banca</span></div>
+      <div class="vidrio">
+        <div class="fila"><b>Progresión automática</b><span class="toggle"></span></div>
+        <div class="fila"><div><b>Reps objetivo</b><div class="sub">todas las series</div></div><span class="num">8</span></div>
+        <div class="fila"><div><b>Subes cuando</b><div class="sub">cumples las reps</div></div><span class="num">2 sesiones</span></div>
+        <div class="fila"><div><b>Usar reps en reserva</b><div class="sub">Si te sobraron 2 o más, subes en una sesión. Si llegaste al fallo, esperas.</div></div><span class="toggle"></span></div>
+        <div class="fila"><div><b>Paso de carga</b><div class="sub">de tus discos</div></div><span class="num">+2.5 kg</span></div>
+        <div class="fila"><div><b>Si te estancas 3 sesiones</b></div><span class="num">baja 7.5 %</span></div>
+      </div>
+      <div class="sub" style="margin-top:10px">Con este plan: 4×8 con 60 kg dos sesiones seguidas → la próxima entrenas con <b>62.5</b>. Si te sobraron 2 reps, con una basta.</div>
+    </div><div class="pie">Así se vería si solo agregamos la fila. Abajo, en la sección 3b, las dos pasadas que la hacen más sencilla.</div></div>
+  </div>
+
+  <h3>③ AMRAP, drop y al fallo</h3>
+  <div class="fila-tel">
+    <div class="tel"><div class="pantalla">
+      <div class="estado"><span>9:41</span><span>En curso · 23 min</span></div>
+      <div class="kicker">Press banca · 3 de 4</div>
+      <div class="serie"><span class="n">1</span><span class="c">80</span><span class="c">8</span><span class="ok hecho">✓</span></div>
+      <div class="serie"><span class="n">2</span><span class="c">80</span><span class="c">8</span><span class="ok hecho">✓</span></div>
+      <div class="serie"><span class="n">3</span><span class="c on">80</span><span class="c ph">máx</span><span class="ok"></span><span class="tipo"><span class="marca z">las que puedas</span> anota cuántas salieron</span></div>
+      <div class="sub" style="margin-top:6px">La última vez: 80 × 11 · te quedaba 1</div>
+      <div class="keypad"><span>1</span><span>2</span><span>3</span><span class="dim">⌫</span><span>4</span><span>5</span><span>6</span><span class="dim">+1</span><span>7</span><span>8</span><span>9</span><span class="dim">−1</span><span class="dim">Q</span><span>0</span><span class="dim">·</span><span class="accion">✓ Serie</span></div>
+    </div><div class="pie">Serie «las que puedas» (AMRAP): la celda de reps dice <b>máx</b> y está vacía. Sin número no se palomea.</div></div>
+    <div class="tel"><div class="pantalla">
+      <div class="estado"><span>9:41</span><span>En curso · 24 min</span></div>
+      <div class="kicker">Press banca · 3 de 4</div>
+      <div class="serie"><span class="n">3</span><span class="c">80</span><span class="c">11</span><span class="ok hecho">✓</span></div>
+      <div class="serie drop"><span class="n">↳</span><span class="c on">64</span><span class="c">9</span><span class="ok"></span><span class="tipo"><span class="marca z">bajar y seguir</span> sin descanso, −20 %</span></div>
+      <div class="serie"><span class="n">4</span><span class="c">80</span><span class="c">8</span><span class="ok"></span></div>
+      <div class="menu"><div>Las que puedas<span class="marca g">AMRAP</span></div><div>Bajar y seguir · −20 %<span class="marca g">drop</span></div><div>Llegué al fallo<span class="marca g">0 en reserva</span></div><div class="rojo">Quitar serie<span>🗑</span></div></div>
+    </div><div class="pie">Pulsación larga sobre una serie abre este menú. La sub-serie «bajar y seguir» aparece debajo con el peso ya redondeado a tus discos; no arranca descanso hasta la última.</div></div>
+    <div class="tel"><div class="pantalla">
+      <div class="estado"><span>9:41</span><span>Editar rutina</span></div>
+      <div class="kicker">Press banca · serie 4 · techo de reps</div>
+      <div class="serie"><span class="n">4</span><span class="c">80</span><span class="c on ph">8 a máx</span><span></span><span class="tipo">piso 8 · techo: <span class="marca z">las que puedas</span></span></div>
+      <div class="keypad"><span>1</span><span>2</span><span>3</span><span class="dim">⌫</span><span>4</span><span>5</span><span>6</span><span class="dim">+1</span><span>7</span><span>8</span><span>9</span><span class="dim">−1</span><span class="dim"></span><span>0</span><span class="dim">·</span><span class="accion">máx</span></div>
+      <div class="vidrio" style="margin-top:14px"><div class="fila"><div><b>Última serie: las que puedas</b><div class="sub">en el menú ··· del ejercicio</div></div><span class="toggle"></span></div></div>
+    </div><div class="pie">En el editor no hay gesto nuevo: al escribir el techo de reps, la tecla de acción dice <b>máx</b>. Y el atajo «Última serie: las que puedas» cubre el caso más común.</div></div>
+  </div>
+
+  <h3>④ Importar tu historial de Strong o Hevy</h3>
+  <div class="fila-tel">
+    <div class="tel"><div class="pantalla">
+      <div class="estado"><span>9:41</span><span>Importar · 1 de 4</span></div>
+      <div class="kicker">Importar historial · un archivo, cero red</div>
+      <div class="titular">Tu historial, de Strong o Hevy</div>
+      <div class="vidrio"><div class="fila"><b>Strong ›</b><span class="sub">Perfil › Ajustes › Exportar datos</span></div><div class="fila"><b>Hevy ›</b><span class="sub">Ajustes › Exportar CSV</span></div></div>
+      <span class="boton">Elegir archivo .csv…</span>
+      <div class="sub" style="text-align:center;margin-top:10px">Cénit reconoce cuál es por sus columnas. Nada sale de tu teléfono.</div>
+    </div><div class="pie">Entrada: Ajustes › Datos y fuentes › Importar. También desde el historial vacío.</div></div>
+    <div class="tel"><div class="pantalla">
+      <div class="estado"><span>9:41</span><span>Importar · 2 de 4</span></div>
+      <div class="titular xl">214</div><div class="sub">sesiones · Strong · ene 2022 a ago 2026</div>
+      <div class="vidrio">
+        <div class="fila"><b>Ejercicios reconocidos</b><span class="num">61 de 68</span></div>
+        <div class="fila"><b>Por resolver</b><span class="num">7 ›</span></div>
+        <div class="fila"><b>Con esfuerzo</b><span class="num">140 de 214</span></div>
+        <div class="fila"><b>Posibles duplicados</b><span class="num">2 · fuera</span></div>
+        <div class="fila"><b>Unidad de peso</b><span class="num">kg</span></div>
+      </div>
+      <div class="sub" style="margin-top:8px">Las sesiones con esfuerzo entran a tu carga como estimadas. Las demás quedan sin carga.</div>
+      <span class="boton">Resolver 7 y continuar</span>
+    </div><div class="pie">Un solo número dominante y lo que tienes que decidir, antes de escribir nada.</div></div>
+    <div class="tel"><div class="pantalla">
+      <div class="estado"><span>9:41</span><span>Importar · 3 de 4</span></div>
+      <div class="kicker">Por resolver · 3 de 7</div>
+      <div class="titular">«Cable Fly (High)»</div>
+      <div class="sub">en 38 sesiones</div>
+      <div class="vidrio verde"><div class="kicker" style="color:var(--verde-profundo)">✦ ¿Quisiste decir…</div><div style="font-weight:700;margin-top:2px">Aperturas en polea alta</div><span class="boton" style="margin-top:8px">Usar</span></div>
+      <div class="acciones"><span>Catálogo</span><span>Crear propio</span><span>Ignorar</span></div>
+      <div class="sub" style="margin-top:10px">Tu decisión se recuerda para siempre.</div>
+    </div><div class="pie">Mismo componente que ya usa el import desde tu IA.</div></div>
+  </div>
+
+  <h3>⑤ Programas con semana ligera</h3>
+  <div class="fila-tel">
+    <div class="tel"><div class="pantalla">
+      <div class="estado"><span>9:41</span><span>Tu Plan</span></div>
+      <div class="titular">Empuje · Tirón · Pierna</div>
+      <div class="sub">Semana 3 de 5 · semana ligera en 2 semanas</div>
+      <div class="semana"><span class="hecha">1</span><span class="hecha">2</span><span class="hoy">3</span><span>4</span><span class="ligera">5<small>LIGERA</small></span></div>
+      <div class="vidrio" style="margin-top:14px"><div class="fila"><b>Lun</b><span>Empuje A</span></div><div class="fila"><b>Mar</b><span>Tirón A</span></div><div class="fila"><b>Mié</b><span class="sub">descanso</span></div><div class="fila"><b>Jue</b><span>Pierna A</span></div></div>
+      <div class="vidrio"><div class="fila"><b>Al terminar la semana ligera</b><span class="num">Repetir ciclo ›</span></div></div>
+    </div><div class="pie">La tira de semanas debajo del título. La semana ligera se ve distinta desde el día uno. Y tú eliges qué pasa al final.</div></div>
+    <div class="tel"><div class="pantalla">
+      <div class="estado"><span>9:41</span><span>Entrenar</span></div>
+      <div class="kicker" style="color:var(--azul)">Semana ligera · 5 de 5</div>
+      <div class="titular">Tirón A</div>
+      <div class="sub">~35 min · 6 ejercicios · 9 series</div>
+      <div class="vidrio azul"><div class="sub" style="color:var(--tinta)">La mitad de las series, el mismo peso. Mismo gym, menos desgaste. La próxima semana arrancas el ciclo con los pesos que te ganaste.</div></div>
+      <span class="boton">Empezar</span>
+      <div class="sub" style="text-align:center;margin-top:8px">Otra forma ▾</div>
+    </div><div class="pie">El mismo héroe; solo cambian el kicker y la meta. Puedes agregar series o subir peso: la app aconseja, no bloquea.</div></div>
+    <div class="tel"><div class="pantalla">
+      <div class="estado"><span>9:41</span><span>Programa</span></div>
+      <div class="kicker">Nuevo programa</div>
+      <div class="titular">Superior / Inferior · 4 días</div>
+      <div class="sub">2 rutinas · lunes, martes, jueves, viernes</div>
+      <div class="vidrio"><div class="fila"><b>Semanas</b></div><div class="segmento"><span>4</span><span class="on">5</span><span>6</span></div>
+        <div class="fila" style="margin-top:8px"><b>Semana ligera</b></div>
+        <div class="opciones"><div class="op on"><div><b>Menos series</b><div class="sub">la mitad, mismo peso</div></div><span class="chk"></span></div><div class="op"><div><b>Menos series y menos peso</b><div class="sub">la mitad, y −7.5 %</div></div><span class="chk"></span></div><div class="op"><div><b>Sin semana ligera</b></div><span class="chk"></span></div></div>
+        <div class="fila" style="margin-top:8px"><b>Al terminar</b></div>
+        <div class="opciones"><div class="op on"><div><b>Repetir el ciclo</b><div class="sub">vuelve a la semana 1 con tus pesos</div></div><span class="chk"></span></div><div class="op"><div><b>Un solo ciclo</b><div class="sub">regresas a tu semana normal</div></div><span class="chk"></span></div></div></div>
+      <span class="boton">Empezar programa</span>
+    </div><div class="pie">Crear desde el chip de Tu Plan. Tres decisiones y ya; todo lo demás son valores que puedes cambiar después.</div></div>
+  </div>
+
+  <!-- ===== 3 PROGRESIÓN ===== -->
+  <h2><span class="n">3</span>Cómo ② se monta sobre la progresión que ya tienes</h2>
+  <p><b>Sí, la toma en cuenta: no la sustituye, la afina.</b> La progresión actual es un contador. Cada ejercicio tiene reps objetivo, un número de sesiones para subir (1 o 2), un paso de carga que sale de tus discos, y una regla de estancamiento (tres fallos seguidos proponen bajar 7.5 %). Encima de todo va el veredicto del cuerpo, que puede detener una subida ganada. ② mete un solo dato nuevo, lo que te quedaba (Q), en la parte del contador que decide si una sesión «cuenta».</p>
+  <div class="diagrama">
+    <svg viewBox="0 0 900 250" xmlns="http://www.w3.org/2000/svg" font-family="Instrument Sans,-apple-system,Helvetica,sans-serif">
+      <defs><marker id="f2" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5C5648"/></marker></defs>
+      <rect x="10" y="60" width="150" height="80" rx="14" fill="#fff" stroke="#221D16" stroke-opacity=".12"/>
+      <text x="85" y="88" text-anchor="middle" font-size="13" font-weight="700" fill="#221D16">Tu plan</text>
+      <text x="85" y="106" text-anchor="middle" font-size="11" fill="#5C5648">reps objetivo · 1 o 2</text>
+      <text x="85" y="121" text-anchor="middle" font-size="11" fill="#5C5648">sesiones · paso de carga</text>
+      <rect x="200" y="60" width="150" height="80" rx="14" fill="#fff" stroke="#221D16" stroke-opacity=".12"/>
+      <text x="275" y="88" text-anchor="middle" font-size="13" font-weight="700" fill="#221D16">Tus sesiones</text>
+      <text x="275" y="106" text-anchor="middle" font-size="11" fill="#5C5648">reps por serie</text>
+      <text x="275" y="121" text-anchor="middle" font-size="11" fill="#0C8F62" font-weight="700">+ reps en reserva por serie (②)</text>
+      <rect x="390" y="40" width="190" height="120" rx="14" fill="#fff" stroke="#0C8F62" stroke-width="2"/>
+      <text x="485" y="66" text-anchor="middle" font-size="13" font-weight="700" fill="#221D16">El contador</text>
+      <text x="485" y="86" text-anchor="middle" font-size="11" fill="#5C5648">¿la sesión cumplió?</text>
+      <text x="485" y="104" text-anchor="middle" font-size="11" fill="#5C5648">¿cuántas seguidas?</text>
+      <text x="485" y="122" text-anchor="middle" font-size="11" fill="#5C5648">¿tres fallos? → baja 7.5 %</text>
+      <text x="485" y="146" text-anchor="middle" font-size="11" fill="#0C8F62" font-weight="700">② cambia solo qué «cumple»</text>
+      <rect x="620" y="60" width="130" height="80" rx="14" fill="#fff" stroke="#221D16" stroke-opacity=".12"/>
+      <text x="685" y="88" text-anchor="middle" font-size="13" font-weight="700" fill="#221D16">Veredicto</text>
+      <text x="685" y="106" text-anchor="middle" font-size="11" fill="#5C5648">del cuerpo</text>
+      <text x="685" y="121" text-anchor="middle" font-size="11" fill="#5C5648">puede frenar (FER-85)</text>
+      <rect x="780" y="60" width="110" height="80" rx="14" fill="#fff" stroke="#221D16" stroke-opacity=".12"/>
+      <text x="835" y="92" text-anchor="middle" font-size="13" font-weight="700" fill="#221D16">Héroe</text>
+      <text x="835" y="110" text-anchor="middle" font-size="11" fill="#5C5648">«Hoy subes»</text>
+      <path d="M160,100 L198,100" stroke="#5C5648" stroke-width="1.5" marker-end="url(#f2)"/>
+      <path d="M350,100 L388,100" stroke="#5C5648" stroke-width="1.5" marker-end="url(#f2)"/>
+      <path d="M580,100 L618,100" stroke="#5C5648" stroke-width="1.5" marker-end="url(#f2)"/>
+      <path d="M750,100 L778,100" stroke="#5C5648" stroke-width="1.5" marker-end="url(#f2)"/>
+      <text x="450" y="215" text-anchor="middle" font-size="12" fill="#5C5648">Todo lo demás (paso de carga, discos, deload, veredicto, «subir de todos modos» a un toque) queda exactamente igual.</text>
+    </svg>
+  </div>
+  <div class="marco"><table>
+    <tr><th>Hoy</th><th>Con ② encendido</th></tr>
+    <tr><td>Una sesión «cumple» si todas las series de trabajo llegan a las reps objetivo.</td><td>Igual, pero si en alguna serie llegaste al fallo (0 en reserva), la sesión no cuenta para subir. Tres seguidas así y cuenta de todos modos.</td></tr>
+    <tr><td>Subes tras 2 sesiones cumplidas (o 1, si así lo pusiste).</td><td>Si cumpliste con 2 o más reps en reserva en todas, subes tras 1 aunque tengas 2 configuradas.</td></tr>
+    <tr><td>Tres sesiones sin cumplir → propone bajar 7.5 %.</td><td>Igual. Las reps en reserva nunca bajan peso por sí solas.</td></tr>
+    <tr><td>El veredicto «hoy ve leve» detiene la subida ganada; la tomas con un toque.</td><td>Igual.</td></tr>
+    <tr><td>Sin reps en reserva capturadas no pasa nada raro.</td><td>Igual: sin dato, regla de siempre.</td></tr>
+  </table></div>
+  <div class="analogia">Es un semáforo que ya existía. ② no añade otro semáforo: solo le pone un sensor más a la luz verde, para que no se ponga verde cuando pasaste rozando.</div>
+
+  <!-- ===== 3b PROGRESIÓN SENCILLA ===== -->
+  <h2><span class="n">3b</span>Progresión, más sencilla: dos pasadas</h2>
+  <p>Sobre el nombre: «Q» era nuestro (viene del teclado, «Quedaban»). Lo que la industria usa es <b>reps en reserva</b> (RIR) o RPE; Alpha Progression dice RIR, Hevy y Strong dicen RPE. Nos quedamos con <b>«reps en reserva»</b> en palabras, y RIR chico donde quepa. También el teclado de la sesión debería decirlo igual, para que sea la misma palabra en todos lados.</p>
+  <p>Hoy la pantalla de progresión tiene seis controles por ejercicio y con ② tendría siete. Funcionan, pero se leen como un panel de avión. Dos pasadas, sin perder nada:</p>
+  <div class="fila-tel">
+    <div class="tel"><div class="pantalla">
+      <div class="estado"><span>9:41</span><span>Progresión · Press banca</span></div>
+      <div class="kicker">Hoy · 7 controles</div>
+      <div class="vidrio">
+        <div class="fila"><b>Progresión automática</b><span class="toggle"></span></div>
+        <div class="fila"><b>Reps objetivo</b><span class="num">8</span></div>
+        <div class="fila"><b>Subes cuando</b><span class="num">2 sesiones</span></div>
+        <div class="fila"><b>Usar reps en reserva</b><span class="toggle"></span></div>
+        <div class="fila"><b>Paso de carga</b><span class="num">+2.5 kg</span></div>
+        <div class="fila"><b>Si te estancas 3 sesiones</b><span class="num">baja 7.5 %</span></div>
+        <div class="fila"><b>Días fuera de rango</b><span class="num">esperar</span></div>
+      </div>
+    </div><div class="pie"><b>Antes.</b> Todo visible, todo del mismo tamaño. Nada te dice qué importa.</div></div>
+    <div class="tel"><div class="pantalla">
+      <div class="estado"><span>9:41</span><span>Progresión · Press banca</span></div>
+      <div class="kicker">Pasada 1 · lo importante arriba</div>
+      <div class="vidrio verde"><div class="sub" style="color:var(--tinta);font-size:14px;line-height:1.4">Subes <b>2.5 kg</b> cuando cumples <b>8 reps</b> en todas las series <b>dos sesiones seguidas</b>. Si te estancas tres veces, bajas 7.5 %.</div></div>
+      <div class="vidrio"><div class="fila"><b>Progresión automática</b><span class="toggle"></span></div><div class="fila"><b>Reps objetivo</b><span class="num">8</span></div><div class="fila"><b>Paso de carga</b><span class="num">+2.5 kg · de tus discos</span></div></div>
+      <div class="sub" style="text-align:center;margin-top:10px">Ajustes finos ▾</div>
+      <div class="vidrio" style="opacity:.6"><div class="fila"><b>Subes cuando</b><span class="num">2 sesiones</span></div><div class="fila"><b>Usar reps en reserva</b><span class="toggle off"></span></div><div class="fila"><b>Si te estancas</b><span class="num">baja 7.5 %</span></div><div class="fila"><b>Días fuera de rango</b><span class="num">esperar</span></div></div>
+    </div><div class="pie"><b>Pasada 1.</b> Una frase arriba que dice qué va a pasar. Tres controles a la vista; los cuatro finos, plegados. Misma funcionalidad.</div></div>
+    <div class="tel"><div class="pantalla">
+      <div class="estado"><span>9:41</span><span>Progresión · Press banca</span></div>
+      <div class="kicker">Pasada 2 · menos controles, mismas funciones</div>
+      <div class="vidrio verde"><div class="sub" style="color:var(--tinta);font-size:14px;line-height:1.4">Subes <b>2.5 kg</b> cuando cumples <b>8 reps</b> con ritmo <b>constante</b>. Si te estancas tres veces, bajas 7.5 %.</div></div>
+      <div class="vidrio"><div class="fila"><b>Progresión automática</b><span class="toggle"></span></div><div class="fila"><b>Reps objetivo</b><span class="num">8</span></div><div class="fila"><b>Paso de carga</b><span class="num">+2.5 kg</span></div>
+        <div class="fila"><b>Ritmo</b></div>
+        <div class="opciones"><div class="op on"><div><b>Constante</b><div class="sub">subes tras 2 sesiones cumplidas</div></div><span class="chk"></span></div><div class="op"><div><b>Rápido</b><div class="sub">subes tras 1</div></div><span class="chk"></span></div><div class="op"><div><b>Según reps en reserva</b><div class="sub">1 si te sobraron 2 · espera si llegaste al fallo</div></div><span class="chk"></span></div></div></div>
+      <div class="sub" style="text-align:center;margin-top:10px">Ajustes finos ▾</div>
+      <div class="vidrio" style="opacity:.6"><div class="fila"><b>Si te estancas</b><span class="num">baja 7.5 %</span></div><div class="fila"><b>Cuando tu cuerpo dice mantén</b><span class="num">esperar</span></div></div>
+    </div><div class="pie"><b>Pasada 2.</b> «Subes cuando» y «usar reps en reserva» eran la misma pregunta: ¿a qué ritmo? Un selector de tres los reemplaza. «Días fuera de rango» se renombra a lo que es. Siete controles quedan en cuatro visibles y dos finos.</div></div>
+  </div>
+  <h3>Pasada UX/UI a los selectores (tu hallazgo)</h3>
+  <p>El selector de tres pastillas con «Reps en reserva» partido en dos líneas rompía una regla de Apple: los controles segmentados son para etiquetas de una palabra. Cuando una opción necesita una explicación, va en <b>lista con palomita</b>, una por renglón, con su subtítulo. Regla para toda la app:</p>
+  <div class="marco"><table>
+    <tr><th>Cuándo</th><th>Qué control</th><th>Ejemplos en la ola 1</th></tr>
+    <tr><td>2 o 3 opciones de <b>una palabra o un número</b></td><td>Riel segmentado: un solo riel gris, segmentos iguales, el elegido en blanco. Nunca dos líneas; si no cabe, es lista.</td><td>Semanas 4 · 5 · 6 · Unidad kg · lb</td></tr>
+    <tr><td>Opciones que <b>necesitan explicación</b></td><td>Lista con palomita: título y subtítulo por renglón, la elegida marcada en verde.</td><td>Ritmo · Semana ligera · Al terminar el ciclo</td></tr>
+    <tr><td>Un valor que abre otra pantalla</td><td>Fila con valor y chevron.</td><td>«Al terminar la semana ligera · Repetir ciclo ›» en Tu Plan</td></tr>
+    <tr><td><b>Acciones</b>, no opciones</td><td>Botones en fila con etiqueta corta; el primario relleno.</td><td>Resolver un nombre: Catálogo · Crear propio · Ignorar</td></tr>
+  </table></div>
+  <div class="fila-tel">
+    <div class="tel"><div class="pantalla"><div class="estado"><span>9:41</span><span>Antes</span></div>
+      <div class="vidrio"><div class="fila"><b>Ritmo</b></div><div style="display:flex;gap:4px;margin-top:6px"><span style="flex:1;text-align:center;padding:6px 0;border-radius:999px;background:#221D16;color:#fff;font-size:12px;font-weight:600">Constante</span><span style="flex:1;text-align:center;padding:6px 0;border-radius:999px;background:#fff;border:1px solid rgba(34,29,22,.1);font-size:12px;font-weight:600">Rápido</span><span style="flex:1;text-align:center;padding:6px 6px;border-radius:999px;background:#fff;border:1px solid rgba(34,29,22,.1);font-size:12px;font-weight:600;line-height:1.1">Reps en reserva</span></div></div>
+      <div class="sub" style="margin-top:10px;color:var(--negativo)">Tres pastillas sueltas, una en dos líneas, sin explicación de qué hace cada una.</div>
+    </div><div class="pie">Antes.</div></div>
+    <div class="tel"><div class="pantalla"><div class="estado"><span>9:41</span><span>Después</span></div>
+      <div class="vidrio"><div class="fila"><b>Ritmo</b></div>
+        <div class="opciones"><div class="op on"><div><b>Constante</b><div class="sub">subes tras 2 sesiones cumplidas</div></div><span class="chk"></span></div><div class="op"><div><b>Rápido</b><div class="sub">subes tras 1</div></div><span class="chk"></span></div><div class="op"><div><b>Según reps en reserva</b><div class="sub">1 si te sobraron 2 · espera si llegaste al fallo</div></div><span class="chk"></span></div></div></div>
+      <div class="vidrio"><div class="fila"><b>Semanas</b></div><div class="segmento"><span>4</span><span class="on">5</span><span>6</span></div></div>
+    </div><div class="pie">Después. Lista con palomita para lo que necesita explicación; riel segmentado solo para números.</div></div>
+  </div>
+  <div class="caja verde"><h4>Qué se mantiene y qué se gana</h4><ul>
+    <li>Se mantiene todo: reps objetivo, paso, ritmo de 1 o 2 sesiones, reps en reserva, deload al estancarte, esperar o no al veredicto.</li>
+    <li>Se gana una frase que dice qué va a pasar (el usuario no tiene que deducirlo de seis filas) y un selector de «Ritmo» que reemplaza un número y un interruptor. En tus rutinas de hoy el ritmo nace en «Constante», que es lo que ya tienes.</li>
+    <li>El chip del ejercicio en el editor dice lo mismo en corto: <span class="copy">+2.5 kg · constante</span> o <span class="copy">+2.5 kg · reps en reserva</span>.</li>
+  </ul></div>
+
+  <!-- ===== 4 TUTORIAL ===== -->
+  <h2><span class="n">4</span>Cómo enseñarlo sin un tutorial</h2>
+  <p>Tienes razón en que se está complicando: cinco formas de descanso, tres tipos de serie, reps en reserva, semana ligera, programas. La mejor práctica de Apple y de los productos que lo hacen bien es <b>no</b> hacer un tour al inicio. Los tours se saltan y se olvidan. Se enseña en el momento en que la cosa aparece, una vez, en una frase, y se puede volver a leer después. Cuatro capas:</p>
+  <div class="marco"><table>
+    <tr><th>Capa</th><th>Qué es</th><th>Ejemplo</th></tr>
+    <tr><td><b>1 · Nombres que se entienden solos</b></td><td>La etiqueta visible es en palabras; la sigla va chica y después. Los valores por defecto esconden lo avanzado.</td><td>«Las que puedas» (AMRAP) · «Bajar y seguir» (drop) · «Reps en reserva» (RIR) · «Semana ligera». Los descansos ya muestran dos formas al frente y tres tras «más opciones».</td></tr>
+    <tr><td><b>2 · Un consejo en el momento, una sola vez</b></td><td>Cuando un concepto aparece por primera vez en tu pantalla, una tarjeta corta de tinta lo explica en dos líneas, con «Entendido». No vuelve. Es exactamente lo que Apple ofrece con TipKit (iOS 17, que ya es nuestro mínimo): reglas de cuándo mostrarlo, máximo uno por pantalla, se cierra con un toque.</td><td>La primera vez que ves una serie «las que puedas»: «Haz todas las reps que puedas con buena forma y anota cuántas salieron. La app la usa para tus récords.»</td></tr>
+    <tr><td><b>3 · El glosario detrás del «?»</b></td><td>La pantalla de trucos que ya decidiste conservar (el signo de interrogación en Entrenar) gana una sección «Palabras del gym» con cada término en una tarjeta: qué es, cuándo usarlo, qué hace la app con él.</td><td>Descansos (5), tipos de serie (3), reps en reserva, esfuerzo estimado, semana ligera, programa, 1RM estimado.</td></tr>
+    <tr><td><b>4 · Tres pasos al crear tu primer programa</b></td><td>La única «guía» real, y es corta porque es una decisión con consecuencias: semanas, semana ligera, qué pasa al terminar. Cada paso con una línea de porqué.</td><td>«La última semana es de descanso activo. La ves marcada desde hoy.»</td></tr>
+  </table></div>
+  <div class="fila-tel">
+    <div class="tel"><div class="pantalla">
+      <div class="estado"><span>9:41</span><span>En curso · 23 min</span></div>
+      <div class="kicker">Press banca · 3 de 4</div>
+      <div class="serie"><span class="n">3</span><span class="c">80</span><span class="c ph">máx</span><span class="ok"></span><span class="tipo"><span class="marca z">las que puedas</span></span></div>
+      <div class="serie"><span class="n">4</span><span class="c">80</span><span class="c">8</span><span class="ok"></span></div>
+      <div class="tip"><span class="x">✕</span><b>Serie «las que puedas»</b>Haz todas las reps que puedas con buena forma y anota cuántas salieron. Cuenta para tus récords y para subir.<span class="ok">Entendido</span></div>
+    </div><div class="pie">Capa 2: el consejo aparece la primera vez, en el lugar exacto, y no vuelve.</div></div>
+    <div class="tel"><div class="pantalla">
+      <div class="estado"><span>9:41</span><span>? · Trucos</span></div>
+      <div class="kicker">Palabras del gym</div>
+      <div class="vidrio"><div class="fila"><div><b>Las que puedas · AMRAP</b><div class="sub">Todas las reps que salgan. Cuenta para récords y para subir.</div></div><span>›</span></div>
+        <div class="fila"><div><b>Bajar y seguir · drop</b><div class="sub">Sin descanso, con menos peso. Cuenta como volumen.</div></div><span>›</span></div>
+        <div class="fila"><div><b>Reps en reserva · RIR</b><div class="sub">Las que aún podías hacer. 0 = llegaste al fallo.</div></div><span>›</span></div>
+        <div class="fila"><div><b>Semana ligera</b><div class="sub">La última del ciclo: la mitad de series, mismo peso.</div></div><span>›</span></div>
+        <div class="fila"><div><b>Esfuerzo estimado</b><div class="sub">Minutos por qué tan duro estuvo. Sin reloj, es tu carga.</div></div><span>›</span></div>
+        <div class="fila"><div><b>Descansos · 5 formas</b><div class="sub">Por reloj o por tu pulso.</div></div><span>›</span></div></div>
+    </div><div class="pie">Capa 3: el glosario vive detrás del «?» que ya existe. Siempre a un toque, nunca estorbando.</div></div>
+    <div class="tel"><div class="pantalla">
+      <div class="estado"><span>9:41</span><span>Nuevo programa · 2 de 3</span></div>
+      <div class="titular">¿Semana ligera?</div>
+      <div class="sub">La última semana del ciclo bajas el volumen a propósito. Descansas sin dejar de entrenar, y el ciclo siguiente lo empiezas fresco.</div>
+      <div class="vidrio" style="margin-top:14px"><div class="opciones"><div class="op on"><div><b>Menos series</b><div class="sub">la mitad, mismo peso · lo más cercano al consenso publicado</div></div><span class="chk"></span></div><div class="op"><div><b>Menos series y menos peso</b><div class="sub">la mitad, y −7.5 %</div></div><span class="chk"></span></div><div class="op"><div><b>Sin semana ligera</b></div><span class="chk"></span></div></div></div>
+      <span class="boton">Siguiente</span><span class="boton terciario">¿Qué es una semana ligera?</span>
+    </div><div class="pie">Capa 4: tres pasos con su porqué, solo la primera vez que creas un programa.</div></div>
+  </div>
+  <div class="caja verde"><h4>Reglas de la enseñanza</h4><ul><li>Un consejo por pantalla, una vez, con «Entendido». Nunca un modal que bloquea.</li><li>El nombre en palabras siempre visible; la sigla, chica y opcional.</li><li>Todo lo avanzado nace escondido: serie normal, descanso fijo, sin programa. Se descubre cuando hace falta (Nielsen lo llama revelación progresiva; Apple lo pide en sus guías de onboarding: enseña en contexto, no antes).</li><li>Cada explicación dice qué hace la app con el dato. Si no puede decirlo en una línea, el concepto sobra.</li></ul></div>
+
+  <!-- ===== 5 PROGRAMAS ===== -->
+  <h2><span class="n">5</span>Programas, pulidos: prender, apagar, repetir</h2>
+  <p>Mi opinión: <b>que se pueda prender y apagar, y que por defecto sea un ciclo que se repite solo.</b> Las tres preguntas que hacías se resuelven con un interruptor y un selector:</p>
+  <div class="marco"><table>
+    <tr><th>Pregunta</th><th>Respuesta propuesta</th><th>Por qué</th></tr>
+    <tr><td><b>¿Prender y apagar?</b></td><td>Sí. «Sin programa» es tu semana de siempre, la que se repite. «Con programa» le pone semanas y una semana ligera. Apagarlo (Terminar programa) conserva rutinas y semana; solo se va el conteo.</td><td>Hay quien no quiere ciclos. Y un viaje largo o una lesión piden apagar sin perder nada.</td></tr>
+    <tr><td><b>¿Siempre la misma o ciclos?</b></td><td>Ciclos, por defecto repetidos: al terminar la semana ligera vuelve solo a la semana 1 con los pesos que ganaste. Opción «un solo ciclo»: al terminar vuelves a tu semana normal.</td><td>Es lo que hacen Boostcamp y Alpha Progression y lo que la encuesta de Bell 2024 reporta: los que entrenan serio bajan cada 5 o 6 semanas. Repetir sin preguntar evita una decisión más cada mes.</td></tr>
+    <tr><td><b>¿Qué cambia entre semanas?</b></td><td>Nada, salvo la ligera. Las semanas 1 a 4 son iguales entre sí; el peso lo mueve la progresión de cada ejercicio, no el calendario.</td><td>Simplicidad: una sola regla de subir. Las ondas de carga por semana (más peso, menos reps) son una ola futura si las piden.</td></tr>
+    <tr><td><b>¿Y si me salto una semana?</b></td><td>No cuenta, no avanza, no regaña: «la semana pasada no contó, sigues en la 3».</td><td>Un viaje no te quema una semana del ciclo.</td></tr>
+    <tr><td><b>¿Y si me estanco a media ciclo?</b></td><td>La propuesta de bajar 7.5 % sigue viva, igual que hoy.</td><td>El biomecánico mostró que esperar a la semana ligera podía dejarte doce sesiones fallando.</td></tr>
+    <tr><td><b>¿Cambiar de 5 a 4 semanas a medio ciclo?</b></td><td>Se puede; si ya vas en la 5, la actual se vuelve ligera.</td><td>Nunca te deja en una semana que no existe.</td></tr>
+  </table></div>
+  <div class="analogia">Un programa es tu semana con un metrónomo encima. Lo puedes apagar y tu semana sigue sonando igual; lo prendes y marca cuándo bajar el ritmo.</div>
+
+  <h3>¿Se pueden importar programas cíclicos desde tu IA?</h3>
+  <p><b>Sí, y creo que es la mejor puerta para ellos.</b> El archivo que tu IA te devuelve aprende tres cosas: cuántas semanas dura el plan, si la última es ligera, y qué día toca cada rutina. Con eso, un plan de tu coach o de un libro entra como programa completo, con su tira de semanas, sin que nosotros tengamos que licenciar contenido de nadie. El prompt que la app te da ya lo pide; tu IA lo llena.</p>
+  <div class="marco"><table>
+    <tr><th>Tu IA puede describir</th><th>Qué hace Cénit</th></tr>
+    <tr><td>Rutinas con series, reps, peso y descanso (como hoy)</td><td>Las crea, como hoy.</td></tr>
+    <tr><td>«Este plan dura 5 semanas y la última es ligera»</td><td>Crea el programa con su tira de semanas y su semana ligera.</td></tr>
+    <tr><td>«Empuje va lunes y jueves, tirón martes y viernes»</td><td>Arma tu semana. Si no dice días, los asigna en orden a los libres, como las plantillas.</td></tr>
+    <tr><td>Series «las que puedas» en la última serie</td><td>Las marca como AMRAP.</td></tr>
+    <tr><td>Semanas distintas entre sí (semana 1 con 5 reps, semana 2 con 3, ondas de carga)</td><td><b>Todavía no.</b> En esta ola las semanas 1 a 4 son iguales y el peso lo mueve la progresión. La app lo dice al importar: «Este plan cambia entre semanas; Cénit usará la semana 1 para todas y la última como ligera». Nada se pierde en silencio.</td></tr>
+    <tr><td>Más de 6 semanas</td><td>Se acepta hasta 8 si viene de tu IA (un bloque de coach suele ser de 6 a 8); creado a mano sigue siendo 4 a 6 para que la decisión sea corta.</td></tr>
+  </table></div>
+  <p class="nota">Mi opinión: esto es lo que hace único a Cénit frente a Boostcamp. Ellos tienen 130 programas de coaches con licencia; nosotros tenemos la puerta para <b>cualquier</b> programa sin tocar la red. Las ondas de carga por semana son la ola siguiente si los usuarios las piden.</p>
+
+  <!-- ===== 6 DECISIONES ===== -->
+  <h2><span class="n">6</span>Tus decisiones</h2>
+  <div class="caja verde"><h4>Ya decididas</h4><ul>
+    <li><b>Q12 · La carga no vota en el veredicto en esta ola.</b> Se abre issue propio con gate de ciencia.</li>
+    <li><b>Q13 · Se pregunta el esfuerzo siempre, también con reloj.</b> Prellenado sugerido, un toque.</li>
+    <li><b>Q1 · Subir en una sesión si te sobraron 2 reps o más.</b> La ciencia (Helms 2016: «sube la intensidad si completas las series con más reps en reserva que el objetivo») y mi recomendación coinciden: sí.</li>
+    <li><b>Q2 · El contador de semanas solo avanza si entrenaste.</b> Sí.</li>
+    <li><b>Q3 · Semana ligera = la mitad de las series, mismo peso.</b> La opción con peso usa el 7.5 % de siempre. Sí.</li>
+    <li><b>Q4 · Cuatro motores con tus plantillas, sin biblioteca de coaches.</b> Sí.</li>
+    <li><b>Q6, Q7, Q8, Q9, Q10 · Con mis recomendaciones.</b> Ritmo por reps en reserva por ejercicio y apagado en lo que ya existe · casilla del AMRAP vacía · «Programa» fuera del primer uso · sin rutinas desde nombres importados · la semana ligera usa el mismo héroe.</li>
+  </ul></div>
+  <p class="nota"><b>No queda ninguna decisión abierta.</b> Siguiente paso: /pm abre el épico.</p>
+  <h3>Las que no se entendieron, explicadas otra vez (referencia)</h3>
+  <div class="marco"><table>
+    <tr><th>#</th><th>En una frase</th><th>Ejemplo concreto</th><th>Mi recomendación</th></tr>
+    <tr><td><b>Q6</b></td><td>El «Ritmo: reps en reserva» se elige <b>por ejercicio</b>, no para toda la app. Y en las rutinas que <b>ya tienes creadas</b> nace apagado: nada cambia hasta que tú lo enciendas.</td><td>Tienes una rutina «Empuje A» desde julio. Al actualizar la app, su press de banca sigue subiendo como siempre (constante). Si creas una rutina nueva desde una plantilla, el press ya viene con «reps en reserva» encendido, pero el curl de bíceps no, porque en aislamiento ir al fallo es normal.</td><td>Sí. Por ejercicio, apagado en lo que ya existe.</td></tr>
+    <tr><td><b>Q7</b></td><td>En una serie «las que puedas», la casilla de reps empieza <b>vacía</b>, con la palabra «máx», en vez de traer un número puesto.</td><td>Haces la serie, salieron 11. Si la casilla dijera «11» de antemano (la última vez), podrías palomear sin contar. Vacía, tienes que escribir 11. La app te enseña abajo «la última vez: 80 × 11» como referencia.</td><td>Vacía. Es la única serie donde el número importa.</td></tr>
+    <tr><td><b>Q8</b></td><td>El botón «Programa · 4 a 6 semanas» <b>no</b> aparece la primera vez que abres Entrenar; aparece en Tu Plan, cuando ya armaste tu semana.</td><td>Usuario nuevo abre Entrenar: ve «Arma tu semana» y tres plantillas. Nada más. Una semana después, en Tu Plan, ve «Convertir en programa» y «Programa · 4 a 6 semanas».</td><td>Sí. El primer minuto tiene un solo foco.</td></tr>
+    <tr><td><b>Q9</b></td><td>Al importar tu historial de Strong, la app <b>no</b> intenta adivinar tus rutinas a partir de los nombres de tus entrenos viejos («Push Day», «Leg Day»).</td><td>Importas 214 sesiones. Tus récords y tu 1RM ya están. Tu semana sigue vacía, y el botón «Arma tu semana» te lleva a las plantillas. En una ola futura podríamos ofrecer «¿Armar tu semana con lo último que hiciste?».</td><td>No en esta ola. El import es historial, no plan.</td></tr>
+    <tr><td><b>Q10</b></td><td>En la semana ligera, el bloque grande de Entrenar (el «héroe») <b>no cambia de forma</b>: sigue siendo tu rutina del día. Solo cambian la línea pequeña de arriba («Semana ligera · 5 de 5») y el resumen («9 series» en vez de 18).</td><td>Lunes de la semana 5: mismo botón «Empezar», misma tarjeta, mismo lugar. Arriba dice «Semana ligera · 5 de 5» en vez de «Hoy · tu sesión». Nada más se mueve. Hacer un bloque distinto reabriría el diseño del héroe que ya cerraste en agosto.</td><td>Sí. Cambiar texto, no forma.</td></tr>
+  </table></div>
+  <p class="nota" style="margin-top:12px">Los dibujos de abajo son los mismos de antes, por si ayudan; las de arriba ya están decididas o explicadas.</p>
+  <div class="decisiones">
+    <div class="dec hecha"><div class="q">Q12 · La carga no vota en el veredicto</div><div class="g"><svg viewBox="0 0 260 90"><rect x="10" y="30" width="60" height="30" rx="8" fill="#F3F4F2" stroke="#221D16" stroke-opacity=".15"/><text x="40" y="49" text-anchor="middle" font-size="10" fill="#221D16">Sueño</text><rect x="80" y="30" width="60" height="30" rx="8" fill="#F3F4F2" stroke="#221D16" stroke-opacity=".15"/><text x="110" y="49" text-anchor="middle" font-size="10" fill="#221D16">Pulso reposo</text><rect x="150" y="30" width="60" height="30" rx="8" fill="#fff" stroke="#C4631F" stroke-dasharray="3 2"/><text x="180" y="49" text-anchor="middle" font-size="10" fill="#8F4712">Carga</text><text x="180" y="75" text-anchor="middle" font-size="9" fill="#5C5648">se ve, no vota</text><text x="235" y="49" text-anchor="middle" font-size="14" fill="#0C8F62">→ ✓</text></svg></div><div class="r"><b>Decidido: no en esta ola.</b> La fuerza sin reloj se ve en tu carga y en tu acta; que cambie el veredicto es un issue propio con gate de ciencia.</div></div>
+    <div class="dec"><div class="q">Q13 · Preguntar el esfuerzo siempre</div><div class="g"><svg viewBox="0 0 260 90"><rect x="15" y="20" width="110" height="50" rx="10" fill="#fff" stroke="#221D16" stroke-opacity=".15"/><text x="70" y="40" text-anchor="middle" font-size="10" fill="#221D16">Sin reloj</text><text x="70" y="58" text-anchor="middle" font-size="10" fill="#0C8F62" font-weight="700">pregunta</text><rect x="135" y="20" width="110" height="50" rx="10" fill="#fff" stroke="#0C8F62" stroke-width="1.5"/><text x="190" y="40" text-anchor="middle" font-size="10" fill="#221D16">Con reloj</text><text x="190" y="58" text-anchor="middle" font-size="10" fill="#0C8F62" font-weight="700">también pregunta</text></svg></div><div class="r"><b>Recomiendo sí</b>, como Apple y como la ciencia: el pulso no distingue bien la fuerza. Un toque, sugerida, saltable.</div><div class="c">Confianza alta · reabre la regla R1 con gate estadístico</div></div>
+    <div class="dec"><div class="q">Q1 · Subir en 1 sesión si llegaste cómodo</div><div class="g"><svg viewBox="0 0 260 90"><text x="10" y="22" font-size="10" fill="#5C5648">Hoy: cumple · cumple → sube</text><rect x="10" y="28" width="40" height="14" rx="4" fill="#0C8F62" opacity=".5"/><rect x="55" y="28" width="40" height="14" rx="4" fill="#0C8F62" opacity=".5"/><text x="105" y="39" font-size="10" fill="#00774B">▲</text><text x="10" y="64" font-size="10" fill="#5C5648">Con 2 en reserva: cumple cómodo → sube</text><rect x="10" y="70" width="40" height="14" rx="4" fill="#0C8F62"/><text x="60" y="81" font-size="10" fill="#00774B">▲ una bastó</text></svg></div><div class="r"><b>Recomiendo sí.</b> Si te sobraban dos reps, el peso ya te quedó chico. Es lo que distingue a Alpha Progression.</div><div class="c">Confianza media · el gate de ciencia valida el umbral</div></div>
+    <div class="dec"><div class="q">Q6 · Interruptor por ejercicio, apagado en tus rutinas de hoy</div><div class="g"><svg viewBox="0 0 260 90"><text x="10" y="20" font-size="10" fill="#221D16">Press banca</text><rect x="200" y="10" width="40" height="18" rx="9" fill="#0C8F62"/><circle cx="231" cy="19" r="7" fill="#fff"/><text x="10" y="45" font-size="10" fill="#221D16">Curl (aislamiento)</text><rect x="200" y="35" width="40" height="18" rx="9" fill="#E6E4DE"/><circle cx="209" cy="44" r="7" fill="#fff"/><text x="10" y="70" font-size="10" fill="#221D16">Tu rutina de siempre</text><rect x="200" y="60" width="40" height="18" rx="9" fill="#E6E4DE"/><circle cx="209" cy="69" r="7" fill="#fff"/></svg></div><div class="r"><b>Recomiendo sí.</b> Nada cambia sin que lo pidas; las plantillas nuevas lo traen encendido en barra y apagado en aislamiento, donde ir al fallo es normal.</div><div class="c">Confianza media-alta</div></div>
+    <div class="dec"><div class="q">Q3 · Semana ligera: solo series, o series y peso</div><div class="g"><svg viewBox="0 0 260 90"><text x="10" y="18" font-size="10" fill="#5C5648">Normal</text><rect x="10" y="24" width="14" height="50" fill="#221D16" opacity=".8"/><rect x="28" y="24" width="14" height="50" fill="#221D16" opacity=".8"/><rect x="46" y="24" width="14" height="50" fill="#221D16" opacity=".8"/><rect x="64" y="24" width="14" height="50" fill="#221D16" opacity=".8"/><text x="120" y="18" font-size="10" fill="#0C8F62" font-weight="700">Ligera (rec.)</text><rect x="120" y="24" width="14" height="50" fill="#0C8F62"/><rect x="138" y="24" width="14" height="50" fill="#0C8F62"/><text x="120" y="86" font-size="9" fill="#5C5648">mitad series · mismo peso</text><text x="195" y="18" font-size="10" fill="#8F4712">Opción</text><rect x="195" y="28" width="14" height="46" fill="#C4631F"/><rect x="213" y="28" width="14" height="46" fill="#C4631F"/><text x="195" y="86" font-size="9" fill="#5C5648">y peso −7.5 %</text></svg></div><div class="r"><b>Recomiendo solo series.</b> Es lo más cercano al consenso publicado, y si eliges también peso, usa el mismo 7.5 % del deload de siempre: una regla de bajar, no dos.</div><div class="c">Confianza baja en la forma · ya decidiste que quieres UNA regla</div></div>
+    <div class="dec"><div class="q">Q2 · El contador solo avanza si entrenaste</div><div class="g"><svg viewBox="0 0 260 90"><g font-size="10" text-anchor="middle"><rect x="10" y="30" width="40" height="30" rx="6" fill="#0C8F62" opacity=".25"/><text x="30" y="49" fill="#00774B">1</text><rect x="60" y="30" width="40" height="30" rx="6" fill="#0C8F62" opacity=".25"/><text x="80" y="49" fill="#00774B">2</text><rect x="110" y="30" width="40" height="30" rx="6" fill="#fff" stroke="#C4631F" stroke-dasharray="3 2"/><text x="130" y="49" fill="#8F4712">viaje</text><rect x="160" y="30" width="40" height="30" rx="6" fill="#0C8F62"/><text x="180" y="49" fill="#fff">3</text><text x="130" y="78" fill="#5C5648">la semana en blanco no cuenta</text></g></svg></div><div class="r"><b>Recomiendo sí.</b> Un viaje no te quema una semana del ciclo. Se calcula sin guardar nada que se pueda descomponer.</div><div class="c">Confianza media</div></div>
+    <div class="dec"><div class="q">Q4 · Cuatro motores con tus plantillas, sin biblioteca de coaches</div><div class="g"><svg viewBox="0 0 260 90"><rect x="10" y="20" width="90" height="50" rx="10" fill="#F3F4F2"/><text x="55" y="42" text-anchor="middle" font-size="10" fill="#221D16">Plantillas</text><text x="55" y="58" text-anchor="middle" font-size="9" fill="#5C5648">que ya tienes</text><text x="120" y="49" font-size="14" fill="#5C5648">+</text><rect x="135" y="20" width="60" height="50" rx="10" fill="#F3F4F2"/><text x="165" y="42" text-anchor="middle" font-size="10" fill="#221D16">semanas</text><text x="165" y="58" text-anchor="middle" font-size="9" fill="#5C5648">+ ligera</text><text x="210" y="49" font-size="14" fill="#5C5648">=</text><rect x="222" y="20" width="32" height="50" rx="10" fill="#0C8F62"/><text x="238" y="49" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">4</text></svg></div><div class="r"><b>Recomiendo sí.</b> Sin licencias ni contenido ajeno; la cola larga la cubre importar desde tu IA.</div><div class="c">Confianza alta</div></div>
+    <div class="dec"><div class="q">Q7 · La celda del AMRAP arranca vacía</div><div class="g"><svg viewBox="0 0 260 90"><rect x="20" y="25" width="90" height="40" rx="8" fill="#fff" stroke="#0C8F62" stroke-width="1.5"/><text x="65" y="50" text-anchor="middle" font-size="12" fill="#6F6857" font-style="italic">máx</text><text x="65" y="80" text-anchor="middle" font-size="9" fill="#00774B" font-weight="700">recomendado</text><rect x="150" y="25" width="90" height="40" rx="8" fill="#fff" stroke="#221D16" stroke-opacity=".15"/><text x="195" y="50" text-anchor="middle" font-size="12" fill="#221D16">11</text><text x="195" y="80" text-anchor="middle" font-size="9" fill="#5C5648">prellenada: invita a no contar</text></svg></div><div class="r"><b>Recomiendo vacía.</b> Es la serie donde el número importa; un número inventado es justo lo que no hacemos. Se ve contigo en /inject.</div><div class="c">Confianza media</div></div>
+    <div class="dec"><div class="q">Q8 · «Programa» fuera del primer uso</div><div class="g"><svg viewBox="0 0 260 90"><rect x="10" y="15" width="110" height="60" rx="10" fill="#F3F4F2"/><text x="65" y="35" text-anchor="middle" font-size="10" fill="#221D16" font-weight="700">Primer uso</text><text x="65" y="52" text-anchor="middle" font-size="9" fill="#5C5648">«Arma tu semana»</text><text x="65" y="66" text-anchor="middle" font-size="9" fill="#5C5648">un solo foco</text><rect x="140" y="15" width="110" height="60" rx="10" fill="#fff" stroke="#0C8F62" stroke-width="1.5"/><text x="195" y="35" text-anchor="middle" font-size="10" fill="#221D16" font-weight="700">Tu Plan</text><text x="195" y="52" text-anchor="middle" font-size="9" fill="#00774B">Programa · 4 a 6 sem</text><text x="195" y="66" text-anchor="middle" font-size="9" fill="#5C5648">cuando ya hay semana</text></svg></div><div class="r"><b>Recomiendo sí.</b> El primer minuto tiene un foco. Las semanas llegan cuando ya hay semana.</div><div class="c">Confianza alta</div></div>
+    <div class="dec"><div class="q">Q9 · Crear rutinas desde los nombres importados</div><div class="g"><svg viewBox="0 0 260 90"><rect x="10" y="25" width="80" height="40" rx="8" fill="#F3F4F2"/><text x="50" y="49" text-anchor="middle" font-size="10" fill="#221D16">Historial</text><path d="M95,45 L135,45" stroke="#5C5648" stroke-width="1.5"/><text x="150" y="49" font-size="10" fill="#0C8F62" font-weight="700">✓ récords · 1RM</text><path d="M95,45 L120,70" stroke="#C4631F" stroke-width="1.5" stroke-dasharray="3 2"/><text x="125" y="78" font-size="9" fill="#8F4712">rutinas: ola 2</text></svg></div><div class="r"><b>Recomiendo no en esta ola.</b> El import es historial; al terminar te lleva a «Arma tu semana».</div><div class="c">Confianza alta</div></div>
+    <div class="dec"><div class="q">Q10 · La semana ligera usa el mismo héroe</div><div class="g"><svg viewBox="0 0 260 90"><rect x="15" y="15" width="230" height="60" rx="12" fill="#fff" stroke="#221D16" stroke-opacity=".15"/><text x="30" y="35" font-size="9" fill="#3B6FA0" font-weight="700" letter-spacing="1">SEMANA LIGERA · 5 DE 5</text><text x="30" y="55" font-size="14" fill="#221D16" font-weight="800">Tirón A</text><text x="30" y="69" font-size="9" fill="#5C5648">~35 min · 9 series</text><text x="215" y="55" font-size="9" fill="#00774B" font-weight="700">mismo</text><text x="215" y="66" font-size="9" fill="#00774B" font-weight="700">héroe</text></svg></div><div class="r"><b>Recomiendo sí.</b> Cambia el kicker y la meta; un estado nuevo reabriría el diseño v18 que ya cerraste.</div><div class="c">Confianza media 🚩 toca v18</div></div>
+  </div>
+  <p class="nota" style="margin-top:18px">Retiradas: Q5 (devolver «la subida espera» al héroe) y Q11 (absorbida por Q12). Con Q12 y Q13 ya inclinadas, el siguiente paso es /pm para abrir el épico.</p>
+</div>

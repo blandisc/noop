@@ -8,7 +8,7 @@ public enum StrengthCSV {
 
     /// Column order is part of the contract with the user (they'll open this in Excel/Numbers/Sheets).
     public static let header =
-        "date,routine,exercise,set_index,set_kind,weight_kg,reps,time_s,distance_m,rpe,rest_taken_s,notes"
+        "date,routine,exercise,set_index,set_kind,weight_kg,reps,time_s,distance_m,rpe,rest_taken_s,notes,set_mode"
 
     /// One exported row: a single logged set, already resolved to the names/values the user reads
     /// (never a raw id) so this file is useful standalone.
@@ -30,14 +30,19 @@ public enum StrengthCSV {
         public let rpe: Double?
         public let restTakenS: Int?
         public let notes: String?
+        /// `SetMode` of the set (ola 1); `.standard` writes an empty field, so pre-ola-1 readers see the
+        /// same 12 columns they always did plus one blank.
+        public let setMode: SetMode
 
         public init(date: Date, routineName: String?, exerciseName: String, setIndex: Int,
                     setKind: SetKind, weightKg: Double?, reps: Int?, timeS: Double?,
-                    distanceM: Double?, rpe: Double?, restTakenS: Int?, notes: String?) {
+                    distanceM: Double?, rpe: Double?, restTakenS: Int?, notes: String?,
+                    setMode: SetMode = .standard) {
             self.date = date; self.routineName = routineName; self.exerciseName = exerciseName
             self.setIndex = setIndex; self.setKind = setKind; self.weightKg = weightKg
             self.reps = reps; self.timeS = timeS; self.distanceM = distanceM; self.rpe = rpe
             self.restTakenS = restTakenS; self.notes = notes
+            self.setMode = setMode
         }
     }
 
@@ -57,14 +62,17 @@ public enum StrengthCSV {
         public let rpe: Double?
         public let restTakenS: Int?
         public let notes: String?
+        public let setMode: SetMode
 
         public init(date: Date, routineName: String?, exerciseId: String, exerciseName: String,
                     setKind: SetKind, weightKg: Double?, reps: Int?, timeS: Double?,
-                    distanceM: Double?, rpe: Double?, restTakenS: Int?, notes: String?) {
+                    distanceM: Double?, rpe: Double?, restTakenS: Int?, notes: String?,
+                    setMode: SetMode = .standard) {
             self.date = date; self.routineName = routineName; self.exerciseId = exerciseId
             self.exerciseName = exerciseName; self.setKind = setKind; self.weightKg = weightKg
             self.reps = reps; self.timeS = timeS; self.distanceM = distanceM; self.rpe = rpe
             self.restTakenS = restTakenS; self.notes = notes
+            self.setMode = setMode
         }
     }
 
@@ -86,7 +94,7 @@ public enum StrengthCSV {
             return Row(date: input.date, routineName: input.routineName, exerciseName: input.exerciseName,
                        setIndex: nextIndex, setKind: input.setKind, weightKg: input.weightKg,
                        reps: input.reps, timeS: input.timeS, distanceM: input.distanceM, rpe: input.rpe,
-                       restTakenS: input.restTakenS, notes: input.notes)
+                       restTakenS: input.restTakenS, notes: input.notes, setMode: input.setMode)
         }
     }
 
@@ -110,6 +118,7 @@ public enum StrengthCSV {
         fields.append(row.rpe.map(numberString) ?? "")
         fields.append(row.restTakenS.map(String.init) ?? "")
         fields.append(escape(row.notes ?? ""))
+        fields.append(row.setMode == .standard ? "" : row.setMode.rawValue)
         return fields.joined(separator: ",")
     }
 

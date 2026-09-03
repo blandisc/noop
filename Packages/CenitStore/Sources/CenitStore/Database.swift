@@ -888,6 +888,45 @@ extension CenitStore {
                 t.primaryKey(["sessionId", "ts"])
             }
         }
+        // v42 (ola 1 · FER-324): the ONE schema PR for the five ola-1 pieces, so three worktrees never
+        // collide on a migration. Every column nullable (or defaulted) and appended via
+        // `addColumnIfMissing` (FER-791/792 discipline). Semantics live with the pieces that use them:
+        // - strengthSession.strainSource ('hr'|'rpe'; NULL with a strain = legacy = measured), sessionRpe
+        //   (6–10, NULL = never answered, never a defaulted 7), sessionRpeSource ('answered'|'prefill'),
+        //   trimpPerAU (the estimate's scale, so a recalibration can recompute in one write) — E2/E3.
+        // - strengthSession.source ('strong'|'hevy'|'cenit-csv'; NULL = Cénit) and title — E8.
+        // - strengthSession.programWeek / deload (1 = served in a light week = progression boundary) — E10.
+        // - routineExercise.progressionUseRPE (DEFAULT 0: no existing routine changes behavior) — E4.
+        // - routineSet.mode / setEntry.mode ('standard'|'amrap'|'drop'; NULL = standard) — E6.
+        migrator.registerMigration("v42") { db in
+            for (column, type) in [("strainSource", Database.ColumnType.text),
+                                   ("sessionRpe", .double), ("sessionRpeSource", .text),
+                                   ("trimpPerAU", .double), ("source", .text), ("title", .text),
+                                   ("programWeek", .integer), ("deload", .integer)] {
+                try addColumnIfMissing(db, column, on: "strengthSession") { $0.add(column: column, type) }
+            }
+            try addColumnIfMissing(db, "progressionUseRPE", on: "routineExercise") {
+                $0.add(column: "progressionUseRPE", .integer).notNull().defaults(to: 0)
+            }
+            try addColumnIfMissing(db, "mode", on: "routineSet") { $0.add(column: "mode", .text) }
+            try addColumnIfMissing(db, "mode", on: "setEntry") { $0.add(column: "mode", .text) }
+        }
+        // v43 (ola 1 · FER-324/FER-329): the one active program (`Program`), a singleton row keyed
+        // `'active'`. The current week is DERIVED (`ProgramCalendar`, from `startTs` + the weeks the user
+        // trained), never stored — there is no column that can drift. `ifNotExists` keeps a re-run
+        // against a DB that already has the table a no-op (same discipline as v42's columns).
+        migrator.registerMigration("v43") { db in
+            try db.create(table: "program", ifNotExists: true) { t in
+                t.column("id", .text).primaryKey()
+                t.column("name", .text).notNull()
+                t.column("weeks", .integer).notNull()
+                t.column("startTs", .integer).notNull()
+                t.column("deloadRule", .text).notNull()
+                t.column("endMode", .text).notNull()
+                t.column("templateId", .text)
+                t.column("createdTs", .integer).notNull()
+            }
+        }
         return migrator
     }
 

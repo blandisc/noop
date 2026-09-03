@@ -18,7 +18,17 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ---
 
+
 ## Unreleased
+
+### Ola 1 de Entrenar · esquema (FER-324)
+- Base de datos v42/v43: columnas para el esfuerzo de sesión y su origen, la procedencia de sesiones
+  importadas, el ritmo «según reps en reserva» por ejercicio, el modo de cada serie («las que puedas»,
+  «bajar y seguir») y la tabla del programa de varias semanas. Sin cambios visibles todavía: las piezas
+  que los usan llegan en los issues E2–E12 del épico FER-323.
+- El export CSV de fuerza gana la columna `set_mode` al final (vacía para una serie normal).
+- Nuevo `docs/specs/ola1-entrenar/` con los specs del taller, y DECISIONS.md con FER-85 transcrito y las
+  decisiones de la ola 1.
 
 - Limpieza: desaparece `SetActionPills` (vista sin consumidores) y el ancla de contraste de Entrenar pasa del papel Instrumento al lienzo Liquid `fondoAlto` (FER-307).
 

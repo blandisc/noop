@@ -1,0 +1,321 @@
+<title>Ola 1 de Entrenar</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;700;800&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+  :root{
+    --fondo:#FEFEFD; --fondo-bajo:#F3F4F2; --tarjeta:#FFFFFF;
+    --tinta:#221D16; --tinta-700:#5C5648; --tinta-500:#6F6857;
+    --tinta-10:rgba(34,29,22,.10); --tinta-7:rgba(34,29,22,.07); --tinta-4:rgba(34,29,22,.04);
+    --verde:#0C8F62; --verde-profundo:#00774B; --verde-suave:rgba(12,143,98,.12);
+    --ambar:#C4631F; --ambar-texto:#8F4712; --ambar-suave:rgba(196,99,31,.13);
+    --negativo:#B3402A; --negativo-suave:rgba(179,64,42,.11);
+    --azul:#3B6FA0; --azul-suave:rgba(59,111,160,.12);
+    --display:"Schibsted Grotesk",-apple-system,"SF Pro Display",Helvetica,Arial,sans-serif;
+    --cuerpo:"Instrument Sans",-apple-system,"SF Pro Text",Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--fondo);color:var(--tinta);font-family:var(--cuerpo);font-size:15.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  a{color:var(--verde-profundo);text-decoration:none;border-bottom:1px solid rgba(0,119,75,.35)}
+  a:focus-visible,summary:focus-visible{outline:2px solid var(--verde);outline-offset:2px}
+  .pagina{max-width:980px;margin:0 auto;padding:40px 28px 80px}
+  h1,h2,h3,h4{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-.01em}
+  h1{font-size:clamp(30px,4.5vw,44px);font-weight:800;line-height:1.05}
+  h2{font-size:26px;font-weight:800;margin-top:64px;padding-top:22px;border-top:1px solid var(--tinta-10);display:flex;gap:14px;align-items:baseline}
+  h2 .n{color:var(--verde-profundo);font-variant-numeric:tabular-nums}
+  h3{font-size:14.5px;font-weight:700;margin-top:26px;color:var(--tinta-700);text-transform:uppercase;letter-spacing:.08em}
+  h4{font-size:15.5px;font-weight:700;margin-top:14px}
+  p{max-width:70ch;margin:10px 0}
+  .eyebrow{font-size:11.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--tinta-500)}
+  .tesis{font-size:18px;line-height:1.45;max-width:62ch;margin-top:14px}
+  .enuna{font-size:19px;font-family:var(--display);font-weight:700;line-height:1.35;max-width:60ch;margin:14px 0 6px}
+  .chip{display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;font-size:11.5px;font-weight:600;letter-spacing:.02em;white-space:nowrap;margin-right:6px}
+  .chip.v{background:var(--verde-suave);color:var(--verde-profundo)}
+  .chip.a{background:var(--ambar-suave);color:var(--ambar-texto)}
+  .chip.r{background:var(--negativo-suave);color:var(--negativo)}
+  .chip.z{background:var(--azul-suave);color:var(--azul)}
+  .chip.g{background:var(--tinta-7);color:var(--tinta-700)}
+  .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .resumen{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:26px}
+  .tile{background:var(--tarjeta);border:1px solid var(--tinta-10);border-radius:14px;padding:14px 16px}
+  .tile .k{font-family:var(--display);font-weight:800;font-size:28px;line-height:1;font-variant-numeric:tabular-nums}
+  .tile .k.verde{color:var(--verde-profundo)} .tile .k.ambar{color:var(--ambar-texto)} .tile .k.negativo{color:var(--negativo)}
+  .tile .t{font-size:12.5px;color:var(--tinta-700);margin-top:8px;line-height:1.4}
+  .marco{overflow-x:auto;border:1px solid var(--tinta-10);border-radius:14px;background:var(--tarjeta);margin-top:14px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px}
+  th{font-family:var(--display);font-size:12px;text-align:left;padding:10px 12px;background:var(--fondo-bajo);color:var(--tinta-700);border-bottom:1px solid var(--tinta-10)}
+  td{padding:9px 12px;border-bottom:1px solid var(--tinta-7);vertical-align:top}
+  tr:last-child td{border-bottom:0}
+  td.antes{color:var(--tinta-500);text-decoration:line-through;text-decoration-color:rgba(179,64,42,.5)}
+  ul.lista{max-width:72ch;padding-left:20px;margin:8px 0}
+  ul.lista li{margin:6px 0}
+  ul.lista li b{color:var(--tinta)}
+  .caja{background:var(--tarjeta);border:1px solid var(--tinta-10);border-radius:14px;padding:14px 18px;margin-top:14px}
+  .caja h4{margin-top:0}
+  .caja.ojo{border-left:3px solid var(--ambar)}
+  .caja.rojo{border-left:3px solid var(--negativo)}
+  .caja.verde{border-left:3px solid var(--verde)}
+  .caja ul{padding-left:18px;margin:6px 0}
+  .caja li{margin:5px 0;font-size:14px}
+  .analogia{border-left:3px solid var(--verde);padding:6px 16px;margin:14px 0;color:var(--tinta-700);font-style:italic;max-width:66ch}
+  .copy{font-family:var(--display);font-weight:600;background:var(--fondo-bajo);border-radius:8px;padding:2px 8px;white-space:nowrap}
+  .dos{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px}
+  .ok{display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:start;font-size:14px;margin:6px 0;max-width:72ch}
+  .ok .b{width:22px;height:22px;border-radius:6px;background:var(--verde-suave);color:var(--verde-profundo);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;margin-top:2px}
+  .nota{font-size:13px;color:var(--tinta-700)}
+  details{margin-top:14px;border:1px solid var(--tinta-10);border-radius:12px;background:var(--tarjeta)}
+  summary{cursor:pointer;padding:12px 16px;font-family:var(--display);font-weight:700;font-size:14px}
+  details .cuerpo{padding:0 16px 14px;font-size:13.5px;color:var(--tinta-700)}
+  @media (max-width:760px){.dos{grid-template-columns:1fr}.pagina{padding:28px 16px 60px}}
+</style>
+
+<div class="pagina">
+  <header>
+    <div class="eyebrow">Cénit · Entrenar · requerimientos finales de la ola 1</div>
+    <h1>Ola 1, blindada: cinco piezas que sobrevivieron al ataque</h1>
+    <p class="tesis">Esto es lo que vamos a construir, explicado como se lo contaría a un dueño de producto: qué vas a ver en la app, qué regla hay detrás de cada cosa, qué cambió porque alguien lo rompió antes de construirlo, y las once decisiones que te tocan. Nada aquí es código; todo es contrato.</p>
+    <div class="meta"><span class="chip v">5 piezas</span><span class="chip g">5 diseñadores + 3 gates</span><span class="chip a">Grok: 5 rondas adversariales</span><span class="chip z">11 decisiones tuyas</span></div>
+  </header>
+
+  <section class="resumen" aria-label="Resumen">
+    <div class="tile"><div class="k">24 → 10 → 5 → 4 → 0</div><div class="t">Hallazgos de Grok por ronda. Empezó con 6 bloqueantes; en la ronda 4 ya no había ninguno alto. El loop se corrió hasta que dejó de encontrar cosas que importen.</div></div>
+    <div class="tile"><div class="k ambar">46</div><div class="t">Hallazgos totales atendidos: 42 de Grok, 8 del gate biomecánico, 10 del estadístico, más el criterio del dueño. Cada uno tiene una decisión escrita.</div></div>
+    <div class="tile"><div class="k negativo">1</div><div class="t">Verdad incómoda: hoy ninguna carga cambia el veredicto de mañana. La ola 1 hace visible la fuerza sin reloj, pero no la deja votar. Es la decisión más importante que te toca (Q12).</div></div>
+    <div class="tile"><div class="k verde">0</div><div class="t">Reglas del repo tocadas: sigue 100 % offline, sin cuenta, sin claims, con cada fórmula citada y probada. FER-85 y el héroe v18 no se reabren.</div></div>
+  </section>
+
+  <h2><span class="n">0</span>La verdad incómoda, primero</h2>
+  <p>Vendimos la ola 1 como «cerrar el círculo»: entrenas, la sesión cuenta en tu carga, y tu veredicto de mañana lo sabe. Al atacar el requerimiento contra el código apareció esto: <b>el veredicto de Hoy escucha sueño y frecuencia en reposo, y a la carga solo la mira de reojo.</b> La carga aparece en el acta como «hubo entreno», pero nunca cambia la palabra del día. Está escrito así en el código, a propósito, esperando el visto bueno del gate de ciencia.</p>
+  <div class="analogia">Es como instalar un termómetro nuevo en el cuarto que faltaba: por fin sabes qué temperatura hay ahí. Pero la calefacción sigue conectada solo al termómetro del pasillo. Medir era el primer paso; conectar el cable es otro trabajo, y hay que hacerlo con cuidado porque cambia el clima de toda la casa.</div>
+  <p><b>Qué sí logra la ola 1:</b> la sesión de fuerza sin reloj deja de valer cero. Se ve en tu carga de entrenamiento, en el acta y en el recibo, con una etiqueta honesta. <b>Qué no logra todavía:</b> que esa carga mueva el veredicto. <b>Mi recomendación:</b> no meterlo en esta ola. Es un cambio de ciencia que afecta a Hoy entero y necesita su propio gate. Abrimos de inmediato el issue «la carga vota en el veredicto» como primera pieza de la ola siguiente, y ninguna pantalla de la ola 1 promete lo que aún no hace.</p>
+
+  <!-- ===== ① ===== -->
+  <h2><span class="n">①</span>La sesión cuenta aunque no traigas reloj</h2>
+  <p class="enuna">Al terminar, una pregunta de un toque. Con eso, tu sesión entra a tu carga con una etiqueta de «estimado» que no se esconde.</p>
+  <h3>Cómo lo vives</h3>
+  <ul class="lista">
+    <li><b>Sin reloj:</b> el recibo abre con la pregunta <span class="copy">¿Qué tan duro estuvo?</span> y la fila de esfuerzo que ya conoces (6 a 10). Si marcaste esfuerzo en tus series, la celda ya viene marcada con el promedio. Tocas otra si no fue así, o la vuelves a tocar para dejarlo sin calificar. Cerrar el recibo guarda lo que está seleccionado en pantalla. No hay pantalla extra ni botón de omitir.</li>
+    <li><b>Con reloj:</b> no se pregunta nada. Manda la frecuencia cardiaca, como hoy. Solo se pregunta si el reloj cubrió menos del 80 % de la sesión.</li>
+    <li><b>El número:</b> el recibo dice <span class="copy">Esfuerzo ~11.4 /21 · estimado</span> y abajo <span class="copy">Cuenta en tu carga desde mañana</span>. En Tendencias, la curva de Carga ya no tiene huecos los días sin Watch, y el pie dice cuántas sesiones son estimadas y cuántas quedaron sin calificar.</li>
+    <li><b>Si no contestas y no capturaste esfuerzo:</b> la sesión queda «sin calificar». No se inventa un 7. Se puede calificar después desde el detalle.</li>
+  </ul>
+  <h3>La regla en llano</h3>
+  <div class="marco"><table>
+    <tr><th>Qué</th><th>Cómo</th></tr>
+    <tr><td>Cuánto vale la sesión</td><td>Minutos por esfuerzo. La escala de 6 a 10 se traduce a la escala del método publicado con una regla fija y probada. El resultado se comprime a la misma escala de 0 a 21 que ya usa la carga por frecuencia cardiaca.</td></tr>
+    <tr><td>Una sola fuente por sesión</td><td>Con reloj suficiente, el reloj. Si no, tu esfuerzo. Nunca se suman las dos.</td></tr>
+    <tr><td>Un día con carrera y pesas</td><td>Si el reloj ya midió la sesión de pesas, no se cuenta dos veces. Si la carrera y las pesas fueron entrenos distintos, se suman. Antes decía «el mayor de los dos» y borraba las pesas: Grok lo cazó.</td></tr>
+    <tr><td>La constante de la escala</td><td>Arranca con un valor de producto documentado (una sesión de 50 minutos a esfuerzo 8 cae donde caería con reloj). Si tienes reloj y marcas esfuerzo por serie, la app la afina con tus propios datos, de forma robusta y solo cuando hay suficientes.</td></tr>
+    <tr><td>Historial importado</td><td>Alimenta récords y 1RM desde el primer día. A la carga solo entra lo que cae dentro de tu historia de reloj (o las últimas 8 semanas), para no inventar un pasado de descansos que no existió.</td></tr>
+  </table></div>
+  <h3>Lo que el ataque cambió</h3>
+  <div class="marco"><table>
+    <tr><th>Antes</th><th>Después</th><th>Quién lo rompió</th></tr>
+    <tr><td class="antes">Preguntar siempre, también con reloj</td><td>Solo sin reloj o con reloj insuficiente</td><td>UX + estadístico</td></tr>
+    <tr><td class="antes">Máximo entre Apple y Cénit por día</td><td>Suma si son entrenos distintos, máximo si es el mismo</td><td>Grok, ronda 1</td></tr>
+    <tr><td class="antes">La escala 6–10 «se usa directo»</td><td>Mapeo explícito y citado; la constante no puede absorber un desfase</td><td>Estadístico</td></tr>
+    <tr><td class="antes">Calibrar con promedio simple</td><td>Mediana de razones, cinco pares mínimo, recalibrar solo al duplicarse los datos</td><td>Estadístico</td></tr>
+    <tr><td class="antes">Cinco años importados entran al ACWR</td><td>Solo desde tu primera semana con reloj (o 8 semanas)</td><td>Estadístico</td></tr>
+    <tr><td class="antes">«Tu veredicto de mañana puede cambiar»</td><td>Frase retirada de todas las pantallas</td><td>Grok, ronda 4</td></tr>
+  </table></div>
+  <h3>Cómo sabremos que está bien</h3>
+  <div class="ok"><div class="b">1</div><div>Una sesión sin reloj con esfuerzo 8 y 52 minutos guarda un valor entre 10 y 12, marcado como estimado.</div></div>
+  <div class="ok"><div class="b">2</div><div>Con cuatro sesiones estimadas en dos semanas, la Carga de entrenamiento ya muestra su banda; con las mismas sesiones sin esfuerzo, no. Esa prueba tiene que fallar con el código de hoy.</div></div>
+  <div class="ok"><div class="b">3</div><div>Una sesión con reloj guarda exactamente el mismo número que antes de este cambio, y nunca muestra la pregunta.</div></div>
+  <div class="ok"><div class="b">4</div><div>La palabra «estimado» aparece una vez por pantalla en los estados estimados y cero veces en los medidos.</div></div>
+  <div class="ok"><div class="b">5</div><div>Ninguna pantalla de la ola dice que una sesión cambia el veredicto.</div></div>
+  <p class="nota"><b>Por dentro:</b> un motor nuevo en el paquete de matemática, tres columnas nuevas en la sesión guardada (de dónde salió la carga, tu respuesta, la constante usada), y la carga se «superpone» al leer, sin tocar la tabla de días. Gates: estadístico y ciencia.</p>
+
+  <!-- ===== ② ===== -->
+  <h2><span class="n">②</span>Lo que te quedaba decide si subes</h2>
+  <p class="enuna">Llegar a las reps cómodo y llegar al fallo dejan de valer lo mismo. La app ya sabía cuánto te quedaba (Q); ahora lo usa.</p>
+  <h3>Cómo lo vives</h3>
+  <ul class="lista">
+    <li><b>Un interruptor por ejercicio</b> en el setup de progresión: <span class="copy">Subir según Q (lo que te quedaba)</span>, con subtítulo <span class="copy">Q 2 o más: sube en 1 · Q 0 o 9.5: espera · tres al límite: subes o apaga</span>. En tus rutinas de hoy nace apagado: nada cambia sin que lo pidas. En plantillas nuevas nace encendido en barra y compuestos, apagado en aislamiento.</li>
+    <li><b>En el hub,</b> la línea de subida explica el porqué: <span class="copy">Llegaste a las reps con esfuerzo 7. Una sesión bastó.</span> o <span class="copy">Llegaste, pero al límite (9.5). Una sesión más holgada y cuenta para subir.</span></li>
+    <li><b>Cuando tu esfuerzo dice sube y tu cuerpo dice mantén,</b> lo ves en la fila del ejercicio y en SUBIDAS LISTAS, con la razón al lado. El héroe se queda como está (no se reabre el diseño v18).</li>
+  </ul>
+  <h3>La regla en llano</h3>
+  <div class="marco"><table>
+    <tr><th>Cumpliste las reps y…</th><th>Qué pasa</th></tr>
+    <tr><td>todas las series con Q 2 o más (esfuerzo ≤ 8)</td><td>Subes en una sesión, no en dos.</td></tr>
+    <tr><td>esfuerzo entre 8.5 y 9</td><td>Como hoy: cuenta una de las dos.</td></tr>
+    <tr><td>alguna serie con Q 0 (esfuerzo ≥ 9.5)</td><td>Mantienes: no cuenta para subir. Pero si pasa tres veces seguidas, subes igual y la app te lo dice. Grok y el biomecánico cazaron que sin ese tope alguien que marca 10 «por costumbre» se quedaba congelado para siempre.</td></tr>
+    <tr><td>no marcaste Q</td><td>Como hoy. Sin dato no se supone nada.</td></tr>
+    <tr><td>tu cuerpo dice mantén</td><td>Sigue mandando encima, como ahora: la subida espera a un toque. FER-85 intacto.</td></tr>
+  </table></div>
+  <div class="analogia">Antes preguntábamos «¿acabaste la carrera?». Ahora también «¿con cuánto aire?». Y si tres veces seguidas llegas sin aire pero llegas, la carrera ya es tuya: subes.</div>
+  <h3>Lo que el ataque cambió</h3>
+  <div class="marco"><table>
+    <tr><th>Antes</th><th>Después</th><th>Quién lo rompió</th></tr>
+    <tr><td class="antes">Encendido por defecto en todas las rutinas</td><td>Apagado en rutinas existentes; encendido solo en plantillas nuevas de barra</td><td>Grok + biomecánico</td></tr>
+    <tr><td class="antes">«Al límite» invisible para siempre</td><td>Tope de tres: después cuenta y subes</td><td>Grok + biomecánico</td></tr>
+    <tr><td class="antes">Nombre «Usar mi esfuerzo»</td><td>«Subir según Q»: «Esfuerzo» ya es el nombre de la escala 0–21 en la app</td><td>Criterio del dueño</td></tr>
+    <tr><td class="antes">Devolver «la subida espera» al héroe</td><td>Se muestra en la fila del ejercicio; el héroe v18 no se toca</td><td>Criterio del dueño</td></tr>
+    <tr><td class="antes">«Una sesión más holgada y subes»</td><td>«…y cuenta para subir» (no garantiza)</td><td>Biomecánico</td></tr>
+  </table></div>
+  <h3>Cómo sabremos que está bien</h3>
+  <div class="ok"><div class="b">1</div><div>Con el interruptor apagado, la progresión se comporta exactamente como antes en toda la batería de pruebas.</div></div>
+  <div class="ok"><div class="b">2</div><div>Dos sesiones cumplidas con esfuerzo 7 → «Hoy subes». Una sola cumplida con esfuerzo 7 → «Hoy subes» (sube en 1).</div></div>
+  <div class="ok"><div class="b">3</div><div>Tres sesiones cumplidas al fallo → propone subir y muestra el copy del tope.</div></div>
+  <div class="ok"><div class="b">4</div><div>Con veredicto «hoy ve leve», la subida ganada por esfuerzo espera igual que hoy.</div></div>
+  <p class="nota"><b>Por dentro:</b> la regla vive en el mismo lugar de siempre (un solo oráculo), con tres constantes nombradas y citadas (Helms 2016, Zourdos 2016). Una columna nueva por ejercicio para el interruptor. Gate: biomecánico.</p>
+
+  <!-- ===== ③ ===== -->
+  <h2><span class="n">③</span>Series AMRAP, drop y al fallo</h2>
+  <p class="enuna">Dos tipos de serie nuevos y un atajo, con reglas claras de a qué cuentan y a qué no.</p>
+  <h3>Cómo lo vives</h3>
+  <ul class="lista">
+    <li><b>En el editor de rutina,</b> al escribir el techo de reps de una serie, el keypad ofrece <span class="copy">máx</span>: esa serie es AMRAP. Y en el menú «···» del ejercicio hay un atajo <span class="copy">Última serie AMRAP</span>, que es como lo usan casi todos los programas. Sin gestos nuevos: la pulsación larga sigue siendo borrar.</li>
+    <li><b>En la sesión,</b> una pulsación larga sobre la serie (o tocar su marca) abre el menú: <span class="copy">AMRAP · las que puedas</span>, <span class="copy">Agregar drop · −20 %</span>, <span class="copy">Al fallo · esfuerzo 10</span>, <span class="copy">Quitar serie</span>. El número de la serie es solo lectura; antes proponíamos usarlo como puerta y Grok mostró que chocaba con el gesto de borrar.</li>
+    <li><b>AMRAP:</b> la celda de reps dice «máx» y está vacía. No puedes palomearla sin escribir cuántas salieron; nunca guarda un cero. En el recibo: <span class="copy">80 kg · 8 · 8 · 11 máx</span>.</li>
+    <li><b>Drop:</b> aparece una sub-serie <span class="copy">↳ drop 64 kg</span> con el peso ya redondeado a tus discos. Palomear la serie madre no arranca descanso; el último drop sí. Hasta tres escalones.</li>
+    <li><b>Al fallo</b> no es un tipo: es esfuerzo 10, lo mismo que ya marcas con «quedaban 0». Solo gana legibilidad: la fila hecha dice <span class="copy">· fallo</span>.</li>
+  </ul>
+  <h3>La regla en llano</h3>
+  <div class="marco"><table>
+    <tr><th>Tipo</th><th>Volumen</th><th>¿Subes?</th><th>Récords</th><th>1RM estimado</th></tr>
+    <tr><td>Trabajo</td><td>Sí</td><td>Sí</td><td>Sí</td><td>Sí</td></tr>
+    <tr><td>AMRAP</td><td>Sí</td><td>Sí, cumple si reps ≥ objetivo</td><td>Sí, es la mejor señal de récord de reps</td><td>Sí, con tope de 12 reps (el detalle lo dice)</td></tr>
+    <tr><td>Drop</td><td>Sí</td><td>No</td><td>No</td><td>No</td></tr>
+  </table></div>
+  <h3>Lo que el ataque cambió</h3>
+  <div class="marco"><table>
+    <tr><th>Antes</th><th>Después</th><th>Quién lo rompió</th></tr>
+    <tr><td class="antes">Cuatro tipos de serie en el mismo campo</td><td>Un eje aparte para el «modo»: sesenta lugares del código que preguntan «¿es serie de trabajo?» siguen correctos sin tocarlos</td><td>Arquitecto</td></tr>
+    <tr><td class="antes">El número de la serie como puerta del menú</td><td>Pulsación larga en sesión; «máx» y atajo en el editor</td><td>Grok, rondas 2 a 4</td></tr>
+    <tr><td class="antes">La celda de reps del AMRAP «vacía» sobre un campo que exigía número</td><td>El campo admite «pendiente»; si la app se cierra a media serie, no se inventa nada</td><td>Grok, ronda 1</td></tr>
+    <tr><td class="antes">Un drop huérfano se convertía en serie de trabajo</td><td>Un drop nunca se promueve: cuenta solo a volumen</td><td>Grok, ronda 2</td></tr>
+    <tr><td class="antes">«Igualar todas» ignoraba el tipo</td><td>Igualar, espejo de superserie y el contador de recetas ven el tipo</td><td>Grok, rondas 3 y 4</td></tr>
+  </table></div>
+  <h3>Cómo sabremos que está bien</h3>
+  <div class="ok"><div class="b">1</div><div>Una serie AMRAP no se puede palomear sin reps; la app cerrada a medias la restaura como pendiente.</div></div>
+  <div class="ok"><div class="b">2</div><div>Un drop más pesado que tu récord no aparece como récord; sí suma al volumen.</div></div>
+  <div class="ok"><div class="b">3</div><div>La siguiente sesión prellena con el peso de la serie madre, nunca con el del drop.</div></div>
+  <div class="ok"><div class="b">4</div><div>Live Activity y Watch muestran «× máx» y «↳ 64 kg × 9» sin campos nuevos.</div></div>
+  <div class="ok"><div class="b">5</div><div>El export CSV sale con el tipo y vuelve a entrar igual (ida y vuelta).</div></div>
+  <p class="nota"><b>Por dentro:</b> una columna nueva «modo» en series planeadas y registradas; las cuatro reglas viven en una sola tabla del paquete de entrenamiento. Sin cambios en la fórmula de 1RM ni en la de progresión.</p>
+
+  <!-- ===== ④ ===== -->
+  <h2><span class="n">④</span>Trae tu historial de Strong o Hevy</h2>
+  <p class="enuna">Un archivo, cero red. Tus récords, tu 1RM y tu mapa muscular arrancan con tu historia, no en cero.</p>
+  <h3>Cómo lo vives</h3>
+  <ul class="lista">
+    <li><b>Dónde:</b> Ajustes › Datos y fuentes › Importar › <span class="copy">Historial de Strong o Hevy (CSV)</span>. También desde el historial vacío: <span class="copy">¿Vienes de Strong o Hevy? Importa tu historial ›</span>. No en el primer uso del hub (ahí el foco es armar la semana).</li>
+    <li><b>Cuatro pasos:</b> elegir el archivo (con instrucciones cortas de cómo exportarlo en cada app) → revisar (<span class="copy">214 sesiones · Strong · ene 2022 a ago 2026</span>, ejercicios reconocidos 61 de 68, por resolver 7, con esfuerzo 140 de 214, posibles duplicados) → resolver los nombres que la app no reconoció (sugerencia, elegir del catálogo, crear propio o ignorar; se recuerda para siempre) → listo.</li>
+    <li><b>Después:</b> cada sesión trae su sello «Strong» o «Hevy». Récords y 1RM ya se recalcularon. Si no tienes plan, el botón dice <span class="copy">Arma tu semana</span>.</li>
+    <li><b>Lo que no hace:</b> no inventa esfuerzo si el archivo no lo trae; no crea rutinas a partir de tus nombres de entreno (eso va después); no promete que cambie tu veredicto.</li>
+  </ul>
+  <h3>La regla en llano</h3>
+  <div class="marco"><table>
+    <tr><th>Qué</th><th>Cómo</th></tr>
+    <tr><td>Reconocer el archivo</td><td>Por los nombres de sus columnas, nunca por su orden. Strong, Hevy y el CSV de Cénit. Cualquier otro se rechaza con un mensaje claro.</td></tr>
+    <tr><td>No duplicar</td><td>Cada sesión importada tiene una llave fija (origen + hora). Reimportar el mismo archivo no crea nada. Sesiones de otro origen a menos de 30 minutos se listan como «posibles duplicados» y quedan fuera salvo que tú las fuerces.</td></tr>
+    <tr><td>Unidades y fechas</td><td>Libras se convierten; si el archivo no dice la unidad, la app la pregunta con una pista («peso más alto: 315 → 143 kg»). Las horas se leen en tu zona actual y se avisa.</td></tr>
+    <tr><td>Esfuerzo importado</td><td>De 6 a 10 se usa; por debajo de 6 se ignora, nunca se sube a 6. Con esfuerzo y duración, la sesión recibe carga estimada; sin uno de los dos, queda «sin carga».</td></tr>
+    <tr><td>Archivos raros</td><td>Filas con fechas ilegibles, reps en cero o nombres vacíos se omiten y se cuentan en la vista previa. Nada se adivina.</td></tr>
+  </table></div>
+  <h3>Lo que el ataque cambió</h3>
+  <div class="marco"><table>
+    <tr><th>Antes</th><th>Después</th><th>Quién lo rompió</th></tr>
+    <tr><td class="antes">Omitir en silencio sesiones de otro origen a ±30 min</td><td>Lista de posibles duplicados, fuera por defecto pero visible y forzable</td><td>Grok, rondas 1 y 2</td></tr>
+    <tr><td class="antes">Solo Strong y Hevy</td><td>También el CSV de Cénit, con prueba de ida y vuelta</td><td>Grok, ronda 1</td></tr>
+    <tr><td class="antes">Formatos «a verificar»</td><td>Archivos reales de cada app en el repo antes de mergear; lo desconocido se omite con conteo</td><td>Grok + arquitecto</td></tr>
+    <tr><td class="antes">Esfuerzo menor a 6 se subía a 6</td><td>Se ignora</td><td>Grok, ronda 1</td></tr>
+    <tr><td class="antes">«N sesiones de los últimos 28 días entran a tu carga»</td><td>N es lo que de verdad entra; si es cero, la app lo dice sin adornos</td><td>Grok, ronda 2</td></tr>
+  </table></div>
+  <h3>Cómo sabremos que está bien</h3>
+  <div class="ok"><div class="b">1</div><div>Un CSV de Hevy en kilos, uno en libras, uno de Strong actual y uno antiguo importan con al menos 90 % de ejercicios reconocidos solos.</div></div>
+  <div class="ok"><div class="b">2</div><div>Importar dos veces el mismo archivo deja el mismo número de sesiones.</div></div>
+  <div class="ok"><div class="b">3</div><div>30 000 filas muestran la vista previa en menos de 5 segundos y el botón Cancelar responde.</div></div>
+  <div class="ok"><div class="b">4</div><div>La mejor marca del ejercicio y el 1RM reflejan la serie importada; el hub no celebra récords de 2022 como nuevos.</div></div>
+  <div class="ok"><div class="b">5</div><div>Ningún texto dice «medimos» sobre una sesión importada.</div></div>
+  <p class="nota"><b>Por dentro:</b> lector puro de tres dialectos en el paquete de import, reutilizando el reconciliador de nombres que ya existe para el import desde tu IA; todo se guarda en una sola escritura. Dos columnas nuevas (origen, título).</p>
+
+  <!-- ===== ⑤ ===== -->
+  <h2><span class="n">⑤</span>Programas de varias semanas con semana ligera</h2>
+  <p class="enuna">Tu semana deja de repetirse a ciegas: es un ciclo de 4 a 6 semanas que sabe en cuál vas y baja el volumen en la última, a propósito.</p>
+  <h3>Cómo lo vives</h3>
+  <ul class="lista">
+    <li><b>Crear:</b> en Tu Plan, el chip de crear plan gana la fila <span class="copy">Programa · 4 a 6 semanas</span> con cuatro motores hechos con tus plantillas de siempre: <span class="copy">Lineal para empezar</span>, <span class="copy">Empuje · Tirón · Pierna · 6 días</span> (intermedio), <span class="copy">Superior / Inferior · 4 días</span>, <span class="copy">Cuerpo completo · 3 días</span>. También puedes convertir tu semana actual en programa. No aparece en el primer uso.</li>
+    <li><b>Ver:</b> en Tu Plan, una tira de semanas: <span class="copy">Semana 3 de 5 · semana ligera en 2 semanas</span>. La última se ve distinta desde el día uno.</li>
+    <li><b>La semana ligera:</b> el hub dice <span class="copy">Semana ligera · 5 de 5</span> en el mismo héroe de siempre; la rutina se sirve con la mitad de las series y el mismo peso. Puedes agregar series o subir: la app aconseja, no bloquea. La semana siguiente arrancas el ciclo con los pesos que te ganaste.</li>
+    <li><b>Las semanas en blanco no cuentan.</b> Un viaje no te quema una semana del ciclo: <span class="copy">Semana 3 de 5 · la semana pasada no contó, sigues en la 3</span>.</li>
+    <li><b>Importar desde tu IA</b> aprende tres campos: semanas, semana ligera y día de cada rutina.</li>
+  </ul>
+  <h3>La regla en llano</h3>
+  <div class="marco"><table>
+    <tr><th>Qué</th><th>Cómo</th></tr>
+    <tr><td>Qué semana es</td><td>Se calcula, no se guarda: fecha de inicio más cuántas semanas has entrenado. Nada que se pueda desincronizar.</td></tr>
+    <tr><td>Cuánto baja</td><td>Series a la mitad (mínimo una), peso igual. Es lo más cercano al consenso publicado (Bell 2023). La opción con peso baja el mismo 7.5 % que ya usa la app cuando te estancas: una sola regla de bajar, no dos.</td></tr>
+    <tr><td>Si te estancas a media programa</td><td>La propuesta de bajar 7.5 % sigue viva, igual que hoy. Antes decíamos «espera a la semana ligera»; el biomecánico mostró que eso podía dejarte doce sesiones fallando al mismo peso.</td></tr>
+    <tr><td>La semana ligera y tu progresión</td><td>Esas sesiones no cuentan como éxito ni fracaso, reinician la racha de estancamiento, y «la última vez» no las usa: arrancas el ciclo nuevo con tu peso real, no con el ligero.</td></tr>
+    <tr><td>El motor lineal para novatos</td><td>Sube cada sesión solo en ejercicios con barra; mancuerna y aislamiento cada dos. Sin semana ligera por default: el novato se autorregula con el estancamiento.</td></tr>
+  </table></div>
+  <div class="analogia">Un plan semanal es una escalera sin descansos. Un programa es la misma escalera con un descanso cada cinco pisos, marcado antes de subir, y con la regla de que si un piso no lo subiste, no cuenta.</div>
+  <h3>Lo que el ataque cambió</h3>
+  <div class="marco"><table>
+    <tr><th>Antes</th><th>Después</th><th>Quién lo rompió</th></tr>
+    <tr><td class="antes">Series −40 % y peso −10 %</td><td>Series a la mitad, peso igual; la opción con peso usa el 7.5 % existente</td><td>Biomecánico + criterio del dueño</td></tr>
+    <tr><td class="antes">Esconder el deload reactivo durante el programa</td><td>Sigue vivo por ejercicio</td><td>Biomecánico</td></tr>
+    <tr><td class="antes">Contador por calendario en el diseño técnico, por semanas entrenadas en UX</td><td>Una sola regla: semanas entrenadas, calculada sin contador guardado</td><td>Grok, ronda 1</td></tr>
+    <tr><td class="antes">Nombre «descarga»</td><td>«Semana ligera»: «descargar» ya significa bajar medios en la app</td><td>Biomecánico</td></tr>
+    <tr><td class="antes">Un estado nuevo del héroe</td><td>El mismo héroe con otro kicker; el diseño v18 no se reabre</td><td>Criterio del dueño</td></tr>
+    <tr><td class="antes">Fila en la pantalla «Crear plan»</td><td>Esa pantalla está archivada (FER-251); la fila vive en el chip de Tu Plan</td><td>Criterio del dueño</td></tr>
+  </table></div>
+  <h3>Cómo sabremos que está bien</h3>
+  <div class="ok"><div class="b">1</div><div>Empezar un programa un martes sin sesiones deja «semana 1»; tres semanas entrenadas dejan «semana 4»; una semana en blanco no avanza.</div></div>
+  <div class="ok"><div class="b">2</div><div>En la semana ligera, 4 series se sirven como 2, 3 como 1, 1 como 1; los calentamientos no cambian; la rutina guardada queda intacta byte a byte.</div></div>
+  <div class="ok"><div class="b">3</div><div>Después de la semana ligera, la sesión abre con el último peso real, nunca con el ligero.</div></div>
+  <div class="ok"><div class="b">4</div><div>Un archivo de tu IA sin los campos nuevos importa igual que hoy.</div></div>
+  <div class="ok"><div class="b">5</div><div>Nada de esto necesita red, cuenta ni reloj.</div></div>
+  <p class="nota"><b>Por dentro:</b> una tabla nueva «programa» (una sola activa), la semana se deriva de la fecha de inicio y las semanas entrenadas, y la versión ligera se aplica solo a la sesión en memoria. Pasa por arquitecto (migración) y biomecánico.</p>
+
+  <!-- ===== cimientos ===== -->
+  <h2><span class="n">→</span>Cimientos y orden</h2>
+  <ul class="lista">
+    <li><b>Primero un solo cambio de esquema,</b> antes que todo lo demás: las columnas nuevas de las cinco piezas y la tabla de programa, en un solo PR con sus pruebas y la documentación al día. Así tres equipos pueden trabajar en paralelo sin chocar.</li>
+    <li><b>Tres carriles en paralelo, en paquetes:</b> matemática (① y ②), modelo (③ y ⑤), datos (④). Cada uno con pruebas propias. Las pantallas al final. Una sola compilación de la app al cerrar la ola.</li>
+    <li><b>Quién teclea:</b> las migraciones y los motores los escribe Claude (carril delicado). Grok teclea el lector de CSV y las pantallas ligeras, y revisa lo que no escribió.</li>
+    <li><b>Gates antes de mergear:</b> arquitecto (esquema), estadístico y ciencia (①), biomecánico (② ③ ⑤), verificador independiente en todo.</li>
+    <li><b>Tres deudas que salieron a la luz y entran al alcance:</b> hoy un día de fuerza sin reloj con pocos pasos se cuenta como descanso en la carga (① lo corrige); FER-85 vive en el código pero no en el registro de decisiones (se transcribe tu orden original); la documentación de migraciones lleva meses atrasada (se actualiza en el mismo PR).</li>
+  </ul>
+
+  <!-- ===== decisiones ===== -->
+  <h2><span class="n">?</span>Las once decisiones que son tuyas</h2>
+  <p>Cada una con mi recomendación y qué tan seguro estoy de que es lo que tú dirías. Las marcadas con 🚩 tocan algo que ya decidiste antes o un gusto que nadie tiene por escrito.</p>
+  <div class="marco"><table>
+    <tr><th>#</th><th>Decisión</th><th>Recomendación</th><th>Confianza</th></tr>
+    <tr><td>Q12 🚩</td><td>¿La carga vota en el veredicto en esta ola?</td><td><b>No.</b> Hacer visible la fuerza sin reloj ya; abrir de inmediato el issue «la carga vota» con gate de ciencia como primera pieza de la ola 1b. Ninguna pantalla promete lo que aún no hace.</td><td>Media</td></tr>
+    <tr><td>Q1</td><td>Subir en una sola sesión cuando llegaste cómodo (Q ≥ 2)</td><td><b>Sí.</b> Es lo que hace único a Alpha Progression y es literal de Helms 2016.</td><td>Media</td></tr>
+    <tr><td>Q6</td><td>Interruptor por ejercicio, apagado en tus rutinas de hoy</td><td><b>Sí.</b> Nada cambia sin que lo pidas; las plantillas nuevas lo traen encendido donde tiene sentido.</td><td>Media-alta</td></tr>
+    <tr><td>Q3 🚩</td><td>Semana ligera: solo series a la mitad, o también peso</td><td><b>Solo series.</b> Y si eliges «también peso», que sea el mismo 7.5 % del deload de siempre: una regla, no dos.</td><td>Baja en la forma</td></tr>
+    <tr><td>Q2</td><td>El contador de semanas solo avanza si entrenaste</td><td><b>Sí.</b> Un viaje no te quema el ciclo; se calcula sin guardar nada.</td><td>Media</td></tr>
+    <tr><td>Q4</td><td>Cuatro motores hechos con tus plantillas, sin biblioteca de coaches</td><td><b>Sí.</b> No tenemos licencias ni contenido; el import desde tu IA cubre el resto.</td><td>Alta</td></tr>
+    <tr><td>Q10 🚩</td><td>La semana ligera cambia el kicker y la meta del héroe existente</td><td><b>Sí.</b> Es texto dentro del estado «día de rutina»; un estado nuevo reabriría el diseño v18.</td><td>Media</td></tr>
+    <tr><td>Q7 🚩</td><td>La celda de reps del AMRAP arranca vacía</td><td><b>Sí.</b> Un número inventado en la serie «al máximo» es justo lo que no hacemos. Se ve contigo en /inject.</td><td>Media</td></tr>
+    <tr><td>Q8</td><td>«Programa» fuera del primer uso, en Tu Plan y plantillas</td><td><b>Sí.</b> El primer minuto tiene un foco: armar la semana.</td><td>Alta</td></tr>
+    <tr><td>Q9</td><td>Crear rutinas desde los nombres de entreno importados</td><td><b>No en esta ola.</b> El import es historial; el botón «Arma tu semana» cubre el hueco.</td><td>Alta</td></tr>
+    <tr><td>—</td><td>Retiradas por el ataque</td><td>Q5 (devolver «la subida espera» al héroe: reabría FER-171) y Q11 (absorbida por Q12).</td><td>—</td></tr>
+  </table></div>
+
+  <h2><span class="n">✕</span>Lo que se dejó fuera, y por qué</h2>
+  <ul class="lista">
+    <li><b>Que el veredicto baje series</b> (toca FER-85). <b>Que la carga vote en el veredicto</b> (Q12, ola 1b con gate de ciencia).</li>
+    <li><b>Watch que registra solo</b> (ola 3) · <b>leer entrenos de otras apps desde Apple Health</b> y <b>pantalla de récords</b> (ola 2) · <b>catálogo con imágenes</b> (después) · <b>campo compuesto/aislamiento en el catálogo</b> (ola 2; por ahora el interruptor por ejercicio es el escape).</li>
+    <li><b>Un tile de «carga de hoy, parcial»</b>: la carga cuenta desde mañana, como pasa hoy con el reloj, y el copy lo dice.</li>
+  </ul>
+
+  <h2><span class="n">⚔</span>Bitácora del ataque</h2>
+  <div class="marco"><table>
+    <tr><th>Ronda</th><th>Hallazgos</th><th>Bloqueantes</th><th>Qué cambió más</th></tr>
+    <tr><td>1</td><td>24</td><td>6</td><td>Máximo vs suma por día; escala sin mapeo; calibración imposible; contador de semanas contradictorio; AMRAP sin forma de estar «pendiente».</td></tr>
+    <tr><td>2</td><td>8 nuevos + 2 parciales</td><td>1</td><td>La pulsación larga chocaba con borrar en el editor; el tope de «al límite» estaba ambiguo; la calibración usaba otro instrumento que el citado.</td></tr>
+    <tr><td>3</td><td>4 nuevos + 1 parcial</td><td>0</td><td>La «hoja por serie» del editor no existía; el eje de carga del veredicto no vota (nace Q12); criterios de aceptación viejos que contradecían las enmiendas.</td></tr>
+    <tr><td>4</td><td>4 nuevos</td><td>0</td><td>Copy residual que prometía veredicto; Q11 chocaba con Q12; el tipo de serie faltaba en el espejo de superseries.</td></tr>
+    <tr><td>5</td><td>0</td><td>0</td><td>Convergió. Veredicto de Grok: «el requerimiento cierra limpio en papel». Riesgo residual: que al implementar se reintroduzca un votante de carga o un copy que prometa lo que el veredicto no hace.</td></tr>
+  </table></div>
+  <p class="nota" style="margin-top:12px">Además: gate biomecánico (8 hallazgos, todas las citas verificadas en la web; retiró una cita sin locator), gate estadístico (10 hallazgos con re-derivación a mano y simulación del motor), y el criterio del dueño (9 preguntas inferidas, 4 banderas rojas, 3 rechazos anticipados que se aplicaron).</p>
+
+  <details><summary>Archivos fuente del taller</summary><div class="cuerpo">
+    Todo vive en el scratchpad de esta sesión, carpeta <b>ola1/</b>: BRIEF.md · ux-A.md, ux-B.md, ux-C.md (experiencia) · arq-A.md, arq-B.md (diseño técnico) · gate-biomecanico-1.md · gate-estadistico-1.md · ronda-1.md a ronda-5.md (Grok) · CONSOLIDACION-v1 a v5 (las decisiones del director, cada una manda sobre la anterior; v4 y v5 traen el bloque de criterios de aceptación sustituidos que el QA lee encima de los specs).
+  </div></details>
+</div>
