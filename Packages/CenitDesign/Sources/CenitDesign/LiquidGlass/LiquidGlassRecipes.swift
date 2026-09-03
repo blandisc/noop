@@ -228,8 +228,8 @@ private struct LiquidGlassLayer<S: InsettableShape>: ViewModifier {
                     .strokeBorder(
                         LinearGradient(
                             stops: [
-                                .init(color: .white.opacity(highlightTop), location: 0),
-                                .init(color: .white.opacity(highlightBottom), location: 1),
+                                .init(color: LiquidColor.vidrioHighlight(highlightTop), location: 0),
+                                .init(color: LiquidColor.vidrioHighlight(highlightBottom), location: 1),
                             ],
                             startPoint: .topLeading, endPoint: .bottomTrailing),
                         lineWidth: 1.5)
@@ -280,8 +280,8 @@ private struct LiquidSolidLayer<S: InsettableShape>: ViewModifier {
                     .strokeBorder(
                         LinearGradient(
                             stops: [
-                                .init(color: .white.opacity(highlightTop), location: 0),
-                                .init(color: .white.opacity(highlightBottom), location: 1),
+                                .init(color: LiquidColor.vidrioHighlight(highlightTop), location: 0),
+                                .init(color: LiquidColor.vidrioHighlight(highlightBottom), location: 1),
                             ],
                             startPoint: .topLeading, endPoint: .bottomTrailing),
                         lineWidth: 1.5)
