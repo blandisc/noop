@@ -15,10 +15,9 @@ import CenitStore
 // FER-184: two changes on top of FER-672's math (untouched — the index stays a user-relative z-score).
 // (1) Input: the sheet used to read through `SourceLens.clearBandColumns`, which nils `skinTempDevC` —
 // a leftover from when this screen needed a strap that Cénit never ships with anymore. It now reads the
-// real Apple Watch wrist-temperature deviation straight off `repo.days`. (2) Skin: re-themed from the
-// light «Instrumento diurno» to Liquid Glass, matching the FER-174 family (Data Sources, Support,
-// AFib History) — a skin pass, the consent gate and the honest hedges below are unchanged in substance,
-// only reworded off a strap that never existed for any Cénit user onto the Apple Watch that does.
+// real Apple Watch wrist-temperature deviation straight off `repo.days`. (2) Skin: Liquid Glass · El Eje
+// (familia FER-174: Fuentes, Soporte, AFib) — solo piel; el gate de consentimiento y los hedges
+// honestos abajo no cambian de fondo, solo el copy dejó la banda inexistente por el Apple Watch real.
 
 /// Opt-in state + informed-consent record for the cycle-phase experiment. On-device only (UserDefaults),
 /// the same pattern as `TermsGateView`'s consent record — no account, no network.

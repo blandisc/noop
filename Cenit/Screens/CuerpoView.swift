@@ -5,37 +5,22 @@ import StrandAnalytics
 import CenitStore
 import Foundation
 
-// MARK: - Cuerpo (the «between-days / history» landing) — FER-186 · FER-100 (Liquid Glass)
+// MARK: - Cuerpo (landing entre días / historia) — Liquid Glass · El Eje (FER-186 · FER-100)
 //
-// The «Cuerpo» tab of the 3-layer IA redesign (FER-182 placed it; this screen replaces its interim
-// `TrendsView`). FER-100 repaints the landing from the light «Instrumento diurno» paper to Liquid
-// Glass: a tinted-lens hero (the Preparación verdict word + its clause, teñido by the verdict's own
-// tone — apagado to paper/ink with no verdict, never green) over a column of `LiquidModulo` glass
-// modules — Rest & load / Training load / Vitals / Activity / Longevity — each with an
-// aurora edge in the hue of ITS OWN data (only the top two animate; the rest draw a still aurora, a
-// scrolling list is too many clocks). Domain color is ALWAYS `MetricIdentity.identity(forKey:)`, never
-// a raw theme token. Grouped stats (label in quiet ink · value in its data hue · optional legend) tap
-// straight into their detail, separated by `LiquidCapilar` hairlines; the «How you wake after each
-// sport» insight nests under one inside Activity → connect nudge → global actions (Compare · See all
-// metrics) at the foot. Each stat is its own tap target (the direct shortcut the old rows had); the
-// module header is a quiet regla label (no chevron — «See all metrics» at the foot is the one catalog
-// door, no duplicate). This is a VISUAL migration only: the data path, engines and navigation below
-// are untouched (see `loadAll` / `detailOverlayContent` / `DetailChrome`).
+// Pestaña Cuerpo (FER-182; reemplaza el `TrendsView` interino). Liquid Glass · El Eje: héroe de
+// Preparación (palabra + cláusula, tono del veredicto) sobre módulos `LiquidModulo` — Descanso y
+// carga / Carga de entrenamiento / Vitales / Actividad / Longevidad — con borde aurora del color
+// de SU dato (`MetricIdentity.identity(forKey:)`). Stats en tinta quieta · valor en tono de dato,
+// separadas por `LiquidCapilar`; insight de deporte bajo Actividad; Comparar / Ver todas al pie.
+// Cada stat es tap target; el header de módulo es rótulo sin chevron. Solo piel: data path /
+// engines / navegación intactos (`loadAll` / `detailOverlayContent` / `DetailChrome`).
 //
-// FER-566 (supersedes the FER-186 "number, not a chart" rule): every signal now carries a mini-trend
-// sparkline — the hero plus each stat in Rest & load, Vitals and Steps — EXCEPT Longevity and
-// Entrenamientos (numbers, not curves) and Heart Rate (intraday, no daily series). A period selector
-// under the header (`selectedPeriod`) re-windows ALL of them at once, and the hero's «vs tu media»
-// delta recomputes against the same window. Stress draws its spark from the stored daily stress series
-// (it isn't a `DailyMetric` field); every other spark slices `displayDays` by the selected period.
+// FER-566: cada señal lleva sparkline (héroe + Rest & load / Vitals / Steps), salvo Longevidad,
+// Entrenamientos y FC intradía. `selectedPeriod` re-ventanea todas; el Δ del héroe usa la misma
+// ventana. Stress lee su serie diaria; el resto corta `displayDays`.
 //
-// Puente de detalle: cada vital abre una hoja Liquid (escalares vía `MetricDetailScreen` FER-185;
-// compuestos en sus pantallas propias). Entrenamientos / Comparar / «Ver todas» también. Solo Data
-// Sources sigue en hoja oscura legada (mismo puente que Hoy).
-//
-// Values + sparklines read from `repo.displayDays` (the merged dashboard), NOT `series()`: the
-// on-device computed scores live in daily-metrics under `strap-noop`, so `series("strap")` is
-// empty for a BLE user — `displayDays` resolves for both import and strap users (FER-149).
+// Detalle: hojas Liquid (`MetricDetailScreen` FER-185 u hojas propias). Valores y sparklines desde
+// `repo.displayDays` (no `series("strap")` — FER-149).
 
 /// Landing de Tendencias. (FER-398 retired the by-the-hour tint; the app no longer changes colour with the clock.)
 struct CuerpoView: View {

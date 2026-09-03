@@ -411,7 +411,7 @@ public struct MatrizHoyFace: View {
             // `minWidth: 0` es el gate de compresión: sin él, un hijo `maxWidth:∞` reporta su
             // ancho IDEAL como piso al HStack de gemelas, así que las dos se niegan a encoger bajo
             // su ancho natural y la fila `.split` desborda ~8pt a la derecha (tras FER-159, que
-            // apretó la columna de 179→171pt). Mismo patrón que StatTile.swift:88.
+            // apretó la columna de 179→171pt). Mismo patrón de compresión: `minWidth: 0`.
             .frame(minWidth: 0, maxWidth: .infinity, maxHeight: estirar ? .infinity : nil, alignment: .topLeading)
             // Sin gemela, el módulo mide su CONTENIDO (el `Spacer` interior no se infla aunque el
             // contenedor proponga alto de sobra — p. ej. un render con marco fijo).

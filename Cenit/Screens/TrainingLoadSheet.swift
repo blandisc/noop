@@ -5,18 +5,14 @@ import StrandAnalytics
 import CenitStore
 import Foundation
 
-// MARK: - Carga de entrenamiento — franja en «Hoy» + hoja Liquid Glass (FER-705 · migración Liquid)
+// MARK: - Carga de entrenamiento — franja + hoja Liquid Glass · El Eje (FER-705 · FER-304)
 //
-// La carga de entrenamiento (ACWR) entra a «Hoy» como una FRANJA fija bajo las pestañas que al
-// tocarla abre esta HOJA. La hoja se migró al sistema Liquid Glass v1: se compone sobre el
-// cascarón `LiquidMetricSheet` con las piezas COMPARTIDAS de la familia (FER-33 · F2):
-// header con sello → frase de nivel → colina (`LiquidHill`, en el hueco: es su firma) →
-// selector → tarjeta de gráfica (`LiquidFraseNivel` + `LiquidGraficaNiveles` +
-// `LiquidResumenVentana`) → escalera (`LiquidLevelsList`) → pie con chip de origen.
-// Toda la matemática viene de
-// `ReadinessEngine` (umbrales 0.8 / 1.3 / 1.5 intactos); estas vistas solo presentan `acwr`,
-// `acwrSeries` y `loadBand`. La FRANJA sigue en «Instrumento» (su equivalente Liquid vive en
-// la Hoy Liquid); esta migración es de la HOJA.
+// ACWR en Hoy: FRANJA fija (`TrainingLoadStrip`, tokens Liquid · El Eje, FER-304) que abre esta
+// HOJA sobre `LiquidMetricSheet` (familia FER-33 · F2): header con sello → frase de nivel →
+// `LiquidHill` → selector → tarjeta (`LiquidFraseNivel` + `LiquidGraficaNiveles` +
+// `LiquidResumenVentana`) → `LiquidLevelsList` → pie con chip de origen. Matemática en
+// `ReadinessEngine` (umbrales 0.8 / 1.3 / 1.5); estas vistas solo presentan `acwr`,
+// `acwrSeries` y `loadBand`.
 
 /// Todo lo que la franja, la hoja y la tarjeta de Tendencias dibujan, construido una vez desde el
 /// dashboard band-masked (`CuerpoView.loadAll` / `TodayView.recomputeDerived`). `acwr == nil` → calibrando.

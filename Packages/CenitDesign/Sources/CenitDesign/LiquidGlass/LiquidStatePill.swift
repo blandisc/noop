@@ -2,20 +2,18 @@ import SwiftUI
 
 // MARK: - LiquidStatePill (FER-280 · clase 4)
 //
-// Pastilla de estado El Eje — `StatePill` (era Instrumento) no habla Liquid.
-// Dos variantes, cada una pixel-fiel a su sitio real:
+// Pastilla de estado Liquid Glass · El Eje. Dos variantes, cada una pixel-fiel a su sitio:
 //
-//   · `.estado` — `BreathingView.swift:182-196` / `IntervalTimerView.swift:199-211`:
-//     HStack (punto opcional + caption) · pad H s300 · V s150 · `.liquidGlass(.pastillaSolida)`.
-//     Dot verde opaco (`LiquidColor.verdePrimario`) cuando el caller no pasa otro tono.
+//   · `.estado` — `BreathingView` / `IntervalTimerView`: HStack (punto opcional + caption) ·
+//     pad H s300 · V s150 · `.liquidGlass(.pastillaSolida)`. Dot verde opaco
+//     (`LiquidColor.verdePrimario`) cuando el caller no pasa otro tono.
 //
-//   · `.valencia` — `WorkoutHistoryScreen.swift:645`: chip Δ% con tintFill + chipRadius,
-//     tipografía grotesk 11 bold, pad H `chipHorizontal` · V `s075`. El tono lo trae el
-//     caller (`theme.positiveText` / `theme.warning`) — la pieza no inventa valencia.
+//   · `.valencia` — chip Δ% con tintFill + chipRadius, tipografía grotesk 11 bold,
+//     pad H `chipHorizontal` · V `s075`. El tono lo trae el caller — la pieza no inventa valencia.
 //
-// Cuándo SÍ: anunciar estado vivo/listo/pausado sobre cristal de hoja; chip de Δ% con
-// color de valencia. Cuándo NO: pastilla Instrumento de chrome (`StatePill`); chip de
-// procedencia (`LiquidOrigenChip`/`LiquidOrigenBadge`); filtro removible (`LiquidChipSeleccion`).
+// Cuándo SÍ: estado vivo/listo/pausado sobre cristal; chip de Δ% con color de valencia.
+// Cuándo NO: procedencia (`LiquidOrigenChip`/`LiquidOrigenBadge`); filtro removible
+// (`LiquidChipSeleccion`).
 
 /// Constantes de la receta — fuera de la View para que los tests no toquen MainActor.
 public enum LiquidStatePillMetrics {
@@ -102,7 +100,7 @@ public struct LiquidStatePill: View {
 }
 
 #if DEBUG
-#Preview("Liquid · StatePill") {
+#Preview("Liquid · pastilla de estado") {
     let t = InstrumentoTheme.base
     VStack(alignment: .leading, spacing: LiquidSpace.s400) {
         Text("estado · pastillaSolida").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)

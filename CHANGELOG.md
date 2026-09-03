@@ -48,6 +48,7 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
   doble de evidencia y el cambio es real (>15 %); al cambiar, todas las sesiones estimadas se
   recalculan de una sola vez para que el recibo y Tendencias digan lo mismo.
 - El veredicto **no cambia** por una sesión: la carga todavía no vota (D-Q12).
+- Higiene (FER-341): cabeceras/MARK de pantallas Liquid ya no describen «Instrumento diurno»; fuera las piezas huérfanas `PaperStepper`, `StatTile` e `InstrumentoSectionBand`.
 
 ### Ola 1 de Entrenar · esquema (FER-324)
 - Base de datos v42/v43: columnas para el esfuerzo de sesión y su origen, la procedencia de sesiones

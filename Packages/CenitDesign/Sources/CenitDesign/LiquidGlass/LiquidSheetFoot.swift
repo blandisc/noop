@@ -69,8 +69,8 @@ public struct LiquidMetodo<Content: View>: View {
     }
 }
 
-/// FER-294 · Pastilla de procedencia en listas/detalle de entrenamiento (gemelo Liquid de
-/// `SourceBadge`). Label YA localizado; `tono: nil` = neutro (`tinta7` + `tinta10` + `tinta700`).
+/// FER-294 · Pastilla de procedencia en listas/detalle de entrenamiento.
+/// Label YA localizado; `tono: nil` = neutro (`tinta7` + `tinta10` + `tinta700`).
 /// Distinto de `LiquidOrigenChip` (pie de hoja con glifo): aquí es solo texto caps en cápsula.
 public struct LiquidOrigenBadge: View {
     private let label: String

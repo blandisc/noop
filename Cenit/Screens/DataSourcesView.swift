@@ -9,24 +9,17 @@ import HealthKit   // HKAuthorizationStatus, for the write-back permission tally
 import UIKit       // UIApplication.openSettingsURLString
 #endif
 
-// MARK: - Fuentes de datos — Liquid Glass (FER-108)
+// MARK: - Fuentes de datos — Liquid Glass · El Eje (FER-108)
 //
-// Migration of the light «Instrumento diurno» Data Sources screen to the Liquid Glass language
-// (FER-104 family: same visual system as Compare/Explore). This is a SKIN pass, not a thread
-// change: every importer, the live Apple Health sync, the coverage diagnostic, the coverage
-// grid and the backup/restore + iCloud auto-backup logic are conserved verbatim. What changes is
-// the surface — `LiquidSheetFondo`, inset section overlines (`bloque`, the Compare pattern),
-// `liquidTarjetaSeccion` cards for grouped content, `LiquidChecklistRow`/`LiquidListRow` for the
-// per-metric and navigation rows, `LiquidGlassButton` for actions.
+// Hoja Liquid Glass · El Eje (familia FER-104 / Compare·Explore): `LiquidSheetFondo`, overlines
+// inset (`bloque`), tarjetas `liquidTarjetaSeccion`, filas `LiquidChecklistRow`/`LiquidListRow`,
+// acciones `LiquidGlassButton`. Solo piel: importers, sync Apple Health, cobertura, backup/
+// restore e iCloud auto-backup intactos.
 //
-// COLOR IS IDENTITY (FER-108 cimientos): the per-metric checklist reads its hue and canonical
-// name through the ingest-key bridge — `MetricIdentity.identity(forIngestKey:)` and
-// `MetricCatalog.descriptor(forIngestKey:)?.canonicalTitle` — never `identity(forKey:)` on a raw
-// ingest key (that falls to the verdePrimario default and loses the metric's real family).
-//
-// The per-source Apple Health viewer stays reachable via the SAME `NavigationLink { AppleHealthView() }`
-// (the screen is presented inside its own NavigationStack by every caller — WorkoutsView, AjustesView,
-// TodayView, CuerpoView — each already wraps it and supplies its own Done toolbar).
+// Color = identidad (FER-108): checklist vía `MetricIdentity.identity(forIngestKey:)` +
+// `MetricCatalog.descriptor(forIngestKey:)?.canonicalTitle` — nunca `identity(forKey:)` sobre
+// una ingest key cruda. Apple Health por-fuente sigue en `NavigationLink { AppleHealthView() }`
+// dentro del NavigationStack que monta cada caller.
 
 struct DataSourcesView: View {
     @Environment(AppModel.self) var model

@@ -476,7 +476,7 @@ public let catalogEntries: [CatalogEntry] = [
     CatalogEntry(rol: "Franja de sección (Liquid)", simbolo: "LiquidFranjaSeccion",
                  archivo: "LiquidGlass/LiquidFranjaSeccion.swift",
                  cuandoUsarlo: "Cabecera a sangre de sección en hojas Liquid de métrica (velo del tono al 4 %).",
-                 cuandoNo: "No en pantallas Instrumento aún en papel (usa `InstrumentoSectionBand`); no inventar banda local."),
+                 cuandoNo: "No inventar banda local; en pantallas Liquid usar esta pieza o `LiquidSectionHeader`."),
     // —— Selectores / chrome ——
     CatalogEntry(rol: "Selector de periodo (Liquid)", simbolo: "LiquidRangeSelector",
                  archivo: "LiquidGlass/LiquidRangeSelector.swift",
@@ -514,7 +514,6 @@ public let catalogEntries: [CatalogEntry] = [
                  archivo: "LiquidGlass/LiquidSheetFoot.swift",
                  cuandoUsarlo: "Pastilla caps de procedencia en historial/detalle de entrenamiento (Apple/Manual/Medido). `tono: nil` = neutro.",
                  cuandoNo: "No en pie de hoja con glifo (usa `LiquidOrigenChip`); no como pastilla de estado (`LiquidStatePill`)."),
-    // SourceBadge (Instrumento) retirado en FER-294 B.2 — consumidores migrados a LiquidOrigenBadge.
     // —— Botones / confirmación / toast ——
     CatalogEntry(rol: "Botón pill Liquid", simbolo: "LiquidGlassButton",
                  archivo: "LiquidGlass/LiquidGlassButton.swift",
@@ -547,7 +546,7 @@ public let catalogEntries: [CatalogEntry] = [
     CatalogEntry(rol: "Stepper de ajuste Entrenar", simbolo: "EntrenarStepper",
                  archivo: "Entrenar/EntrenarStepper.swift",
                  cuandoUsarlo: "Control − valor + de hoja-herramienta (incremento, reloj de descanso) — tallas `.fila`/`.hoja`.",
-                 cuandoNo: "No para steppers Instrumento de papel (`PaperStepper`/`StepperButton`); el caller formatea el valor."),
+                 cuandoNo: "No reinventar −/+ a mano; el caller formatea el valor."),
     CatalogEntry(rol: "Toggle Liquid", simbolo: "LiquidToggleStyle / .liquid",
                  archivo: "LiquidGlass/LiquidToggleStyle.swift",
                  cuandoUsarlo: "Switch cromo El Eje (tinta900/tinta10/papelTarjeta) en hojas Liquid — `.toggleStyle(.liquid)`.",
@@ -612,7 +611,7 @@ public let catalogEntries: [CatalogEntry] = [
     CatalogEntry(rol: "Encabezado de sección (Liquid)", simbolo: "LiquidSectionHeader",
                  archivo: "LiquidGlass/LiquidSectionHeader.swift",
                  cuandoUsarlo: "Abrir una sección en una pantalla Liquid Glass — kicker + aire, sin banda de fondo (FER-273; adopción en Ola 3).",
-                 cuandoNo: "No en pantallas «Instrumento diurno» aún sin migrar (usa `InstrumentoSectionBand`, que sí lleva banda de papel)."),
+                 cuandoNo: "No inventar kicker+banda local; si hace falta franja a sangre de métrica usa `LiquidFranjaSeccion`."),
     CatalogEntry(rol: "Cápsula de acción (Hoja)", simbolo: "HojaCapsulaAccion",
                  archivo: "Entrenar/HojaCapsulaAccion.swift",
                  cuandoUsarlo: "Acción compacta sobre vidrio DENTRO de una hoja de Entrenar que no promete navegación — flecha opcional, apagada por default (FER-280·1c).",
@@ -625,7 +624,7 @@ public let catalogEntries: [CatalogEntry] = [
     CatalogEntry(rol: "Pastilla de estado Liquid", simbolo: "LiquidStatePill",
                  archivo: "LiquidGlass/LiquidStatePill.swift",
                  cuandoUsarlo: "Estado vivo/listo sobre cristal (`.pastillaSolida`) o chip de valencia Δ% — sustituye `statusPill` a mano y chips de signo.",
-                 cuandoNo: "No pastilla Instrumento de chrome (`StatePill`); no procedencia (`LiquidOrigenChip`/`LiquidOrigenBadge`); no filtro removible (`LiquidChipSeleccion`)."),
+                 cuandoNo: "No procedencia (`LiquidOrigenChip`/`LiquidOrigenBadge`); no filtro removible (`LiquidChipSeleccion`)."),
     // —— FER-280 · piezas que matan clases (ola 2q · avisos) ——
     CatalogEntry(rol: "Toast de deshacer", simbolo: "UndoToast",
                  archivo: "LiquidGlass/UndoToast.swift",

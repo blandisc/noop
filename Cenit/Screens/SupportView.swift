@@ -2,18 +2,13 @@
 import SwiftUI
 import CenitDesign
 
-// MARK: - «Acerca de y soporte» — Liquid Glass (FER-180)
+// MARK: - «Acerca de y soporte» — Liquid Glass · El Eje (FER-180)
 //
-// Migration of the light «Instrumento diurno» About/Support screen to the Liquid Glass language
-// (same skin pass as Data Sources, FER-108 family): a hoja header (overline + displayS title +
-// subtitle), the identity + version + mission block on a single `liquidTarjetaSeccion` card, and a
-// quiet disclaimer footnote. This is a SKIN pass, not a content change — FER-381 already trimmed
-// this screen down to identity + version + mission + the single «not affiliated / not a medical
-// device» disclaimer; that content and its behavior (none — the screen is static) are conserved
-// verbatim.
-//
-// The screen is presented inside its own NavigationStack by every caller (Ajustes forces the light
-// paper theme on the sheet, `.preferredColorScheme(.light)`), so no navigation chrome lives here.
+// Hoja Liquid Glass · El Eje (familia FER-108): header (overline + displayS + subtítulo),
+// identidad/versión/misión en una `liquidTarjetaSeccion`, disclaimer quieto al pie, suelo
+// `LiquidSheetFondo`. Solo piel — FER-381 ya dejó el contenido en identidad + versión + misión +
+// el disclaimer «no afiliado / no dispositivo médico». Cada caller la monta en su propio
+// NavigationStack (Ajustes fuerza `.preferredColorScheme(.light)`).
 
 struct SupportView: View {
     /// Single source of truth for the version pill: the app bundle's marketing version, same value

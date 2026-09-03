@@ -8,9 +8,8 @@ import StrandAnalytics
 // transforma siete veces sobre EL MISMO lienzo de partículas. Lo que hay que entender antes de
 // tocar este archivo:
 //
-//   1. **Un solo suelo: `LiquidColor.fondoGradient`.** Es exactamente el papel de Hoy. El
-//      onboarding termina descubriendo la app, y con el papel cálido de «Instrumento» el
-//      aterrizaje saltaba de color en el último cuadro. El suelo es `LiquidColor.fondoGradient`.
+//   1. **Un solo suelo: `LiquidColor.fondoGradient`.** Mismo lienzo Liquid Glass · El Eje que
+//      Hoy, para que el último acto no salte de color al aterrizar en la app.
 //
 //   2. **El orbe se llena con TU evidencia, no con el reloj.** La densidad del lienzo la manda
 //      `OnboardingLanding.densidadHonesta`, nunca cuánto tiempo llevas mirando la pantalla (ver

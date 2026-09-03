@@ -592,13 +592,11 @@ struct TodayView: View {
         return { pendingSeeMore = present; metricDetail = nil }
     }
 
-    // MARK: - Today (instrumento diurno · veredicto dominante · dial 24h · métricas en tinta)
+    // MARK: - Hoy (Liquid Glass · El Eje · LiquidHoyContent · atmósfera + dial 24h)
     //
-    // Escrito en el lenguaje «Instrumento diurno» (FER-135): papel cálido, un solo número dominante
-    // (la recuperación), jerarquía por ESPACIO (sin card-in-card), y COLOR SOLO en el dato — el número
-    // de recuperación, la palabra del veredicto y la línea+punto de cada gráfica; todo lo demás
-    // (labels, valores, dial, iconos, chevrons, overlines) en tinta. Conserva toda la lógica de
-    // estados/datos previa; solo reacomoda y recolorea. (FER-398 retiró el tinte por hora del día.)
+    // Superficie Liquid Glass · El Eje: `LiquidHoyBuilder` → `LiquidHoyContent` sobre
+    // `LiquidAtmosfera` (suelo ambiental), con el `DialSeal` de 24h como firma y pull-to-refresh.
+    // Color solo en el dato; chrome en tinta. (FER-398 retiró el tinte por hora del día.)
 
     private var iosBody: some View {
         // Alto y anclaje (FER-217 · FER-1039): un `GeometryReader` da el alto visible (`proxy.size.height`)
