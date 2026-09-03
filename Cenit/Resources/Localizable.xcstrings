@@ -68935,6 +68935,40 @@
           }
         }
       }
+    },
+    "Couldn’t save. Nothing was imported. Try again." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t save. Nothing was imported. Try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo guardar. No se importó nada. Intenta de nuevo."
+          }
+        }
+      }
+    },
+    "Reading… %lld sessions found" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading… %lld sessions found"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leyendo… %lld sesiones encontradas"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

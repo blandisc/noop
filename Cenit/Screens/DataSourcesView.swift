@@ -231,6 +231,11 @@ struct DataSourcesView: View {
         .sheet(isPresented: $showStrengthCSVImport) {
             StrengthHistoryImportSheet(
                 onComplete: { },
+                // QA D4: ninguna de las dos tiene ruta hoy — `DataSourcesView()` se construye sin
+                // parámetros en sus tres call sites (CuerpoView/AjustesView/TodayView) y ninguno le
+                // pasa un coordinador de navegación hacia Historial o el planificador de semana.
+                // Cablearla exigiría un closure nuevo en 3+ archivos fuera del hunk de este issue;
+                // se deja documentado en vez de improvisar una ruta. «Listo» sigue siendo la salida.
                 onOpenHistory: nil,
                 onArmWeek: nil)
                 .environmentObject(repo)

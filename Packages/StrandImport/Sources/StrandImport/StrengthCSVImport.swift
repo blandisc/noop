@@ -97,11 +97,16 @@ public enum StrengthCSVImporter {
         public var skipped: [RowIssue]
         /// Cross-origin overlaps at ±30 min. Default **out** of the import (N5); UI toggles force-in.
         public var possibleDuplicates: [PossibleDuplicate]
+        /// The weight unit this file actually carries — Strong's own header/user pick, `.kg` for
+        /// Hevy/Cénit (always normalized to kg on parse). QA D7 / E9: the screen's «Weight unit» row
+        /// reads this instead of assuming kg.
+        public var declaredUnit: WorkoutWeightUnit?
 
         public init(sessions: [ImportedSession], skipped: [RowIssue] = [],
-                    possibleDuplicates: [PossibleDuplicate] = []) {
+                    possibleDuplicates: [PossibleDuplicate] = [], declaredUnit: WorkoutWeightUnit? = nil) {
             self.sessions = sessions; self.skipped = skipped
             self.possibleDuplicates = possibleDuplicates
+            self.declaredUnit = declaredUnit
         }
     }
 
@@ -138,15 +143,21 @@ public enum StrengthCSVImporter {
         switch dialect {
         case .hevy:
             guard isHevy(colSet) else { throw ImportError.unknownHeader }
-            return try parseHevy(rows: rows, columns: columns)
+            var result = try parseHevy(rows: rows, columns: columns)
+            result.declaredUnit = .kg
+            return result
         case .strong:
             guard isStrong(colSet) else { throw ImportError.unknownHeader }
             let unit = strongUnit(from: colSet) ?? weightUnit
             guard let unit else { throw ImportError.unitRequired }
-            return try parseStrong(rows: rows, columns: columns, unit: unit)
+            var result = try parseStrong(rows: rows, columns: columns, unit: unit)
+            result.declaredUnit = unit
+            return result
         case .cenit:
             guard isCenit(colSet) else { throw ImportError.unknownHeader }
-            return try parseCenit(rows: rows, columns: columns)
+            var result = try parseCenit(rows: rows, columns: columns)
+            result.declaredUnit = .kg
+            return result
         }
     }
 

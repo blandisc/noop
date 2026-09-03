@@ -119,6 +119,8 @@ struct ExerciseNameMappingPanel: View {
                     .font(LiquidType.tituloFilaMedia)
                     .foregroundStyle(LiquidColor.tinta500)
                     .underline()
+                    .frame(minHeight: LiquidControl.hitTarget, alignment: .leading)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
         }
@@ -185,6 +187,8 @@ struct ExerciseNameMappingPanel: View {
                 .font(LiquidType.tituloFilaMedia)
                 .foregroundStyle(LiquidColor.tinta500)
                 .underline()
+                .frame(minHeight: LiquidControl.hitTarget, alignment: .center)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -202,6 +206,10 @@ struct ExerciseNameMappingPanel: View {
                                            bottom: .zero, trailing: .zero),
                         minHeight: nil,
                         touchInset: .zero))
+                // QA D3c: the drawn pill stays compact; the tap target grows to 44 pt via an
+                // invisible frame + contentShape, same trick `EntrenarPressStyle` callers use.
+                .frame(minHeight: LiquidControl.hitTarget)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }

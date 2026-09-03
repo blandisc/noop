@@ -1126,6 +1126,11 @@ struct WorkoutHistoryScreen: View {
             #if os(iOS)
             StrengthHistoryImportSheet(
                 onComplete: { await load() },
+                // QA D4: `onOpenHistory` no aplica — el usuario YA está en el historial; `onArmWeek`
+                // se deja fuera porque `WorkoutHistoryScreen` no recibe una ruta al planificador de
+                // semana (su init no trae `openWeeklyPlan`, a diferencia de `EntrenarView`) — cablearla
+                // significaría propagar un closure nuevo por `CuerpoView`/`AppMap`, fuera del hunk de
+                // esta pantalla. «Listo» sigue siendo la salida real.
                 onOpenHistory: nil,
                 onArmWeek: nil)
                 .environmentObject(repo)

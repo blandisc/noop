@@ -15,6 +15,7 @@ struct StrengthHistoryImportSheet: View {
     var onArmWeek: (() -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var typeSize
     @EnvironmentObject private var repo: Repository
 
     fileprivate enum Phase {
@@ -55,7 +56,10 @@ struct StrengthHistoryImportSheet: View {
     @State private var loadCount = 0
     @State private var leftOutDuplicateCount = 0
     @State private var readTask: Task<Void, Never>?
-    @State private var readingProgressLabel: LocalizedStringKey = "Reading…"
+    @State private var readingProgressLabel = String(localized: "Reading…")
+    /// Bumped by every new read (fresh pick or unit retry) and by `resetToArchivo()` — a completion
+    /// handler from an older read compares against this before touching state (QA D2/D13 race).
+    @State private var readGeneration = 0
 
     private var midWork: Bool {
         phase == .revisar || phase == .resolver
@@ -84,7 +88,9 @@ struct StrengthHistoryImportSheet: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .entrenarHojaFondo(tono: .neutro)
-        .saveErrorToast(isPresented: $saveError)
+        .saveErrorToast(
+            isPresented: $saveError,
+            message: String(localized: "Couldn’t save. Nothing was imported. Try again."))
         .overlay(alignment: .topTrailing) {
             if phase == .resolver || phase == .listo || phase == .leyendo {
                 BackButton(role: .close, action: dismissImport)
@@ -158,14 +164,7 @@ struct StrengthHistoryImportSheet: View {
                 showFileImporter = true
             }
 
-            if let parseErrorKey {
-                LiquidAviso(
-                    titulo: String(localized: "Couldn’t read the file"),
-                    cuerpo: parseErrorKey,
-                    tono: LiquidColor.negativo,
-                    cta: String(localized: "Choose another"),
-                    accion: { showFileImporter = true })
-            }
+            parseErrorBanner
 
             Text("Cénit recognizes which one it is by its columns. Nothing leaves your phone.")
                 .font(LiquidType.caption)
@@ -173,6 +172,20 @@ struct StrengthHistoryImportSheet: View {
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
                 .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// Shown wherever a parse can fail — Archivo (first pick) and Revisar (unit retry, QA D1/D4:
+    /// the error must render in the step where it happened, not only in Archivo).
+    @ViewBuilder
+    private var parseErrorBanner: some View {
+        if let parseErrorKey {
+            LiquidAviso(
+                titulo: String(localized: "Couldn’t read the file"),
+                cuerpo: parseErrorKey,
+                tono: LiquidColor.negativo,
+                cta: String(localized: "Choose another"),
+                accion: { showFileImporter = true })
         }
     }
 
@@ -224,10 +237,8 @@ struct StrengthHistoryImportSheet: View {
         let stats = reviewStats
         return VStack(alignment: .leading, spacing: LiquidSpace.s700) {
             stepCaption(2)
-            EntrenarHojaCabecera(
-                titulo: "\(stats.totalSessions)",
-                subtitulo: reviewSubtitle(stats: stats),
-                tono: .neutro, salida: .cerrar, onSalir: dismissImport)
+            numeralHeader(titulo: "\(stats.totalSessions)", subtitulo: reviewSubtitle(stats: stats))
+            parseErrorBanner
 
             VStack(alignment: .leading, spacing: .zero) {
                 reviewRow(
@@ -269,7 +280,7 @@ struct StrengthHistoryImportSheet: View {
             }
 
             if stats.newCount == 0 && !needsWeightUnit {
-                Text("Already there · \(stats.totalSessions)")
+                Text("Already there · \(stats.alreadyExisting)")
                     .font(LiquidType.cuerpo.weight(.semibold))
                     .foregroundStyle(LiquidColor.tinta700)
                 LiquidGlassButton(String(localized: "Nothing new to import"),
@@ -413,7 +424,8 @@ struct StrengthHistoryImportSheet: View {
                 .font(LiquidType.displayS)
                 .tracking(LiquidType.displaySTracking)
                 .foregroundStyle(LiquidColor.tinta900)
-                .fixedSize(horizontal: false, vertical: true)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
 
             Text("Records, 1RM and muscle map already recalculated with your history.")
                 .font(LiquidType.cuerpo)
@@ -469,6 +481,27 @@ struct StrengthHistoryImportSheet: View {
 
     // MARK: - Shared chrome
 
+    /// Like `EntrenarHojaCabecera` but the title is a numeral that can run to 5+ digits: scales
+    /// down before it clips instead of truncating (QA D3a). Kept local — `EntrenarHojaCabecera`'s
+    /// own title is tuned for short words, every other caller is fine as-is.
+    private func numeralHeader(titulo: String, subtitulo: String) -> some View {
+        HStack(alignment: .top, spacing: LiquidSpace.s300) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s050) {
+                Text(titulo)
+                    .font(LiquidType.tituloHoja)
+                    .foregroundStyle(LiquidColor.tinta900)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                    .accessibilityAddTraits(.isHeader)
+                Text(subtitulo)
+                    .font(LiquidType.cuerpo)
+                    .foregroundStyle(LiquidColor.tinta700)
+            }
+            Spacer(minLength: LiquidSpace.s200)
+            BackButton(role: .close, action: dismissImport)
+        }
+    }
+
     private func stepCaption(_ step: Int) -> some View {
         Text("Import · \(step) of 4")
             .font(LiquidType.tituloFilaMedia)
@@ -483,10 +516,21 @@ struct StrengthHistoryImportSheet: View {
     }
 
     private func reviewRowContent(_ title: String, _ value: String) -> some View {
-        HStack(spacing: LiquidSpace.s300) {
-            Text(title).font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta900)
-            Spacer(minLength: LiquidSpace.s200)
-            Text(value).font(LiquidType.cuerpo.weight(.semibold)).foregroundStyle(LiquidColor.tinta700)
+        Group {
+            // QA D3b: title + value cramp side by side at large accessibility sizes — stack instead.
+            if typeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+                    Text(title).font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta900)
+                    Text(value).font(LiquidType.cuerpo.weight(.semibold)).foregroundStyle(LiquidColor.tinta700)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                HStack(spacing: LiquidSpace.s300) {
+                    Text(title).font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta900)
+                    Spacer(minLength: LiquidSpace.s200)
+                    Text(value).font(LiquidType.cuerpo.weight(.semibold)).foregroundStyle(LiquidColor.tinta700)
+                }
+            }
         }
         .padding(LiquidSpace.s400)
         .frame(minHeight: LiquidControl.hitTarget)
@@ -603,38 +647,56 @@ struct StrengthHistoryImportSheet: View {
         beginRead(data: data, unit: needsWeightUnit ? weightUnit : nil)
     }
 
+    /// Reads + parses + annotates off the main actor (QA D2: 30 000 rows was 4.1 s of a frozen
+    /// MainActor — `Task.detached` moves the CPU-heavy part to a background executor so the UI, and
+    /// Cancel, stay responsive), and guards every checkpoint with a read-generation id (QA D2/D13):
+    /// an older read's completion can never stomp a newer one's state, cancellation-flag timing
+    /// notwithstanding.
     private func beginRead(data: Data, unit: WorkoutWeightUnit?) {
         parseErrorKey = nil
         phase = .leyendo
-        readingProgressLabel = "Reading…"
+        readingProgressLabel = String(localized: "Reading…")
         readTask?.cancel()
+        readGeneration += 1
+        let generation = readGeneration
         readTask = Task {
             let overlap = await repo.sessionSummariesForImportOverlap()
-            if Task.isCancelled {
-                await MainActor.run { resetToArchivo() }
-                return
-            }
+            guard generation == readGeneration else { return }
             do {
-                let parsed = try StrengthCSVImporter.parse(data: data, weightUnit: unit)
-                if Task.isCancelled {
-                    await MainActor.run { resetToArchivo() }
-                    return
+                // `Task.detached` does NOT inherit this task's cancellation — wire it explicitly
+                // via `withTaskCancellationHandler` so cancelling `readTask` actually reaches the
+                // background parse (QA D2's "Task.checkCancellation" ask). The parser itself has no
+                // internal checkpoints (one synchronous pass over the rows), so cancellation is only
+                // observed between steps, not mid-loop — but the UI no longer freezes while it runs,
+                // and a cancel now genuinely stops the pipeline instead of a `Task.isCancelled` that
+                // could never fire on a task nobody was cancelling.
+                let parseTask = Task.detached(priority: .userInitiated) {
+                    let parsed = try StrengthCSVImporter.parse(data: data, weightUnit: unit)
+                    try Task.checkCancellation()
+                    return StrengthCSVImporter.annotateDuplicates(parsed, existing: overlap)
                 }
-                let annotated = StrengthCSVImporter.annotateDuplicates(parsed, existing: overlap)
-                let ids = annotated.sessions.map(\.id)
-                let existing = await repo.existingSessionIds(ids)
-                if Task.isCancelled {
-                    await MainActor.run { resetToArchivo() }
-                    return
+                let annotated = try await withTaskCancellationHandler {
+                    try await parseTask.value
+                } onCancel: {
+                    parseTask.cancel()
                 }
+                guard generation == readGeneration else { return }
                 await MainActor.run {
-                    applyParsed(annotated, existing: existing, unitAsked: false)
-                    readingProgressLabel = "Reading… \(annotated.sessions.count) of \(annotated.sessions.count)"
+                    readingProgressLabel = String(localized: "Reading… \(annotated.sessions.count) sessions found")
+                }
+                let existing = await repo.existingSessionIds(annotated.sessions.map(\.id))
+                guard generation == readGeneration else { return }
+                await MainActor.run {
+                    applyParsed(annotated, existing: existing)
                     phase = .revisar
                 }
+            } catch is CancellationError {
+                // Cancelled from the Leyendo screen — its Cancel button already reset to Archivo.
             } catch let err as StrengthCSVImporter.ImportError {
+                guard generation == readGeneration else { return }
                 await MainActor.run { handleParseError(err, data: data) }
             } catch {
+                guard generation == readGeneration else { return }
                 await MainActor.run {
                     parseErrorKey = String(localized: "We couldn’t read that file. Pick the original .csv and try again.")
                     resetToArchivo()
@@ -643,29 +705,53 @@ struct StrengthHistoryImportSheet: View {
         }
     }
 
+    /// Re-parse with a unit the user just picked (Strong legacy, QA D1) or the immediate kg guess
+    /// right after detecting `.unitRequired`. Lands back on Revisar either way — success or failure
+    /// — so the selector stays put and a failure shows `parseErrorBanner` in the step it happened,
+    /// not silently in a step the user has left (QA D1 bug 4).
     private func retryParse(data: Data, unit: WorkoutWeightUnit) {
+        parseErrorKey = nil
         phase = .leyendo
-        readingProgressLabel = "Reading…"
+        readingProgressLabel = String(localized: "Reading…")
         readTask?.cancel()
+        readGeneration += 1
+        let generation = readGeneration
         readTask = Task {
             let overlap = await repo.sessionSummariesForImportOverlap()
-            if Task.isCancelled {
-                await MainActor.run { phase = .revisar }
-                return
-            }
+            guard generation == readGeneration else { return }
             do {
-                let parsed = try StrengthCSVImporter.parse(data: data, weightUnit: unit)
-                let annotated = StrengthCSVImporter.annotateDuplicates(parsed, existing: overlap)
-                let existing = await repo.existingSessionIds(annotated.sessions.map(\.id))
-                if Task.isCancelled {
-                    await MainActor.run { phase = .revisar }
-                    return
+                // `Task.detached` does NOT inherit this task's cancellation — wire it explicitly
+                // via `withTaskCancellationHandler` so cancelling `readTask` actually reaches the
+                // background parse (QA D2's "Task.checkCancellation" ask). The parser itself has no
+                // internal checkpoints (one synchronous pass over the rows), so cancellation is only
+                // observed between steps, not mid-loop — but the UI no longer freezes while it runs,
+                // and a cancel now genuinely stops the pipeline instead of a `Task.isCancelled` that
+                // could never fire on a task nobody was cancelling.
+                let parseTask = Task.detached(priority: .userInitiated) {
+                    let parsed = try StrengthCSVImporter.parse(data: data, weightUnit: unit)
+                    try Task.checkCancellation()
+                    return StrengthCSVImporter.annotateDuplicates(parsed, existing: overlap)
                 }
+                let annotated = try await withTaskCancellationHandler {
+                    try await parseTask.value
+                } onCancel: {
+                    parseTask.cancel()
+                }
+                guard generation == readGeneration else { return }
                 await MainActor.run {
-                    applyParsed(annotated, existing: existing, unitAsked: true)
+                    readingProgressLabel = String(localized: "Reading… \(annotated.sessions.count) sessions found")
+                }
+                let existing = await repo.existingSessionIds(annotated.sessions.map(\.id))
+                guard generation == readGeneration else { return }
+                await MainActor.run {
+                    applyParsed(annotated, existing: existing)
                     phase = .revisar
                 }
+            } catch is CancellationError {
+                guard generation == readGeneration else { return }
+                await MainActor.run { phase = .revisar }
             } catch {
+                guard generation == readGeneration else { return }
                 await MainActor.run {
                     parseErrorKey = String(localized: "We couldn’t read that file. Pick the original .csv and try again.")
                     phase = .revisar
@@ -677,6 +763,10 @@ struct StrengthHistoryImportSheet: View {
     private func handleParseError(_ err: StrengthCSVImporter.ImportError, data: Data) {
         switch err {
         case .unitRequired:
+            // QA D1: show the selector with kg preselected AND parse right away with that guess —
+            // no static "0 sessions" screen waiting on a tap the user hasn't made yet. `needsWeightUnit`
+            // is only cleared by `resetToArchivo()` (a new file), so the selector stays put and every
+            // later toggle (`onChange(of: weightUnit)`) re-parses instead of getting silently ignored.
             needsWeightUnit = true
             weightUnit = .kg
             if let text = try? decodePreview(data) {
@@ -684,7 +774,7 @@ struct StrengthHistoryImportSheet: View {
             }
             dialectLabel = "Strong"
             history = nil
-            phase = .revisar
+            retryParse(data: data, unit: .kg)
         case .unknownHeader:
             parseErrorKey = String(localized: "I don’t recognize this file. Cénit reads the CSV Strong and Hevy export. Make sure it’s the original .csv, unedited.")
             resetToArchivo()
@@ -702,16 +792,15 @@ struct StrengthHistoryImportSheet: View {
     }
 
     private func applyParsed(_ annotated: StrengthCSVImporter.ImportedStrengthHistory,
-                             existing: Set<String>, unitAsked: Bool) {
+                             existing: Set<String>) {
         history = annotated
         existingIds = existing
         forcedDuplicateIds = []
         duplicatesExpanded = false
-        needsWeightUnit = false
-        if unitAsked == false {
-            // Infer display unit from first positive kg weight vs dialect label.
-            weightUnit = .kg
-        }
+        // QA D7: the «Weight unit» row shows what the file actually declared (Strong's own header
+        // or the unit the user just picked), not an assumed kg. `needsWeightUnit` is deliberately
+        // NOT reset here (QA D1) — only a fresh file (`resetToArchivo`) clears it.
+        weightUnit = annotated.declaredUnit ?? weightUnit
         dialectLabel = annotated.sessions.first.map { displaySource($0.source) } ?? dialectLabel
         rebuildReconciler(from: annotated)
     }
@@ -934,12 +1023,20 @@ struct StrengthHistoryImportSheet: View {
             resetToArchivo()
         case .guardando:
             break
-        case .archivo, .listo:
+        case .archivo:
             dismiss()
+        case .listo:
+            // QA D5: closing Listo via the X / edge-swipe must still tell the caller to refresh.
+            Task {
+                await onComplete()
+                dismiss()
+            }
         }
     }
 
     private func resetToArchivo() {
+        // QA D2/D13: invalidate any in-flight read so its completion can't resurrect stale state.
+        readGeneration += 1
         phase = .archivo
         history = nil
         fileData = nil
