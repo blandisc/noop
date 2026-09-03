@@ -20,6 +20,8 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- Diseño (FER-338): las 26 `Capsule()` a mano del gate `no-capsule-a-mano` quedan drenadas (tracks de dato a `Capsule(style: .continuous)` como `LiquidBarraMarca`, sin deuda nueva de `token-exempt`; chrome a `OutlineCapsule` / ShapeStyle-in-Shape).
+
 - Limpieza: desaparece `SetActionPills` (vista sin consumidores) y el ancla de contraste de Entrenar pasa del papel Instrumento al lienzo Liquid `fondoAlto` (FER-307).
 
 - Diseño, remates del loop 3 (FER-321): fuera los últimos dos usos de API retirada (`StrandPalette.disabledOpacity`, `PaperStepper` en Intervalos), dos lecturas muertas del tema Instrumento y baseline del gate regrabado tras el loop 2.

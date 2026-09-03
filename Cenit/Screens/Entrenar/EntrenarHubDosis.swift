@@ -56,9 +56,9 @@ struct EntrenarHubDosis: View {
                 .frame(width: EntrenarHubMetrics.dosisLabelWidth, alignment: .leading)
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule()
+                    Capsule(style: .continuous)
                         .fill(LiquidColor.papelTarjeta.opacity(EntrenarHubMetrics.dosisTrackFondoAlfa))
-                    Capsule()
+                    Capsule(style: .continuous)
                         .fill(fila.low ? LiquidColor.cian.opacity(EntrenarHubMetrics.dosisFillBajoAlfa) : LiquidColor.cian)
                         .frame(width: max(0, geo.size.width * min(1, fila.fraction)))
                     // Los dos ticks MUDOS de referencia — 50 % y el tope, sin texto (mock `.band`/`::after`).

@@ -360,7 +360,7 @@ struct WeeklyPlanEditorView: View {
         let maxV = vol.map(\.value).max() ?? 1
         HStack(spacing: LiquidSpace.s075) {
             ForEach(Array(vol.enumerated()), id: \.offset) { _, e in
-                Capsule()
+                Capsule(style: .continuous)
                     .fill(e.key.tint())
                     .frame(width: max(12, CGFloat(e.value) / CGFloat(maxV) * 34), height: 4)
             }

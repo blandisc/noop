@@ -1720,9 +1720,9 @@ struct LiveStrengthSheet: View {
             GeometryReader { geo in
                 let w = geo.size.width
                 ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(LiquidColor.tinta10)  // token-exempt(dato): track de progreso
-                    Capsule()
+                    Capsule()  // token-exempt(dato): track de progreso
+                        .fill(LiquidColor.tinta10)
+                    Capsule(style: .continuous)
                         .fill(neutral ? LiquidColor.tinta10 : LiquidColor.verdeCarga)
                         .opacity(neutral || positive ? 1 : 0.75)
                         .frame(width: max(4, w * (current / maxV)))

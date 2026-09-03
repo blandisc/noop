@@ -281,13 +281,13 @@ struct IntervalTimerView: View {
     private var roundIndicators: some View {
         HStack(spacing: LiquidSpace.s100) {
             ForEach(1...max(1, rounds), id: \.self) { index in
-                Capsule()
+                Capsule(style: .continuous)
                     .fill(roundIndicatorFill(index))
                     .frame(height: LiquidSpace.s150)
                     .frame(maxWidth: .infinity)
                     .overlay {
                         if index > currentRound && phase != .done {
-                            Capsule()
+                            Capsule(style: .continuous)
                                 .strokeBorder(LiquidColor.tinta10, lineWidth: 1)
                         }
                     }
@@ -336,9 +336,9 @@ struct IntervalTimerView: View {
             // Slim total-session progress bar
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule()
+                    Capsule(style: .continuous)
                         .fill(LiquidColor.tinta10)
-                    Capsule()
+                    Capsule(style: .continuous)
                         .fill(LiquidColor.ambar)
                         .frame(width: geo.size.width * sessionProgress)
                         .strandAnimation(.linear(duration: 0.9), value: sessionProgress)

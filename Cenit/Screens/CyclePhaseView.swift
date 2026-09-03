@@ -361,9 +361,9 @@ private struct CyclePhaseProgressBar: View {
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                Capsule()
+                Capsule(style: .continuous)
                     .fill(LiquidColor.tinta10)
-                Capsule()
+                Capsule(style: .continuous)
                     .fill(LiquidColor.verdePrimario)
                     .frame(width: max(0, min(1, fraction)) * geo.size.width)
             }
