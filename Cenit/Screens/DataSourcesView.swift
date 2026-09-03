@@ -874,7 +874,8 @@ struct DataSourcesView: View {
                     distanceM: set.distanceM,
                     rpe: set.rpe,
                     restTakenS: set.restTakenS,
-                    notes: session.notes)
+                    notes: session.notes,
+                    setMode: set.mode)
             }
             StrengthCSV.appendRows(StrengthCSV.rows(forSessionSets: inputs), to: &out)
         }

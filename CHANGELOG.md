@@ -30,8 +30,6 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 - Nuevo `docs/specs/ola1-entrenar/` con los specs del taller, y DECISIONS.md con FER-85 transcrito y las
   decisiones de la ola 1.
 
-## Unreleased
-
 - Limpieza: desaparece `SetActionPills` (vista sin consumidores) y el ancla de contraste de Entrenar pasa del papel Instrumento al lienzo Liquid `fondoAlto` (FER-307).
 
 - Diseño, remates del loop 3 (FER-321): fuera los últimos dos usos de API retirada (`StrandPalette.disabledOpacity`, `PaperStepper` en Intervalos), dos lecturas muertas del tema Instrumento y baseline del gate regrabado tras el loop 2.

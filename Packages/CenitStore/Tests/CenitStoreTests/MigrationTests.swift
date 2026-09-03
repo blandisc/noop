@@ -1599,5 +1599,11 @@ final class MigrationTests: XCTestCase {
         XCTAssertEqual(saved?.deload, true)
         let savedSets = try await store.setEntries(sessionId: "s1")
         XCTAssertEqual(savedSets.map(\.mode), [SetMode.standard, .drop])
+        // The storage contract is «NULL = standard»: a standard set must persist as NULL, never as the
+        // literal 'standard', so a pre-ola-1 reader and a future writer agree on the same byte.
+        let rawModes = try await store.dbWriter.read { db in
+            try String?.fetchAll(db, sql: "SELECT mode FROM setEntry WHERE sessionId = 's1' ORDER BY position")
+        }
+        XCTAssertEqual(rawModes, [nil, "drop"])
     }
 }
