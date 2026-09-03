@@ -1335,6 +1335,7 @@ final class StrengthStoreTests: XCTestCase {
         let volumes = try await store.sessionVolumes()
         XCTAssertEqual(volumes["s1"]?.volumeKg, 80 * 8 + 64 * 10)
         XCTAssertEqual(volumes["s1"]?.setCount, 2)
+    }
 
     // MARK: - Ola 1 · E2 · provenance + session-effort calibration
 
