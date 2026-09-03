@@ -379,29 +379,11 @@ struct HojaFoco: View {
         }
     }
 
-    /// El toggle TIEMPO/FC — mismo lenguaje de pastilla de dos segmentos que `CompactTrendToggle`
-    /// (CenitDesign), sin generalizar ese componente (está acoplado a `TrendMode`, un concepto
-    /// ajeno): misma receta (padding 3, cápsula, segmento activo en tinta), igual que `RestBand`.
+    /// Toggle TIEMPO/FC: `SegmentedPillControl` del catálogo (FER-342; sin cápsula a mano).
     private var combustibleToggle: some View {
-        HStack(spacing: LiquidSpace.s075) {
-            combustibleSegmento(String(localized: "Time"), activo: forzarVistaTiempo) { forzarVistaTiempo = true }
-            combustibleSegmento(String(localized: "HR"), activo: !forzarVistaTiempo) { forzarVistaTiempo = false }
+        SegmentedPillControl([true, false], selection: $forzarVistaTiempo, inkThumb: true) { value in
+            value ? String(localized: "Time") : String(localized: "HR")
         }
-        .padding(LiquidSpace.s075)
-        .liquidGlass(.pastillaSolida)
-    }
-
-    private func combustibleSegmento(_ label: String, activo: Bool, action: @escaping () -> Void) -> some View {
-        Text(verbatim: label)
-            .font(LiquidType.captionFuerte).tracking(0.6).textCase(.uppercase)
-            .foregroundStyle(activo ? LiquidColor.papelTarjeta : LiquidColor.tinta500)
-            .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s125)
-            .frame(minHeight: EntrenarMetrics.secondaryButton)
-            // Segmento activo: fill tinta vía ShapeStyle-in-Shape (misma API que OutlineCapsule).
-            .background(activo ? LiquidColor.tinta900 : Color.clear, in: Capsule())
-            .contentShape(Capsule())
-            .onTapGesture { withAnimation(vivo.reduceMotion ? nil : LiquidMotion.toque) { action() } }
-            .accessibilityAddTraits(activo ? [.isSelected, .isButton] : .isButton)
     }
 
     // MARK: - D3 · HECHO

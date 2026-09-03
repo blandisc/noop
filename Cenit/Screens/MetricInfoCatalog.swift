@@ -6,8 +6,8 @@ import StrandAnalytics
 
 /// Data model for the "tap a metric to learn more" bottom sheet.
 /// Each metric defines its bands (fixed ranges) and which band is active for the user's current
-/// value. Colour is NOT baked here — the sheet resolves every hue from the live «Instrumento»
-/// theme (FER-162), so the same model recolours by time of day on warm paper.
+/// value. Colour is NOT baked here: the Liquid sheet resolves every hue from `LiquidColor`
+/// (FER-162 / FER-342), so the same model stays palette-agnostic.
 struct MetricInfo: Identifiable {
     let id: String
     // FER-39 (F13): el copy se guarda como `LocalizedStringResource` (no `LocalizedStringKey`): sirve
@@ -51,7 +51,7 @@ struct MetricInfo: Identifiable {
     /// personal band (`levelsRelative`). Gates the body, header, foot link and detent. (FER-619)
     var usesLevels: Bool { levelsMetric != nil || levelsRelative }
 
-    /// A semantic tint for the header numeral, resolved against the «Instrumento» theme by the sheet.
+    /// A semantic tint for the header numeral, resolved against `LiquidColor` by the sheet.
     /// `metric` = the metric's own data hue; `neutral` = quiet ink (used for the "—" no-data state);
     /// `good`/`warn`/`bad` = the verdict/warning/critical roles (recovery's banded score). (FER-162)
     enum Tint { case metric, neutral, good, warn, bad }

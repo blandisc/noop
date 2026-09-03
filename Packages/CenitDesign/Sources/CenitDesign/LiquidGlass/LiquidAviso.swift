@@ -7,14 +7,14 @@ import SwiftUI
 // (`Cenit/Screens/HealthAlertBanner.swift:46-50`). Sin icono ni CTA, el body es
 // EXACTAMENTE esa composición — adopción cero-pixel del banner de salud.
 //
-// Slots opcionales para matar los otros 3 dialectos en la ola de adopción:
-//   · `icono` — leading `LiquidIcon` (connectNudge / CuerpoView:1167)
-//   · `cta` + `accion` — rótulo quiet bajo el cuerpo; si hay `accion`, toda la
-//     tarjeta es tocable (TodayBanner / AvisoDesconexion con tap a Salud)
+// Slots opcionales para matar los otros dialectos en la ola de adopción:
+//   · `icono` - leading `LiquidIcon` (connectNudge / CuerpoView)
+//   · `cta` + `accion` - rótulo quiet bajo el cuerpo; si hay `accion`, toda la
+//     tarjeta es tocable (AvisoDesconexion con tap a Salud)
 //
 // Cuándo SÍ: heads-up / desconexión / nudge / lectura de aviso en pantalla Liquid.
-// Cuándo NO: snack de deshacer (`UndoToast`); error de escritura (`.saveErrorToast`);
-// banner Instrumento de «Hoy» aún sin migrar (`TodayBanner` — muere al adoptar).
+// Cuándo NO: snack de deshacer (`UndoToast`); error de escritura (`.saveErrorToast`).
+// FER-342: `TodayBanner` (Instrumento) se borró; Hoy monta `LiquidAviso` cuando hace falta.
 
 /// Constantes de la receta — fuera de la View para que los tests no toquen MainActor.
 enum LiquidAvisoMetrics {

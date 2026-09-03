@@ -128,7 +128,7 @@ private struct DetailChrome<Content: View>: View {
     }
 }
 
-/// Identifiable wrapper so the light «Instrumento» Detalle de Sueño can ride `.sheet(item:)`
+/// Identifiable wrapper so the Liquid Detalle de Sueño can ride `.sheet(item:)`
 /// (the model itself isn't Identifiable). One per presentation. (FER-212)
 private struct SleepDetailItem: Identifiable {
     let id: UUID
@@ -169,23 +169,21 @@ private struct CuerpoLanding: View {
     /// Unified Detalle de Métrica (FER-185): the three vitals (HRV / FC reposo / Respiración) open this
     /// at `.full` depth instead of the legacy `MetricInfoSheet` / dark `MetricDetailView` bridge.
     @State private var metricSpec: MetricDetailSpec? = nil
-    /// Light «Instrumento» Detalle de Recuperación (FER-225): the recovery hero now opens this rich detail
-    /// (superset of the old `MetricInfoSheet`), built fresh on tap from the in-memory dashboard, theme
-    /// passed explicitly.
+    /// Detalle de Recuperación Liquid (FER-225): the recovery hero opens this rich detail
+    /// (superset of the old `MetricInfoSheet`), built fresh on tap from the in-memory dashboard.
     @State private var recoveryDetail: PreparacionDetalleItem? = nil
-    /// Dark screen / catalog-detail sheet, for everything without a light sheet yet.
+    /// Dark screen / catalog-detail sheet, for everything without a Liquid sheet yet.
     @State private var darkSheet: CuerpoSheet? = nil
-    /// Light «Instrumento» Comparar (FER-268) — the «Compare» row now opens the reskinned overlay screen
-    /// as a light sheet (theme injected at the root; it doesn't cross the `.sheet` boundary, FER-162), NO
+    /// Comparar Liquid (FER-268): the «Compare» row opens the overlay as a sheet
+    /// (tokens at the sheet root; they do not cross the `.sheet` boundary, FER-162), NO
     /// nested NavigationStack (FER-171). Replaces the old dark `.screen(.compare)` bridge.
     @State private var showCompare = false
-    /// Light «Instrumento» Explore (FER-272) — the «See all metrics» row now opens the reskinned metric
-    /// catalog as a light sheet with its OWN NavigationStack (so a metric row pushes its detail), theme
-    /// injected at the sheet root (it doesn't cross the `.sheet` boundary, FER-162). Replaces the old dark
+    /// Explore Liquid (FER-272): the «See all metrics» row opens the metric catalog as a sheet
+    /// with its OWN NavigationStack (so a metric row pushes its detail). Replaces the old dark
     /// `.screen(.explore)` bridge.
     @State private var showExplore = false
-    /// Light «Instrumento» Entrenamientos (FER-260) — the «Workouts» row opens the reskinned list as a
-    /// detail LAYER, like every other Tendencias detail (it used to be the odd one out, a card sliding up
+    /// Entrenamientos Liquid (FER-260): the «Workouts» row opens the list as a detail LAYER,
+    /// like every other Tendencias detail (it used to be the odd one out, a card sliding up
     /// from the bottom). It keeps its own NavigationStack so a session row still pushes the detail.
     @State private var showWorkouts = false
     /// The Entrenamientos stack's path, held here (not implicit inside `NavigationStack`) so the layer can
@@ -197,22 +195,22 @@ private struct CuerpoLanding: View {
     /// del trainStack (las dos puertas nunca son visibles a la vez). Sin él, abrir el detalle rico de una
     /// sesión CRASHEA (`WorkoutSessionDetailScreen` lo exige como `@EnvironmentObject`).
     @StateObject private var workoutsCoordinator = WorkoutHistoryCoordinator()
-    /// Light «Instrumento» Detalle de Sueño (FER-212) — the «Sueño» row now opens this superset of the
-    /// old dark sleep screen (built fresh on tap from the in-memory dashboard), theme passed explicitly.
+    /// Detalle de Sueño Liquid (FER-212): the «Sueño» row opens this superset of the
+    /// old dark sleep screen (built fresh on tap from the in-memory dashboard).
     @State private var sleepDetail: SleepDetailItem? = nil
-    /// Light «Instrumento» Detalle de Esfuerzo (FER-238) — the «Day Strain» row now opens this rich detail
+    /// Detalle de Esfuerzo Liquid (FER-238): the «Day Strain» row opens this rich detail
     /// (héroe + zonas + tendencia + método) instead of the legacy `MetricInfoSheet`. Hoy unchanged.
     @State private var strainDetail: StrainDetailItem? = nil
-    /// Light «Instrumento» Detalle de Estrés (FER-241) — the «Stress» row now opens this dedicated screen
-    /// (valor de hoy + bandas universales + qué lo mueve + ⓘ por concepto), theme passed explicitly. SOLO
+    /// Detalle de Estrés Liquid (FER-241): the «Stress» row opens this dedicated screen
+    /// (valor de hoy + bandas universales + qué lo mueve + ⓘ por concepto). SOLO
     /// en Cuerpo: el tile de Estrés en Hoy NO cambia.
     @State private var stressDetail: StressDetailItem? = nil
     /// The «mapa del día» driver (EventKit + intraday stress), built fresh when the Stress row opens
     /// its detail and passed into the sheet. (FER-377)
     @State private var stressDayMap: CalendarDayMap? = nil
-    /// Light «Instrumento» Detalle de Temperatura de la piel (FER-256) — the «Skin Temperature» row now
-    /// opens this dedicated screen (última lectura + tendencia con banda ±típica + consistencia en SD °C +
-    /// método) instead of the legacy dark catalog sheet; theme passed explicitly.
+    /// Detalle de Temperatura de la piel Liquid (FER-256): the «Skin Temperature» row opens
+    /// this dedicated screen (última lectura + tendencia con banda ±típica + consistencia en SD °C +
+    /// método) instead of the legacy dark catalog sheet.
     @State private var skinTempDetail: SkinTempDetailItem? = nil
     /// Carga de entrenamiento (FER-705): today's ACWR + the replayed per-day series, computed once per
     /// refresh in `loadAll` from the band-masked dashboard (the same slice the recovery detail feeds
@@ -255,7 +253,7 @@ private struct CuerpoLanding: View {
     @State private var recoveryCalibration: Int? = nil
     /// Fitness Age (FER-141): the 7-day orchestration snapshot, memoized once per refresh in `loadAll`.
     @State private var fitnessAge: FitnessAgeSnapshot? = nil
-    /// Drives the Fitness Age detail sheet (the light «Instrumento» sheet for «Edad física»).
+    /// Drives the Fitness Age detail sheet (Liquid sheet for «Edad física»).
     @State private var showFitnessAge = false
 
     private static let recoverySeed = Baselines.minNightsSeed
@@ -287,7 +285,7 @@ private struct CuerpoLanding: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(LiquidSheetFondo(tone: heroTono))
-            // Detalle «Instrumento» como CAPA sobre el landing (handoff v2 Chrome, FER-828 / FER-837): una
+            // Detalle Liquid como CAPA sobre el landing (handoff v2 Chrome, FER-828 / FER-837): una
             // sola pantalla de papel opaco encima de Tendencias EN LA MISMA jerarquía, no un `fullScreenCover`
             // (que ocultaba el landing detrás de una plancha en blanco). Así el back-swipe descubre la
             // pantalla real de Tendencias que está debajo. Cero `NavigationStack` → cero riesgo FER-171.
@@ -316,19 +314,18 @@ private struct CuerpoLanding: View {
         .task(id: repo.refreshSeq) { await loadAll() }
         .sheet(item: $darkSheet) { sheet in darkSheetContent(sheet) }
         .sheet(isPresented: $showCompare) {
-            // Light «Instrumento» Comparar — the theme is injected at the root (it doesn't cross the
-            // `.sheet` boundary, FER-162) and the env objects are re-supplied (a sheet starts a fresh
-            // environment branch). No nested NavigationStack (FER-171); you drag to dismiss. (FER-268)
+            // Comparar Liquid: tokens at the sheet root (they do not cross the `.sheet`
+            // boundary, FER-162) and env objects re-supplied (a sheet starts a fresh
+            // environment branch). No nested NavigationStack (FER-171); drag to dismiss. (FER-268)
             CompareView()
                                 .environmentObject(repo)
                 .environment(model)
                 .environmentObject(health)
         }
         .sheet(isPresented: $showExplore) {
-            // Light «Instrumento» Explore (FER-272) — its OWN NavigationStack lives inside the sheet so a
-            // metric row pushes its detail (NOT a stack nested across the tab path, FER-171). The theme is
-            // passed explicitly to the screen AND injected at the root (it doesn't cross the `.sheet`
-            // boundary, FER-162); the env objects are re-supplied (a sheet starts a fresh environment).
+            // Explore Liquid (FER-272): its OWN NavigationStack lives inside the sheet so a
+            // metric row pushes its detail (NOT a stack nested across the tab path, FER-171).
+            // Env objects are re-supplied (a sheet starts a fresh environment).
             // A light sheet from a light tab keeps the status bar honest (no dark pin needed).
             NavigationStack {
                 MetricExplorerView()
@@ -346,7 +343,7 @@ private struct CuerpoLanding: View {
 
     // MARK: - Detail layer (FER-837 follow-up)
 
-    /// Whether ANY «Instrumento» detail is showing over the landing. Drives the `detailOverlayContent`
+    /// Whether ANY Liquid detail is showing over the landing. Drives the `detailOverlayContent`
     /// layer + its slide-in/out animation. Only one is ever set at a time (each tap sets exactly one).
     private var detailPresented: Bool {
         metricSpec != nil || recoveryDetail != nil || strainDetail != nil || sleepDetail != nil
@@ -1251,9 +1248,9 @@ private struct CuerpoLanding: View {
 
     // MARK: - Detail sheets
 
-    /// Data Sources, now reskinned to the light «Instrumento» language (FER-338), presented
-    /// self-contained: its own NavigationStack + Done button (so «Ver datos importados» pushes the
-    /// Apple Health viewer), and the environment objects re-injected (a sheet starts a fresh environment branch).
+    /// Data Sources in Liquid Glass · El Eje (FER-338), presented self-contained: its own
+    /// NavigationStack + Done button (so «Ver datos importados» pushes the Apple Health viewer),
+    /// and the environment objects re-injected (a sheet starts a fresh environment branch).
     /// A light sheet from a light tab keeps the status bar honest (no dark pin needed).
     private func darkSheetContent(_ sheet: CuerpoSheet) -> some View {
         NavigationStack {

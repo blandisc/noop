@@ -15,10 +15,9 @@ import StrandAnalytics
 // FER-111 · Es un RECORDATORIO, no una entrega: Cénit no despierta sola, así que el aviso no puede
 // traer la lectura, solo acordarse por ti de venir por ella. El copy lo dice en voz alta.
 //
-// FER-177: pase de PIEL de papel «Instrumento» a Liquid Glass — mismo comportamiento, mismos
-// permisos, mismo copy; cambia solo la superficie (overline `franja`, grupo en
-// `.liquidTarjetaSeccion()`, toggle nativo con `.tint(LiquidColor.verdePrimario)`), siguiendo el
-// patrón ya sentado por `DataSourcesView`.
+// FER-177 / FER-342: superficie Liquid Glass · El Eje (overline `franja`, grupo en
+// `.liquidTarjetaSeccion()`, toggle nativo con `.tint(LiquidColor.verdePrimario)`), mismo
+// comportamiento / permisos / copy. Patrón sentado por `DataSourcesView`.
 //
 // Cuatro verdades que la sección tiene que sostener a la vista:
 //   1. El permiso se pide AL ENCENDER el switch, nunca antes.

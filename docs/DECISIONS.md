@@ -209,4 +209,5 @@ adversarial (`docs/specs/ola1-entrenar/`):
 - **Material solo vía receta (FER-340).** Un `.ultraThinMaterial`/`.regularMaterial` suelto es vidrio fuera de sistema. Regla `no-native-material` en las tres patas del gate; la única casa legítima es `LiquidGlassRecipes.swift`. Diálogos y tarjetas de captura ya pasan por receta.
 - **Sin exenciones nuevas en loop 4.** `FocoMetrics.contentTop` (26 pt, sin escalón exacto) pasa a `LiquidSpace.s700` (28 pt) en vez de abrir `token-exempt(falta-pieza)`: la escala manda, no el píxel heredado. Misma línea que la decisión de loop 3 (AppMap queda en baseline, no en exención).
 - **Halo/glow es pieza (`LiquidGlow`).** Blur + fill a mano en pantallas queda prohibido por criterio; la pieza entra al catálogo.
+- **Texto de lectura con `@ScaledMetric` + `.system(size:)` NO es hallazgo** (Ronda 2 D2, hub Entrenar y RestEditor): escala con Dynamic Type por diseño; la auditoría lo excluye.
 

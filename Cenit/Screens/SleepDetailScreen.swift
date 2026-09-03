@@ -8,11 +8,11 @@ import Foundation
 
 // MARK: - SleepDetailScreen — el «Detalle de Sueño» en vidrio Liquid (FER-102)
 //
-// Migración PURAMENTE VISUAL del esqueleto «Tendencias Final» (papel «Instrumento») a los legos
-// Liquid: campo teñido a sangre (`LiquidCampoMetrica`) → costuras de sección
-// (`LiquidFranjaSeccion`) → mosaicos (`LiquidCajita`) → las gráficas de la familia. Los motores,
-// el modelo y los loaders NO cambian: `SleepDetailModel`, `NightAutonomicShape` y `Baselines` se
-// leen tal cual, y esta pantalla sigue siendo pura presentación (cero DB).
+// Detalle de Sueño en Liquid Glass · El Eje (FER-102 · FER-342): campo teñido a sangre
+// (`LiquidCampoMetrica`) → costuras de sección (`LiquidFranjaSeccion`) → mosaicos
+// (`LiquidCajita`) → las gráficas de la familia. Los motores, el modelo y los loaders NO
+// cambian: `SleepDetailModel`, `NightAutonomicShape` y `Baselines` se leen tal cual, y esta
+// pantalla sigue siendo pura presentación (cero DB).
 //
 // Tres decisiones del dueño (2026-08-17) van dentro:
 //   1. el héroe conserva LOS DOS datos (horas | regularidad) en UN solo campo;
@@ -1171,11 +1171,10 @@ struct SleepDetailScreen: View {
 // MARK: - SleepStagesInfoSheet — the combined "what the stages mean" card (FER-227)
 //
 // One bottom sheet explaining all four sleep stages + why they're approximate, opened from the ⓘ next
-// to "Last night". It mirrors the `MetricInfoSheet` visual language (warm paper, title, lede, rows,
-// footnote) but its content is a list of stages rather than a banded value — so it's its own small
-// view, not a contorted `MetricInfo`. Theme passed EXPLICITLY (it doesn't propagate through `.sheet`,
-// FER-162); no nested `NavigationStack` (FER-171). The stage hues are the fixed `StrandPalette` sleep
-// colors, the same dots the legend uses (color only in the datum).
+// to "Last night". It mirrors the Liquid metric-sheet language (title, lede, rows, footnote) but its
+// content is a list of stages rather than a banded value, so it's its own small view, not a
+// contorted `MetricInfo`. No nested `NavigationStack` (FER-171). The stage hues are the fixed
+// `StrandPalette` sleep colors, the same dots the legend uses (color only in the datum).
 
 /// «Etapas de sueño en detalle» — la hoja que abre desde el pie del método.
 ///

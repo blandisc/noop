@@ -7,8 +7,8 @@ import Foundation
 
 // MARK: - StrainDetailScreen — el «Detalle de Esfuerzo» en vidrio Liquid (FER-101 · TND-10)
 //
-// Migración PURAMENTE VISUAL del esqueleto «Tendencias Final» (papel «Instrumento») a los legos
-// Liquid, calcando el patrón de `SleepDetailScreen.swift` (la vara de medir de esta migración):
+// Detalle de Esfuerzo en Liquid Glass · El Eje (FER-101 · FER-342). Calcando el patrón de
+// `SleepDetailScreen.swift` (la vara de medir de esta migración):
 // campo teñido a sangre (`LiquidCampoMetrica`) → costuras de sección (`LiquidFranjaSeccion`) →
 // lectura de nivel (`LiquidReadingLine`; los rangos viven en la escalera tocable del historial,
 // UX-08) → historial (`LiquidRangeSelector` + `LiquidGraficaNiveles` +

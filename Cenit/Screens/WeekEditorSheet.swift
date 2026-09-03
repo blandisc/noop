@@ -63,18 +63,19 @@ struct WeekEditorSheet: View {
         .saveErrorToast(isPresented: $saveError)
         .overlay(alignment: .bottom) {
             if lockedToast {
-                Text("Days already trained can't be edited")
-                    .font(LiquidType.caption)
-                    .foregroundStyle(LiquidColor.papelTarjeta)
-                    // Toast no-botón: OutlineCapsule modifier no expone filled.
-                    .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s200)
-                    .background(LiquidColor.tinta900, in: Capsule())
-                    .padding(.bottom, LiquidSpace.s700)
-                    .transition(LiquidMotion.risingFadeTransition)
-                    .task {
-                        try? await Task.sleep(for: .seconds(2))
-                        lockedToast = false
-                    }
+                // FER-342: aviso breve sin acción → LiquidAviso (no UndoToast: ese pide CTA).
+                LiquidAviso(
+                    titulo: "",
+                    cuerpo: String(localized: "Days already trained can't be edited"),
+                    tono: LiquidColor.tinta500
+                )
+                .padding(.horizontal, LiquidSpace.s600)
+                .padding(.bottom, LiquidSpace.s700)
+                .transition(LiquidMotion.risingFadeTransition)
+                .task {
+                    try? await Task.sleep(for: .seconds(2))
+                    lockedToast = false
+                }
             }
         }
         .animation(LiquidMotion.fundido, value: lockedToast)

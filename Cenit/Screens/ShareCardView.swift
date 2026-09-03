@@ -50,9 +50,8 @@ struct ShareCardView: View {
                     .padding(.top, LiquidSpace.handoff14)
             }
         }
-        .padding(LiquidSpace.tarjetaAmplia)
-        .background(LiquidColor.papelTarjeta, in: RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: LiquidRadius.tarjeta, style: .continuous).strokeBorder(LiquidColor.vidrioCanto, lineWidth: 1))
+        // FER-342: canto + papel vía receta (mata strokeBorder a mano).
+        .liquidTarjetaSeccion(padding: LiquidSpace.tarjetaAmplia)
     }
 
     private struct Metric { let label: LocalizedStringKey; let value: String; let unit: String?; let accent: Color? }

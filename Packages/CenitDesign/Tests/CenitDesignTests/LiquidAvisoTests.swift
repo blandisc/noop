@@ -31,7 +31,7 @@ final class LiquidAvisoTests: XCTestCase {
             titulo: "Heads up",
             cuerpo: "Your resting heart rate has been higher than usual.",
             tono: LiquidColor.atencion)
-        // Variante con icono + CTA (dialectos connectNudge / TodayBanner).
+        // Variante con icono + CTA (dialectos connectNudge / aviso con acción).
         let _: any View = LiquidAviso(
             titulo: "Apple Salud",
             lineas: ["Connect Apple Health to fill steps and more."],
