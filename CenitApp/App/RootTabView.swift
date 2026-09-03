@@ -292,7 +292,6 @@ struct RootTabView: View {
                 RoutineSheet(origin: .today(routineId: appModel.strengthSession?.routineId), mode: .live)
                     .environment(appModel)
                     .environmentObject(tabRouter)
-                    .preferredColorScheme(.light)
             }
         }
     }

@@ -128,7 +128,6 @@ struct WorkoutImportView: View {
                     if let chosen = picks.first { resolve(target.name, with: chosen) }
                 }
             }
-            .environmentObject(repo).preferredColorScheme(.light)
         }
         // FER-995: «create new» opens the library's own create form, pre-filled with the plan's name,
         // the type it declared and a muscle proposed from the name — instead of silently saving an
@@ -138,7 +137,6 @@ struct WorkoutImportView: View {
                                 initialType: declaredType(target.name)) { exercise in
                 createNew(target.name, as: exercise)
             }
-            .environmentObject(repo).preferredColorScheme(.light)
         }
         .enableInjection()
     }
@@ -857,7 +855,6 @@ extension WorkoutImportView {
 private func importPreview(_ view: WorkoutImportView) -> some View {
     view
         .environmentObject(Repository(deviceId: "preview"))
-        .preferredColorScheme(.light)
         .environment(\.locale, Locale(identifier: "es"))   // canvas en es-MX; quitar para ver el copy en inglés
 }
 

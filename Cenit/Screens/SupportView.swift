@@ -8,7 +8,6 @@ import CenitDesign
 // identidad/versión/misión en una `liquidTarjetaSeccion`, disclaimer quieto al pie, suelo
 // `LiquidSheetFondo`. Solo piel — FER-381 ya dejó el contenido en identidad + versión + misión +
 // el disclaimer «no afiliado / no dispositivo médico». Cada caller la monta en su propio
-// NavigationStack (Ajustes fuerza `.preferredColorScheme(.light)`).
 
 struct SupportView: View {
     /// Single source of truth for the version pill: the app bundle's marketing version, same value

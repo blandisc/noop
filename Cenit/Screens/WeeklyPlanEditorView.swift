@@ -169,17 +169,14 @@ struct WeeklyPlanEditorView: View {
         }
         .sheet(isPresented: $showTemplates) {
             StarterTemplatesSheet { await load() }
-                .environmentObject(repo).preferredColorScheme(.light)
         }
         .sheet(isPresented: $showImport) {
             WorkoutImportView { await load() }
-                .environmentObject(repo).preferredColorScheme(.light)
         }
         // Ola 1 · E11: «Programa · 4 a 6 semanas» (crear desde un motor, StarterTemplatesSheet en
         // modo programa) y «Convertir en programa ›» (la semana YA armada, sin motor).
         .sheet(isPresented: $showProgramCreate) {
             StarterTemplatesSheet(programa: true, onApplied: { showProgramReadyToast = true }) { await load() }
-                .environmentObject(repo).preferredColorScheme(.light)
         }
         .sheet(isPresented: $showConvertToProgram, onDismiss: { convertStartsMonday = false }) {
             convertToProgramSheet

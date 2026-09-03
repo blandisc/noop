@@ -328,7 +328,6 @@ struct LiveStrengthSheet: View {
             showLibraryPicker = false
             Task { await addExercises(picks) }
         }
-        .environmentObject(model.repo).preferredColorScheme(.light)
     }
 
     /// Progression / detail / change / rest·plates·RPE·note + the share fullScreen cover.
@@ -397,7 +396,6 @@ struct LiveStrengthSheet: View {
             .padding(.top, LiquidSpace.s300)
             .presentationDragIndicator(.visible)
             .presentationBackground(LiquidColor.fondoAlto)
-            .preferredColorScheme(.light)
         }
     }
 
@@ -411,7 +409,6 @@ struct LiveStrengthSheet: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
         }
-        .environmentObject(model.repo).preferredColorScheme(.light)
     }
 
     @ViewBuilder
@@ -432,7 +429,6 @@ struct LiveStrengthSheet: View {
             },
             onClose: { changeExercise = nil }
         )
-        .preferredColorScheme(.light)
         .presentationBackground(LiquidColor.fondoAlto)
     }
 
@@ -636,7 +632,6 @@ struct LiveStrengthSheet: View {
             .presentationDetents([.height(560)])
             .presentationDragIndicator(.visible)
             .presentationBackground(LiquidColor.fondoAlto)
-            .preferredColorScheme(.light)
     }
 
     /// The note sheet content, shared by the two presenters (main body + inside the focus cover).
@@ -662,7 +657,6 @@ struct LiveStrengthSheet: View {
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
             .presentationBackground(LiquidColor.fondoAlto)
-            .preferredColorScheme(.light)
         }
     }
 
@@ -686,7 +680,6 @@ struct LiveStrengthSheet: View {
                     restEdit = nil
                 }
             )
-            .preferredColorScheme(.light)
             .presentationDetents([.large])
             .presentationDragIndicator(.hidden)
             .presentationBackground(LiquidColor.fondoAlto)

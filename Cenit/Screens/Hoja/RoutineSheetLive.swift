@@ -166,7 +166,6 @@ struct HojaSesionViva: View {
         }
         .entrenarHojaFondo(tono: .indigo)
         
-        .preferredColorScheme(.light)
         // B17: el gesto de borde minimiza — NUNCA termina la sesión (mismo modificador que
         // `LiveStrengthSheet` ya usaba en el mismo cover).
         .edgeSwipeToExit { sheet.model.strengthSheetPresented = false }
@@ -216,7 +215,6 @@ struct HojaSesionViva: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
             }
-            .environmentObject(sheet.repo).preferredColorScheme(.light)
         }
         // B8 (FER-169): «＋ Agregar ejercicio» — mismo picker que la Hoja fría/`LiveStrengthSheet`
         // (`ExerciseLibraryScreen`), reusado tal cual; insertar+persistir es 1:1 con
@@ -227,7 +225,6 @@ struct HojaSesionViva: View {
                 addExerciseAfterRunId = nil
                 Task { await addExercisesFromLibrary(picks, afterRunId: afterRunId) }
             }
-            .environmentObject(sheet.repo).preferredColorScheme(.light)
         }
         .sheet(item: $changeExercise) { target in
             ChangeExerciseSheet(
@@ -245,7 +242,6 @@ struct HojaSesionViva: View {
                 },
                 onClose: { changeExercise = nil }
             )
-            .preferredColorScheme(.light).presentationBackground(LiquidColor.fondoAlto)
         }
         .sheet(item: $platesTarget) { target in
             PlatesScreen(
@@ -269,7 +265,6 @@ struct HojaSesionViva: View {
                      onPick: { rpe in session.setRPE(exercise: target.runId, set: target.id, rpe: rpe); rpeTarget = nil },
                      onClose: { rpeTarget = nil })
                 .presentationDetents([.height(560)]).presentationDragIndicator(.visible)
-                .presentationBackground(LiquidColor.fondoAlto).preferredColorScheme(.light)
         }
         .sheet(item: $noteTarget) { target in
             if let run = session.runs.first(where: { $0.id == target.id }) {
@@ -290,7 +285,6 @@ struct HojaSesionViva: View {
                     onClose: { noteTarget = nil }
                 )
                 .presentationDetents([.medium, .large]).presentationDragIndicator(.visible)
-                .presentationBackground(LiquidColor.fondoAlto).preferredColorScheme(.light)
             }
         }
         .sheet(item: $restEdit) { edit in
@@ -310,7 +304,6 @@ struct HojaSesionViva: View {
                         restEdit = nil
                     }
                 )
-                .preferredColorScheme(.light).presentationDetents([.large]).presentationDragIndicator(.hidden).presentationBackground(LiquidColor.fondoAlto)
             }
         }
         .sheet(item: $progressionEdit) { target in
@@ -323,7 +316,6 @@ struct HojaSesionViva: View {
                     onBack: { progressionEdit = nil },
                     onSave: { _, _, _, _, _, _, _ in progressionEdit = nil }   // La escritura a la rutina sigue F4 (intervención) — F2 solo abre/cierra la hoja intacta.
                 )
-                .padding(.top, LiquidSpace.s300).presentationDragIndicator(.visible).presentationBackground(LiquidColor.fondoAlto).preferredColorScheme(.light)
             }
         }
         // Confirm de Terminar en la raíz; los otros tres cuelgan de subvistas de `liveLoop` (FER-174).

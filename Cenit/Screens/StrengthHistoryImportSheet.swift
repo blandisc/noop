@@ -128,13 +128,11 @@ struct StrengthHistoryImportSheet: View {
                     if let chosen = picks.first { resolve(target.name, with: chosen) }
                 }
             }
-            .environmentObject(repo).preferredColorScheme(.light)
         }
         .sheet(item: $creationTarget) { target in
             CreateExerciseSheet(catalog: catalog, initialName: target.name) { exercise in
                 createNew(target.name, as: exercise)
             }
-            .environmentObject(repo).preferredColorScheme(.light)
         }
         .onChange(of: weightUnit) { _, newUnit in
             guard needsWeightUnit, let data = fileData else { return }
