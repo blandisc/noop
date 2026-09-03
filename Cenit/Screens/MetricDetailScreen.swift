@@ -1200,38 +1200,41 @@ struct MetricDetailScreen: View {
 
     @ViewBuilder private func liquidSpectralContent(_ s: SpectralHRV) -> some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s300) {
-            LiquidCajitaGrid {
-                LiquidCajita(rotulo: "\(String(localized: "Respiratory")) · HF",
-                             valor: liquidSpectralValor(s.hf.value),
-                             unidad: "ms²",
-                             pie: liquidSpectralPie(
-                                subtitulo: String(localized: "your calm signal, tied to your breathing"),
-                                label: s.hf.label),
-                             tono: liquidTono,
-                             compacto: true)
-                if let lf = s.lf {
-                    LiquidCajita(rotulo: "\(String(localized: "Slow")) · LF",
-                                 valor: liquidSpectralValor(lf.value),
-                                 unidad: "ms²",
+            if let lf = s.lf {
+                // Solo cuando hay LF (noche completa). La normalización por varianza se cancela en el
+                // cociente, así que hf/(hf+lf) es el HFnu canónico (Task Force 1996). Es la FORMA del
+                // ritmo, no la cantidad.
+                let denom = s.hf.value + lf.value
+                let hfnu = denom > 0 ? Int((100 * s.hf.value / denom).rounded()) : 0
+                let lfnu = 100 - hfnu   // fuerza suma = 100, sin artefacto de redondeo
+                LiquidCajitaGrid {
+                    LiquidCajita(rotulo: "\(String(localized: "Respiratory")) · HF",
+                                 valor: "\(hfnu)",
+                                 unidad: "%",
                                  pie: liquidSpectralPie(
-                                    subtitulo: String(localized: "slow waves; a mix of signals"),
+                                    subtitulo: String(localized: "the fast rhythm, paced by your breathing"),
+                                    label: s.hf.label),
+                                 tono: liquidTono,
+                                 compacto: true)
+                    LiquidCajita(rotulo: "\(String(localized: "Slow")) · LF",
+                                 valor: "\(lfnu)",
+                                 unidad: "%",
+                                 pie: liquidSpectralPie(
+                                    subtitulo: String(localized: "the slow rhythm; a mix of signals"),
                                     label: lf.label),
                                  compacto: true)
                 }
-                LiquidCajita(rotulo: String(localized: "Total variation"),
-                             valor: liquidSpectralValor(s.total),
-                             unidad: "ms²",
-                             pie: String(localized: "everything together, the “volume” of your HRV"),
-                             compacto: true)
-            }
-            if s.lf == nil {
-                LiquidNotaLine(String(localized: "Last night's reading was short, so it only covers the respiratory part: not the slow waves."),
+                LiquidNotaLine(String(localized: "Of last night's rhythmic HRV, how much was fast (breathing) versus slow. The two add up to 100%."),
                                tono: LiquidColor.tinta700)
-            } else if s.hf.label == nil {
-                LiquidNotaLine(String(localized: "Still learning your normal range. Once there are enough nights, I'll tell you whether a value is high or low for you."),
+                if s.hf.label == nil {
+                    LiquidNotaLine(String(localized: "Still learning your normal range. Once there are enough nights, I'll tell you whether a value is high or low for you."),
+                                   tono: LiquidColor.tinta700)
+                }
+            } else {
+                LiquidNotaLine(String(localized: "Last night's reading was short, so we could only see the fast (breathing) part of the rhythm, not the slow part."),
                                tono: LiquidColor.tinta700)
             }
-            LiquidNotaLine(String(localized: "Computed from last night's heartbeats (Lomb-Scargle). These are descriptive band powers to compare against yourself: not a diagnosis or a “stress balance.”"))
+            LiquidNotaLine(String(localized: "Computed from last night's heartbeats with the Lomb-Scargle method. It shows the shape of your heartbeat's rhythm: how much was fast (breathing-paced) versus slow, to compare against yourself; it is not the amount of variability (that's your HRV number) and not a measure of stress or autonomic balance."))
         }
     }
 
