@@ -636,6 +636,11 @@ public let catalogEntries: [CatalogEntry] = [
                  archivo: "LiquidGlass/LiquidRampas.swift",
                  cuandoUsarlo: "Color de zona HR (`hrZone`), fatiga muscular 0…1 (`muscleLoad`) o tinte de familia de movimiento (`movementFamilyTint`) sin tocar `InstrumentoTheme` desde pantallas.",
                  cuandoNo: "No inventar rampas locales; no leer `InstrumentoTheme.base.hrZoneRamp`/`muscleLoadColor`/`movementFamilyTint` desde `Cenit/`/`CenitApp/`."),
+    // —— FER-338 · barra de progreso (mata Capsule() a mano) ——
+    CatalogEntry(rol: "Barra de progreso (pista+relleno)", simbolo: "LiquidBarraProgreso",
+                 archivo: "LiquidGlass/LiquidBarraProgreso.swift",
+                 cuandoUsarlo: "Cualquier riel de avance 0…1 (calibración, dosis, sesión, volumen): pista + relleno Capsule con tono/altura; opcional marca/contorno.",
+                 cuandoNo: "No para barra con rótulo/delta/promedio (`LiquidBarraMarca`); no conteo en ventana (`LiquidBarraConteo`); no etapas de sueño (`LiquidStageBar`); no chrome de acción (`OutlineCapsule`)."),
 ]
 
 func catalogoTable() -> String {

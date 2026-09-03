@@ -395,14 +395,10 @@ struct HojaFoco: View {
         Text(verbatim: label)
             .font(LiquidType.captionFuerte).tracking(0.6).textCase(.uppercase)
             .foregroundStyle(activo ? LiquidColor.papelTarjeta : LiquidColor.tinta500)
-            .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s125).frame(minHeight: EntrenarMetrics.secondaryButton)
-            .background {
-                if activo {
-                    // Segmento activo del combustible: fill tinta, no OutlineCapsule (inactivo sin cromo).
-                    Capsule()
-                        .fill(LiquidColor.tinta900)
-                }
-            }
+            .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s125)
+            .frame(minHeight: EntrenarMetrics.secondaryButton)
+            // Segmento activo: fill tinta vía ShapeStyle-in-Shape (misma API que OutlineCapsule).
+            .background(activo ? LiquidColor.tinta900 : Color.clear, in: Capsule())
             .contentShape(Capsule())
             .onTapGesture { withAnimation(vivo.reduceMotion ? nil : LiquidMotion.toque) { action() } }
             .accessibilityAddTraits(activo ? [.isSelected, .isButton] : .isButton)

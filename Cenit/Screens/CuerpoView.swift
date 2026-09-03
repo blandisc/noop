@@ -692,9 +692,8 @@ private struct CuerpoLanding: View {
                         if let load, load.series.count > 1, let band {
                             let color = loadBandColor(band)
                             ZStack(alignment: .center) {
-                                Capsule()
-                                    .fill(LiquidColor.tinta10)
-                                    .frame(width: 104, height: 3)
+                                LiquidBarraProgreso(fraccion: 0, altura: LiquidSpace.s075)
+                                    .frame(width: 104)
                                 Sparkline(values: load.series.map(\.value),
                                           gradient: ChartWell.fillGradient(color),
                                           lineWidth: 2.0, showsArea: false, showsHead: true, showsScrub: false)
@@ -885,14 +884,12 @@ private struct CuerpoLanding: View {
     @ViewBuilder
     private func recoveryHeroAccessory(calibrating: Int?) -> some View {
         if let calibrating {
-            Capsule()
-                .fill(LiquidColor.tinta10)
-                .frame(width: 132, height: 6)
-                .overlay(alignment: .leading) {
-                    Capsule()
-                        .fill(LiquidColor.tinta500)
-                        .frame(width: 132 * CGFloat(calibrating) / CGFloat(Self.recoverySeed), height: 6)
-                }
+            LiquidBarraProgreso(
+                fraccion: Double(calibrating) / Double(Self.recoverySeed),
+                tono: LiquidColor.tinta500,
+                altura: LiquidSpace.s150,
+                animada: false)
+                .frame(width: 132)
                 .padding(.top, LiquidSpace.s200)
                 .accessibilityHidden(true)
         }

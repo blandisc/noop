@@ -409,3 +409,26 @@ class DefaultRootsByRule(unittest.TestCase):
                 self.assertEqual(rc, 1, "roots explícitos cubren todas las rules de la invocación")
             finally:
                 os.chdir(cwd)
+
+    def test_pieza_reinventada_capsula_confirm_menu(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src = _swift(tmp, "Cenit/Screens/P.swift", [
+                ".background(Capsule().fill(LiquidColor.tinta10))",           # 1 inline
+                "Capsule()",                                                    # 2 partida → hit en esta línea
+                "    .fill(LiquidColor.verdePrimario)",
+                "Capsule()   // token-exempt(dato): track de progreso",         # 4 exenta
+                "    .fill(LiquidColor.tinta10)",
+                "Capsule()",                                                    # 6 exenta por el modifier
+                "    .fill(LiquidColor.tinta10)   // token-exempt(dato): track",
+                "Capsule(style: .continuous)",                                  # 8 esquive: cuenta igual
+                "    .fill(LiquidColor.tinta10)",
+                ".confirmationDialog(\"x\", isPresented: $a) {}",              # 10
+                "Menu { Text(\"a\") }",                                       # 11
+                ".liquidMenu(items) {}",                                        # no
+                "LiquidMenu(items)",                                            # no
+            ])
+            caps = drift.check([src], ["no-capsule-a-mano"])
+            self.assertEqual([i for _p, i, _r, _s in caps], [1, 2, 8])
+            self.assertEqual([i for _p, i, _r, _s in drift.check([src], ["no-confirmation-dialog"])], [10])
+            self.assertEqual([i for _p, i, _r, _s in drift.check([src], ["no-native-menu"])], [11])
+

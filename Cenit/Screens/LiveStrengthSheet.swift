@@ -1717,20 +1717,15 @@ struct LiveStrengthSheet: View {
         return HStack(spacing: LiquidSpace.s250) {
             Text(label).font(LiquidType.caption).foregroundStyle(LiquidColor.tinta700)
                 .frame(width: 64, alignment: .leading)
-            GeometryReader { geo in
-                let w = geo.size.width
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(LiquidColor.tinta10)  // token-exempt(dato): track de progreso
-                    Capsule()
-                        .fill(neutral ? LiquidColor.tinta10 : LiquidColor.verdeCarga)
-                        .opacity(neutral || positive ? 1 : 0.75)
-                        .frame(width: max(4, w * (current / maxV)))
-                    Rectangle().fill(LiquidColor.tinta900).frame(width: 2, height: 14)
-                        .offset(x: min(w - 2, max(0, w * (prev / maxV) - 1)))
-                }
-            }
-            .frame(height: 8)
+            LiquidBarraProgreso(
+                fraccion: current / maxV,
+                tono: (neutral ? LiquidColor.tinta10 : LiquidColor.verdeCarga)
+                    .opacity(neutral || positive ? 1 : 0.75),
+                altura: LiquidSpace.s200,
+                animada: false,
+                marca: prev / maxV,
+                anchoMinimoRelleno: current > 0 ? 4 : 0)
+
             Text(delta).font(LiquidType.caption)
                 .foregroundStyle(positive ? LiquidColor.positivo : LiquidColor.tinta700)
                 .frame(width: 56, alignment: .trailing)

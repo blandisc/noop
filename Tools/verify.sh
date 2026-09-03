@@ -76,6 +76,7 @@ run_lint() {
       python3 Tools/check-design-drift.py --rules no-deprecated-metrics,no-instrumento-theme,no-weight-on-grotesk \
         --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media CenitApp CenitWidgets CenitWatch || ok=1
       python3 Tools/check-design-drift.py --rules no-iphone-tone-on-oled CenitWatch || ok=1
+      python3 Tools/check-design-drift.py --rules no-capsule-a-mano,no-confirmation-dialog,no-native-menu Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App CenitApp || ok=1
       python3 Tools/check-design-drift.py --rules token-exempt \
         --baseline Tools/design-drift-baseline.json Cenit/Screens Cenit/Onboarding Cenit/System Cenit/App Cenit/Data Cenit/LiveActivity Cenit/Media Packages/CenitDesign/Sources CenitApp || ok=1
     fi

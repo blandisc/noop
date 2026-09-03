@@ -281,16 +281,14 @@ struct IntervalTimerView: View {
     private var roundIndicators: some View {
         HStack(spacing: LiquidSpace.s100) {
             ForEach(1...max(1, rounds), id: \.self) { index in
-                Capsule()
-                    .fill(roundIndicatorFill(index))
-                    .frame(height: LiquidSpace.s150)
+                LiquidBarraProgreso(
+                    fraccion: 1,
+                    tono: roundIndicatorFill(index),
+                    pista: roundIndicatorFill(index),
+                    altura: LiquidSpace.s150,
+                    animada: false,
+                    contorno: (index > currentRound && phase != .done) ? LiquidColor.tinta10 : nil)
                     .frame(maxWidth: .infinity)
-                    .overlay {
-                        if index > currentRound && phase != .done {
-                            Capsule()
-                                .strokeBorder(LiquidColor.tinta10, lineWidth: 1)
-                        }
-                    }
             }
         }
         .accessibilityElement(children: .ignore)
@@ -334,17 +332,9 @@ struct IntervalTimerView: View {
             }
 
             // Slim total-session progress bar
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(LiquidColor.tinta10)
-                    Capsule()
-                        .fill(LiquidColor.ambar)
-                        .frame(width: geo.size.width * sessionProgress)
-                        .strandAnimation(.linear(duration: 0.9), value: sessionProgress)
-                }
-            }
-            .frame(height: LiquidSpace.s200)
+            LiquidBarraProgreso(fraccion: sessionProgress, tono: LiquidColor.ambar,
+                                altura: LiquidSpace.s200)
+
 
             HStack(spacing: .zero) {
                 overviewStat("Work", "\(workSeconds)s", LiquidColor.ambar)

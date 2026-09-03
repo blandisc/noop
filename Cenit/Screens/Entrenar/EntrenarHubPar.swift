@@ -126,21 +126,22 @@ struct EntrenarHubPar: View {
     }
 
     private func restTrack(real: Int, planS: Int) -> some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(LiquidColor.tinta900.opacity(EntrenarHubMetrics.vbarsEmptyAlfa))
-                Capsule()
-                    .fill(LiquidColor.cian.opacity(EntrenarHubMetrics.restFillAlfa))
-                    .frame(width: geo.size.width * min(1, planS > 0 ? Double(real) / Double(planS) : 1))
-                Rectangle().fill(LiquidColor.tinta900.opacity(EntrenarHubMetrics.restPlanTickAlfa))
-                    .frame(width: EntrenarHubMetrics.restPlanTickWidth)
-                    .position(x: geo.size.width - EntrenarHubMetrics.restPlanTickWidth / 2, y: geo.size.height / 2)
+        LiquidBarraProgreso(
+            fraccion: min(1, planS > 0 ? Double(real) / Double(planS) : 1),
+            tono: LiquidColor.cian.opacity(EntrenarHubMetrics.restFillAlfa),
+            pista: LiquidColor.tinta900.opacity(EntrenarHubMetrics.vbarsEmptyAlfa),
+            altura: EntrenarHubMetrics.restTrackHeight,
+            animada: false)
+            .overlay {
+                GeometryReader { geo in
+                    Rectangle().fill(LiquidColor.tinta900.opacity(EntrenarHubMetrics.restPlanTickAlfa))
+                        .frame(width: EntrenarHubMetrics.restPlanTickWidth)
+                        .position(x: geo.size.width - EntrenarHubMetrics.restPlanTickWidth / 2,
+                                  y: geo.size.height / 2)
+                }
             }
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: EntrenarHubMetrics.restTrackHeight)
-        .clipShape(Capsule())
+            .frame(maxWidth: .infinity)
+            .clipShape(Capsule())
     }
 
     private static func mmss(_ seconds: Int) -> String {

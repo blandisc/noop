@@ -91,9 +91,11 @@ struct TrainingLoadStrip: View {
             ZStack(alignment: .topLeading) {
                 HStack(spacing: LiquidSpace.s050) {
                     ForEach(LoadScale.bounds, id: \.lo) { seg in
-                        Capsule()
-                            .fill(seg.band == band ? seg.band.flag.color() : LiquidColor.tinta10)
-                            .frame(width: max(0, w * (seg.hi - seg.lo) / LoadScale.max - 2), height: 6)
+                        let tono = seg.band == band ? seg.band.flag.color() : LiquidColor.tinta10
+                        LiquidBarraProgreso(fraccion: 1, tono: tono, pista: tono,
+                                            altura: LiquidSpace.s150, animada: false)
+                            .frame(width: max(0, w * (seg.hi - seg.lo) / LoadScale.max - 2),
+                                   height: LiquidSpace.s150)
                     }
                 }
                 .frame(height: 12, alignment: .center)

@@ -594,9 +594,9 @@ struct MetricDetailView: View {
                 Rectangle().fill(LiquidColor.tinta10)
                     .frame(width: 1, height: 14)
                     .position(x: medio, y: cy)
-                Capsule()
-                    .fill(tono)
-                    .frame(width: ancho, height: 6)
+                LiquidBarraProgreso(fraccion: 1, tono: tono, pista: tono,
+                                    altura: LiquidSpace.s150, animada: false)
+                    .frame(width: ancho, height: LiquidSpace.s150)
                     .position(x: r < 0 ? medio - ancho / 2 : medio + ancho / 2, y: cy)
             }
         }

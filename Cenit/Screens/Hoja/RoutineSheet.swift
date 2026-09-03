@@ -421,7 +421,8 @@ struct RoutineSheet: View {
     private func compactBlock(_ block: ReorderBlock) -> some View {
         HStack(spacing: LiquidSpace.s250) {
             if block.isSuperset {
-                Capsule()
+                // Acento vertical de superserie (dato, no barra): a 2.5 pt el redondeo no se lee.
+                Rectangle()
                     .fill(LiquidColor.cian)
                     .frame(width: 2.5)
             }

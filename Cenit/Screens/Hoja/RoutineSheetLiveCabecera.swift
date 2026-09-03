@@ -119,19 +119,11 @@ enum HojaCabeceraSesion {
 
     /// El riel de avance (mock `.avance`): índigo, 3pt — MISMA fracción que la píldora/cabecera leen.
     static func avance(vivo: HojaSesionViva) -> some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(LiquidColor.tinta10)
-                Capsule()
-                    .fill(vivo.familyTint)
-                    .frame(width: geo.size.width * vivo.fraccionAvance)
-            }
-        }
-        .frame(height: EntrenarMetrics.progressBar)
-        .padding(.horizontal, LiquidSpace.s600)
-        .padding(.top, LiquidSpace.s250)
-        .accessibilityLabel(Text(verbatim: vivo.serieSubtitle))
+        LiquidBarraProgreso(fraccion: vivo.fraccionAvance, tono: vivo.familyTint,
+                            altura: EntrenarMetrics.progressBar)
+            .padding(.horizontal, LiquidSpace.s600)
+            .padding(.top, LiquidSpace.s250)
+            .accessibilityLabel(Text(verbatim: vivo.serieSubtitle))
     }
 
     /// B16 — sesión llena: CTA prominente «Terminar y guardar», la ÚNICA acción que queda una vez
