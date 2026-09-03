@@ -316,7 +316,13 @@ MOVES = [
 
 
 def main():
-    catalog = json.load(open(CATALOG))
+    # The catalog ships zlib-compressed (FER-923); accept both the raw and the .zlib file.
+    if os.path.exists(CATALOG):
+        catalog = json.load(open(CATALOG))
+    else:
+        import zlib
+        # NSData .zlib = raw deflate (no header): wbits -15.
+        catalog = json.loads(zlib.decompress(open(CATALOG + ".zlib", "rb").read(), -15))
     by_name = {}
     for e in catalog:
         by_name.setdefault(e["name"], e["id"])   # first wins, like the app's index

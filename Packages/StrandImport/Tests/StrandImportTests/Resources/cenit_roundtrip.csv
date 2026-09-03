@@ -2,6 +2,6 @@ date,routine,exercise,set_index,set_kind,weight_kg,reps,time_s,distance_m,rpe,re
 2024-11-28T23:36:08Z,Empuje A,Press de banca,1,warmup,40,10,,,,90,,
 2024-11-28T23:36:08Z,Empuje A,Press de banca,2,work,80,8,,,8,120,,
 2024-11-28T23:36:08Z,Empuje A,Press de banca,3,work,80,7,,,9,180,,
-2024-11-28T23:36:08Z,Empuje A,Press de banca,4,work,60,8,,,9,,drop
+2024-11-28T23:36:08Z,Empuje A,Press de banca,4,work,60,8,,,9,,,drop
 2024-11-28T23:36:08Z,Empuje A,Remo con barra,1,work,60,10,,,7.5,90,,
 2024-11-28T23:36:08Z,Empuje A,Remo con barra,2,work,60,10,,,8,0,nota de serie,amrap
