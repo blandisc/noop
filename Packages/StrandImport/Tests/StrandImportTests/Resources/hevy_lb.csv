@@ -1,0 +1,6 @@
+title,start_time,end_time,description,exercise_title,superset_id,exercise_notes,set_index,set_type,weight_lbs,reps,distance_miles,duration_seconds,rpe
+"Upper Reps","28 Mar 2025, 17:29","28 Mar 2025, 18:52","","Incline Bench Press (Barbell)",,"",0,warmup,45,10,,,
+"Upper Reps","28 Mar 2025, 17:29","28 Mar 2025, 18:52","","Incline Bench Press (Barbell)",,"",1,normal,135,8,,,8
+"Upper Reps","28 Mar 2025, 17:29","28 Mar 2025, 18:52","","Incline Bench Press (Barbell)",,"",2,normal,155,5,,,9
+"Upper Reps","28 Mar 2025, 17:29","28 Mar 2025, 18:52","","Bicep Curl (Dumbbell)",,"",0,normal,30,10,,,7.5
+"Upper Reps","28 Mar 2025, 17:29","28 Mar 2025, 18:52","","Bicep Curl (Dumbbell)",,"",1,failure,30,8,,,

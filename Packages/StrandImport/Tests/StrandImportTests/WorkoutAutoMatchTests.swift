@@ -91,17 +91,76 @@ final class WorkoutAutoMatchTests: XCTestCase {
 
     /// Trap discipline extended to autoMatch (FER-542 spirit): ambiguous / not-an-exercise names must
     /// never auto-resolve — a wrong auto-match deceives; an unmatched name costs one tap.
+    /// FER-328: bare Strong/Hevy words («Row», «Press», «Curl», «Fly») never auto-casan.
     func testTrapsDoNotAutoMatch() {
         let traps = ["press", "máquina", "cardio 30 minutos", "estiramiento", "circuito de core",
                      "movilidad de cadera", "descanso activo", "calentamiento", "enfriamiento",
                      "press 3x5", "remo 12 reps", "curl 4 series",
-                     "mi ejercicio inventado 3x8"]
+                     "mi ejercicio inventado 3x8",
+                     "Row", "Press", "Curl", "Fly", "row", "fly"]
         for trap in traps {
             if let hit = Self.reconciler.autoMatch(trap) {
                 XCTFail("trap \(trap.debugDescription) auto-matched → \(hit.name) (id \(hit.id))")
             }
         }
     }
+
+    /// FER-328 · E8: the ~100 most common Strong/Hevy export names resolve automatically ≥ 90 %.
+    func testStrongHevyTop100Resolve() {
+        let names = Self.strongHevyTop100
+        XCTAssertGreaterThanOrEqual(names.count, 100, "fixture list must stay ≥ 100 names")
+        var hit = 0
+        var missed: [String] = []
+        for name in names {
+            if Self.reconciler.autoMatch(name) != nil || Self.reconciler.match(name) != nil {
+                hit += 1
+            } else {
+                missed.append(name)
+            }
+        }
+        let rate = Double(hit) / Double(names.count)
+        XCTAssertGreaterThanOrEqual(rate, 0.90,
+            "Only \(hit)/\(names.count) (\(Int(rate * 100))%) auto-resolved. Missed:\n"
+            + missed.prefix(20).joined(separator: "\n"))
+    }
+
+    /// Common Strong / Hevy library titles (EN) plus the es-MX aliases athletes type by hand.
+    private static let strongHevyTop100: [String] = [
+        // Strong / Hevy English titles
+        "Bench Press (Barbell)", "Incline Bench Press (Barbell)", "Incline Bench Press (Dumbbell)",
+        "Bench Press (Dumbbell)", "Close Grip Bench Press", "Chest Press (Machine)",
+        "Chest Fly", "Incline Chest Fly", "Cable Crossover", "Chest Dip",
+        "Overhead Press (Barbell)", "Shoulder Press (Dumbbell)", "Arnold Press (Dumbbell)",
+        "Lateral Raise (Dumbbell)", "Front Raise (Dumbbell)", "Rear Delt Fly", "Face Pull",
+        "Upright Row (Barbell)", "Shrug (Barbell)", "Shrug (Dumbbell)",
+        "Pull Up", "Chin Up", "Lat Pulldown (Cable)", "Seated Cable Row",
+        "Bent Over Row (Barbell)", "Bent Over Row (Dumbbell)", "T Bar Row",
+        "Machine Row", "Pull Up (Weighted)",
+        "Squat (Barbell)", "Front Squat (Barbell)", "Goblet Squat", "Hack Squat",
+        "Leg Press", "Lunge (Dumbbell)", "Walking Lunge", "Bulgarian Split Squat",
+        "Romanian Deadlift (Barbell)", "Deadlift (Barbell)", "Sumo Deadlift",
+        "Good Morning", "Hip Thrust (Barbell)", "Leg Curl (Lying)", "Leg Curl (Seated)",
+        "Leg Extension", "Calf Raise (Standing)", "Calf Raise (Seated)",
+        "Bicep Curl (Barbell)", "Bicep Curl (Dumbbell)", "Hammer Curl (Dumbbell)",
+        "Preacher Curl", "EZ Bar Curl", "Cable Curl", "Wrist Curl",
+        "Triceps Pushdown", "Skullcrusher", "Overhead Triceps Extension",
+        "Triceps Kickback", "Triceps Dip", "Bench Dip",
+        "Crunch", "Cable Crunch", "Russian Twist", "Hanging Leg Raise", "Plank",
+        // es-MX / colloquial (alias table)
+        "press de banca", "press banca", "press inclinado", "press militar",
+        "elevaciones laterales", "face pull", "dominadas", "jalon al pecho",
+        "remo sentado", "remo con barra", "remo con mancuerna", "sentadilla",
+        "sentadilla con barra", "prensa de pierna", "zancadas", "peso muerto rumano",
+        "peso muerto", "hip thrust", "curl femoral", "extension de pierna",
+        "elevacion de pantorrilla de pie", "curl de biceps con barra",
+        "curl de biceps", "curl martillo", "extension de triceps en polea",
+        "press frances", "fondos", "abdominales", "abdominales en polea",
+        "bench press", "squat", "deadlift", "overhead press", "lat pulldown",
+        "barbell row", "dumbbell curl", "leg press", "romanian deadlift", "rdl",
+        "incline dumbbell press", "seated cable row", "lateral raise",
+        "triceps pushdown", "hip thrust con barra", "walking lunges",
+        "pec fly", "machine fly", "shoulder press", "chin up", "pull ups",
+    ]
 
     /// `resolve` (the silent tier: id / exact name / learned) must NOT gain auto-matching — anything
     /// the user didn't confirm goes through the visible mapping step.

@@ -336,7 +336,7 @@ public struct StrengthSession: Codable, Sendable, Identifiable, Equatable {
     /// The TRIMP-per-AU scale used to estimate this session's `strain` (E2). Persisted so a later
     /// recalibration can recompute every `.rpe` session onto one scale in a single write.
     public var trimpPerAU: Double?
-    /// Import provenance (E8): `"strong"`, `"hevy"`, `"cenit-csv"`; `nil` = logged in Cénit.
+    /// Import provenance (E8): `"strong"`, `"hevy"`, `"cenit"`; `nil` = logged in Cénit.
     public var source: String?
     /// The workout title as the source app named it (imports only); `nil` = logged in Cénit.
     public var title: String?

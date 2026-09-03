@@ -1416,4 +1416,73 @@ final class StrengthStoreTests: XCTestCase {
         XCTAssertEqual(back.first { $0.id == "legacy" }!.strain!, 8.0, accuracy: 1e-9)
         XCTAssertNil(back.first { $0.id == "legacy" }!.trimpPerAU)
     }
+
+    // MARK: - Ola 1 · E8 · CSV import batch
+
+    /// Re-importing the same deterministic ids leaves COUNT unchanged (idempotent upsert).
+    func testSaveSessionsBatchIsIdempotentById() async throws {
+        let store = try await CenitStore.inMemory()
+        let batch: [(StrengthSession, [SetEntry])] = (0..<5).map { i in
+            let id = "hevy-\(1_700_000_000 + i * 3600)"
+            let session = StrengthSession(id: id, startTs: 1_700_000_000 + i * 3600,
+                                          endTs: 1_700_000_000 + i * 3600 + 2400,
+                                          source: "hevy", title: "Sesión \(i)")
+            let sets = [
+                SetEntry(sessionId: id, exerciseId: "bench", position: 0,
+                         weightKg: 80, reps: 8, done: true, ts: session.startTs, rpe: 8),
+                SetEntry(sessionId: id, exerciseId: "bench", position: 1,
+                         weightKg: 80, reps: 7, done: true, ts: session.startTs, rpe: 9),
+            ]
+            return (session, sets)
+        }
+        try await store.saveSessions(batch)
+        let firstCount = try await store.recentSessions(limit: 100).count
+        try await store.saveSessions(batch)
+        let secondCount = try await store.recentSessions(limit: 100).count
+        XCTAssertEqual(firstCount, 5)
+        XCTAssertEqual(secondCount, 5)
+
+        let ids = batch.map(\.0.id)
+        let existing = try await store.existingSessionIds(ids + ["hevy-missing"])
+        XCTAssertEqual(existing, Set(ids))
+    }
+
+    /// 1000 synthetic sessions in one syncWrite finish under 2 s on macOS (generous ceiling).
+    func testSaveSessionsBatchUnderTwoSecondsFor1000Sessions() async throws {
+        let store = try await CenitStore.inMemory()
+        let batch: [(StrengthSession, [SetEntry])] = (0..<1000).map { i in
+            let id = "strong-\(1_600_000_000 + i)"
+            let session = StrengthSession(id: id, startTs: 1_600_000_000 + i,
+                                          source: "strong", title: "W\(i)")
+            let sets = [
+                SetEntry(sessionId: id, exerciseId: "squat", position: 0,
+                         weightKg: 100, reps: 5, done: true, ts: session.startTs),
+            ]
+            return (session, sets)
+        }
+        let start = ContinuousClock.now
+        try await store.saveSessions(batch)
+        let elapsed = ContinuousClock.now - start
+        XCTAssertLessThan(elapsed, Duration.seconds(2),
+                          "batch of 1000 took \(elapsed) — expected < 2s")
+        let count = try await store.recentSessions(limit: 2000).count
+        XCTAssertEqual(count, 1000)
+    }
+
+    /// Imported PRs keep the set's original `ts` — a 2022 record is not "new today".
+    func testImportedPRsKeepOriginalTs() async throws {
+        let store = try await CenitStore.inMemory()
+        let oldTs = 1_640_995_200  // 2022-01-01-ish
+        let id = "hevy-\(oldTs)"
+        try await store.saveSessions([(
+            StrengthSession(id: id, startTs: oldTs, source: "hevy", title: "Viejo"),
+            [SetEntry(sessionId: id, exerciseId: "deadlift", position: 0,
+                      weightKg: 180, reps: 3, done: true, ts: oldTs)]
+        )])
+        let prs = try await store.personalRecords(exerciseId: "deadlift")
+        let maxW = try XCTUnwrap(prs.first { $0.metric == .maxWeight })
+        XCTAssertEqual(maxW.ts, oldTs)
+        let recent = try await store.personalRecordCount(sinceTs: Double(oldTs + 1))
+        XCTAssertEqual(recent, 0, "a 2022 PR must not count as recent")
+    }
 }
