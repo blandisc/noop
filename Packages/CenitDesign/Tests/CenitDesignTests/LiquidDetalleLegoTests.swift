@@ -12,6 +12,10 @@ import Testing
 // TOKENS con `rgbaComponents`, no de hex copiados a mano — si alguien cambia `papelAlto` o un
 // tono de la familia, estas pruebas se enteran.
 
+// A1/FER-345: @MainActor porque resuelve colores DINÁMICOS (tonoCampo/tokens): en macOS,
+// bridgear/resolver un color dinámico fuera del hilo principal deadlockea (AppKit); Swift Testing
+// corre los @Test off-main por defecto. iOS/producción (UIColor) no sufre esto.
+@MainActor
 @Suite("Liquid · legos de la pantalla de detalle")
 struct LiquidDetalleLegoTests {
 
