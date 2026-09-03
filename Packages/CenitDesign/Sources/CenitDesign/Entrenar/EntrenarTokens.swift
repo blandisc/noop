@@ -68,10 +68,10 @@ public enum EntrenarFamily: String, Sendable, CaseIterable, Hashable {
 /// El ritmo de la sección: las alturas y los blancos táctiles que se repiten en más de una pantalla.
 /// Base 4, alineado al handoff. Lo que no está aquí vive en `CenitMetrics` (márgenes, radios, gaps).
 public enum EntrenarMetrics {
-    /// Piso seguro de contraste de lectura: lo que pasa AA en el papel cálido pasa en
-    /// `fondoAlto` (FER-316). Migrar a `LiquidColor.fondoAlto` cuando ninguna pantalla
-    /// hospedadora siga en papel.
-    public static let lienzoContraste = InstrumentoTheme.base.paper
+    /// Lienzo de referencia para oscurecer texto hasta AA. Desde FER-317 ninguna pantalla
+    /// hospedadora pinta el papel cálido Instrumento: el lienzo de «El Eje» es `fondoAlto`
+    /// (FER-307 cierra la migración que FER-316 dejó anclada al papel viejo).
+    public static let lienzoContraste = LiquidColor.fondoAlto
     /// Fila mínima y blanco táctil (HIG). El dibujo puede ser menor; el toque nunca.
     public static let row: CGFloat = LiquidControl.hitTarget      // 44
     /// Fila de la tabla de series: más alta que una fila de lista porque es un campo de captura.

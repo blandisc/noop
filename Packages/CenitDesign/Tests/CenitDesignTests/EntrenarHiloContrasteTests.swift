@@ -13,8 +13,8 @@ final class EntrenarHiloContrasteTests: XCTestCase {
 
     func testLaPalabraCumpleAAsobreElPapel() {
         for tone in tonos {
-            let ratio = OKLab.contrastRatio(tone.word(theme), theme.paper)
-            XCTAssertGreaterThanOrEqual(ratio, 4.5, "\(tone) da \(ratio):1 sobre el papel")
+            let ratio = OKLab.contrastRatio(tone.word(theme), EntrenarMetrics.lienzoContraste)
+            XCTAssertGreaterThanOrEqual(ratio, 4.5, "\(tone) da \(ratio):1 sobre el lienzo")
         }
     }
 
@@ -25,7 +25,7 @@ final class EntrenarHiloContrasteTests: XCTestCase {
         var oscurecioAlMenosUno = false
         for tone in [EntrenarHilo.Tone.clear, .caution, .ease] {
             let hue = tone.hue(theme)
-            guard OKLab.contrastRatio(hue, theme.paper) < 4.5 else { continue }
+            guard OKLab.contrastRatio(hue, EntrenarMetrics.lienzoContraste) < 4.5 else { continue }
             oscurecioAlMenosUno = true
             XCTAssertLessThan(OKLab.relativeLuminance(tone.word(theme)),
                               OKLab.relativeLuminance(hue),
@@ -39,9 +39,9 @@ final class EntrenarHiloContrasteTests: XCTestCase {
     /// se rompió al dibujar la pastilla; que quede clavada aquí y no solo en la revisión de nadie.
     func testElHueSaturadoNuncaPintaLaPalabra() {
         for tone in [EntrenarHilo.Tone.clear, .caution, .ease] {
-            let deHue = OKLab.contrastRatio(tone.hue(theme), theme.paper)
+            let deHue = OKLab.contrastRatio(tone.hue(theme), EntrenarMetrics.lienzoContraste)
             guard deHue < 4.5 else { continue }
-            XCTAssertGreaterThan(OKLab.contrastRatio(tone.word(theme), theme.paper), deHue,
+            XCTAssertGreaterThan(OKLab.contrastRatio(tone.word(theme), EntrenarMetrics.lienzoContraste), deHue,
                                  "\(tone): la palabra está pintada con el hue saturado")
         }
     }

@@ -79,7 +79,7 @@ final class EntrenarFamilyTinteUnaFuenteTests: XCTestCase {
     /// puede tocar texto. Las cuatro familias tienen que cumplir AA en su tono de lectura.
     func testElTonoDeLecturaDeCadaFamiliaCumpleAA() {
         for f in EntrenarFamily.allCases {
-            XCTAssertGreaterThanOrEqual(OKLab.contrastRatio(f.reading(theme), theme.paper), 4.5, "\(f)")
+            XCTAssertGreaterThanOrEqual(OKLab.contrastRatio(f.reading(theme), EntrenarMetrics.lienzoContraste), 4.5, "\(f)")
         }
     }
 }
@@ -109,23 +109,23 @@ final class EntrenarFamilyDotTests: XCTestCase {
 }
 
 /// FER-86 — la barra de la sesión pinta tres cifras a 17 pt, por debajo del piso de 24 en que el
-/// ADN permite el hue saturado. El pulso venía en `dataHeart` crudo (4.24:1 sobre el papel) con un
+/// ADN permite el hue saturado. El pulso venía en `dataHeart` crudo (4.24:1 sobre el lienzo) con un
 /// comentario que se justificaba diciendo «el numeral es grande». No lo es.
 final class SessionStatsBarContrasteTests: XCTestCase {
 
     private let theme = InstrumentoTheme.base
 
-    /// El hue crudo del pulso REPRUEBA. Si algún día pasara, esta prueba avisa que el ancla se
-    /// movió y que el tono de lectura quizá ya no haga falta — no que se pueda usar el crudo.
-    func testElHueCrudoDelPulsoNoAlcanzaElPisoDeTexto() {
-        XCTAssertLessThan(OKLab.contrastRatio(theme.dataHeart, theme.paper), 4.5,
-                          "dataHeart ya cumple AA: revisar si la barra todavía necesita oscurecerlo")
+    /// FER-307 movió el ancla al lienzo Liquid (`fondoAlto`): ahí el hue crudo del pulso ya roza AA
+    /// (≈4.75:1), así que la prueba de «el crudo reprueba» dejó de tener sentido. Lo que sigue
+    /// importando: el tono de LECTURA cumple AA con holgura sobre el lienzo real.
+    func testElTonoDeLecturaDelPulsoCumpleAAsobreElLienzo() {
+        XCTAssertGreaterThanOrEqual(OKLab.contrastRatio(EntrenarFamily.pull.reading(theme), EntrenarMetrics.lienzoContraste), 4.5)
     }
 
     /// Y su tono de lectura sí, que es el que la barra usa.
     func testElTonoDeLecturaDelPulsoCumpleAA() {
         let lectura = theme.onPaper(theme.dataHeart)
-        XCTAssertGreaterThanOrEqual(OKLab.contrastRatio(lectura, theme.paper), 4.5)
+        XCTAssertGreaterThanOrEqual(OKLab.contrastRatio(lectura, EntrenarMetrics.lienzoContraste), 4.5)
         XCTAssertLessThan(OKLab.relativeLuminance(lectura), OKLab.relativeLuminance(theme.dataHeart),
                           "el tono de lectura tiene que ser más oscuro que su hue")
     }
@@ -134,7 +134,7 @@ final class SessionStatsBarContrasteTests: XCTestCase {
     /// que comprobar, porque son las que se leen a media serie.
     func testLasCifrasDeTintaDeLaBarraCumplenAA() {
         for (nombre, c) in [("ink", theme.ink), ("inkSecondary", theme.inkSecondary)] {
-            XCTAssertGreaterThanOrEqual(OKLab.contrastRatio(c, theme.paper), 4.5, nombre)
+            XCTAssertGreaterThanOrEqual(OKLab.contrastRatio(c, EntrenarMetrics.lienzoContraste), 4.5, nombre)
         }
     }
 }
