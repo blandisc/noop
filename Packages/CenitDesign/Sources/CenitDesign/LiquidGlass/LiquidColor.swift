@@ -19,9 +19,9 @@ public enum LiquidColor {
     /// Texto principal, iconos activos.
     public static let tinta900 = LiquidTheme.dynamic(light: Color(hex: "#221D16"), dark: Color(hex: "#ECE9E0"))
     /// Texto secundario, kickers de fecha.
-    public static let tinta700 = Color(hex: "#5C5648")
+    public static let tinta700 = LiquidTheme.dynamic(light: Color(hex: "#5C5648"), dark: Color(hex: "#A6A298"))
     /// Labels, captions neutros, iconos inactivos.
-    public static let tinta500 = Color(hex: "#6F6857")
+    public static let tinta500 = LiquidTheme.dynamic(light: Color(hex: "#6F6857"), dark: Color(hex: "#8B8370"))
     /// Tracks de anillos, divisores de lista — tinta/900 al 10 %.
     public static let tinta10 = tinta900.opacity(0.10)
     /// Segmentos de barra inactivos, chips de día vacíos — tinta/900 al 7 %.
@@ -30,9 +30,9 @@ public enum LiquidColor {
     // MARK: Papel (fondos)
 
     /// Inicio del degradado de pantalla.
-    public static let papelAlto = Color(hex: "#F8F6EF")
+    public static let papelAlto = LiquidTheme.dynamic(light: Color(hex: "#F8F6EF"), dark: Color(hex: "#151310"))
     /// Fin del degradado de pantalla.
-    public static let papelBajo = Color(hex: "#F0EDE4")
+    public static let papelBajo = LiquidTheme.dynamic(light: Color(hex: "#F0EDE4"), dark: Color(hex: "#100E0C"))
     /// Relleno del vidrio/lente (dock) — #FBF9F2 al 50 %.
     public static let papelDock = Color(hex: "#FBF9F2").opacity(0.38)
     /// Tarjeta de HOJA — blanco puro (mock canónico `.card{background:#FFFFFF}`): las
@@ -50,44 +50,44 @@ public enum LiquidColor {
     /// plasta monocroma del veredicto y la aurora fina de los filos respiren sobre un suelo
     /// casi blanco — el tercio del héroe es «cielo», el tablero «instrumento».
     public static let fondoAlto = LiquidTheme.dynamic(light: Color(hex: "#FEFEFD"), dark: Color(hex: "#0C0B0A"))
-    public static let fondoBajo = Color(hex: "#F3F4F2")
+    public static let fondoBajo = LiquidTheme.dynamic(light: Color(hex: "#F3F4F2"), dark: Color(hex: "#000000"))
     public static let fondoGradient = LinearGradient(
         colors: [fondoAlto, fondoBajo], startPoint: .top, endPoint: .bottom)
 
     /// FER-51 · El papel plano del modo Matriz («medios tonos»): tinta sobre papel cálido,
     /// sin tarjetas — un solo lienzo para las gráficas de partículas. Plano a propósito
     /// (el dither necesita un suelo uniforme, no un degradado).
-    public static let papelMatriz = Color(hex: "#F6F4EE")
+    public static let papelMatriz = LiquidTheme.dynamic(light: Color(hex: "#F6F4EE"), dark: Color(hex: "#141210"))
 
     // MARK: Verde (única voz de marca)
 
     /// CTA, énfasis, palabra destacada del hero, pulsos.
-    public static let verdePrimario = Color(hex: "#0C8F62")
+    public static let verdePrimario = LiquidTheme.dynamic(light: Color(hex: "#0C8F62"), dark: Color(hex: "#2EB27D"))
     /// Deltas positivos, texto quiet.
-    public static let verdeProfundo = Color(hex: "#00774B")
+    public static let verdeProfundo = LiquidTheme.dynamic(light: Color(hex: "#00774B"), dark: Color(hex: "#2EB27D"))
     /// SOLO halos/auroras de fondo (nunca texto).
     public static let verdeAurora = Color(hex: "#2EB27D")
     /// El verde claro de los orbes drift del fondo de Hoy (rgba(80,175,115,…) en el ensamble).
-    public static let verdeOrbe = Color(hex: "#50AF73")
+    public static let verdeOrbe = LiquidTheme.dynamic(light: Color(hex: "#50AF73"), dark: Color(hex: "#5FC08A"))
     /// Tope del degradado del botón primary (#12A06E → verde/primario).
-    public static let verdeBotonAlto = Color(hex: "#12A06E")
+    public static let verdeBotonAlto = LiquidTheme.dynamic(light: Color(hex: "#12A06E"), dark: Color(hex: "#43C08E"))
     /// Texto sobre el botón primary (papel cálido, no blanco puro).
     public static let tintaSobreVerde = Color(hex: "#F4F1E8")
 
     // MARK: Tonos de dato (asignación 1:1, no intercambiables)
 
     /// Sueño.
-    public static let indigo = Color(hex: "#5D5A9E")
+    public static let indigo = LiquidTheme.dynamic(light: Color(hex: "#5D5A9E"), dark: Color(hex: "#8F8CD6"))
     /// HRV.
-    public static let cian = Color(hex: "#147C8C")
+    public static let cian = LiquidTheme.dynamic(light: Color(hex: "#147C8C"), dark: Color(hex: "#3FB2C4"))
     /// FC en reposo.
     public static let rosa = LiquidTheme.dynamic(light: Color(hex: "#B85068"), dark: Color(hex: "#BD546C"))
     /// Esfuerzo, temperatura de piel.
-    public static let ambar = Color(hex: "#C4631F")
+    public static let ambar = LiquidTheme.dynamic(light: Color(hex: "#C4631F"), dark: Color(hex: "#E08A45"))
     /// Pasos.
-    public static let teal = Color(hex: "#4C8998")
+    public static let teal = LiquidTheme.dynamic(light: Color(hex: "#4C8998"), dark: Color(hex: "#6FB2C2"))
     /// Respiración.
-    public static let azul = Color(hex: "#3B6FA0")
+    public static let azul = LiquidTheme.dynamic(light: Color(hex: "#3B6FA0"), dark: Color(hex: "#6FA0D0"))
     /// Amanecer / halos cálidos.
     public static let oro = Color(hex: "#E8C24B")
     /// El ámbar CLARO del clima de atención (decisión del dueño /inject: un solo ámbar,
@@ -98,12 +98,12 @@ public enum LiquidColor {
     /// alerta no pueden compartir hue. Oscurecido desde el #B08A3E del prototipo para
     /// contraste ≥ 4.5:1 como texto sobre `papelMatriz` (verificado en MatrizContrasteTests);
     /// las partículas/puntos pueden usar la familia clara, el TEXTO usa este.
-    public static let doradoTemp = Color(hex: "#8A6A2B")
+    public static let doradoTemp = LiquidTheme.dynamic(light: Color(hex: "#8A6A2B"), dark: Color(hex: "#C9A24A"))
     /// Identidad de CARGA. Espejo de `InstrumentoTheme.dataOxygen` — un verde de bosque
     /// que NO es `verdePrimario`: esa es la única voz de marca (CTA y veredicto) y también
     /// la zona «bajo» del medidor de estrés, así que una métrica no puede vestirla sin
     /// decir dos cosas con el mismo hex (auditoría de los sellos, ago-2026).
-    public static let verdeCarga = Color(hex: "#3F7A5E")
+    public static let verdeCarga = LiquidTheme.dynamic(light: Color(hex: "#3F7A5E"), dark: Color(hex: "#5FA582"))
 
     /// FER-60 · Heatmap de ESTRÉS (contexto, NO vota): una rampa de calor de tres pasos
     /// — nivel bajo = la tinta neutra de la sección (`tinta500`, sin calor); medio y alto
@@ -112,8 +112,8 @@ public enum LiquidColor {
     /// el estrés es acompañante, no puede vestir el color de la alarma que decide (mismo
     /// principio que `doradoTemp`). Nunca verde (ese es el veredicto). Oscurecidos para
     /// contraste ≥ 4.5:1 como texto sobre `papelMatriz` (verificado en MatrizContrasteTests).
-    public static let estresMedio = Color(hex: "#A9752F")
-    public static let estresAlto = Color(hex: "#9C5B2E")
+    public static let estresMedio = LiquidTheme.dynamic(light: Color(hex: "#A9752F"), dark: Color(hex: "#D19A55"))
+    public static let estresAlto = LiquidTheme.dynamic(light: Color(hex: "#9C5B2E"), dark: Color(hex: "#CC8050"))
 
     // MARK: Partículas del Ecosistema (FER-10)
     //
@@ -180,19 +180,19 @@ public enum LiquidColor {
     }
     /// El rojo CLARO del clima de alerta (par simétrico de `ambarClaro` — el ambiente de
     /// alerta usaba `rosa`, que es el tono 1:1 de FC en reposo, no un clima).
-    public static let rojoClaro = Color(hex: "#E06C56")
+    public static let rojoClaro = LiquidTheme.dynamic(light: Color(hex: "#E06C56"), dark: Color(hex: "#E8836F"))
 
     // MARK: Semánticos
 
     /// Deltas a favor.
-    public static let positivo = Color(hex: "#00774B")
+    public static let positivo = LiquidTheme.dynamic(light: Color(hex: "#00774B"), dark: Color(hex: "#2EB27D"))
     /// Fuera de rango.
-    public static let atencion = Color(hex: "#C4631F")
+    public static let atencion = LiquidTheme.dynamic(light: Color(hex: "#C4631F"), dark: Color(hex: "#E08A45"))
     /// Deltas en contra.
-    public static let negativo = Color(hex: "#B3402A")
+    public static let negativo = LiquidTheme.dynamic(light: Color(hex: "#B3402A"), dark: Color(hex: "#CD4A42"))
     /// La voz de «atención» PARA TEXTO CHICO: el ámbar #C4631F ronda 3.5:1 sobre vidrio
     /// (falla AA); esta variante oscurecida pasa 4.5:1 (pasada UI /inject 2026-07-22).
-    public static let atencionTexto = Color(hex: "#8F4712")
+    public static let atencionTexto = LiquidTheme.dynamic(light: Color(hex: "#8F4712"), dark: Color(hex: "#E29A50"))
 
     // MARK: Blancos de vidrio (alfas fijos de #FFFFFF — §4.1)
 
