@@ -67,6 +67,15 @@ jobs:
         run: swift build
         working-directory: Packages/${{ matrix.package }}
 
+      # CenitDesign se embebe en Watch e iOS: un `swift build` en macOS no ve `UIKeyboardType` sin
+      # `!os(watchOS)` ni las ambigüedades que solo aparecen con UIKit en scope (FER-197, FER-339).
+      - name: Cross-compile CenitDesign (watchOS + iOS simulator)
+        if: matrix.package == 'CenitDesign'
+        working-directory: Packages/CenitDesign
+        run: |
+          swift build --triple arm64-apple-watchos10.0-simulator --sdk "$(xcodebuild -version -sdk watchsimulator Path)" --scratch-path .build/watch
+          swift build --triple arm64-apple-ios17.0-simulator --sdk "$(xcodebuild -version -sdk iphonesimulator Path)" --scratch-path .build/ios
+
       - name: Test ${{ matrix.package }}
         run: swift test
         working-directory: Packages/${{ matrix.package }}
