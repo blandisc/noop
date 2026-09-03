@@ -41737,13 +41737,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The plan's unit isn't supported: it must be kg or lb."
-    "The plan's unit isn't supported: it must be kg or lb.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The plan's unit isn't supported: it must be kg or lb."
           }
         },
         "es" : {
