@@ -1,0 +1,607 @@
+{
+  "count_ours": 873,
+  "count_bryl": 302,
+  "matched": 100,
+  "hits": [
+    [
+      "Bench Press",
+      "Smith Machine Bench Press",
+      "Smith_Machine_Bench_Press",
+      "strip"
+    ],
+    [
+      "Incline Bench Press",
+      "Smith Machine Incline Bench Press",
+      "Smith_Machine_Incline_Bench_Press",
+      "strip"
+    ],
+    [
+      "Incline Dumbbell Press",
+      "Incline Dumbbell Press",
+      "Incline_Dumbbell_Press",
+      "exact"
+    ],
+    [
+      "Dumbbell Bench Press",
+      "Dumbbell Bench Press",
+      "Dumbbell_Bench_Press",
+      "exact"
+    ],
+    [
+      "Machine Chest Press",
+      "Cable Chest Press",
+      "Cable_Chest_Press",
+      "strip"
+    ],
+    [
+      "Arnold Press",
+      "Kettlebell Arnold Press",
+      "Kettlebell_Arnold_Press",
+      "strip"
+    ],
+    [
+      "Rear Delt Fly",
+      "Cable Rear Delt Fly",
+      "Cable_Rear_Delt_Fly",
+      "strip"
+    ],
+    [
+      "Face Pull",
+      "Face Pull",
+      "Face_Pull",
+      "exact"
+    ],
+    [
+      "Upright Row",
+      "Smith Machine Upright Row",
+      "Smith_Machine_Upright_Row",
+      "strip"
+    ],
+    [
+      "Deadlift",
+      "Trap Bar Deadlift",
+      "Trap_Bar_Deadlift",
+      "strip"
+    ],
+    [
+      "Romanian Deadlift",
+      "Romanian Deadlift",
+      "Romanian_Deadlift",
+      "exact"
+    ],
+    [
+      "Barbell Row",
+      "Sled Row",
+      "Sled_Row",
+      "strip"
+    ],
+    [
+      "Dumbbell Bent Over Row",
+      "Smith Machine Bent Over Row",
+      "Smith_Machine_Bent_Over_Row",
+      "strip"
+    ],
+    [
+      "One-Arm Dumbbell Row",
+      "One-Arm Dumbbell Row",
+      "One-Arm_Dumbbell_Row",
+      "exact"
+    ],
+    [
+      "Machine Row",
+      "Sled Row",
+      "Sled_Row",
+      "strip"
+    ],
+    [
+      "Straight-Arm Pulldown",
+      "Straight-Arm Pulldown",
+      "Straight-Arm_Pulldown",
+      "exact"
+    ],
+    [
+      "Assisted Pull-up",
+      "Band Assisted Pull-Up",
+      "Band_Assisted_Pull-Up",
+      "strip"
+    ],
+    [
+      "Chin-up",
+      "Chin-Up",
+      "Chin-Up",
+      "exact"
+    ],
+    [
+      "Barbell Shrug",
+      "Barbell Shrug",
+      "Barbell_Shrug",
+      "exact"
+    ],
+    [
+      "Squat",
+      "Weighted Squat",
+      "Weighted_Squat",
+      "strip"
+    ],
+    [
+      "Hack Squat",
+      "Hack Squat",
+      "Hack_Squat",
+      "exact"
+    ],
+    [
+      "Leg Press",
+      "Leg Press",
+      "Leg_Press",
+      "exact"
+    ],
+    [
+      "Walking Lunge",
+      "Bodyweight Walking Lunge",
+      "Bodyweight_Walking_Lunge",
+      "strip"
+    ],
+    [
+      "Seated Leg Curl",
+      "Seated Leg Curl",
+      "Seated_Leg_Curl",
+      "exact"
+    ],
+    [
+      "Hip Thrust",
+      "Barbell Hip Thrust",
+      "Barbell_Hip_Thrust",
+      "strip"
+    ],
+    [
+      "Glute Bridge",
+      "Barbell Glute Bridge",
+      "Barbell_Glute_Bridge",
+      "strip"
+    ],
+    [
+      "Good Morning",
+      "Good Morning",
+      "Good_Morning",
+      "exact"
+    ],
+    [
+      "Seated Calf Raise",
+      "Seated Calf Raise",
+      "Seated_Calf_Raise",
+      "exact"
+    ],
+    [
+      "Bicep Curl",
+      "Machine Bicep Curl",
+      "Machine_Bicep_Curl",
+      "strip"
+    ],
+    [
+      "Preacher Curl",
+      "Preacher Curl",
+      "Preacher_Curl",
+      "exact"
+    ],
+    [
+      "Cable Curl",
+      "EZ-Bar Curl",
+      "EZ-Bar_Curl",
+      "strip"
+    ],
+    [
+      "Wrist Curl",
+      "Cable Wrist Curl",
+      "Cable_Wrist_Curl",
+      "strip"
+    ],
+    [
+      "Skull Crusher",
+      "Band Skull Crusher",
+      "Band_Skull_Crusher",
+      "strip"
+    ],
+    [
+      "Close-Grip Bench Press",
+      "Smith Machine Close-Grip Bench Press",
+      "Smith_Machine_Close-Grip_Bench_Press",
+      "strip"
+    ],
+    [
+      "Plank",
+      "Plank",
+      "Plank",
+      "exact"
+    ],
+    [
+      "Hanging Leg Raise",
+      "Hanging Leg Raise",
+      "Hanging_Leg_Raise",
+      "exact"
+    ],
+    [
+      "Cable Crunch",
+      "Cable Crunch",
+      "Cable_Crunch",
+      "exact"
+    ],
+    [
+      "Smith Machine Bench Press",
+      "Smith Machine Bench Press",
+      "Smith_Machine_Bench_Press",
+      "exact"
+    ],
+    [
+      "Machine Shoulder Press",
+      "Dumbbell Shoulder Press",
+      "Dumbbell_Shoulder_Press",
+      "strip"
+    ],
+    [
+      "Standing Dumbbell Press",
+      "Standing Dumbbell Press",
+      "Standing_Dumbbell_Press",
+      "exact"
+    ],
+    [
+      "Push Press",
+      "Push Press",
+      "Push_Press",
+      "exact"
+    ],
+    [
+      "Cable Rear Delt Fly",
+      "Cable Rear Delt Fly",
+      "Cable_Rear_Delt_Fly",
+      "exact"
+    ],
+    [
+      "Inverted Row",
+      "Inverted Row",
+      "Inverted_Row",
+      "exact"
+    ],
+    [
+      "Wide-Grip Lat Pulldown",
+      "Wide-Grip Lat Pulldown",
+      "Wide-Grip_Lat_Pulldown",
+      "exact"
+    ],
+    [
+      "Weighted Chin-up",
+      "Chin-Up",
+      "Chin-Up",
+      "strip"
+    ],
+    [
+      "Dumbbell Shrug",
+      "Dumbbell Shrug",
+      "Dumbbell_Shrug",
+      "exact"
+    ],
+    [
+      "Goblet Squat",
+      "Goblet Squat",
+      "Goblet_Squat",
+      "exact"
+    ],
+    [
+      "Smith Machine Squat",
+      "Smith Machine Squat",
+      "Smith_Machine_Squat",
+      "exact"
+    ],
+    [
+      "Sumo Deadlift",
+      "Sumo Deadlift",
+      "Sumo_Deadlift",
+      "exact"
+    ],
+    [
+      "Trap Bar Deadlift",
+      "Trap Bar Deadlift",
+      "Trap_Bar_Deadlift",
+      "exact"
+    ],
+    [
+      "Single-Leg Glute Bridge",
+      "Single Leg Glute Bridge",
+      "Single_Leg_Glute_Bridge",
+      "exact"
+    ],
+    [
+      "Barbell Glute Bridge",
+      "Barbell Glute Bridge",
+      "Barbell_Glute_Bridge",
+      "exact"
+    ],
+    [
+      "Dumbbell Glute Bridge",
+      "Barbell Glute Bridge",
+      "Barbell_Glute_Bridge",
+      "strip"
+    ],
+    [
+      "Dumbbell Hip Thrust",
+      "Barbell Hip Thrust",
+      "Barbell_Hip_Thrust",
+      "strip"
+    ],
+    [
+      "Smith Machine Hip Thrust",
+      "Barbell Hip Thrust",
+      "Barbell_Hip_Thrust",
+      "strip"
+    ],
+    [
+      "Smith Machine Romanian Deadlift",
+      "Romanian Deadlift",
+      "Romanian_Deadlift",
+      "strip"
+    ],
+    [
+      "Dumbbell Romanian Deadlift",
+      "Romanian Deadlift",
+      "Romanian_Deadlift",
+      "strip"
+    ],
+    [
+      "Kettlebell Romanian Deadlift",
+      "Romanian Deadlift",
+      "Romanian_Deadlift",
+      "strip"
+    ],
+    [
+      "Cable Pull-Through",
+      "Pull Through",
+      "Pull_Through",
+      "strip"
+    ],
+    [
+      "Machine Glute Kickback",
+      "Glute Kickback",
+      "Glute_Kickback",
+      "strip"
+    ],
+    [
+      "Dumbbell Sumo Deadlift",
+      "Sumo Deadlift",
+      "Sumo_Deadlift",
+      "strip"
+    ],
+    [
+      "Landmine Squat",
+      "Weighted Squat",
+      "Weighted_Squat",
+      "strip"
+    ],
+    [
+      "Landmine Romanian Deadlift",
+      "Romanian Deadlift",
+      "Romanian_Deadlift",
+      "strip"
+    ],
+    [
+      "Reverse Hyperextension",
+      "Reverse Hyperextension",
+      "Reverse_Hyperextension",
+      "exact"
+    ],
+    [
+      "Jump Squat",
+      "Weighted Jump Squat",
+      "Weighted_Jump_Squat",
+      "strip"
+    ],
+    [
+      "Incline Dumbbell Curl",
+      "Incline Dumbbell Curl",
+      "Incline_Dumbbell_Curl",
+      "exact"
+    ],
+    [
+      "EZ-Bar Curl",
+      "EZ-Bar Curl",
+      "EZ-Bar_Curl",
+      "exact"
+    ],
+    [
+      "Spider Curl",
+      "Spider Curl",
+      "Spider_Curl",
+      "exact"
+    ],
+    [
+      "Drag Curl",
+      "Drag Curl",
+      "Drag_Curl",
+      "exact"
+    ],
+    [
+      "Bench Dip",
+      "Weighted Bench Dip",
+      "Weighted_Bench_Dip",
+      "strip"
+    ],
+    [
+      "Crunch",
+      "Cable Crunch",
+      "Cable_Crunch",
+      "strip"
+    ],
+    [
+      "Reverse Crunch",
+      "Reverse Crunch",
+      "Reverse_Crunch",
+      "exact"
+    ],
+    [
+      "Russian Twist",
+      "Russian Twist",
+      "Russian_Twist",
+      "exact"
+    ],
+    [
+      "Dead Bug",
+      "Dead Bug",
+      "Dead_Bug",
+      "exact"
+    ],
+    [
+      "Pallof Press",
+      "Pallof Press",
+      "Pallof_Press",
+      "exact"
+    ],
+    [
+      "Weighted Crunch",
+      "Cable Crunch",
+      "Cable_Crunch",
+      "strip"
+    ],
+    [
+      "Weighted Russian Twist",
+      "Russian Twist",
+      "Russian_Twist",
+      "strip"
+    ],
+    [
+      "Dumbbell Side Bend",
+      "Dumbbell Side Bend",
+      "Dumbbell_Side_Bend",
+      "exact"
+    ],
+    [
+      "Incline Push-up",
+      "Incline Push-Up",
+      "Incline_Push-Up",
+      "exact"
+    ],
+    [
+      "Decline Push-up",
+      "Decline Push-Up",
+      "Decline_Push-Up",
+      "exact"
+    ],
+    [
+      "Superman",
+      "Superman",
+      "Superman",
+      "exact"
+    ],
+    [
+      "Scapular Pull-up",
+      "Scapular Pull-Up",
+      "Scapular_Pull-Up",
+      "exact"
+    ],
+    [
+      "Bodyweight Squat",
+      "Bodyweight Squat",
+      "Bodyweight_Squat",
+      "exact"
+    ],
+    [
+      "Pistol Squat",
+      "Smith Machine Pistol Squat",
+      "Smith_Machine_Pistol_Squat",
+      "strip"
+    ],
+    [
+      "Sissy Squat",
+      "Weighted Sissy Squat",
+      "Weighted_Sissy_Squat",
+      "strip"
+    ],
+    [
+      "Calf Raise",
+      "Smith Machine Calf Raise",
+      "Smith_Machine_Calf_Raise",
+      "strip"
+    ],
+    [
+      "Banded Glute Bridge",
+      "Barbell Glute Bridge",
+      "Barbell_Glute_Bridge",
+      "strip"
+    ],
+    [
+      "Banded Hip Thrust",
+      "Barbell Hip Thrust",
+      "Barbell_Hip_Thrust",
+      "strip"
+    ],
+    [
+      "Banded Monster Walk",
+      "Monster Walk",
+      "Monster_Walk",
+      "strip"
+    ],
+    [
+      "Banded Squat",
+      "Weighted Squat",
+      "Weighted_Squat",
+      "strip"
+    ],
+    [
+      "Band Pull-Apart",
+      "Band Pull Apart",
+      "Band_Pull_Apart",
+      "exact"
+    ],
+    [
+      "Banded Face Pull",
+      "Face Pull",
+      "Face_Pull",
+      "strip"
+    ],
+    [
+      "Banded Row",
+      "Sled Row",
+      "Sled_Row",
+      "strip"
+    ],
+    [
+      "Banded Pallof Press",
+      "Pallof Press",
+      "Pallof_Press",
+      "strip"
+    ],
+    [
+      "Banded Dead Bug",
+      "Dead Bug",
+      "Dead_Bug",
+      "strip"
+    ],
+    [
+      "Inchworm",
+      "Inchworm",
+      "Inchworm",
+      "exact"
+    ],
+    [
+      "Arm Circles",
+      "Arm Circles",
+      "Arm_Circles",
+      "exact"
+    ],
+    [
+      "World's Greatest Stretch",
+      "World's Greatest Stretch",
+      "Worlds_Greatest_Stretch",
+      "exact"
+    ],
+    [
+      "Child's Pose",
+      "Child's Pose",
+      "Childs_Pose",
+      "exact"
+    ],
+    [
+      "Hamstring Stretch",
+      "Hamstring Stretch",
+      "Hamstring_Stretch",
+      "exact"
+    ]
+  ]
+}
