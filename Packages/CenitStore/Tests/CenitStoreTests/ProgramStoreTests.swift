@@ -150,4 +150,72 @@ final class ProgramStoreTests: XCTestCase {
         XCTAssertEqual(Set(all), [10_000, 20_000])
         XCTAssertEqual(recent, [20_000])
     }
+
+    // MARK: - installProgram (ola 1 · E11): el escritor atómico
+
+    func testInstallProgramWritesRoutinesScheduleAndProgramInOneCall() async throws {
+        let store = try await CenitStore.inMemory()
+        guard let template = ProgramTemplate.byID("full-body-3") else {
+            return XCTFail("el motor full-body-3 debe existir en ProgramTemplate.all")
+        }
+        let materialized = template.materialize(now: 1_000, names: ["full-body": "Cuerpo completo"],
+                                                 programName: "Cuerpo completo · 3 días")
+
+        try await store.installProgram(materialized)
+
+        let routines = try await store.routines()
+        XCTAssertEqual(Set(routines.map(\.id)), Set(materialized.routines.map(\.id)))
+
+        let schedule = try await store.routineSchedule()
+        XCTAssertEqual(Set(schedule.map(\.weekday)), Set(materialized.schedule.map(\.weekday)))
+        XCTAssertEqual(schedule.count, materialized.schedule.count)
+
+        let program = try await store.program()
+        XCTAssertEqual(program, materialized.program)
+
+        // Cada rutina trae sus ejercicios — no solo la fila `routine` sin su contenido.
+        for r in materialized.routines {
+            let exs = try await store.routineExercises(routineId: r.id)
+            XCTAssertFalse(exs.isEmpty, "la rutina \(r.id) debe traer sus ejercicios en la misma instalación")
+        }
+    }
+
+    /// `full-body-3` agenda la MISMA plantilla lunes/miércoles/viernes — `materialize` produce UNA
+    /// rutina y TRES filas de calendario, nunca tres copias (arq-B.md §⑤).
+    func testInstallProgramReusesOneRoutineAcrossRepeatedWeekdays() async throws {
+        let store = try await CenitStore.inMemory()
+        let template = ProgramTemplate.byID("full-body-3")!
+        let materialized = template.materialize(now: 0, names: [:], programName: "P")
+
+        try await store.installProgram(materialized)
+
+        let routines = try await store.routines()
+        XCTAssertEqual(routines.count, 1, "una sola rutina de cuerpo completo, agendada 3 veces")
+        let schedule = try await store.routineSchedule()
+        XCTAssertEqual(schedule.count, 3)
+        XCTAssertTrue(schedule.allSatisfy { $0.routineId == routines[0].id })
+    }
+
+    /// Instalar un programa nuevo sobre uno viejo es un upsert — la fila `program` sigue siendo UNA
+    /// sola (mismo contrato que `setProgram`), y las rutinas del programa anterior no se borran (el
+    /// alcance de `installProgram` es escribir lo nuevo, no limpiar lo viejo — eso lo decide la
+    /// pantalla, igual que hoy decide cuándo copiar una plantilla).
+    func testInstallProgramOverAnExistingProgramUpsertsTheSingletonRow() async throws {
+        let store = try await CenitStore.inMemory()
+        let first = ProgramTemplate.byID("upper-lower-4")!.materialize(now: 0, names: [:], programName: "A")
+        try await store.installProgram(first)
+
+        let second = ProgramTemplate.byID("ppl-6")!.materialize(now: 500, names: [:], programName: "B")
+        try await store.installProgram(second)
+
+        // Mismo contrato que `setProgram`: el upsert no toca `createdTs` (se preserva el del primer
+        // alta) — todo lo demás sí se reemplaza por el segundo programa.
+        let program = try await store.program()
+        var expected = second.program
+        expected.createdTs = first.program.createdTs
+        XCTAssertEqual(program, expected)
+        let routines = try await store.routines()
+        XCTAssertTrue(Set(first.routines.map(\.id)).isSubset(of: Set(routines.map(\.id))))
+        XCTAssertTrue(Set(second.routines.map(\.id)).isSubset(of: Set(routines.map(\.id))))
+    }
 }

@@ -335,6 +335,11 @@ final class StrengthSessionModel: ObservableObject {
     /// `deload` convierte la sesión en frontera para `ProgressionMath` y la saca de `lastWorkSets`.
     var programWeek: Int?
     var deload: Bool?
+    /// «· la semana ligera llega en la N» (ola 1 · E11, P8) — el mismo `ProgramServing.Context` que ya
+    /// sirvió los slots, resumido a un texto para el chip de estancamiento. Efímero a propósito: NO
+    /// viaja en el snapshot ni se persiste (a diferencia de `programWeek`/`deload`) — es una pista de
+    /// UI que se recalcula la próxima vez que se arranca, nunca un dato de la sesión guardada.
+    var lightWeekHint: String?
     /// Whether the receipt's 0→value count-up already played (FER-715). A plain flag (not `@Published`, so
     /// setting it never re-renders): the receipt view sets it after animating, so the numerals count up only
     /// the first time the summary appears (at save), never when the session is re-opened. Dies with the session.

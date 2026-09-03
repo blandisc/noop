@@ -25,10 +25,14 @@ struct StarterTemplatesSheet: View {
 
     /// Called after a template is copied (or a group is applied), so the hub reloads.
     var onAdded: () async -> Void
-    /// Optional: fired after a successful group apply (toast / dismiss parent), never on single-add.
+    /// Optional: fired after a successful group apply OR program install (toast / dismiss parent, ola 1 · E11), never on a single routine add.
     var onApplied: (() -> Void)?
     /// nil = catálogo completo; non-nil = solo ese grupo (FER-251).
     var grupo: StarterTemplate.Group?
+    /// Ola 1 · E11 (FER-334): modo programa — la lista muestra los 4 motores (`ProgramTemplate.all`)
+    /// en vez del catálogo de plantillas sueltas, y elegir uno abre los 3 pasos (semanas · semana
+    /// ligera · al terminar) en vez del preview de ejercicios. Excluyente con `grupo`.
+    var programa: Bool = false
 
     /// nil = the grouped list; non-nil = that template's preview.
     @State private var selected: StarterTemplate?
@@ -37,13 +41,27 @@ struct StarterTemplatesSheet: View {
     /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
     @ObserveInjection private var inject
 
+    // MARK: - Modo programa (ola 1 · E11)
+
+    /// nil = la lista de motores; non-nil = los 3 pasos de ESE motor.
+    @State private var motorElegido: ProgramTemplate?
+    @State private var programaWeeks = 5
+    @State private var programaDeload: DeloadRule = .volumeOnly
+    @State private var programaEndMode: ProgramEndMode = .repeat
+    /// El programa YA activo, si lo hay — se checa antes de instalar uno nuevo (aviso del dueño:
+    /// «Ya tienes un programa en la semana N de M. Empezar otro lo termina.»).
+    @State private var programaActivo: ProgramServing.Context?
+    @State private var confirmReemplazoPrograma = false
+
     /// Catálogo completo (`grupo == nil`) o acotado a un programa. En modo grupo abre SIEMPRE con
     /// la primera rutina en preview (ronda 2 del gate FER-251: el CTA «Usar este plan» nunca es
     /// alcanzable sin ejercicios visibles — el preview aprobado por el dueño llega abierto).
     init(grupo: StarterTemplate.Group? = nil,
+         programa: Bool = false,
          onApplied: (() -> Void)? = nil,
          onAdded: @escaping () async -> Void) {
         self.grupo = grupo
+        self.programa = programa
         self.onApplied = onApplied
         self.onAdded = onAdded
         if let grupo {
@@ -56,7 +74,13 @@ struct StarterTemplatesSheet: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: LiquidSpace.s700) {
-                if let t = selected {
+                if programa {
+                    if let motor = motorElegido {
+                        programaSetup(motor)
+                    } else {
+                        programaEngineList
+                    }
+                } else if let t = selected {
                     preview(t)
                 } else {
                     listContent
@@ -77,6 +101,15 @@ struct StarterTemplatesSheet: View {
         .entrenarHojaFondo(tono: .neutro)
         // FER-969 / FER-280·2c: write failure → `.saveErrorToast` (misma receta, un solo dialecto).
         .saveErrorToast(isPresented: $saveError)
+        .task { if programa { programaActivo = await repo.programServing() } }
+        .alert("You already have a program", isPresented: $confirmReemplazoPrograma) {
+            Button("Keep mine", role: .cancel) { }
+            Button("Start the new one", role: .destructive) {
+                if let motor = motorElegido { instalarPrograma(motor) }
+            }
+        } message: {
+            Text(programaActivoAviso)
+        }
         .enableInjection()
     }
 
@@ -242,6 +275,190 @@ struct StarterTemplatesSheet: View {
         .padding(.horizontal, LiquidSpace.s400).padding(.vertical, LiquidSpace.s300)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text("\(name), \(schemeText(slot)), rest \(restAccessibility(slot.restSeconds))"))
+    }
+
+    // MARK: - Modo programa: lista de motores (ola 1 · E11)
+
+    private var programaEngineList: some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s700) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+                Text("Templates").liquidKicker().foregroundStyle(LiquidColor.tinta500)
+                Text("Program · 4 to 6 weeks")
+                    .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
+                    .foregroundStyle(LiquidColor.tinta900)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("Pick an engine. Everything after is a value you can change later.")
+                    .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta700)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, LiquidSpace.s050)
+            }
+            EntrenarModulo(tono: .neutro, intensidad: LiquidTonoMetrics.intensidadDefault, insets: EdgeInsets()) {
+                VStack(alignment: .leading, spacing: .zero) {
+                    ForEach(ProgramTemplate.all) { motor in
+                        programaEngineRow(motor)
+                        if motor.id != ProgramTemplate.all.last?.id { divider }
+                    }
+                }
+            }
+        }
+    }
+
+    private func programaEngineRow(_ motor: ProgramTemplate) -> some View {
+        Button {
+            programaWeeks = motor.weeks
+            programaDeload = motor.deloadRule
+            programaEndMode = motor.endMode
+            withAnimation(LiquidMotion.toque) { motorElegido = motor }
+        } label: {
+            HStack(spacing: LiquidSpace.s300) {
+                VStack(alignment: .leading, spacing: LiquidSpace.s025) {
+                    Text(programaEngineTitle(motor.id)).font(LiquidType.tituloGemela).foregroundStyle(LiquidColor.tinta900)
+                    Text(programaEngineSubtitle(motor)).font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: LiquidSpace.s200)
+                CenitIcon.disclosure.image
+                    .font(LiquidType.iconSF(size: 15)).foregroundStyle(LiquidColor.tinta500)
+            }
+            .padding(.horizontal, LiquidSpace.s400).frame(minHeight: LiquidSpace.s1400).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint(Text("Set this program up"))
+    }
+
+    // MARK: - Modo programa: los 3 pasos (semanas · semana ligera · al terminar)
+
+    private func programaSetup(_ motor: ProgramTemplate) -> some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s700) {
+            Button { withAnimation(LiquidMotion.toque) { motorElegido = nil } } label: {
+                HStack(spacing: LiquidSpace.s100) {
+                    CenitIcon.back.image.font(LiquidType.iconSF(size: 15))
+                    Text("Templates").font(LiquidType.cuerpo)
+                }
+                .foregroundStyle(LiquidColor.tinta700)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("Back to templates"))
+
+            VStack(alignment: .leading, spacing: LiquidSpace.s075) {
+                Text("New program").liquidKicker().foregroundStyle(LiquidColor.tinta500)
+                Text(programaEngineTitle(motor.id))
+                    .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
+                    .foregroundStyle(LiquidColor.tinta900)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(programaEngineSubtitle(motor))
+                    .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta700)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            VStack(alignment: .leading, spacing: LiquidSpace.s450) {
+                VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+                    Text("Weeks").font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+                    // Regla de selectores (§5): etiqueta de un solo número → segmentado, nunca lista.
+                    SegmentedPillControl(Array(Program.appWeeks), selection: $programaWeeks) { "\($0)" }
+                }
+                VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+                    Text("Light week").font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+                    LiquidListaPalomita(deloadOpciones, seleccion: $programaDeload)
+                }
+                VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+                    Text("When it ends").font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+                    LiquidListaPalomita(endModeOpciones, seleccion: $programaEndMode)
+                }
+                Text("The last week is active recovery: you'll see it marked from today.")
+                    .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            CenitCTAButton("Start program") { startProgram(motor) }
+                .disabled(saving)
+        }
+    }
+
+    private var deloadOpciones: [LiquidOpcionPalomita<DeloadRule>] {
+        [
+            LiquidOpcionPalomita(id: .volumeOnly, titulo: String(localized: "Fewer sets"),
+                                 subtitulo: String(localized: "half, same weight")),
+            LiquidOpcionPalomita(id: .volumeAndLoad, titulo: String(localized: "Fewer sets and less weight"),
+                                 subtitulo: String(localized: "half, and −7.5%")),
+            LiquidOpcionPalomita(id: .none, titulo: String(localized: "No light week"))
+        ]
+    }
+
+    private var endModeOpciones: [LiquidOpcionPalomita<ProgramEndMode>] {
+        [
+            LiquidOpcionPalomita(id: .repeat, titulo: String(localized: "Repeat the cycle"),
+                                 subtitulo: String(localized: "back to week 1 with your weights")),
+            LiquidOpcionPalomita(id: .single, titulo: String(localized: "One cycle"),
+                                 subtitulo: String(localized: "back to your normal week"))
+        ]
+    }
+
+    /// «Ya tienes un programa en la semana 3 de 5. Empezar otro lo termina.»
+    private var programaActivoAviso: String {
+        guard let ctx = programaActivo else { return "" }
+        return String(localized: "You already have a program on week \(ctx.position.week) of \(ctx.program.weeks). Starting another one ends it.")
+    }
+
+    /// «Empezar programa»: si ya hay uno activo, primero confirma (el alert de `body`); si no, instala.
+    private func startProgram(_ motor: ProgramTemplate) {
+        guard !saving else { return }
+        if programaActivo != nil {
+            confirmReemplazoPrograma = true
+            return
+        }
+        instalarPrograma(motor)
+    }
+
+    /// Materializa el motor con las 3 decisiones del usuario (no las del motor: D-Q4 las trata como
+    /// punto de partida editable) y lo instala en UNA transacción (`installProgram`, ola 1 · E11).
+    private func instalarPrograma(_ motor: ProgramTemplate) {
+        saving = true
+        let now = Int(Date().timeIntervalSince1970)
+        let ids = Set(motor.weekdays.values)
+        let names = Dictionary(uniqueKeysWithValues: ids.map { ($0, String(localized: templateName($0))) })
+        let elegido = ProgramTemplate(id: motor.id, weekdays: motor.weekdays, weeks: programaWeeks,
+                                      deloadRule: programaDeload, endMode: programaEndMode,
+                                      barbellProgressionSessions: motor.barbellProgressionSessions,
+                                      otherProgressionSessions: motor.otherProgressionSessions,
+                                      progressionUseRPE: motor.progressionUseRPE)
+        let materialized = elegido.materialize(now: now, names: names,
+                                               programName: programaEngineTitle(motor.id))
+        Task {
+            do {
+                try await repo.installProgram(materialized)
+                await onAdded()
+                // «Programa listo · semana 1 de N» (ola 1 · E11): mismo canal que `applyTemplateGroup`
+                // ya usa para avisar tras cerrar — el toast vive en quien presenta la hoja, porque la
+                // hoja misma está a punto de desaparecer con `dismiss()`.
+                onApplied?()
+                dismiss()
+            } catch {
+                saving = false
+                saveError = true
+            }
+        }
+    }
+
+    private func programaEngineTitle(_ id: String) -> String {
+        switch id {
+        case "linear-novice":   return String(localized: "Linear, to start")
+        case "full-body-3":     return String(localized: "Full body · 3 days")
+        case "ppl-6":           return String(localized: "Push · Pull · Legs · 6 days · intermediate")
+        case "upper-lower-4":   return String(localized: "Upper / Lower · 4 days")
+        default:                return id
+        }
+    }
+
+    /// «N rutinas · 5 semanas · semana ligera en la 5» — o sin el último tramo cuando el motor no
+    /// trae ligera (el lineal de novato: D-Q4, la descarga reactiva ya lo cuida).
+    private func programaEngineSubtitle(_ motor: ProgramTemplate) -> String {
+        let routineCount = Set(motor.weekdays.values).count
+        var parts = [routineCountText(routineCount), String(localized: "\(motor.weeks) weeks")]
+        if motor.deloadRule != .none {
+            parts.append(String(localized: "light week in week \(motor.weeks)"))
+        }
+        return parts.joined(separator: " · ")
     }
 
     // MARK: - Add (copy → save → reload → dismiss)

@@ -22,6 +22,25 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 ## Unreleased
 
 - Diseño (FER-358 · loop 6): `LiquidBarraProgreso` con marcas mudas dentro de la pieza y `.pastillaSolida` en vez de `.clipShape(Capsule())` a mano; Dynamic Type (`@ScaledMetric`) en detalle/edición de workout, ejercicio y progresión; `.white`/velo a tokens `LiquidColor`; comentario de etapas de sueño honesto.
+
+### Ola 1 de Entrenar · pantallas de programa (FER-334)
+- El motor de programas de FER-329 ya tiene dónde prenderse: «Programa · 4 a 6 semanas» en Tu Plan
+  (junto a Plantillas e Importar) abre los 4 motores de fábrica y, en tres pasos, arma semanas ·
+  semana ligera · al terminar el ciclo antes de crear tus rutinas y tu calendario en un solo paso.
+- Si ya tienes una semana armada, «Convertir en programa ›» le pone las mismas tres decisiones a la
+  semana que ya usas, sin motor ni rutinas nuevas.
+- Con un programa activo, Tu Plan muestra la semana en curso y una tira con las semanas hecha /
+  hoy / futura / ligera; «···» ofrece cambiar «al terminar» o terminar el programa (tus rutinas y tu
+  calendario quedan intactos, solo se va el conteo). La línea distingue «Ciclo 2 · semana 1» al
+  repetir el ciclo y «Semana 3 · la semana pasada quedó en blanco» cuando el contador no avanzó por
+  eso — nunca «Semana 3 de 5» a secas cuando algo fuera de lo normal pasó.
+- En la semana ligera, el héroe de Entrenar cambia el «Hoy · tu sesión» por «Semana ligera · N de M»
+  y, cuando no hay subida que ofrecer, explica la ligera en el mismo lugar donde iría la subida. En la
+  sesión, la fila activa de cada serie marca «· ligera» junto a la última vez, y el chip de
+  estancamiento avisa «la semana ligera llega en la N» cuando aplica.
+- El prompt de importación ya enseña `semanas`, `semana_ligera`, `al_terminar` y `dia` — la IA los
+  llena si tu plan los tiene; un archivo sin ellos importa exactamente igual que antes.
+
 - Diseño (FER-342 · loop 5): tipografía de hoja en Interval Timer; `LiquidAviso` / `SegmentedPillControl` en vez de `Capsule()` a mano; tokens `LiquidColor` por `.white`; se borra `TodayBanner`; `LiquidCampoTexto` en import; `liquidTarjetaSeccion` en ShareCard; comentarios Instrumento alineados al código Liquid.
 ### Ola 1 de Entrenar · esfuerzo al cerrar (FER-330)
 ### ES
@@ -69,8 +88,7 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
   completo 3 días, push/pull/legs 6 días, torso/pierna 4 días), y «al terminar el ciclo» puedes
   repetirlo con los pesos ganados o dejar que el programa se termine solo. Terminar un programa borra
   solo el programa: tus rutinas y tu calendario quedan intactos. **Todo esto es el motor**: la pantalla
-  para prender un programa y elegir sus opciones llega con FER-334; hasta entonces no hay dónde
-  activarlo.
+  para prender un programa y elegir sus opciones se agrega en FER-334, arriba.
 - El formato de importación desde tu IA aprende `semanas`, `semana_ligera`, `al_terminar` y el `dia` de
   cada rutina. Un archivo que trae semanas distintas entre sí no falla: importa la primera y te lo dice.
 

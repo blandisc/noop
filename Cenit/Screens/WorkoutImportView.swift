@@ -51,6 +51,10 @@ struct WorkoutImportView: View {
     @State private var creationTarget: MappingName? // name being created → drives the create-exercise sheet (FER-995)
     @State private var createdCount = 0
     @State private var celebrate = false   // done-screen pop-in (respects Reduce Motion)
+    /// Ola 1 · E11: cuando el archivo trae `semanas`, el toggle de confirmación decide si además de
+    /// las rutinas se instala el programa (calendario + fila `program`). Encendido por default — el
+    /// archivo lo pidió; apagarlo importa SOLO las rutinas, como hacía la app antes de E11.
+    @State private var installAsProgram = true
     /// M4 (decisión Fer): cerrar con el mapeo/confirmación a medias pide confirmación — antes el
     /// swipe-down tiraba todo el trabajo sin avisar.
     @State private var confirmDiscard = false
@@ -311,6 +315,10 @@ struct WorkoutImportView: View {
                 }
             }
 
+            if program.weeks != nil {
+                programToggleSection(program)
+            }
+
             HStack(spacing: LiquidSpace.s300) {
                 Spacer(minLength: 0)
                 fixLink
@@ -319,6 +327,41 @@ struct WorkoutImportView: View {
                 }
             }
         }
+    }
+
+    /// Ola 1 · E11: el archivo trajo `semanas` — el toggle decide si además de las rutinas se instala
+    /// el programa (calendario + fila `program`); apagado, `save()` solo crea las rutinas, como hacía
+    /// la app antes de esta ola. El aviso de `weeksDiffer` vive aquí, no en la lista de rutinas: es
+    /// sobre el PLAN completo, no sobre una rutina en particular.
+    private func programToggleSection(_ program: WorkoutProgram) -> some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+            Toggle(isOn: $installAsProgram) {
+                VStack(alignment: .leading, spacing: LiquidSpace.s025) {
+                    Text(programToggleTitle(program))
+                        .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+                    if let subtitle = programToggleSubtitle(program) {
+                        Text(subtitle).font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
+                    }
+                }
+            }
+            .tint(LiquidColor.verdePrimario)
+            .frame(minHeight: EntrenarMetrics.row)
+
+            if program.warnings.contains(.weeksDiffer) {
+                Text("This plan changes between weeks; Cénit will use week 1 for all of them and the last as the light week.")
+                    .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private func programToggleTitle(_ program: WorkoutProgram) -> String {
+        String(localized: "Turn it into a \(program.weeks ?? Program.appWeeks.lowerBound)-week program")
+    }
+
+    private func programToggleSubtitle(_ program: WorkoutProgram) -> String? {
+        guard program.deloadRule != .none, let weeks = program.weeks else { return nil }
+        return String(localized: "light week in week \(weeks)")
     }
 
     private var fixLink: some View {
@@ -564,6 +607,7 @@ struct WorkoutImportView: View {
             let p = try importer.parse(data)
             program = p
             parseError = nil
+            installAsProgram = true
             let r = WorkoutExerciseReconciler(known: catalog, learned: learnedAliases,
                                               aliases: ExerciseAliasTable.bundled)
             reconciler = r
@@ -601,8 +645,13 @@ struct WorkoutImportView: View {
         let now = Int(Date().timeIntervalSince1970)
         let omittedSnapshot = omitted
         let resolutionSnapshot = resolution
+        let installProgramSnapshot = installAsProgram
         Task {
             var created = 0
+            // Ola 1 · E11: id de rutina creada por índice del plan — la entrada que
+            // `assignedWeekdays()` necesita para agendar SOLO las rutinas que de verdad se escribieron
+            // (una rutina sin ejercicios resueltos se salta arriba y no debe reclamar un día).
+            var createdRoutineIds: [Int: String] = [:]
             for (rIndex, routine) in program.routines.enumerated() {
                 let routineId = UUID().uuidString
                 var slots: [RoutineExercise] = []
@@ -625,6 +674,7 @@ struct WorkoutImportView: View {
                 do {
                     try await repo.saveRoutine(r, exercises: slots)
                     created += 1
+                    createdRoutineIds[rIndex] = routineId
                 } catch {
                     // Stay on confirm; don't advance to .done or learn aliases for a half-write.
                     saveError = true
@@ -640,6 +690,27 @@ struct WorkoutImportView: View {
                 } catch {
                     saveError = true
                 }
+            }
+            // Ola 1 · E11 (FER-334, fix QA D1): agenda el calendario y arma el programa SOLO cuando
+            // el usuario de verdad pidió instalar un programa — el mismo gate `installProgramSnapshot`
+            // que ya protegía la fila `program`. Antes de este fix, `assignedWeekdays()` se llamaba
+            // SIEMPRE que hubiera rutinas creadas: un archivo `noop.workout.v1` viejo (sin `semanas` ni
+            // `dia`) o el toggle apagado auto-asignaban días LIBRES a rutinas sin `dia` y pisaban el
+            // calendario semanal del usuario — un import nunca tocaba `routineSchedule` antes de esta
+            // ola. Con el toggle apagado o un archivo sin `semanas`, `save()` solo crea las rutinas,
+            // como siempre hizo. Best-effort (`try?`, como `applyTemplateGroup`): un día sin agendar o
+            // un programa que no cuajó no deben tirar las rutinas que SÍ se guardaron.
+            if !createdRoutineIds.isEmpty, let weeks = program.weeks, installProgramSnapshot,
+               let store = await repo.storeHandle() {
+                let weekdays = program.assignedWeekdays()
+                for (rIndex, routineId) in createdRoutineIds {
+                    guard rIndex < weekdays.count, let weekday = weekdays[rIndex] else { continue }
+                    try? await store.setRoutineSchedule(weekday: weekday, routineId: routineId)
+                }
+                let p = Program(name: program.name.isEmpty ? String(localized: "Program") : program.name,
+                                weeks: weeks, startTs: now, deloadRule: program.deloadRule,
+                                endMode: program.endMode, createdTs: now)
+                try? await store.setProgram(p)
             }
             createdCount = created
             phase = .done

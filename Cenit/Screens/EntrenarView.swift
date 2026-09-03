@@ -375,19 +375,42 @@ private struct EntrenarLanding: View {
             // por NOMBRE (`region(name:)`) es un paso de más que además puede fallar si dos rutinas
             // comparten nombre. Mismo respaldo `.push` que el resto de la pantalla.
             tono: (routineCategory[r.id]?.family ?? .push).tono,
+            kicker: heroKicker,
             routineName: r.name,
             meta: sesionMetaTexto(r.id),
             exerciseNames: todaySlotsExerciseNames,
+            // Ola 1 · E5: la píldora del héroe (verde «Hoy subes» + ritmo, o ámbar «Hoy mantienes»).
             raiseLine: heroPillLine,
-            // Ola 1 · E5: ámbar «Hoy mantienes» SOLO cuando no hay ninguna subida que mostrar —
-            // ver `atLimitHeldToday`.
             raiseTono: raisesToday.isEmpty ? .ambar : .verde,
+            // Ola 1 · E11: en semana ligera sin subida, el slot explica la ligera (vidrio cian). En una
+            // semana ligera `heroPillLine`→`mantieneText` es nil (el ritmo no propone nada), así que no
+            // colisionan: el componente muestra la línea de ligera.
+            lightWeekLine: raisesToday.isEmpty ? heroLightWeekLine : nil,
             onOpenRaise: { openRoutine(r.id) },
             onStart: { startToday() },
             otraFormaAbierta: otraFormaAbierta,
             onToggleOtraForma: { otraFormaAbierta.toggle() },
             pliegue: { otraFormaPliegue }
         )
+    }
+
+    /// «Hoy · tu sesión», o «Semana ligera · N de M» en la última semana de un programa — el ÚNICO
+    /// cambio de kicker que D-Q10 autoriza (sin estado nuevo del héroe: mismo `todayServing` que ya
+    /// sembraba los slots recortados).
+    private var heroKicker: Text {
+        guard let serving = todayServing, serving.isLight else { return Text("Today · your session") }
+        return Text("Light week · \(serving.position.week) of \(serving.program.weeks)")
+    }
+
+    /// El slot de `raiseLine` cuando no hay subida que ofrecer (semana ligera: `evaluate` no propone
+    /// nada esa semana) — la explicación fija del artefacto aprobado, nunca reinterpretada. Ola 1 ·
+    /// E11 (P7): si además la semana pasada quedó en blanco, lo dice primero — sigue siendo el MISMO
+    /// slot y el MISMO estado (D-Q10), solo el texto se enriquece.
+    private var heroLightWeekLine: Text? {
+        guard let serving = todayServing, serving.isLight else { return nil }
+        let explicacion = Text("Half the sets, the same weight. Same gym, less wear. Next week you start the cycle with the weight you earned.")
+        guard serving.lastWeekBlank else { return explicacion }
+        return Text("Last week was blank, so this is still the light week.") + Text(verbatim: " ") + explicacion
     }
 
     /// «6 ejercicios · 18 series · ~50 min» en texto plano — el mismo dato que `sesionMetrics(_:)`
@@ -801,7 +824,8 @@ private struct EntrenarLanding: View {
         // que ya recortó los slots si tocaba ligera.
         model.startStrengthSession(routineId: r.id, routineName: r.name, slots: todaySlots,
                                    programWeek: todayServing.flatMap(\.stampWeek),
-                                   deload: todayServing.flatMap(\.stampDeload))
+                                   deload: todayServing.flatMap(\.stampDeload),
+                                   lightWeekHint: ProgramServing.stalledHint(context: todayServing))
     }
 
 

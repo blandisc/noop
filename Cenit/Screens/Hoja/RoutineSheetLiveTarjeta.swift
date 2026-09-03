@@ -131,7 +131,7 @@ struct HojaTarjetaEjercicioSesion: View {
             Text(verbatim: "↓").foregroundStyle(LiquidColor.tinta700)
             switch display {
             case .propose(let fromKg, let toKg):
-                Text(String(localized: "\(ProgressionMath.deloadStallThreshold) sessions unmoved · proposes \(vivo.plateNumber(vivo.displayWeight(toKg))) \(vivo.weightUnit())"))
+                Text(deloadProposeText(toKg))
                     .font(LiquidType.captionFuerte).foregroundStyle(LiquidColor.tinta900)
                 Spacer(minLength: LiquidSpace.s150)
                 Button { vivo.applyDeload(ei: ei, toKg: toKg) } label: {
@@ -145,7 +145,7 @@ struct HojaTarjetaEjercicioSesion: View {
                 }
                 .buttonStyle(.plain)
             case .warnOnly(let sessions):
-                Text(String(localized: "\(sessions) sessions unmoved · goal not met"))
+                Text(deloadWarnOnlyText(sessions))
                     .font(LiquidType.captionFuerte).foregroundStyle(LiquidColor.tinta700)
                 Spacer(minLength: LiquidSpace.s150)
                 Button { vivo.dismissDeload(ei: ei) } label: {
@@ -157,6 +157,21 @@ struct HojaTarjetaEjercicioSesion: View {
         }
         .padding(.horizontal, LiquidSpace.s250).padding(.vertical, LiquidSpace.s150)
         .accessibilityElement(children: .combine)
+    }
+
+    /// Ola 1 · E11 (P8): «· la semana ligera llega en la N» — el mismo `lightWeekHint` que se calculó
+    /// UNA vez al arrancar (`EntrenarView`/`RoutineSheetLogic`, desde el `serving` que ya tenían),
+    /// nunca una segunda consulta al store desde dentro de la sesión viva.
+    private func deloadProposeText(_ toKg: Double) -> String {
+        let base = String(localized: "\(ProgressionMath.deloadStallThreshold) sessions unmoved · proposes \(vivo.plateNumber(vivo.displayWeight(toKg))) \(vivo.weightUnit())")
+        guard let hint = vivo.session.lightWeekHint else { return base }
+        return base + " " + hint
+    }
+
+    private func deloadWarnOnlyText(_ sessions: Int) -> String {
+        let base = String(localized: "\(sessions) sessions unmoved · goal not met")
+        guard let hint = vivo.session.lightWeekHint else { return base }
+        return base + " " + hint
     }
 
     private var tabla: some View {
@@ -266,7 +281,7 @@ struct HojaTarjetaEjercicioSesion: View {
             conSubida: set.kind == .work && run.proposedRaise?.waiting == false,
             reps: repsText,
             q: marca == .hecha ? set.rpe.map(LiveStrengthSheet.qLabel(fromRPE:)) : nil,
-            ant: marca == .activa ? vivo.antPlayhead(run) : nil,
+            ant: marca == .activa ? antPlayheadTexto(run) : nil,   // E11: sufijo «· ligera»
             esPrimera: esPrimera,
             tipoEtiqueta: tipoEtiqueta,
             tipoDetalle: tipoDetalle
@@ -363,6 +378,16 @@ struct HojaTarjetaEjercicioSesion: View {
                 }
             }
         }
+    }
+
+    /// Ola 1 · E11: el playhead de la fila activa lleva «· ligera» cuando ESTA sesión se sirvió en
+    /// semana ligera (`strengthSession.deload`, ola 1 · E10) — «la última vez» sigue siendo la receta
+    /// completa; el sufijo dice por qué hoy se ve distinta, sin tocar `antPlayhead` (el formato base
+    /// sigue siendo de `RoutineSheetLiveLogic`, un solo dueño).
+    private func antPlayheadTexto(_ run: StrengthSessionModel.ExerciseRun) -> String? {
+        guard let base = vivo.antPlayhead(run) else { return nil }
+        guard vivo.session.deload == true else { return base }
+        return base + " · " + String(localized: "light week")
     }
 
     /// B12 (FER-169): el cronómetro compacto de la fila ACTIVA de tiempo/distancia (mapa: nombre ·
