@@ -31,6 +31,9 @@ public enum HRCoverage {
 
     /// Covered fraction of `elapsedSeconds` in [0, 1]. Fewer than 2 samples or a non-positive
     /// elapsed time → 0 (nothing is covered), never a divide-by-zero.
+    /// Known approximation: the pulse is NOT scored while a session is paused, so a pause shorter than
+    /// `maxPlausibleGapS` shows up here as one covered gap while `elapsedSeconds` excludes it — the
+    /// fraction can be inflated by at most one gap per pause (Grok E2 H1; accepted, documented).
     public static func fraction(_ samples: [HRSample], elapsedSeconds: Int) -> Double {
         guard elapsedSeconds > 0, samples.count >= 2 else { return 0 }
         let ts = samples.map(\.ts).sorted()

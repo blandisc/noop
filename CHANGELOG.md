@@ -22,6 +22,7 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 ## Unreleased
 
 - Diseño (FER-339): una pieza por rol en el catálogo (toast de error de guardado, pastilla de estado, selector de periodo, campo de texto `LiquidCampoTexto`, aviso Liquid; sin `NoteStrip`; toolbar de Ajustes al `fondoAlto`).
+
 ### Ola 1 de Entrenar · ritmo «según reps en reserva» (FER-326)
 - La regla de subida gana un ritmo: en un ejercicio con el interruptor encendido, terminar la sesión con
   reps de sobra (esfuerzo 8 o menos) adelanta la subida a una sola sesión; llegar al límite (9,5 o más)
@@ -35,7 +36,9 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 ### Ola 1 de Entrenar · la carga sin reloj (FER-325)
 - Una sesión de fuerza sin reloj ya cuenta. Antes, un día en el que entrenaste sin pulso se leía como
   descanso — un cero — y tiraba tu carga hacia abajo; ahora los minutos y el esfuerzo de la sesión se
-  convierten a la misma escala 0–21 y entran a Carga y al ACWR, etiquetados como estimados.
+  convierten a la misma escala 0–21 y entran a Carga y al ACWR, etiquetados como estimados. El
+  esfuerzo lo respondes tú al cerrar la sesión: esa pregunta llega con FER-330 y, hasta entonces, la
+  carga sigue saliendo del pulso (o queda sin estimar).
 - Si entrenaste y no hay con qué estimar la carga, el día se queda **sin dato** en vez de contarse como
   descanso: no sabemos cuánto, pero sabemos que no descansaste.
 - El pulso ya no cuenta como «medido» solo por durar: hace falta que cubra al menos el 80 % de la
