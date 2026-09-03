@@ -252,4 +252,44 @@ final class StrengthCSVImportTests: XCTestCase {
         ])
         XCTAssertTrue(far.possibleDuplicates.isEmpty)
     }
+
+    // MARK: - parse(data:) BOM / encoding (E9 · QA D3)
+
+    func testParseDataUTF8BOM() throws {
+        let body = try fixture("hevy_kg")
+        var bytes = Data([0xEF, 0xBB, 0xBF])
+        bytes.append(Data(body.utf8))
+        let history = try StrengthCSVImporter.parse(data: bytes)
+        XCTAssertFalse(history.sessions.isEmpty)
+        XCTAssertEqual(history.sessions.first?.source, "hevy")
+    }
+
+    func testParseDataUTF16LEWithBOM() throws {
+        let body = try fixture("hevy_kg")
+        var bytes = Data([0xFF, 0xFE])
+        for u in body.utf16 {
+            var le = u.littleEndian
+            withUnsafeBytes(of: &le) { bytes.append(contentsOf: $0) }
+        }
+        let history = try StrengthCSVImporter.parse(data: bytes)
+        XCTAssertFalse(history.sessions.isEmpty)
+    }
+
+    func testParseDataUTF16BEWithBOM() throws {
+        let body = try fixture("strong_current")
+        var bytes = Data([0xFE, 0xFF])
+        for u in body.utf16 {
+            var be = u.bigEndian
+            withUnsafeBytes(of: &be) { bytes.append(contentsOf: $0) }
+        }
+        let history = try StrengthCSVImporter.parse(data: bytes, weightUnit: .kg)
+        XCTAssertFalse(history.sessions.isEmpty)
+        XCTAssertEqual(history.sessions.first?.source, "strong")
+    }
+
+    func testStrongMaxWeightRawOnLegacy() throws {
+        let text = try fixture("strong_legacy")
+        let maxRaw = try XCTUnwrap(StrengthCSVImporter.strongMaxWeightRaw(text: text))
+        XCTAssertGreaterThan(maxRaw, 0)
+    }
 }

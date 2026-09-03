@@ -158,6 +158,38 @@ public enum StrengthCSVImporter {
         return try parse(text: normalized, dialect: dialect, weightUnit: weightUnit)
     }
 
+    /// Decode raw file bytes (UTF-8 / UTF-16 LE/BE with or without BOM) then parse. QA D3 / E9.
+    public static func parse(data: Data, dialect: Dialect? = nil,
+                             weightUnit: WorkoutWeightUnit? = nil) throws -> ImportedStrengthHistory {
+        let text = try decodeCSVData(data)
+        if let dialect {
+            return try parse(text: text, dialect: dialect, weightUnit: weightUnit)
+        }
+        return try parse(text: text, weightUnit: weightUnit)
+    }
+
+    /// Highest numeric value in Strong's `Weight` column before unit conversion — drives the
+    /// «315 → 143 kg» hint when the file omits the unit and the UI must ask (E9).
+    public static func strongMaxWeightRaw(text: String) -> Double? {
+        let normalized = normalizeText(text)
+        let rows = CSV.parse(normalized)
+        guard let header = rows.first else { return nil }
+        let cols = header.map { normalizeColumnName($0) }
+        guard isStrong(Set(cols)) else { return nil }
+        // Prefer an explicit unit column name; legacy Strong uses plain `Weight`.
+        let weightKeys = ["weight (kg)", "weight (lbs)", "weight (lb)", "weight"]
+        guard let wi = cols.firstIndex(where: { weightKeys.contains($0) }) else { return nil }
+        var maxV: Double?
+        for row in rows.dropFirst() {
+            guard wi < row.count else { continue }
+            let raw = row[wi].trimmingCharacters(in: .whitespacesAndNewlines)
+                .replacingOccurrences(of: ",", with: ".")
+            guard let v = Double(raw), v > 0 else { continue }
+            maxV = max(maxV ?? v, v)
+        }
+        return maxV
+    }
+
     // MARK: - Duplicates (pure)
 
     /// Annotate cross-origin overlaps within ±`duplicateWindowSeconds`. Exact id matches are NOT
@@ -639,6 +671,35 @@ private extension StrengthCSVImporter {
         guard let s else { return nil }
         let t = s.trimmingCharacters(in: .whitespacesAndNewlines)
         return t.isEmpty ? nil : t
+    }
+
+    /// Decode CSV file bytes: UTF-8 BOM, UTF-16 LE/BE BOM, then plain UTF-8 / UTF-16 fallbacks (E9).
+    static func decodeCSVData(_ data: Data) throws -> String {
+        if data.isEmpty { throw ImportError.emptyInput }
+        // UTF-8 BOM EF BB BF — strip then decode the rest as UTF-8.
+        if data.count >= 3, data[0] == 0xEF, data[1] == 0xBB, data[2] == 0xBF {
+            guard let s = String(data: data.dropFirst(3), encoding: .utf8) else {
+                throw ImportError.emptyInput
+            }
+            return s
+        }
+        // UTF-16 LE BOM FF FE / BE BOM FE FF — include BOM so String drops it.
+        if data.count >= 2, data[0] == 0xFF, data[1] == 0xFE {
+            guard let s = String(data: data, encoding: .utf16LittleEndian) else {
+                throw ImportError.emptyInput
+            }
+            return s
+        }
+        if data.count >= 2, data[0] == 0xFE, data[1] == 0xFF {
+            guard let s = String(data: data, encoding: .utf16BigEndian) else {
+                throw ImportError.emptyInput
+            }
+            return s
+        }
+        if let s = String(data: data, encoding: .utf8) { return s }
+        if let s = String(data: data, encoding: .utf16LittleEndian) { return s }
+        if let s = String(data: data, encoding: .utf16BigEndian) { return s }
+        throw ImportError.emptyInput
     }
 
     /// Strip UTF-8 BOM; decode UTF-16 LE/BE when a BOM is present; prefer `;` when it dominates.

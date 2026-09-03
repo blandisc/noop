@@ -117,6 +117,8 @@ struct WorkoutHistoryScreen: View {
     @State private var progressDetailExercise: Exercise?
     /// «Registrar entreno a mano» (FER-136 · V7) — el mismo `ManualWorkoutSheet` que «Mis entrenamientos».
     @State private var showManualEntry = false
+    /// FER-333 · E9: hoja de import CSV Strong/Hevy desde el vacío del historial.
+    @State private var showStrengthCSVImport = false
     /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
     @ObserveInjection private var inject
 
@@ -507,6 +509,7 @@ struct WorkoutHistoryScreen: View {
 
     /// Una `StrengthSession` como `EntrenarFilaFuerza` (glifo de familia + marca + esfuerzo).
     /// Nombre, meta, familia, marcas — una sola fila compartida con el dialecto Fuerza.
+    /// FER-333: sello Strong/Hevy/Cénit cuando la sesión vino de un CSV importado.
     private func fuerzaRow(_ s: StrengthSession) -> some View {
         let family: EntrenarFamily = s.routineId.flatMap { routineRegions[$0] }?.family ?? .fullBody
         return EntrenarFilaFuerza(
@@ -514,7 +517,8 @@ struct WorkoutHistoryScreen: View {
             nombre: name(for: s),
             meta: sessionMeta(s),
             marcas: marksBySession[s.id] ?? 0,
-            esfuerzo: s.strain.map { StrengthHistoryFormat.strain($0) }
+            esfuerzo: s.strain.map { StrengthHistoryFormat.strain($0) },
+            origen: StrengthImportSource.label(s.source)
         ) { openWorkoutSession?(route(for: s)) }
     }
 
@@ -1099,9 +1103,35 @@ struct WorkoutHistoryScreen: View {
             Text("When you finish a strength session, it shows up here with its breakdown, volume and effort.")
                 .font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
                 .fixedSize(horizontal: false, vertical: true)
+            // FER-333 · E9: misma hoja de 4 pasos que Ajustes › Datos y fuentes › Importar.
+            Button { showStrengthCSVImport = true } label: {
+                HStack(spacing: LiquidSpace.s100) {
+                    Text("Coming from Strong or Hevy? Import your history")
+                        .font(LiquidType.tituloFilaMedia)
+                        .foregroundStyle(LiquidColor.tinta900)
+                        .multilineTextAlignment(.leading)
+                    Spacer(minLength: LiquidSpace.s100)
+                    LiquidIcon(.chevron, size: 12, color: LiquidColor.tinta500)
+                        .accessibilityHidden(true)
+                }
+                .frame(minHeight: EntrenarMetrics.row)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.liquidPress)
+            .accessibilityHint(Text("Opens the CSV import sheet"))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, LiquidSpace.s400)
+        .sheet(isPresented: $showStrengthCSVImport) {
+            #if os(iOS)
+            StrengthHistoryImportSheet(
+                onComplete: { await load() },
+                onOpenHistory: nil,
+                onArmWeek: nil)
+                .environmentObject(repo)
+                .preferredColorScheme(.light)
+            #endif
+        }
     }
 
     /// «Error de lectura» (Estados, decisión #16 del épico): sustituye la ilustración de «sin datos» —
@@ -1195,7 +1225,12 @@ struct WorkoutHistoryScreen: View {
     // MARK: - Derived
 
     private func name(for session: StrengthSession) -> String {
-        session.routineId.flatMap { routineNames[$0] } ?? String(localized: "Strength workout")
+        if let routine = session.routineId.flatMap({ routineNames[$0] }) { return routine }
+        // FER-333: imported sessions keep the title Strong/Hevy gave them.
+        if let title = session.title?.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty {
+            return title
+        }
+        return String(localized: "Strength workout")
     }
 
     private func route(for session: StrengthSession) -> WorkoutSessionRoute {
@@ -1490,6 +1525,7 @@ struct WorkoutSessionDetailScreen: View {
                     noteBlock(note)
                 }
                 sourceBadge
+                importLoadNote
                 if loaded {
                     // Handoff: exercise blocks breathe compact (16), not the section's 28.
                     VStack(alignment: .leading, spacing: LiquidSpace.s400) {
@@ -1927,10 +1963,19 @@ struct WorkoutSessionDetailScreen: View {
             tono: LiquidColor.tinta10)
     }
 
-    /// «FUENTE» — measured (journal join, or a pulse that covered the session) vs nothing. An effort-
-    /// estimated session says «estimado» ONCE, in its own pill, so the badge stays out (ola 1 · E3, A6).
+    /// «FUENTE» — la procedencia de import (Strong/Hevy) SIEMPRE se muestra y nunca dice «Medido en el
+    /// dispositivo» (FER-333 · C10); si no es import, el badge aparece solo cuando el número fue MEDIDO
+    /// (journal o un pulso que cubrió la sesión), y una sesión estimada por esfuerzo dice «estimado»
+    /// una sola vez en su pastilla, así que el badge se queda fuera (ola 1 · E3, A6).
     @ViewBuilder private var sourceBadge: some View {
-        if Self.sourceBadgeIsMeasured(journal: journalRow != nil, strainSource: fullSession?.strainSource) {
+        if let label = StrengthImportSource.label(fullSession?.source) {
+            HStack(spacing: LiquidSpace.s200) {
+                Text("Source").liquidLabel().foregroundStyle(LiquidColor.tinta500)
+                LiquidOrigenBadge(label, tono: nil)
+                Spacer(minLength: 0)
+            }
+            .accessibilityElement(children: .combine)
+        } else if Self.sourceBadgeIsMeasured(journal: journalRow != nil, strainSource: fullSession?.strainSource) {
             HStack(spacing: LiquidSpace.s200) {
                 Text("Source").liquidLabel().foregroundStyle(LiquidColor.tinta500)
                 LiquidOrigenBadge(String(localized: "Measured on device"),
@@ -1944,6 +1989,24 @@ struct WorkoutSessionDetailScreen: View {
     /// The single rule behind the FUENTE badge: shown only when the number was MEASURED.
     static func sourceBadgeIsMeasured(journal: Bool, strainSource: StrainSource?) -> Bool {
         journal || strainSource == .hr
+    }
+
+    /// Load honesty under Fuente for imported sessions (FER-333 · C9/C11).
+    @ViewBuilder
+    private var importLoadNote: some View {
+        if StrengthImportSource.label(fullSession?.source) != nil {
+            if fullSession?.strainSource == .rpe {
+                Text("Estimated from your imported history")
+                    .font(LiquidType.captionLectura)
+                    .foregroundStyle(LiquidColor.tinta500)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else if fullSession?.strain == nil {
+                Text("No load · the file has no effort")
+                    .font(LiquidType.captionLectura)
+                    .foregroundStyle(LiquidColor.tinta500)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
     }
 
     /// Match this strength session to a journal workout by interval overlap
