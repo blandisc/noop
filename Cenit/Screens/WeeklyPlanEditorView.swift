@@ -2,6 +2,7 @@
 import SwiftUI
 import CenitDesign
 import StrandTraining
+import TipKit
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // MARK: - «Tu Plan» — the single home for the week + the routines (FER-890, was FER-533 + FER-534)
@@ -79,6 +80,29 @@ struct WeeklyPlanEditorView: View {
     @State private var saveError = false
     /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
     @ObserveInjection private var inject
+
+    // MARK: - Programa (ola 1 · E11)
+
+    /// El programa activo y la semana en curso, o `nil` sin programa — recargado junto con
+    /// `schedule` (`reloadSchedule`).
+    @State private var programa: ProgramServing.Context?
+    /// Abre `StarterTemplatesSheet` en modo programa (crear desde un motor, 4 a 6 semanas).
+    @State private var showProgramCreate = false
+    /// Abre los 3 pasos de «Convertir en programa ›» (semana YA armada, sin motor).
+    @State private var showConvertToProgram = false
+    @State private var convertWeeks = 5
+    @State private var convertDeload: DeloadRule = .volumeOnly
+    @State private var convertEndMode: ProgramEndMode = .repeat
+    /// «Empieza: Esta semana · El lunes» — solo en Convertir (crear-desde-motor arranca al instante).
+    @State private var convertStartsMonday = false
+    @State private var showEndModeMenu = false
+    @State private var confirmEndProgram = false
+    /// «Programa listo · semana 1 de N» (ola 1 · E11): se prende desde `onApplied`/`convertToProgram`
+    /// una vez que `programa` YA se recargó — el toast lee su propio texto de ahí, sin repetirlo por
+    /// closure. No existe una variante de ÉXITO del toast único del app (`.saveErrorToast` es solo de
+    /// error, `UndoToast` exige un CTA de deshacer que aquí no aplica), así que este es un `LiquidAviso`
+    /// inline con el MISMO patrón de auto-descarte (documentado, ver reporte de FER-334).
+    @State private var showProgramReadyToast = false
     private static let unfiledSectionID = "unfiled-section"
 
     /// Monday-first display order in the Calendar weekday convention (2 = Mon … 1 = Sun).
@@ -100,6 +124,7 @@ struct WeeklyPlanEditorView: View {
                 if loaded {
                     if !routines.isEmpty {
                         weekSection
+                        programaSection
                         volumeFooter
                     }
                     routinesSection
@@ -119,6 +144,21 @@ struct WeeklyPlanEditorView: View {
         }
         // FER-969 / FER-280·2c: write failure → `.saveErrorToast` (misma receta, un solo dialecto).
         .saveErrorToast(isPresented: $saveError)
+        // Ola 1 · E11: «Programa listo · semana 1 de N» — no hay variante de éxito del toast único
+        // (`.saveErrorToast` es solo de error), así que este es un `LiquidAviso` inline con el MISMO
+        // patrón de auto-descarte (GAP documentado en el reporte de FER-334).
+        .overlay(alignment: .top) {
+            if showProgramReadyToast, let ctx = programa {
+                LiquidAviso(titulo: "", cuerpo: programReadyText(ctx), tono: LiquidColor.verdePrimario)
+                    .padding(.horizontal, LiquidSpace.s400)
+                    .transition(LiquidMotion.fallingFadeTransition)
+                    .task(id: showProgramReadyToast) {
+                        try? await Task.sleep(for: .seconds(4))
+                        showProgramReadyToast = false
+                    }
+            }
+        }
+        .animation(LiquidMotion.fundido, value: showProgramReadyToast)
         .sensoryFeedback(trigger: pendingUndo?.id) { _, new in
             new != nil ? LiquidHaptica.advertencia.feedback : nil
         }
@@ -134,6 +174,21 @@ struct WeeklyPlanEditorView: View {
         .sheet(isPresented: $showImport) {
             WorkoutImportView { await load() }
                 .environmentObject(repo).preferredColorScheme(.light)
+        }
+        // Ola 1 · E11: «Programa · 4 a 6 semanas» (crear desde un motor, StarterTemplatesSheet en
+        // modo programa) y «Convertir en programa ›» (la semana YA armada, sin motor).
+        .sheet(isPresented: $showProgramCreate) {
+            StarterTemplatesSheet(programa: true, onApplied: { showProgramReadyToast = true }) { await load() }
+                .environmentObject(repo).preferredColorScheme(.light)
+        }
+        .sheet(isPresented: $showConvertToProgram, onDismiss: { convertStartsMonday = false }) {
+            convertToProgramSheet
+        }
+        .alert("End the program?", isPresented: $confirmEndProgram) {
+            Button("Cancel", role: .cancel) { }
+            Button("End program", role: .destructive) { endProgram() }
+        } message: {
+            Text("Your routines and your week stay; only the week count goes away.")
         }
         .liquidInput(
             isPresented: Binding(get: { showNewFolder },
@@ -185,6 +240,229 @@ struct WeeklyPlanEditorView: View {
         var out: [MuscleGroup: Int] = [:]
         for rid in schedule.values { for (g, n) in routineVolume[rid] ?? [:] { out[g, default: 0] += n } }
         return out
+    }
+
+    // MARK: - Programa (ola 1 · E11)
+    //
+    // Sin programa Y con ≥1 día asignado: «Convertir en programa ›» (D-Q8, la puerta liviana — usa
+    // la semana YA armada, sin motor). Con programa activo: línea + tira + «Al terminar» + terminar.
+    // Las dos son mutuamente excluyentes — `programaSection` decide cuál mostrar.
+
+    @ViewBuilder
+    private var programaSection: some View {
+        if let ctx = programa {
+            activeProgramCard(ctx)
+        } else if !schedule.isEmpty {
+            convertRow
+        }
+    }
+
+    private var convertRow: some View {
+        Button {
+            convertWeeks = 5
+            convertDeload = .volumeOnly
+            convertEndMode = .repeat
+            convertStartsMonday = false
+            showConvertToProgram = true
+        } label: {
+            HStack(spacing: LiquidSpace.s300) {
+                Text("Convert into a program").font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+                Spacer(minLength: LiquidSpace.s200)
+                CenitIcon.disclosure.image.font(LiquidType.iconSF(size: 15)).foregroundStyle(LiquidColor.tinta500)
+            }
+            .padding(.horizontal, LiquidSpace.s400).frame(minHeight: LiquidSpace.s1400).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .liquidGlass(.superficieSolida)
+    }
+
+    private func activeProgramCard(_ ctx: ProgramServing.Context) -> some View {
+        VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+                    Text(programaLinea(ctx)).font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
+                        .fixedSize(horizontal: false, vertical: true)
+                        // Ola 1 · E12: consejo «Semana ligera», la primera vez que Tu Plan muestra un
+                        // programa con semana ligera configurada (TipKit gobierna el «una vez»).
+                        .popoverTipIf(ctx.program.deloadRule != .none, SemanaLigeraTip())
+                    if !ctx.position.ended {
+                        LiquidTiraSemanas(semanaEstados(ctx), etiquetaAccesibilidad: Text(programaAccesibilidad(ctx)))
+                    }
+                }
+                Spacer(minLength: LiquidSpace.s200)
+                Button { showEndModeMenu = true } label: {
+                    CenitIcon.more.image.font(LiquidType.iconSF(size: 15)).foregroundStyle(LiquidColor.tinta500)
+                        .frame(width: LiquidControl.hitTarget, height: LiquidControl.hitTarget)
+                        .contentShape(Rectangle())
+                }
+                .accessibilityLabel(Text("Program options"))
+                .liquidMenu(isPresented: $showEndModeMenu, items: [
+                    LiquidMenuItem(String(localized: "Repeat cycle"),
+                                  systemImage: ctx.program.endMode == .repeat ? "checkmark" : nil) { setEndMode(.repeat, ctx) },
+                    LiquidMenuItem(String(localized: "One cycle"),
+                                  systemImage: ctx.program.endMode == .single ? "checkmark" : nil) { setEndMode(.single, ctx) },
+                    LiquidMenuItem(String(localized: "End program"), systemImage: "xmark.circle",
+                                  isDestructive: true) { confirmEndProgram = true }
+                ])
+            }
+            if !ctx.position.ended, ctx.program.deloadRule != .none {
+                alTerminarRow(ctx)
+            }
+        }
+        .padding(.horizontal, LiquidSpace.s400).padding(.vertical, LiquidSpace.s300)
+        .liquidGlass(.superficieSolida)
+    }
+
+    private func alTerminarRow(_ ctx: ProgramServing.Context) -> some View {
+        HStack(spacing: LiquidSpace.s300) {
+            Text("When the light week ends").font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta900)
+            Spacer(minLength: LiquidSpace.s200)
+            Text(ctx.program.endMode == .repeat ? String(localized: "Repeat cycle") : String(localized: "One cycle"))
+                .font(LiquidType.cuerpo).monospacedDigit().foregroundStyle(LiquidColor.tinta500)
+        }
+        .padding(.top, LiquidSpace.s100)
+    }
+
+    /// «Semana 3 de 5 · semana ligera en 2 semanas» (P7): «Ciclo 2 · semana 1» al entrar a un ciclo
+    /// nuevo (D-Q4/D-Q7, repetir el ciclo) y «Semana 3 · la semana pasada quedó en blanco» cuando el
+    /// contador no avanzó porque de verdad no hubo sesión la semana de calendario anterior (D-Q2: una
+    /// semana en blanco no adelanta la ligera — esto explica por qué, no es un bug). Las tres son
+    /// mutuamente excluyentes por construcción: un ciclo nuevo siempre es semana 1, y semana 1 nunca
+    /// lleva sufijo de ligera.
+    private func programaLinea(_ ctx: ProgramServing.Context) -> String {
+        if ctx.position.ended { return String(localized: "Program ended") }
+        if ctx.isFreshCycle {
+            return String(localized: "Cycle \(ctx.position.cycle + 1) · week 1")
+        }
+        if ctx.lastWeekBlank {
+            return String(localized: "Week \(ctx.position.week) · last week was blank")
+        }
+        let base = String(localized: "Week \(ctx.position.week) of \(ctx.program.weeks)")
+        guard ctx.program.deloadRule != .none else { return base }
+        if ctx.position.isLight { return base + " · " + String(localized: "light week") }
+        return base + " · " + String(localized: "light week in \(ctx.position.weeksUntilLight) weeks")
+    }
+
+    private func programaAccesibilidad(_ ctx: ProgramServing.Context) -> String {
+        String(localized: "Program, \(programaLinea(ctx))")
+    }
+
+    /// «Programa listo · semana 1 de N» — el toast tras crear/convertir (ola 1 · E11).
+    private func programReadyText(_ ctx: ProgramServing.Context) -> String {
+        String(localized: "Program ready · week \(ctx.position.week) of \(ctx.program.weeks)")
+    }
+
+    /// La última semana del ciclo es SIEMPRE `.ligera` (marcada desde el día uno, artefacto §5) — sin
+    /// regla de descarga, la tira no tiene ligera que marcar.
+    private func semanaEstados(_ ctx: ProgramServing.Context) -> [LiquidSemanaEstado] {
+        let total = ctx.program.weeks
+        let ligeraIndex = ctx.program.deloadRule != .none ? total : nil
+        return (1...max(total, 1)).map { n in
+            if n == ligeraIndex { return .ligera }
+            if n < ctx.position.week { return .hecha }
+            if n == ctx.position.week { return .hoy }
+            return .futura
+        }
+    }
+
+    private func setEndMode(_ mode: ProgramEndMode, _ ctx: ProgramServing.Context) {
+        var p = ctx.program
+        p.endMode = mode
+        Task { try? await repo.setProgram(p) ; await reloadSchedule() }
+    }
+
+    private func endProgram() {
+        Task { try? await repo.endProgram(); await reloadSchedule() }
+    }
+
+    // MARK: - Convertir en programa (ola 1 · E11) — la semana YA armada, sin motor
+
+    private var convertToProgramSheet: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: LiquidSpace.s700) {
+                VStack(alignment: .leading, spacing: LiquidSpace.s075) {
+                    Text("New program").liquidKicker().foregroundStyle(LiquidColor.tinta500)
+                    Text("Convert your week")
+                        .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
+                        .foregroundStyle(LiquidColor.tinta900)
+                    Text("\(assignedCount) days · \(routines.count) routines")
+                        .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta700)
+                }
+                VStack(alignment: .leading, spacing: LiquidSpace.s450) {
+                    VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+                        Text("Weeks").font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+                        SegmentedPillControl(Array(Program.appWeeks), selection: $convertWeeks) { "\($0)" }
+                    }
+                    VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+                        Text("Light week").font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+                        LiquidListaPalomita(convertDeloadOpciones, seleccion: $convertDeload)
+                    }
+                    VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+                        Text("When it ends").font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+                        LiquidListaPalomita(convertEndModeOpciones, seleccion: $convertEndMode)
+                    }
+                    VStack(alignment: .leading, spacing: LiquidSpace.s200) {
+                        Text("Starts").font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+                        LiquidListaPalomita(convertStartOpciones, seleccion: $convertStartsMonday)
+                    }
+                    Text("The last week is active recovery: you'll see it marked from today.")
+                        .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                CenitCTAButton("Start program") { convertToProgram() }
+            }
+            .padding(LiquidSpace.s600)
+        }
+        .entrenarHojaFondo(tono: .neutro)
+    }
+
+    private var convertDeloadOpciones: [LiquidOpcionPalomita<DeloadRule>] {
+        [
+            LiquidOpcionPalomita(id: .volumeOnly, titulo: String(localized: "Fewer sets"),
+                                 subtitulo: String(localized: "half, same weight")),
+            LiquidOpcionPalomita(id: .volumeAndLoad, titulo: String(localized: "Fewer sets and less weight"),
+                                 subtitulo: String(localized: "half, and −7.5%")),
+            LiquidOpcionPalomita(id: .none, titulo: String(localized: "No light week"))
+        ]
+    }
+
+    private var convertEndModeOpciones: [LiquidOpcionPalomita<ProgramEndMode>] {
+        [
+            LiquidOpcionPalomita(id: .repeat, titulo: String(localized: "Repeat the cycle"),
+                                 subtitulo: String(localized: "back to week 1 with your weights")),
+            LiquidOpcionPalomita(id: .single, titulo: String(localized: "One cycle"),
+                                 subtitulo: String(localized: "back to your normal week"))
+        ]
+    }
+
+    private var convertStartOpciones: [LiquidOpcionPalomita<Bool>] {
+        [
+            LiquidOpcionPalomita(id: false, titulo: String(localized: "This week")),
+            LiquidOpcionPalomita(id: true, titulo: String(localized: "Monday"))
+        ]
+    }
+
+    /// «Convertir» arma `Program` sobre el calendario YA existente — sin motor, sin rutinas nuevas.
+    /// `startTs` cae en el lunes de esta semana (arranca ya) o el próximo lunes, según la elección.
+    private func convertToProgram() {
+        let now = Date()
+        let cal = Calendar.current
+        let thisMonday = ProgramCalendar.weekStart(of: Int(now.timeIntervalSince1970), calendar: cal)
+        let startTs = convertStartsMonday
+            ? thisMonday + 7 * 24 * 3_600
+            : thisMonday
+        let p = Program(name: String(localized: "My program"), weeks: convertWeeks, startTs: startTs,
+                        deloadRule: convertDeload, endMode: convertEndMode, createdTs: Int(now.timeIntervalSince1970))
+        Task {
+            do {
+                try await repo.setProgram(p)
+                await reloadSchedule()
+                showConvertToProgram = false
+                showProgramReadyToast = true
+            } catch {
+                saveError = true
+            }
+        }
     }
 
     // MARK: - The week (one row per day)
@@ -490,7 +768,14 @@ struct WeeklyPlanEditorView: View {
     /// Folders anchors the folder-management paper menu (new / rename / delete).
     private var toolsChipsRow: some View {
         HStack(spacing: LiquidSpace.s200) {
-            CrearPlanChip(onTemplates: { showTemplates = true }, onImport: { showImport = true })
+            CrearPlanChip(onTemplates: { showTemplates = true }, onImport: { showImport = true },
+                         // D-Q8: fuera del primer uso — el mismo umbral que ya usa el resto de esta
+                         // pantalla para «primer uso» (`routines.isEmpty`, ver `header`/`body`), no si
+                         // ya hay un día asignado: alguien con rutinas creadas pero sin calendario
+                         // armado todavía ya pasó el primer uso. Con un programa corriendo, la fila de
+                         // abajo (`activeProgramCard`) ya lo administra.
+                         onProgram: (programa == nil && !routines.isEmpty)
+                            ? { showProgramCreate = true } : nil)
             // Decisión Fer (2026-07-16 v2): UNA sola acción — crear la división. Renombrar/borrar
             // viven en la sub-cabecera de cada carpeta (··· → undo de 4 s al borrar).
             EntrenarChipHerramienta(systemImage: "folder.badge.plus", label: Text("New section")) {
@@ -1006,6 +1291,9 @@ struct WeeklyPlanEditorView: View {
         guard let store = await repo.storeHandle() else { return }
         let rows = (try? await store.routineSchedule()) ?? []
         schedule = Dictionary(rows.map { ($0.weekday, $0.routineId) }, uniquingKeysWith: { a, _ in a })
+        // Ola 1 · E11: el programa activo se recarga junto con el calendario — «Terminar programa» y
+        // convertir/crear uno nuevo cambian ambos a la vez.
+        programa = await repo.programServing()
     }
 
     private func assign(_ wd: Int, _ routineId: String) {

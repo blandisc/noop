@@ -5970,23 +5970,6 @@
         }
       }
     },
-    "1 session" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1 session"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1 sesión"
-          }
-        }
-      }
-    },
     "1 session · 90 days" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6232,23 +6215,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "1A"
-          }
-        }
-      }
-    },
-    "2 in a row" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "2 in a row"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "2 seguidas"
           }
         }
       }
@@ -15544,17 +15510,6 @@
         }
       }
     },
-    "Days that aren't in range" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Días que no son en rango"
-          }
-        }
-      }
-    },
     "Decrease" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -22593,22 +22548,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Subir peso"
-          }
-        }
-      }
-    },
-    "Increment" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Increment"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Incremento"
           }
         }
       }
@@ -34878,18 +34817,18 @@
     },
     "Reps left kicker" : {
       "extractionState" : "manual",
-      "comment" : "Kicker QUEDABAN de la fila RIR del teclado de sesión (FER-134). Clave propia, distinta de «Remaining» (usada por IntervalTimerView para el tiempo restante del temporizador) para no pisar esa traducción.",
+      "comment" : "Kicker de la fila RIR del teclado de sesión (FER-134; reps en reserva desde ola 1 · E5 / D-Q1: nunca «Q»/«Quedaban»). Clave propia, distinta de «Remaining» (usada por IntervalTimerView para el tiempo restante del temporizador) para no pisar esa traducción.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Remaining"
+            "value" : "Reps in reserve"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "quedaban"
+            "value" : "reps en reserva"
           }
         }
       }
@@ -47512,13 +47451,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You had ~2 reps left"
+            "value" : "~2 more reps"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Te quedaban ~2 reps"
+            "value" : "~2 reps más"
           }
         }
       }
@@ -47608,22 +47547,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Registraste %lld series. Toca Terminar para guardar el entrenamiento."
-          }
-        }
-      }
-    },
-    "You raise when" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You raise when"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Subes cuando"
           }
         }
       }
@@ -53093,23 +53016,6 @@
         }
       }
     },
-    "every %lld" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "every %lld"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "cada %lld"
-          }
-        }
-      }
-    },
     "every second of pulse adds to the total" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -53395,22 +53301,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "del primer al último tercio de la noche"
-          }
-        }
-      }
-    },
-    "from your plates: the minimum is %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "from your plates: the minimum is %@"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "de tus discos: el mínimo es %@"
           }
         }
       }
@@ -60427,23 +60317,6 @@
         }
       }
     },
-    "one session" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "one session"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "una sesión"
-          }
-        }
-      }
-    },
     "one signal needs care" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -64308,23 +64181,6 @@
         }
       }
     },
-    "two sessions in a row" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "two sessions in a row"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "dos sesiones seguidas"
-          }
-        }
-      }
-    },
     "two weeks of recorded strain" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -66692,47 +66548,6 @@
         }
       }
     },
-    "%lld left" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld left"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld left"
-                }
-              }
-            }
-          }
-        },
-        "es" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "quedaba %lld"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "quedaban %lld"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "Back to %@ %@" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -67362,23 +67177,6 @@
         }
       }
     },
-    "Includes %lld days with estimated effort" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Includes %lld days with estimated effort"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Incluye %lld días con esfuerzo estimado"
-          }
-        }
-      }
-    },
     "%lld session without effort: not in your load" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -67545,6 +67343,3531 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Incluye %lld sesión con esfuerzo estimado"
+          }
+        }
+      }
+    },
+    "Rhythm" : {
+      "comment" : "Ola 1 · E5: rótulo de la sección «Ritmo» en ProgressionSetupScreen (lista con palomita).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rhythm"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ritmo"
+          }
+        }
+      }
+    },
+    "Steady rhythm" : {
+      "comment" : "Ola 1 · E5: título de la opción «Constante» del selector Ritmo (progressionUseRPE=false, sessions=2).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steady rhythm"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Constante"
+          }
+        }
+      }
+    },
+    "Fast rhythm" : {
+      "comment" : "Ola 1 · E5: título de la opción «Rápido» del selector Ritmo (progressionUseRPE=false, sessions=1).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fast rhythm"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rápido"
+          }
+        }
+      }
+    },
+    "Reps in reserve rhythm" : {
+      "comment" : "Ola 1 · E5: título de la opción «Reps en reserva» del selector Ritmo (progressionUseRPE=true).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reps in reserve rhythm"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reps en reserva"
+          }
+        }
+      }
+    },
+    "raises after 2 sessions in a row" : {
+      "comment" : "Ola 1 · E5: subtítulo de «Constante» en el selector Ritmo.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "raises after 2 sessions in a row"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "subes tras 2 sesiones cumplidas"
+          }
+        }
+      }
+    },
+    "raises after 1" : {
+      "comment" : "Ola 1 · E5: subtítulo de «Rápido» en el selector Ritmo.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "raises after 1"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "subes tras 1"
+          }
+        }
+      }
+    },
+    "1 if you had 2 to spare · waits if you hit failure" : {
+      "comment" : "Ola 1 · E5: subtítulo de «Reps en reserva» en el selector Ritmo.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 if you had 2 to spare · waits if you hit failure"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 si te sobraron 2 · espera si llegaste al fallo"
+          }
+        }
+      }
+    },
+    "Fine-tune" : {
+      "comment" : "Ola 1 · E5: disclosure «Ajustes finos ▾» en ProgressionSetupScreen (Pasada 2).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fine-tune"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajustes finos"
+          }
+        }
+      }
+    },
+    "Load step" : {
+      "comment" : "Ola 1 · E5: rótulo del incremento en ProgressionSetupScreen (antes «Increment»).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Load step"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paso de carga"
+          }
+        }
+      }
+    },
+    "from your plates" : {
+      "comment" : "Ola 1 · E5: nota corta del paso de carga cuando no hay override a mano.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "from your plates"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "de tus discos"
+          }
+        }
+      }
+    },
+    "When your body says hold" : {
+      "comment" : "Ola 1 · E5: renombre de «Days that aren't in range» — describe el veredicto, no un calendario.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When your body says hold"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuando tu cuerpo dice mantén"
+          }
+        }
+      }
+    },
+    "Raise anyway" : {
+      "comment" : "Ola 1 · E5: opción del segmentado «Cuando tu cuerpo dice mantén» (progressionIgnoreRecovery=true).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Raise anyway"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subir igual"
+          }
+        }
+      }
+    },
+    "Wait" : {
+      "comment" : "Ola 1 · E5: opción del segmentado «Cuando tu cuerpo dice mantén» (progressionIgnoreRecovery=false).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wait"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esperar"
+          }
+        }
+      }
+    },
+    "constant" : {
+      "comment" : "Ola 1 · E5: palabra de ritmo embebida en la frase-resumen «Subes X kg cuando cumples Y reps con ritmo…».",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "constant"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "constante"
+          }
+        }
+      }
+    },
+    "fast" : {
+      "comment" : "Ola 1 · E5: palabra de ritmo embebida en la frase-resumen (ver «constant»).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "fast"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "rápido"
+          }
+        }
+      }
+    },
+    "reps in reserve" : {
+      "comment" : "Ola 1 · E5: palabra de ritmo embebida en la frase-resumen (ver «constant») y en ProgressionChip.summary.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "reps in reserve"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "reps en reserva"
+          }
+        }
+      }
+    },
+    "Stall three times and you drop %@%%." : {
+      "comment" : "Ola 1 · E5: cola de la frase-resumen cuando el deload es «Propose». Gate QA FER-331 O1: espacio antes de % en es, como la clave hermana «bajas ~7,5 % y reconstruyes».",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stall three times and you drop %@%%."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si te estancas tres veces, bajas %@ %%."
+          }
+        }
+      }
+    },
+    "Stall three times and Cénit just warns you." : {
+      "comment" : "Ola 1 · E5: cola de la frase-resumen cuando el deload es «Warn only».",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stall three times and Cénit just warns you."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si te estancas tres veces, Cénit solo te avisa."
+          }
+        }
+      }
+    },
+    "You hit the reps with %lld to spare. One session was enough." : {
+      "comment" : "Ola 1 · E5: línea 2 del héroe — caso cómodo (RaiseRhythmNote.comfortable).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You hit the reps with %lld to spare. One session was enough."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Llegaste a las reps y te sobraban %lld. Una sesión bastó."
+          }
+        }
+      }
+    },
+    "Three sessions at your limit and you still hit the reps: you raise, or change the rhythm." : {
+      "comment" : "Ola 1 · E5: línea 2 del héroe — caso tope (RaiseRhythmNote.atLimitCap).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Three sessions at your limit and you still hit the reps: you raise, or change the rhythm."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tres veces al fallo y con las reps: subes, o cambia el ritmo."
+          }
+        }
+      }
+    },
+    "Today you maintain" : {
+      "comment" : "Ola 1 · E5: prefijo de la píldora ámbar del héroe (paralelo a «Today you raise»).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today you maintain"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy mantienes"
+          }
+        }
+      }
+    },
+    "You hit the reps, but at your limit. One easier session and it counts toward the raise." : {
+      "comment" : "Ola 1 · E5: línea 2 de la píldora ámbar «Hoy mantienes» (RaiseRhythmNote.atLimitHold).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You hit the reps, but at your limit. One easier session and it counts toward the raise."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Llegaste, pero al fallo. Una sesión más holgada y cuenta para subir."
+          }
+        }
+      }
+    },
+    "at failure" : {
+      "comment" : "Ola 1 · E5: LiveStrengthSheet.qLabel con 0 en reserva — antes «Q 0». Nunca «Q»/«Quedaban».",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "at failure"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "al fallo"
+          }
+        }
+      }
+    },
+    "%lld in reserve" : {
+      "comment" : "Ola 1 · E5: LiveStrengthSheet.qLabel con 1-3 en reserva — antes «Q 1»/«Q 2»/«Q 3».",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld in reserve"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld en reserva"
+          }
+        }
+      }
+    },
+    "4+ in reserve" : {
+      "comment" : "Ola 1 · E5: LiveStrengthSheet.qLabel en el tope — antes «Q 4+».",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "4+ in reserve"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "4+ en reserva"
+          }
+        }
+      }
+    },
+    "You raise %@ kg when you hit %lld reps %@." : {
+      "comment" : "Ola 1 · E5: frase-resumen de ProgressionSetupScreen (Pasada 2). Gate QA FER-331 O1: la cláusula de ritmo (%@) viaja completa — «con ritmo constante» / «con ritmo rápido» / «según reps en reserva», nunca «con ritmo reps en reserva».",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You raise %@ kg when you hit %lld reps %@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subes %@ kg cuando cumples %lld reps %@."
+          }
+        }
+      }
+    },
+    "with a constant rhythm" : {
+      "comment" : "Ola 1 · E5: cláusula de ritmo de la frase-resumen, ritmo Constante.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "with a constant rhythm"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "con ritmo constante"
+          }
+        }
+      }
+    },
+    "with a fast rhythm" : {
+      "comment" : "Ola 1 · E5: cláusula de ritmo de la frase-resumen, ritmo Rápido.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "with a fast rhythm"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "con ritmo rápido"
+          }
+        }
+      }
+    },
+    "by reps in reserve" : {
+      "comment" : "Ola 1 · E5: cláusula de ritmo de la frase-resumen, ritmo Reps en reserva (gate QA FER-331 O1: «según», no «con ritmo»).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "by reps in reserve"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "según reps en reserva"
+          }
+        }
+      }
+    },
+    "Drop 7.5%" : {
+      "comment" : "Ola 1 · E5: opción de la lista con palomita «Si te estancas 3 sesiones» (gate QA FER-331 D1/D2 — reemplaza el segmentado «Propose»; NO reutiliza esa clave, y el espacio antes de % sigue a «bajas ~7,5 % y reconstruyes»).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drop 7.5%"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bajar 7,5 %"
+          }
+        }
+      }
+    },
+    "drops the weight and rebuilds" : {
+      "comment" : "Ola 1 · E5: subtítulo de «Drop 7.5%» en la lista con palomita.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "drops the weight and rebuilds"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "baja el peso y reconstruye"
+          }
+        }
+      }
+    },
+    "keeps the weight, just warns you" : {
+      "comment" : "Ola 1 · E5: subtítulo de «Warn only» en la lista con palomita «Si te estancas 3 sesiones».",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "keeps the weight, just warns you"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "no toca el peso, solo avisa"
+          }
+        }
+      }
+    },
+    "the raise waits for a better day" : {
+      "comment" : "Ola 1 · E5: subtítulo de «Wait» en la lista con palomita «Cuando tu cuerpo dice mantén».",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "the raise waits for a better day"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "la subida espera a un día mejor"
+          }
+        }
+      }
+    },
+    "takes the raise, verdict aside" : {
+      "comment" : "Ola 1 · E5: subtítulo de «Raise anyway» en la lista con palomita «Cuando tu cuerpo dice mantén».",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "takes the raise, verdict aside"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "toma la subida, veredicto aparte"
+          }
+        }
+      }
+    }
+,
+    "Your history, from Strong or Hevy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your history, from Strong or Hevy"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu historial, de Strong o Hevy"
+          }
+        }
+      }
+    },
+    "Import history · one file, zero network" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import history · one file, zero network"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importar historial · un archivo, cero red"
+          }
+        }
+      }
+    },
+    "Strong ›" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Strong ›"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Strong ›"
+          }
+        }
+      }
+    },
+    "Profile › Settings › Export data" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profile › Settings › Export data"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Perfil › Ajustes › Exportar datos"
+          }
+        }
+      }
+    },
+    "Hevy ›" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hevy ›"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hevy ›"
+          }
+        }
+      }
+    },
+    "Settings › Export CSV" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings › Export CSV"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajustes › Exportar CSV"
+          }
+        }
+      }
+    },
+    "Choose .csv file…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose .csv file…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elegir archivo .csv…"
+          }
+        }
+      }
+    },
+    "Couldn’t read the file" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t read the file"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo leer el archivo"
+          }
+        }
+      }
+    },
+    "Choose another" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose another"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elegir otro"
+          }
+        }
+      }
+    },
+    "Cénit recognizes which one it is by its columns. Nothing leaves your phone." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit recognizes which one it is by its columns. Nothing leaves your phone."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cénit reconoce cuál de las dos es por sus columnas. Nada sale de tu teléfono."
+          }
+        }
+      }
+    },
+    "Reading…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leyendo…"
+          }
+        }
+      }
+    },
+    "Saving… Almost there" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saving… Almost there"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardando… Ya casi"
+          }
+        }
+      }
+    },
+    "Recognized exercises" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recognized exercises"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ejercicios reconocidos"
+          }
+        }
+      }
+    },
+    "Unresolved" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unresolved"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Por resolver"
+          }
+        }
+      }
+    },
+    "%lld ›" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld ›"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld ›"
+          }
+        }
+      }
+    },
+    "With effort" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "With effort"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Con esfuerzo"
+          }
+        }
+      }
+    },
+    "Possible duplicates" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Possible duplicates"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Posibles duplicados"
+          }
+        }
+      }
+    },
+    "%lld · out" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld · out"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld · fuera"
+          }
+        }
+      }
+    },
+    "Sessions with effort enter your load as estimated. The rest stay without load." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sessions with effort enter your load as estimated. The rest stay without load."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estas entran a tu carga como estimadas. Las demás quedan sin carga."
+          }
+        }
+      }
+    },
+    "Already there · %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Already there · %lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ya estaban · %lld"
+          }
+        }
+      }
+    },
+    "Nothing new to import" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing new to import"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nada nuevo por importar"
+          }
+        }
+      }
+    },
+    "Resolve %lld and continue" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resolve %lld and continue"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resolver %lld y continuar"
+          }
+        }
+      }
+    },
+    "Import %lld sessions" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import %lld sessions"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importar %lld sesiones"
+          }
+        }
+      }
+    },
+    "Weight unit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weight unit"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unidad de peso"
+          }
+        }
+      }
+    },
+    "Highest weight in file: %lld → %@ kg" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Highest weight in file: %lld → %@ kg"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Peso más alto del archivo: %lld → %@ kg"
+          }
+        }
+      }
+    },
+    "Unresolved · all set" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unresolved · all set"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Por resolver · listo"
+          }
+        }
+      }
+    },
+    "Unresolved · %lld of %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unresolved · %lld of %lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Por resolver · %lld de %lld"
+          }
+        }
+      }
+    },
+    "Your decision is remembered forever." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your decision is remembered forever."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu decisión se recuerda para la próxima vez."
+          }
+        }
+      }
+    },
+    "Continue to save" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue to save"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continuar para guardar"
+          }
+        }
+      }
+    },
+    "%lld left to resolve, disabled" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld left to resolve, disabled"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Faltan %lld por resolver, deshabilitado"
+          }
+        }
+      }
+    },
+    "%lld sessions in your history" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld sessions in your history"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld sesiones en tu historial"
+          }
+        }
+      }
+    },
+    "Records, 1RM and muscle map already recalculated with your history." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Records, 1RM and muscle map already recalculated with your history."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Récords, 1RM y mapa muscular ya se recalcularon con tu historia."
+          }
+        }
+      }
+    },
+    "%lld sessions enter your load" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld sessions enter your load"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld sesiones entran a tu carga"
+          }
+        }
+      }
+    },
+    "Your history already feeds records and 1RM. Your load starts with your watch or your next sessions." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your history already feeds records and 1RM. Your load starts with your watch or your next sessions."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu historia ya alimenta récords y 1RM. Tu carga arranca con tu reloj o con tus próximas sesiones."
+          }
+        }
+      }
+    },
+    "%lld possible duplicates were left out; review them in Settings › Data Sources › Import" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld possible duplicates were left out; review them in Settings › Data Sources › Import"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld posibles duplicados se dejaron fuera; revísalos en Ajustes › Datos y fuentes › Importar"
+          }
+        }
+      }
+    },
+    "View history" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View history"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ver historial"
+          }
+        }
+      }
+    },
+    "Arm your week" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arm your week"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arma tu semana"
+          }
+        }
+      }
+    },
+    "Import · %lld of 4" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import · %lld of 4"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importar · %lld de 4"
+          }
+        }
+      }
+    },
+    "Overlaps %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Overlaps %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se traslapa con %@"
+          }
+        }
+      }
+    },
+    "Illegible dates in %lld rows" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Illegible dates in %lld rows"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fechas ilegibles en %lld filas"
+          }
+        }
+      }
+    },
+    "Times are read in your current time zone." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Times are read in your current time zone."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las horas se leen en tu zona horaria actual."
+          }
+        }
+      }
+    },
+    "Supersets are saved as consecutive exercises." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supersets are saved as consecutive exercises."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las superseries se guardan como ejercicios seguidos."
+          }
+        }
+      }
+    },
+    "We couldn’t read that file. Pick the original .csv and try again." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn’t read that file. Pick the original .csv and try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No pudimos leer ese archivo. Elige el .csv original e inténtalo de nuevo."
+          }
+        }
+      }
+    },
+    "I don’t recognize this file. Cénit reads the CSV Strong and Hevy export. Make sure it’s the original .csv, unedited." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I don’t recognize this file. Cénit reads the CSV Strong and Hevy export. Make sure it’s the original .csv, unedited."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No reconozco este archivo. Cénit lee el CSV que exportan Strong y Hevy. Revisa que sea el .csv original, sin editar."
+          }
+        }
+      }
+    },
+    "That file is empty. Export again from the app and try once more." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That file is empty. Export again from the app and try once more."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El archivo está vacío. Exporta de nuevo desde la app y vuelve a intentarlo."
+          }
+        }
+      }
+    },
+    "in %lld sessions" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "in %lld sessions"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "en %lld sesiones"
+          }
+        }
+      }
+    },
+    "Ignored" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ignored"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ignorado"
+          }
+        }
+      }
+    },
+    "Ignoring leaves %lld sets out; the session still imports." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ignoring leaves %lld sets out; the session still imports."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ignorar deja fuera %lld series; la sesión sí se importa."
+          }
+        }
+      }
+    },
+    "Catalog" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Catalog"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Catálogo"
+          }
+        }
+      }
+    },
+    "Create own" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create own"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crear propio"
+          }
+        }
+      }
+    },
+    "%@, ignored" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, ignored"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, ignorado"
+          }
+        }
+      }
+    },
+    "%@, matched to %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, matched to %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, emparejado con %@"
+          }
+        }
+      }
+    },
+    "%@, in %lld sessions, unresolved. Suggestion: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, in %lld sessions, unresolved. Suggestion: %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, en %lld sesiones, sin resolver. Sugerencia: %@"
+          }
+        }
+      }
+    },
+    "%@, in %lld sessions, unresolved" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, in %lld sessions, unresolved"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, en %lld sesiones, sin resolver"
+          }
+        }
+      }
+    },
+    "%@, unresolved. Suggestion: %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, unresolved. Suggestion: %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, sin resolver. Sugerencia: %@"
+          }
+        }
+      }
+    },
+    "%@, unresolved" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, unresolved"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, sin resolver"
+          }
+        }
+      }
+    },
+    "Strong" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Strong"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Strong"
+          }
+        }
+      }
+    },
+    "Hevy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hevy"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hevy"
+          }
+        }
+      }
+    },
+    "Strong or Hevy history (CSV)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Strong or Hevy history (CSV)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historial de Strong o Hevy (CSV)"
+          }
+        }
+      }
+    },
+    "Bring your lifting history from Strong or Hevy. Cénit reads the CSV on this iPhone. Nothing leaves your phone." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bring your lifting history from Strong or Hevy. Cénit reads the CSV on this iPhone. Nothing leaves your phone."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trae tu historial de pesas desde Strong o Hevy. Cénit lee el CSV en este iPhone. Nada sale de tu teléfono."
+          }
+        }
+      }
+    },
+    "Import history…" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import history…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importar historial…"
+          }
+        }
+      }
+    },
+    "Coming from Strong or Hevy? Import your history" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Coming from Strong or Hevy? Import your history"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Vienes de Strong o Hevy? Importa tu historial"
+          }
+        }
+      }
+    },
+    "Opens the CSV import sheet" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens the CSV import sheet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre la hoja de importar CSV"
+          }
+        }
+      }
+    },
+    "Estimated from your imported history" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estimated from your imported history"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estimado de tu historial importado"
+          }
+        }
+      }
+    },
+    "No load · the file has no effort" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No load · the file has no effort"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin carga · el archivo no trae esfuerzo"
+          }
+        }
+      }
+    },
+    "Couldn’t save. Nothing was imported. Try again." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t save. Nothing was imported. Try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo guardar. No se importó nada. Intenta de nuevo."
+          }
+        }
+      }
+    },
+    "Reading… %lld sessions found" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading… %lld sessions found"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leyendo… %lld sesiones encontradas"
+          }
+        }
+      }
+    }
+,
+    "max" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "max"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "máx"
+          }
+        }
+      }
+    },
+    "Mark as however many you can" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark as however many you can"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marcar como «las que puedas»"
+          }
+        }
+      }
+    },
+    "%lld to max" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld to max"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld a máx"
+          }
+        }
+      }
+    },
+    "Last set: however many you can" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last set: however many you can"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Última serie: las que puedas"
+          }
+        }
+      }
+    },
+    "However many you can" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "However many you can"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las que puedas"
+          }
+        }
+      }
+    },
+    "Log how many you got" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Log how many you got"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "anota cuántas salieron"
+          }
+        }
+      }
+    },
+    "Drop and continue" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drop and continue"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bajar y seguir"
+          }
+        }
+      }
+    },
+    "No rest, −20%" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No rest, −20%"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sin descanso, −20 %"
+          }
+        }
+      }
+    },
+    "failure" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "failure"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "fallo"
+          }
+        }
+      }
+    },
+    "The estimated 1RM uses a maximum of %lld reps" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The estimated 1RM uses a maximum of %lld reps"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El 1RM estimado usa máximo %lld reps"
+          }
+        }
+      }
+    }
+,
+    "Drop set" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drop set"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bajar y seguir"
+          }
+        }
+      }
+    }
+,
+    "Remove set" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove set"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quitar serie"
+          }
+        }
+      }
+    },
+    "Only for rep-based sets" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only for rep-based sets"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solo en series por reps"
+          }
+        }
+      }
+    },
+    "Drop and continue · −20%" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drop and continue · −20%"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bajar y seguir · −20 %"
+          }
+        }
+      }
+    },
+    "Reached failure" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reached failure"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Llegué al fallo"
+          }
+        }
+      }
+    },
+    "This set has %lld logged “drop and continue” steps. Removing it deletes them too." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This set has %lld logged “drop and continue” steps. Removing it deletes them too."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta serie tiene %lld «bajar y seguir» registradas. Quitarla también las borra."
+          }
+        }
+      }
+    },
+    "Remove this set?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove this set?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Quitar esta serie?"
+          }
+        }
+      }
+    },
+    "Keep set" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep set"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conservar"
+          }
+        }
+      }
+    },
+    "Remove set and drops" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove set and drops"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quitar serie y sus «bajar y seguir»"
+          }
+        }
+      }
+    }
+,
+    "Maximum reps" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maximum reps"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "máximo de reps"
+          }
+        }
+      }
+    },
+    "%lld at failure" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld at failure"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld al fallo"
+          }
+        }
+      }
+    }
+,
+    "No room to drop further" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No room to drop further"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ya no hay margen para bajar"
+          }
+        }
+      }
+    },
+    "4 to 6 weeks" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "4 to 6 weeks"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "4 a 6 semanas"
+          }
+        }
+      }
+    },
+    "Convert into a program" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Convert into a program"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Convertir en programa"
+          }
+        }
+      }
+    },
+    "Convert your week" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Convert your week"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Convierte tu semana"
+          }
+        }
+      }
+    },
+    "End program" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "End program"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terminar programa"
+          }
+        }
+      }
+    },
+    "End the program?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "End the program?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Terminar el programa?"
+          }
+        }
+      }
+    },
+    "Fewer sets and less weight" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fewer sets and less weight"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Menos series y menos peso"
+          }
+        }
+      }
+    },
+    "Fewer sets" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fewer sets"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Menos series"
+          }
+        }
+      }
+    },
+    "Full body · 3 days" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Full body · 3 days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuerpo completo · 3 días"
+          }
+        }
+      }
+    },
+    "Half the sets, the same weight. Same gym, less wear. Next week you start the cycle with the weight you earned." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Half the sets, the same weight. Same gym, less wear. Next week you start the cycle with the weight you earned."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La mitad de las series, el mismo peso. Mismo gym, menos desgaste. La próxima semana arrancas el ciclo con los pesos que te ganaste."
+          }
+        }
+      }
+    },
+    "Keep mine" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep mine"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seguir con el mío"
+          }
+        }
+      }
+    },
+    "Light week · %lld of %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Light week · %lld of %lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Semana ligera · %lld de %lld"
+          }
+        }
+      }
+    },
+    "Light week" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Light week"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Semana ligera"
+          }
+        }
+      }
+    },
+    "Linear, to start" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Linear, to start"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lineal para empezar"
+          }
+        }
+      }
+    },
+    "Monday" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monday"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El lunes"
+          }
+        }
+      }
+    },
+    "My program" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "My program"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mi programa"
+          }
+        }
+      }
+    },
+    "New program" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New program"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nuevo programa"
+          }
+        }
+      }
+    },
+    "No light week" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No light week"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin semana ligera"
+          }
+        }
+      }
+    },
+    "One cycle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One cycle"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un solo ciclo"
+          }
+        }
+      }
+    },
+    "Pick an engine. Everything after is a value you can change later." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick an engine. Everything after is a value you can change later."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elige un motor. Todo lo demás es un valor que puedes cambiar después."
+          }
+        }
+      }
+    },
+    "Program ended" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Program ended"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Programa terminado"
+          }
+        }
+      }
+    },
+    "Program options" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Program options"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opciones del programa"
+          }
+        }
+      }
+    },
+    "Program · 4 to 6 weeks" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Program · 4 to 6 weeks"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Programa · 4 a 6 semanas"
+          }
+        }
+      }
+    },
+    "Program" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Program"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Programa"
+          }
+        }
+      }
+    },
+    "Program, %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Program, %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Programa, %@"
+          }
+        }
+      }
+    },
+    "Push · Pull · Legs · 6 days · intermediate" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Push · Pull · Legs · 6 days · intermediate"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empuje · Tirón · Pierna · 6 días · intermedio"
+          }
+        }
+      }
+    },
+    "Repeat cycle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Repeat cycle"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Repetir ciclo"
+          }
+        }
+      }
+    },
+    "Repeat the cycle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Repeat the cycle"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Repetir el ciclo"
+          }
+        }
+      }
+    },
+    "Set this program up" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set this program up"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configura este programa"
+          }
+        }
+      }
+    },
+    "Start program" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start program"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empezar programa"
+          }
+        }
+      }
+    },
+    "Start the new one" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start the new one"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empezar el nuevo"
+          }
+        }
+      }
+    },
+    "Starts" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Starts"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empieza"
+          }
+        }
+      }
+    },
+    "The last week is active recovery: you'll see it marked from today." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The last week is active recovery: you'll see it marked from today."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La última semana es de descanso activo: la ves marcada desde hoy."
+          }
+        }
+      }
+    },
+    "This plan changes between weeks; Cénit will use week 1 for all of them and the last as the light week." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This plan changes between weeks; Cénit will use week 1 for all of them and the last as the light week."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este plan cambia entre semanas; Cénit usará la semana 1 para todas y la última como ligera."
+          }
+        }
+      }
+    },
+    "Turn it into a %lld-week program" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn it into a %lld-week program"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Convertirlo en programa de %lld semanas"
+          }
+        }
+      }
+    },
+    "Upper / Lower · 4 days" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upper / Lower · 4 days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Superior / Inferior · 4 días"
+          }
+        }
+      }
+    },
+    "Week %lld of %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Week %lld of %lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Semana %lld de %lld"
+          }
+        }
+      }
+    },
+    "Weeks" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weeks"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Semanas"
+          }
+        }
+      }
+    },
+    "When it ends" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When it ends"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Al terminar"
+          }
+        }
+      }
+    },
+    "When the light week ends" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When the light week ends"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Al terminar la semana ligera"
+          }
+        }
+      }
+    },
+    "You already have a program on week %lld of %lld. Starting another one ends it." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You already have a program on week %lld of %lld. Starting another one ends it."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ya tienes un programa en la semana %lld de %lld. Empezar otro lo termina."
+          }
+        }
+      }
+    },
+    "You already have a program" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You already have a program"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ya tienes un programa"
+          }
+        }
+      }
+    },
+    "Your routines and your week stay; only the week count goes away." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your routines and your week stay; only the week count goes away."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus rutinas y tu semana se quedan; solo se va el conteo de semanas."
+          }
+        }
+      }
+    },
+    "back to week 1 with your weights" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "back to week 1 with your weights"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "vuelve a la semana 1 con tus pesos"
+          }
+        }
+      }
+    },
+    "back to your normal week" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "back to your normal week"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "regresas a tu semana normal"
+          }
+        }
+      }
+    },
+    "half, and −7.5%" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "half, and −7.5%"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "la mitad, y −7.5 %"
+          }
+        }
+      }
+    },
+    "half, same weight" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "half, same weight"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "la mitad, mismo peso"
+          }
+        }
+      }
+    },
+    "light week in %lld weeks" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "light week in %lld weeks"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "semana ligera en %lld semanas"
+          }
+        }
+      }
+    },
+    "light week in week %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "light week in week %lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "semana ligera en la %lld"
+          }
+        }
+      }
+    },
+    "light week" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "light week"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ligera"
+          }
+        }
+      }
+    },
+    "Cycle %lld · week 1" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cycle %lld · week 1"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ciclo %lld · semana 1"
+          }
+        }
+      }
+    },
+    "Last week was blank, so this is still the light week." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last week was blank, so this is still the light week."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La semana pasada quedó en blanco, así que esta sigue siendo la semana ligera."
+          }
+        }
+      }
+    },
+    "Program ready · week %lld of %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Program ready · week %lld of %lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Programa listo · semana %lld de %lld"
+          }
+        }
+      }
+    },
+    "Week %lld · last week was blank" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Week %lld · last week was blank"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Semana %lld · la semana pasada quedó en blanco"
+          }
+        }
+      }
+    },
+    "· light week arrives in %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "· light week arrives in %lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "· la semana ligera llega en la %lld"
+          }
+        }
+      }
+    },
+    "The as-many-as-you-can set" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The as-many-as-you-can set"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Serie \u00ablas que puedas\u00bb"
+          }
+        }
+      }
+    },
+    "Do every rep you can with good form and log how many you got. It counts for your records and to raise." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Do every rep you can with good form and log how many you got. It counts for your records and to raise."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Haz todas las reps que puedas con buena forma y anota cu\u00e1ntas salieron. Cuenta para tus r\u00e9cords y para subir."
+          }
+        }
+      }
+    },
+    "About drop and continue" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About drop and continue"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\u00abBajar y seguir\u00bb"
+          }
+        }
+      }
+    },
+    "When you finish the set, drop the weight and keep going without resting. It adds volume; it doesn't count to raise or for records." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When you finish the set, drop the weight and keep going without resting. It adds volume; it doesn't count to raise or for records."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Al terminar la serie, baja el peso y sigue sin descansar. Suma volumen; no cuenta para subir ni para r\u00e9cords."
+          }
+        }
+      }
+    },
+    "About reps in reserve" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About reps in reserve"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reps en reserva"
+          }
+        }
+      }
+    },
+    "How many more reps you had left when you finished. 0 means you hit failure. The app uses it to decide whether you raise." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How many more reps you had left when you finished. 0 means you hit failure. The app uses it to decide whether you raise."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cu\u00e1ntas reps m\u00e1s pod\u00edas hacer al terminar. 0 = llegaste al fallo. Con esto la app decide si subes."
+          }
+        }
+      }
+    },
+    "About how hard it was" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About how hard it was"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\u00bfQu\u00e9 tan duro estuvo?"
+          }
+        }
+      }
+    },
+    "One tap when you finish. With minutes and effort, your session enters your load even without a watch." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One tap when you finish. With minutes and effort, your session enters your load even without a watch."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un toque al cerrar. Con minutos y esfuerzo, tu sesi\u00f3n entra a tu carga aunque no traigas reloj."
+          }
+        }
+      }
+    },
+    "About the light week" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About the light week"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Semana ligera"
+          }
+        }
+      }
+    },
+    "The last week of the cycle: half the sets, the same weight. You rest without stopping training." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The last week of the cycle: half the sets, the same weight. You rest without stopping training."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La \u00faltima del ciclo: la mitad de las series, el mismo peso. Descansas sin dejar de entrenar."
+          }
+        }
+      }
+    },
+    "About the raise rhythm" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About the raise rhythm"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ritmo de subida"
+          }
+        }
+      }
+    },
+    "Steady raises after 2 sessions in a row met; fast after 1; by reps in reserve, it raises 1 if you had 2 to spare and waits if you hit failure." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steady raises after 2 sessions in a row met; fast after 1; by reps in reserve, it raises 1 if you had 2 to spare and waits if you hit failure."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Constante sube tras 2 sesiones cumplidas; r\u00e1pido tras 1; por reps en reserva, sube 1 si te sobraron 2 y espera si llegaste al fallo."
+          }
+        }
+      }
+    },
+    "Gym words" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gym words"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Palabras del gym"
+          }
+        }
+      }
+    },
+    "As many as you can \u00b7 AMRAP" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "As many as you can \u00b7 AMRAP"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las que puedas \u00b7 AMRAP"
+          }
+        }
+      }
+    },
+    "Every rep that comes out. It counts for records and to raise." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every rep that comes out. It counts for records and to raise."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todas las reps que salgan. Cuenta para r\u00e9cords y para subir."
+          }
+        }
+      }
+    },
+    "Drop and continue \u00b7 drop" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drop and continue \u00b7 drop"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bajar y seguir \u00b7 drop"
+          }
+        }
+      }
+    },
+    "No rest, less weight. It counts as volume." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No rest, less weight. It counts as volume."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin descanso, con menos peso. Cuenta como volumen."
+          }
+        }
+      }
+    },
+    "Reps in reserve \u00b7 RIR" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reps in reserve \u00b7 RIR"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reps en reserva \u00b7 RIR"
+          }
+        }
+      }
+    },
+    "However many you still had. 0 means you hit failure." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "However many you still had. 0 means you hit failure."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las que a\u00fan pod\u00edas hacer. 0 = llegaste al fallo."
+          }
+        }
+      }
+    },
+    "The last week of the cycle: half the sets, same weight." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The last week of the cycle: half the sets, same weight."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La \u00faltima del ciclo: la mitad de series, mismo peso."
+          }
+        }
+      }
+    },
+    "Estimated effort" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estimated effort"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esfuerzo estimado"
+          }
+        }
+      }
+    },
+    "Minutes times how hard it was. Without a watch, it's your load." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minutes times how hard it was. Without a watch, it's your load."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minutos por qu\u00e9 tan duro estuvo. Sin reloj, es tu carga."
+          }
+        }
+      }
+    },
+    "Rest \u00b7 five ways" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rest \u00b7 five ways"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descansos \u00b7 5 formas"
+          }
+        }
+      }
+    },
+    "By the clock or by your pulse." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "By the clock or by your pulse."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Por reloj o por tu pulso."
+          }
+        }
+      }
+    },
+    "Weeks with a rhythm: it tracks your cycle and marks the light week for you." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weeks with a rhythm: it tracks your cycle and marks the light week for you."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Semanas con un ritmo: lleva tu ciclo y te marca la semana ligera."
+          }
+        }
+      }
+    },
+    "Estimated one-rep max" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estimated one-rep max"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1RM estimado"
+          }
+        }
+      }
+    },
+    "The heaviest single lift the app estimates from your sets, to track your strength." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The heaviest single lift the app estimates from your sets, to track your strength."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El m\u00e1ximo que la app estima que podr\u00edas levantar una vez, para seguir tu fuerza."
+          }
+        }
+      }
+    },
+    "What's a light week?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What's a light week?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\u00bfQu\u00e9 es una semana ligera?"
           }
         }
       }

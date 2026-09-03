@@ -175,6 +175,19 @@ enum RoutineSetEditing {
         return max(seen.count, 1)
     }
 
+    /// La celda de reps del EDITOR (E7 · ola 1): «8 a máx» para un AMRAP, «8-10» para un rango,
+    /// «8» para un piso fijo. `RoutineSet.repsRangeLabel` (StrandTraining, puro) ya normaliza el DATO
+    /// («8+»); esta es la palabra de INTERFAZ que ese archivo deja explícitamente a /ux (E7) — la
+    /// receta editable dice «máx», el dato crudo no.
+    static func editorRepsLabel(_ set: RoutineSet) -> String? {
+        guard let reps = set.reps else { return nil }
+        if set.mode == .amrap {
+            return String(localized: "\(reps) to max")
+        }
+        guard let top = set.repsRangeTop, top > reps else { return "\(reps)" }
+        return "\(reps)-\(top)"
+    }
+
     /// «Igualar todas»: copia la receta de la PRIMERA serie de trabajo a todas las demás — peso, piso,
     /// techo y modo (ola 1 · FER-327 · v5 N15). Los calentamientos no se tocan.
     static func equalizeWorkSets(_ sets: inout [RoutineSet]) {

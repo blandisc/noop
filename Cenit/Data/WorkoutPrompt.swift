@@ -31,7 +31,8 @@ enum WorkoutPrompt {
     ni después:
 
     { "schema":"noop.workout.v1", "idioma":"", "unidad":"kg", "programa":"",
-      "rutinas":[ { "nombre":"", "etiqueta":"",
+      "semanas":0, "semana_ligera":"", "al_terminar":"",
+      "rutinas":[ { "nombre":"", "etiqueta":"", "dia":0,
         "ejercicios":[ {"id":"", "nombre":"", "tipo":"weightReps", "series":0, "reps":0,
           "peso":0, "descanso_seg":0, "calentamiento_pcts":[], "superset":null} ] } ] }
 
@@ -42,7 +43,11 @@ enum WorkoutPrompt {
     - "nombre" del ejercicio: tal cual aparece en mi plan, sin traducirlo ni cambiarlo.
     - "unidad": "kg" o "lb", según la unidad de los pesos de mi plan.
     - Una entrada en "rutinas" por cada día/rutina (ej. Empuje, Jalón, Pierna), en orden. "etiqueta"
-      es opcional y solo informativa (ej. "Lunes").
+      es opcional y solo informativa (ej. "Lunes"). "dia" es el día de la semana de esa rutina
+      (1 = lunes … 7 = domingo), si mi plan lo dice; si no, omítelo.
+    - Si mi plan dura varias semanas y la última es más ligera: "semanas" (4 a 8), "semana_ligera"
+      ("menos_series", "menos_series_y_peso" o "ninguna") y "al_terminar" ("repetir" el ciclo o
+      "un_ciclo" solo). Si mi plan es una sola semana que se repite siempre igual, omite los tres.
     - "tipo": "weightReps" (peso × reps, lo normal), "bodyweight" (peso corporal), "time" (por
       tiempo, ej. plancha) o "distance" (cardio por distancia). Ante la duda, "weightReps".
     - "series" = número de series de trabajo (entero ≥ 1).
@@ -63,7 +68,8 @@ enum WorkoutPrompt {
     app to accept it, I need your reply to be just the JSON, no text before or after:
 
     { "schema":"noop.workout.v1", "idioma":"", "unidad":"kg", "programa":"",
-      "rutinas":[ { "nombre":"", "etiqueta":"",
+      "semanas":0, "semana_ligera":"", "al_terminar":"",
+      "rutinas":[ { "nombre":"", "etiqueta":"", "dia":0,
         "ejercicios":[ {"id":"", "nombre":"", "tipo":"weightReps", "series":0, "reps":0,
           "peso":0, "descanso_seg":0, "calentamiento_pcts":[], "superset":null} ] } ] }
 
@@ -74,7 +80,11 @@ enum WorkoutPrompt {
     - Each exercise "nombre": exactly as written in my plan, without translating or changing it.
     - "unidad": "kg" or "lb", matching the unit my plan's weights are written in.
     - One "rutinas" entry per day/routine (e.g. Push, Pull, Legs), in order. "etiqueta" is optional
-      and informational only (e.g. "Monday").
+      and informational only (e.g. "Monday"). "dia" is that routine's weekday (1 = Monday … 7 =
+      Sunday), if my plan says; otherwise leave it out.
+    - If my plan runs several weeks and the last one is lighter: "semanas" (4 to 8), "semana_ligera"
+      ("menos_series", "menos_series_y_peso" or "ninguna") and "al_terminar" ("repetir" the cycle or
+      "un_ciclo" once). If my plan is one week repeated forever the same, leave all three out.
     - "tipo": "weightReps" (weight × reps, the usual), "bodyweight", "time" (held/timed, e.g. plank)
       or "distance" (distance cardio). When in doubt, "weightReps".
     - "series" = number of working sets (integer ≥ 1).

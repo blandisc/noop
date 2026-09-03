@@ -140,8 +140,14 @@ struct HojaFoco: View {
             let actual = min(total, vivo.session.closedSupersetRounds(members: members) + 1)
             return "\(run.name) · " + String(localized: "Round \(actual) of \(total)")
         }
-        let work = run.sets.filter { $0.kind == .work }
-        let n = run.sets.prefix(run.currentSet + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
+        // Ola 1 (E7 · D2): un escalón de «bajar y seguir» no es una serie numerada — si el foco cayó
+        // en uno (mid-cadena), su número es el de su MADRE (`isNumberedWorkSet`, único oráculo).
+        let work = run.sets.filter(\.isNumberedWorkSet)
+        var motherIdx = run.currentSet
+        if run.sets.indices.contains(motherIdx) {
+            while motherIdx > 0, !run.sets[motherIdx].isNumberedWorkSet { motherIdx -= 1 }
+        }
+        let n = run.sets.prefix(motherIdx + 1).reduce(0) { $0 + ($1.isNumberedWorkSet ? 1 : 0) }
         return "\(run.name) · " + String(localized: "Set \(max(1, n)) of \(work.count)")
     }
 
@@ -403,7 +409,8 @@ struct HojaFoco: View {
                 let total = members.map { vivo.session.supersetRounds(at: $0) }.max() ?? 0
                 return (vivo.session.closedSupersetRounds(members: members), total)
             }
-            let work = run.sets.filter { $0.kind == .work }
+            // Ola 1 (E7 · D2): «N de M» solo cuenta series numeradas — un escalón no es una de ellas.
+            let work = run.sets.filter(\.isNumberedWorkSet)
             return (work.filter(\.done).count, work.count)
         }()
         let isLast = vivo.session.isComplete

@@ -86,7 +86,12 @@ struct RoutineSheet: View {
     /// R8 (QA D10, adjudicado): una superserie legada con rondas YA desiguales no se aplana en
     /// silencio — la primera edición que dispararía el espejo queda aquí hasta que el confirm
     /// («¿Igualar todas las rondas?») la libere.
-    struct PendingMirror { let idx: Int; let si: Int; let field: EditorCell.Field; let value: String }
+    struct PendingMirror {
+        let idx: Int; let si: Int; let field: EditorCell.Field; let value: String
+        /// N16 (ola 1 · E7): la tecla «máx» también dispara este candado (mismo campo `.repsTop`) —
+        /// `true` = «al liberar, marca AMRAP» en vez de escribir `value` como techo tecleado.
+        var setsAmrap: Bool = false
+    }
     @State var pendingMirror: PendingMirror? = nil
 
     // MARK: Captura con el keypad de la sesión
@@ -222,12 +227,13 @@ struct RoutineSheet: View {
                 derivedIncrementKg: PlateMath.minimumIncrement(
                     for: .from(equipment: ex.equipment), inventory: plates.inventory),
                 onBack: { progressionTarget = nil },
-                onSave: { enabled, targetReps, sessions, incrementKg, deload, ignoreRecovery in
+                onSave: { enabled, targetReps, sessions, incrementKg, deload, ignoreRecovery, useRPE in
                     items[t.ei].re.progressionEnabled = enabled
                     items[t.ei].re.progressionSessions = sessions
                     items[t.ei].re.progressionIncrementKg = incrementKg
                     items[t.ei].re.progressionDeload = deload
                     items[t.ei].re.progressionIgnoreRecovery = ignoreRecovery
+                    items[t.ei].re.progressionUseRPE = useRPE
                     dirty = true
                     guard enabled else { return }
                     for si in items[t.ei].re.sets.indices where items[t.ei].re.sets[si].kind == .work {

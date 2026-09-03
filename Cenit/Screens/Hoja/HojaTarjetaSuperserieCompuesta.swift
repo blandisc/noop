@@ -99,7 +99,7 @@ struct HojaTarjetaSuperserieCompuesta: View {
                 }
             }
             .frame(width: HojaMetrics.colPesoEdicion, alignment: .leading)
-            Text(sheet.showsReps(type) ? (set?.repsRangeLabel ?? "—") : "—")
+            Text((sheet.showsReps(type) ? set.flatMap(RoutineSetEditing.editorRepsLabel) : nil) ?? "—")
                 .font(LiquidType.valorS).foregroundStyle(LiquidColor.tinta900)
                 .frame(width: HojaMetrics.colRepsEdicion, alignment: .leading)
             Text(verbatim: "≡")

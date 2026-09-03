@@ -11,12 +11,23 @@ import CenitDesign
 // el parámetro `pliegue`, para no bifurcar su lógica.
 struct EntrenarHubHeroe<Pliegue: View>: View {
     let tono: LiquidTono
+    /// «Hoy · tu sesión», o «Semana ligera · N de M» en la última semana de un programa (ola 1 · E11,
+    /// D-Q10). El héroe no gana un estado nuevo: solo este texto y `meta` cambian; la forma es la misma.
+    let kicker: Text
     let routineName: String
     let meta: String
     let exerciseNames: String?
     /// «Hoy subes: sentadilla · 82,5 kg» ya armado (negritas incluidas) — reusa
     /// `EntrenarLanding.raiseText` tal cual, la Parte B no reinterpreta `raisesToday`.
     let raiseLine: Text?
+    /// Ola 1 · E5: tono de la píldora — `.verde` («Hoy subes») por default; `.ambar` cuando
+    /// `raiseLine` es en realidad «Hoy mantienes» (un ejercicio cumplió al fallo, sin subir).
+    var raiseTono: LiquidTono = .verde
+    /// Ola 1 · E11: en semana ligera SIN subida que ofrecer (`ProgressionPlanner.evaluate` no propone
+    /// nada esa semana), este slot explica la ligera en vez de quedar vacío — mismo lugar que
+    /// `raiseLine`, un vidrio cian (no verde: no es una subida) para no leerse como una. Mutuamente
+    /// excluyente con `raiseLine` en la práctica (`raiseLine` gana si por lo que sea ambos llegan no-nil).
+    let lightWeekLine: Text?
     let onOpenRaise: () -> Void
     let onStart: () -> Void
     let otraFormaAbierta: Bool
@@ -35,12 +46,14 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
     /// Init explícito (mismo patrón que `EntrenarModulo`, Parte A): `pliegue` se invoca UNA vez, aquí
     /// — el `body` de este struct se reconstruye cada vez que su padre redibuja de todos modos, así
     /// que evaluarlo en el `init` es equivalente a guardar el closure sin invocar.
-    init(tono: LiquidTono, routineName: String, meta: String, exerciseNames: String?, raiseLine: Text?,
+    init(tono: LiquidTono, kicker: Text, routineName: String, meta: String, exerciseNames: String?,
+        raiseLine: Text?, raiseTono: LiquidTono = .verde, lightWeekLine: Text? = nil,
         onOpenRaise: @escaping () -> Void, onStart: @escaping () -> Void,
         otraFormaAbierta: Bool, onToggleOtraForma: @escaping () -> Void,
         @ViewBuilder pliegue: () -> Pliegue) {
-        self.tono = tono; self.routineName = routineName; self.meta = meta
-        self.exerciseNames = exerciseNames; self.raiseLine = raiseLine
+        self.tono = tono; self.kicker = kicker; self.routineName = routineName; self.meta = meta
+        self.exerciseNames = exerciseNames; self.raiseLine = raiseLine; self.raiseTono = raiseTono
+        self.lightWeekLine = lightWeekLine
         self.onOpenRaise = onOpenRaise; self.onStart = onStart
         self.otraFormaAbierta = otraFormaAbierta; self.onToggleOtraForma = onToggleOtraForma
         self.pliegue = pliegue()
@@ -56,7 +69,7 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
                 // VoiceOver (regla del spec «un elemento por módulo» es para lectura, no para un
                 // módulo con varios controles vivos).
                 VStack(alignment: .leading, spacing: .zero) {
-                    Text("Today · your session")
+                    kicker
                         .liquidRegla()
                         .foregroundStyle(tono.rotulo)
                     Text(verbatim: routineName)
@@ -81,6 +94,12 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
                 .accessibilityElement(children: .combine)
                 if let raiseLine {
                     subPill(raiseLine).padding(.top, EntrenarHubMetrics.heroNombresToSubPillTop)
+                } else if let lightWeekLine {
+                    EntrenarModulo(tono: .cian) {
+                        lightWeekLine.font(LiquidType.caption).foregroundStyle(LiquidColor.tinta700)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(.top, EntrenarHubMetrics.heroNombresToSubPillTop)
                 }
                 ctaRow.padding(.top, EntrenarHubMetrics.heroSubPillToCtaTop)
                 pliegue
@@ -89,22 +108,23 @@ struct EntrenarHubHeroe<Pliegue: View>: View {
         .liquidEntrada(index: 0)
     }
 
-    // MARK: - Píldora «Hoy subes»
+    // MARK: - Píldora «Hoy subes» / «Hoy mantienes» (Ola 1 · E5: `raiseTono` la tiñe)
 
     private func subPill(_ line: Text) -> some View {
-        // 2A: cromo vía `OutlineCapsule.Estilo.tenida(.verde)` (alfas en `EntrenarHubMetrics.subPill*`).
+        // 2A: cromo vía `OutlineCapsule.Estilo.tenida(_:)` (alfas en `EntrenarHubMetrics.subPill*`).
         OutlineCapsule(size: .aMedida(insets: EntrenarHubMetrics.subPillInsets, minHeight: nil, touchInset: 0),
-                       estilo: .tenida(.verde), action: onOpenRaise) {
+                       estilo: .tenida(raiseTono), action: onOpenRaise) {
             HStack(spacing: LiquidSpace.s200) {
                 Circle()
                     .fill(LiquidColor.papelTarjeta)
                     .frame(width: EntrenarHubMetrics.subPillBadge, height: EntrenarHubMetrics.subPillBadge)
                     .overlay {
-                        Text(verbatim: "↑")
+                        // «↑» sube, «=» mantiene — el mismo badge, glifo distinto por tono.
+                        Text(verbatim: raiseTono == .verde ? "↑" : "=")
                             .font(EntrenarHubMetrics.subPillGlifo)
-                            .foregroundStyle(LiquidTono.verde.rotulo)
+                            .foregroundStyle(raiseTono.rotulo)
                     }
-                    .accessibilityHidden(true)   // decorativo — la palabra «subes» ya lo dice
+                    .accessibilityHidden(true)   // decorativo — la palabra «subes»/«mantienes» ya lo dice
                 line.font(.system(size: subPillTextoSize)).foregroundStyle(LiquidColor.tinta700)
                     .fixedSize(horizontal: false, vertical: true)
             }

@@ -18,7 +18,8 @@ extension RoutineSheet {
     /// `EditorItem.raise` sin re-filtrarla. Estática y pura para que un test la truene si alguien
     /// la envuelve en un gate de `advice`.
     static func raiseForEditorItem(
-        _ evaluation: (state: ProgressionState, raise: ProgressionPlanner.Raise?)?
+        _ evaluation: (state: ProgressionState, raise: ProgressionPlanner.Raise?,
+                       rhythmNote: ProgressionPlanner.RaiseRhythmNote?)?
     ) -> ProgressionPlanner.Raise? {
         evaluation?.raise
     }
@@ -188,7 +189,8 @@ extension RoutineSheet {
         }
         model.startStrengthSession(routineId: r.id, routineName: r.name, slots: slots,
                                    programWeek: serving.flatMap(\.stampWeek),
-                                   deload: serving.flatMap(\.stampDeload))
+                                   deload: serving.flatMap(\.stampDeload),
+                                   lightWeekHint: ProgramServing.stalledHint(context: serving))
     }
 
     // MARK: - Set + exercise mutations
@@ -528,6 +530,25 @@ extension RoutineSheet {
     func showsReps(_ t: ExerciseType) -> Bool { t == .weightReps || t == .bodyweight }
     func showsWeight(_ t: ExerciseType) -> Bool { t == .weightReps }
 
+    /// La ÚLTIMA serie de TRABAJO del ejercicio — el blanco de «Última serie: las que puedas»
+    /// (N16). `nil` sin series de trabajo (caso imposible en la práctica, ver `recetaCount`).
+    func lastWorkSetIndex(_ idx: Int) -> Int? {
+        items[idx].re.sets.lastIndex { $0.kind == .work }
+    }
+
+    /// N16 (ola 1 · E7): la MISMA acción que `setAmrap` del keypad, disparada desde el «···» — quita
+    /// el techo y marca AMRAP, o revierte a estándar si ya lo era. Sin el candado de rondas
+    /// desiguales del keypad (R8): un atajo de menú es una acción deliberada sobre TODO el ejercicio,
+    /// no una escritura de celda a medio teclear.
+    func toggleLastSetAmrap(_ idx: Int, si: Int) {
+        guard !locked, items.indices.contains(idx), items[idx].re.sets.indices.contains(si) else { return }
+        let isAmrap = items[idx].re.sets[si].mode == .amrap
+        items[idx].re.sets[si].mode = isAmrap ? .standard : .amrap
+        items[idx].re.sets[si].repsRangeTop = nil
+        dirty = true
+        mirrorAcrossRoundsIfSuperset(idx: idx, si: si)
+    }
+
     // MARK: - Day assignment (.planDay «···»)
 
     func changeRoutine(to r: Routine) {
@@ -574,6 +595,16 @@ extension RoutineSheet {
         if includeWarmup, !hasWarmups(idx) {
             rows.append(.init(String(localized: "Add warm-up"), systemImage: "flame") {
                 addWarmupRamp(idx)
+            })
+        }
+        // N16 (ola 1 · E7): el atajo que cubre el caso más común sin abrir la celda — el «···» y la
+        // tecla «máx» del keypad (`setAmrap`) son las DOS puertas a la MISMA acción sobre la MISMA
+        // serie. Solo en tipos con reps (Q7/mock §④): AMRAP no existe en tiempo/distancia.
+        if includeWarmup, showsReps(item.exercise.type), let lastWork = lastWorkSetIndex(idx) {
+            let isAmrap = item.re.sets[lastWork].mode == .amrap
+            rows.append(.init(String(localized: "Last set: however many you can"),
+                              systemImage: isAmrap ? "checkmark" : "infinity") {   // catalog: es «Última serie: las que puedas»
+                toggleLastSetAmrap(idx, si: lastWork)
             })
         }
         if !setsAreEqual(idx) {

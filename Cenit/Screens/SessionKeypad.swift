@@ -1,5 +1,6 @@
 import SwiftUI
 import CenitDesign
+import TipKit
 
 // MARK: - Custom numeric keypad for the strength session (FER-716)
 //
@@ -63,10 +64,10 @@ struct SessionKeypad: View {
     var onPause: (() -> Void)? = nil
     /// Qué cara pone el accesorio: ❚❚ para pausar, ▶ para reanudar.
     var isPaused: Bool = false
-    /// «QUEDABAN» — RIR (reps in reserve) capturado junto con la serie (FER-134, prototipo «Sesión en
-    /// vivo»): 0 · 1 · 2 · 3 · 4+, índice en `Self.rirLabels`. Se guarda como RPE = 10 − RIR al
-    /// palomear (mismo campo `WorkingSet.rpe`). `nil` oculta la fila entera (mismo patrón que
-    /// `onCopyAbove`): sin un destino que la lea, la fila sería un control muerto.
+    /// «REPS EN RESERVA» (ola 1 · E5; antes «QUEDABAN») — RIR capturado junto con la serie (FER-134,
+    /// prototipo «Sesión en vivo»): 0 · 1 · 2 · 3 · 4+, índice en `Self.rirLabels`. Se guarda como
+    /// RPE = 10 − RIR al palomear (mismo campo `WorkingSet.rpe`). `nil` oculta la fila entera (mismo
+    /// patrón que `onCopyAbove`): sin un destino que la lea, la fila sería un control muerto.
     var selectedRIR: Int? = nil
     var onSelectRIR: ((Int) -> Void)? = nil
 
@@ -76,6 +77,9 @@ struct SessionKeypad: View {
         VStack(spacing: .zero) {
             if let onSelectRIR {
                 rirRow(onSelectRIR)
+                    // Ola 1 · E12: consejo «Reps en reserva», la primera vez que se registra una
+                    // serie (TipKit gobierna el «una vez»).
+                    .popoverTip(RepsEnReservaTip())
                 Rectangle().fill(LiquidColor.tinta10).frame(height: 1)
             }
             accessoryBar
@@ -85,7 +89,7 @@ struct SessionKeypad: View {
         .entrenarHojaBarraFondo(tono: .neutro)
     }
 
-    // MARK: QUEDABAN (RIR)
+    // MARK: Reps en reserva (RIR)
 
     private func rirRow(_ onSelectRIR: @escaping (Int) -> Void) -> some View {
         HStack(spacing: LiquidSpace.s200) {

@@ -5,6 +5,7 @@ import CenitDesign
 import StrandTraining
 import StrandAnalytics
 import CenitStore
+import TipKit
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // 2026-07-19: `plateNumber` y `massString` vivían aquí como copias privadas y se habían desfasado de
@@ -386,10 +387,10 @@ struct LiveStrengthSheet: View {
                     for: .from(equipment: ExerciseCatalog.byID(run.exerciseId)?.equipment),
                     inventory: model.plates.inventory),
                 onBack: { progressionEdit = nil },
-                onSave: { enabled, targetReps, sessions, incrementKg, deload, ignoreRecovery in
+                onSave: { enabled, targetReps, sessions, incrementKg, deload, ignoreRecovery, useRPE in
                     persistProgressionFull(runId: run.id, enabled: enabled, targetReps: targetReps,
                                            sessions: sessions, incrementKg: incrementKg,
-                                           deload: deload, ignoreRecovery: ignoreRecovery)
+                                           deload: deload, ignoreRecovery: ignoreRecovery, useRPE: useRPE)
                     progressionEdit = nil
                 }
             )
@@ -577,18 +578,19 @@ struct LiveStrengthSheet: View {
     /// `LiveStrengthSheetRIRTests`.
     static func rpe(fromRIR rir: Int) -> Double { Double(10 - min(4, max(0, rir))) }
 
-    /// La lectura inversa para la tabla (handoff «Sesión en vivo» §4, ítem 4: «"Q n" ... en filas
-    /// hechas (QUEDABAN = RIR)»): el motor solo guarda RPE (`WorkingSet.rpe`), así que la columna
-    /// de `SetTable` recibe la lectura QUEDABAN ya formateada en vez del RPE crudo — el campo no
-    /// cambia, solo cómo se lee en ESTA tabla (RIR = 10 − RPE, saturado a 0…4, «4+» en el tope).
-    /// `RoutineEditorScreen` sigue leyendo `set.rpe` sin pasar por aquí — su columna RPE es RPE de
-    /// verdad, no QUEDABAN (revisión ronda 3, hallazgo grave/menor duplicado).
+    /// La lectura inversa para la tabla (reps en reserva, D-Q1/D-Q6, ola 1 · E5): el motor solo
+    /// guarda RPE (`WorkingSet.rpe`), así que la columna de `SetTable` recibe la lectura ya
+    /// formateada en vez del RPE crudo — el campo no cambia, solo cómo se lee en ESTA tabla
+    /// (RIR = 10 − RPE, saturado a 0…4, «4+» en el tope). `RoutineEditorScreen` sigue leyendo
+    /// `set.rpe` sin pasar por aquí — su columna RPE es RPE de verdad, no reps en reserva (revisión
+    /// ronda 3, hallazgo grave/menor duplicado). Antes decía «Q n» (abreviatura del prototipo); el
+    /// vocabulario del dueño prohíbe «Q»/«Quedaban» en cualquier cadena visible — 0 en reserva lee
+    /// «al fallo», el resto «N en reserva» / «4+ en reserva».
     static func qLabel(fromRPE rpe: Double) -> String {
         let rir = 10 - Int(rpe.rounded())
         let clamped = min(max(rir, 0), 4)
-        // «Q» es la abreviatura del prototipo (copy.md «Sesión en vivo»), no una palabra a traducir —
-        // igual que el badge «C» de calentamiento en la misma tabla (`badgeText` arriba).
-        return clamped >= 4 ? "Q 4+" : "Q \(clamped)"
+        if clamped == 0 { return String(localized: "at failure") }
+        return clamped >= 4 ? String(localized: "4+ in reserve") : String(localized: "\(clamped) in reserve")
     }
 
 
@@ -1310,7 +1312,8 @@ struct LiveStrengthSheet: View {
     }
 
     private func persistProgressionFull(runId: String, enabled: Bool, targetReps: Int, sessions: Int,
-                                        incrementKg: Double?, deload: DeloadPolicy, ignoreRecovery: Bool) {
+                                        incrementKg: Double?, deload: DeloadPolicy, ignoreRecovery: Bool,
+                                        useRPE: Bool) {
         guard let rid = session.routineId else { return }
         Task {
             guard let store = await model.repo.storeHandle(),
@@ -1322,6 +1325,7 @@ struct LiveStrengthSheet: View {
             res[idx].progressionIncrementKg = incrementKg
             res[idx].progressionDeload = deload
             res[idx].progressionIgnoreRecovery = ignoreRecovery
+            res[idx].progressionUseRPE = useRPE
             res[idx].targetReps = targetReps
             for i in res[idx].sets.indices where res[idx].sets[i].kind == .work {
                 res[idx].sets[i].reps = targetReps
@@ -1609,6 +1613,9 @@ struct LiveStrengthSheet: View {
         return VStack(alignment: .leading, spacing: LiquidSpace.s200) {
             Text("How hard was it?")
                 .font(LiquidType.tituloGemela).foregroundStyle(LiquidColor.tinta900)
+                // Ola 1 · E12: consejo «Esfuerzo estimado», el primer recibo que trae la pregunta
+                // (TipKit gobierna el «una vez»).
+                .popoverTip(EsfuerzoEstimadoTip())
             EntrenarFilaEsfuerzo(
                 opciones: labels,
                 seleccion: seleccion,
@@ -1859,21 +1866,31 @@ struct LiveStrengthSheet: View {
         .liquidGlass(.superficieSolida)
     }
 
-    /// «Por ejercicio»: one quiet row per exercise — sets · top datum · trend vs «la última vez».
+    /// «Por ejercicio»: nombre + gramática de la serie (D7, ola 1 · FER-327 · E7 · issue) — «80 kg ·
+    /// 8 · 8 · 11 máx» (+ «· N al fallo» si aplica) + tendencia; sus escalones de «bajar y seguir», si
+    /// los hubo, en líneas propias debajo, tinta más tenue (son extra, no la serie prescrita).
     private func receiptExercises(_ lines: [StrengthSummary.ExerciseLine]) -> some View {
         VStack(alignment: .leading, spacing: .zero) {
             Text("By exercise").liquidKicker().foregroundStyle(LiquidColor.tinta700)
                 .padding(.bottom, LiquidSpace.s050)
                 ForEach(Array(lines.enumerated()), id: \.element.id) { i, line in
-                HStack(spacing: LiquidSpace.s300) {
-                    Text(line.name).font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta900)
-                        .lineLimit(1).minimumScaleFactor(0.8)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    Text(exerciseLineDetail(line))
-                        .font(LiquidType.caption).monospacedDigit().foregroundStyle(LiquidColor.tinta700)
-                    exerciseTrendGlyph(line.trend)
+                VStack(alignment: .leading, spacing: LiquidSpace.s050) {
+                    HStack(spacing: LiquidSpace.s300) {
+                        Text(line.name).font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta900)
+                            .lineLimit(1).minimumScaleFactor(0.8)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Text(exerciseLineDetail(line))
+                            .font(LiquidType.caption).monospacedDigit().foregroundStyle(LiquidColor.tinta700)
+                        exerciseTrendGlyph(line.trend)
+                    }
+                    ForEach(Array(line.dropLines.enumerated()), id: \.offset) { _, drop in
+                        Text(dropLineDetail(drop))
+                            .font(LiquidType.caption).monospacedDigit().foregroundStyle(LiquidColor.tinta500)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                    }
                 }
                 .frame(minHeight: 40)
+                .padding(.vertical, LiquidSpace.s050)
                 .overlay(alignment: .bottom) {
                     if i < lines.count - 1 { Rectangle().fill(LiquidColor.tinta10).frame(height: 1) }
                 }
@@ -1882,15 +1899,39 @@ struct LiveStrengthSheet: View {
         }
     }
 
+    /// D7: series con reps (weightReps/bodyweight) listan «peso · rep1 · rep2 · …», cada AMRAP con
+    /// «máx» pegado a su número; «· N al fallo» al final si alguna llegó a RPE 10. Sin reps
+    /// (tiempo/distancia, o una reimpresión sin este detalle) cae al «N sets · dato» de siempre.
     private func exerciseLineDetail(_ line: StrengthSummary.ExerciseLine) -> String {
-        let top: String? = {
-            if let w = line.topWeightKg, w > 0 { return massText(w) }
-            if let t = line.topTimeS, t > 0 { return Self.clock(t) }
-            if let d = line.topDistanceM, d > 0 { return distanceText(d) }
-            return nil
-        }()
-        guard let top else { return String(localized: "\(line.setCount) sets") }
-        return String(localized: "\(line.setCount) sets · \(top)")
+        guard !line.repsSequence.isEmpty else {
+            let top: String? = {
+                if let w = line.topWeightKg, w > 0 { return massText(w) }
+                if let t = line.topTimeS, t > 0 { return Self.clock(t) }
+                if let d = line.topDistanceM, d > 0 { return distanceText(d) }
+                return nil
+            }()
+            guard let top else { return String(localized: "\(line.setCount) sets") }
+            return String(localized: "\(line.setCount) sets · \(top)")
+        }
+        var parts: [String] = []
+        if let w = line.topWeightKg, w > 0 { parts.append(massText(w)) }
+        for (i, reps) in line.repsSequence.enumerated() {
+            let repsStr = reps.map(String.init) ?? "—"
+            let isAmrap = line.amrapFlags.indices.contains(i) && line.amrapFlags[i]
+            parts.append(isAmrap ? repsStr + " " + String(localized: "max") : repsStr)
+        }
+        var text = parts.joined(separator: " · ")
+        if line.failureCount > 0 {
+            text += " · " + String(localized: "\(line.failureCount) at failure")
+        }
+        return text
+    }
+
+    /// D7: «↳ bajar y seguir 64 kg · 9» — un escalón, con su propio peso (ya reducido) y sus reps.
+    private func dropLineDetail(_ drop: StrengthSummary.ExerciseLine.DropLine) -> String {
+        let weightStr = massText(drop.weightKg)
+        let repsStr = drop.reps.map(String.init) ?? "—"
+        return "↳ " + String(localized: "Drop and continue") + " \(weightStr) · \(repsStr)"
     }
 
     @ViewBuilder private func exerciseTrendGlyph(_ trend: Int?) -> some View {

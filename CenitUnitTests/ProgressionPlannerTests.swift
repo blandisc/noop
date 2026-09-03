@@ -76,4 +76,48 @@ final class ProgressionPlannerTests: XCTestCase {
         XCTAssertEqual(held?.state, .deferred(newKg: 102.5))
         XCTAssertEqual(held?.raise?.waiting, true)
     }
+
+    // MARK: - RaiseRhythmNote (ola 1 · E5, gate QA FER-331)
+
+    /// RPE 7 en las dos series de trabajo (todas ≤ `rpeComfortableMax`): la sesión cuenta como
+    /// cómoda y sube en una sola sesión — la nota lleva `reserveReps = 10 − 7 = 3`.
+    func testComfortableRhythmNoteCarriesReserveFromRPE() {
+        let history = [row(100, kg: 100, reps: 8, rpe: 7), row(100, kg: 100, reps: 8, rpe: 7)]
+        let result = ProgressionPlanner.evaluate(re: exercise(useRPE: true), history: history,
+                                                 inventory: [], equipment: "barbell", advice: .planAsIs)
+        XCTAssertEqual(result?.state, .readyToAdvance(newKg: 102.5))
+        XCTAssertEqual(result?.rhythmNote, .comfortable(reserveReps: 3))
+    }
+
+    /// Una sola sesión cumplida AL FALLO (RPE 10 ≥ `rpeLimitMin`): invisible al ciclo (`.inCycle`,
+    /// no rompe ni suma), y la nota trae el peso de esa MISMA sesión (`workingKg`) para la píldora
+    /// ámbar del hub — gate QA FER-331 O2.
+    func testAtLimitHoldWhenNewestSessionMetAtTheLimit() {
+        let history = [row(100, kg: 100, reps: 8, rpe: 10), row(100, kg: 100, reps: 8, rpe: 10)]
+        let result = ProgressionPlanner.evaluate(re: exercise(useRPE: true), history: history,
+                                                 inventory: [], equipment: "barbell", advice: .planAsIs)
+        XCTAssertEqual(result?.state, .inCycle(done: 0, of: 2))
+        XCTAssertEqual(result?.rhythmNote, .atLimitHold(workingKg: 100))
+    }
+
+    /// Tres sesiones seguidas cumplidas al fallo alcanzan el tope (`atLimitStreakCap`): la racha
+    /// entera cuenta como estándar y sube de todos modos — la nota es el tope, no lo cómodo.
+    func testAtLimitCapAfterThreeSessionsAtTheLimit() {
+        let history = (1...3).flatMap { i in
+            [row(i * 100, kg: 100, reps: 8, rpe: 10), row(i * 100, kg: 100, reps: 8, rpe: 10)]
+        }
+        let result = ProgressionPlanner.evaluate(re: exercise(useRPE: true), history: history,
+                                                 inventory: [], equipment: "barbell", advice: .planAsIs)
+        XCTAssertEqual(result?.state, .readyToAdvance(newKg: 102.5))
+        XCTAssertEqual(result?.rhythmNote, .atLimitCap)
+    }
+
+    /// La sesión más reciente NO cumplió las reps: sin importar el esfuerzo, no hay nota de ritmo
+    /// que decir — `rhythmNote` solo describe sesiones que SÍ llegaron a la meta.
+    func testNoRhythmNoteWhenNewestSessionMissedTheGoal() {
+        let history = [row(100, kg: 100, reps: 5, rpe: 10), row(100, kg: 100, reps: 5, rpe: 10)]
+        let result = ProgressionPlanner.evaluate(re: exercise(useRPE: true), history: history,
+                                                 inventory: [], equipment: "barbell", advice: .planAsIs)
+        XCTAssertNil(result?.rhythmNote)
+    }
 }

@@ -131,7 +131,7 @@ struct HojaTarjetaEjercicioSesion: View {
             Text(verbatim: "↓").foregroundStyle(LiquidColor.tinta700)
             switch display {
             case .propose(let fromKg, let toKg):
-                Text(String(localized: "\(ProgressionMath.deloadStallThreshold) sessions unmoved · proposes \(vivo.plateNumber(vivo.displayWeight(toKg))) \(vivo.weightUnit())"))
+                Text(deloadProposeText(toKg))
                     .font(LiquidType.captionFuerte).foregroundStyle(LiquidColor.tinta900)
                 Spacer(minLength: LiquidSpace.s150)
                 Button { vivo.applyDeload(ei: ei, toKg: toKg) } label: {
@@ -145,7 +145,7 @@ struct HojaTarjetaEjercicioSesion: View {
                 }
                 .buttonStyle(.plain)
             case .warnOnly(let sessions):
-                Text(String(localized: "\(sessions) sessions unmoved · goal not met"))
+                Text(deloadWarnOnlyText(sessions))
                     .font(LiquidType.captionFuerte).foregroundStyle(LiquidColor.tinta700)
                 Spacer(minLength: LiquidSpace.s150)
                 Button { vivo.dismissDeload(ei: ei) } label: {
@@ -157,6 +157,21 @@ struct HojaTarjetaEjercicioSesion: View {
         }
         .padding(.horizontal, LiquidSpace.s250).padding(.vertical, LiquidSpace.s150)
         .accessibilityElement(children: .combine)
+    }
+
+    /// Ola 1 · E11 (P8): «· la semana ligera llega en la N» — el mismo `lightWeekHint` que se calculó
+    /// UNA vez al arrancar (`EntrenarView`/`RoutineSheetLogic`, desde el `serving` que ya tenían),
+    /// nunca una segunda consulta al store desde dentro de la sesión viva.
+    private func deloadProposeText(_ toKg: Double) -> String {
+        let base = String(localized: "\(ProgressionMath.deloadStallThreshold) sessions unmoved · proposes \(vivo.plateNumber(vivo.displayWeight(toKg))) \(vivo.weightUnit())")
+        guard let hint = vivo.session.lightWeekHint else { return base }
+        return base + " " + hint
+    }
+
+    private func deloadWarnOnlyText(_ sessions: Int) -> String {
+        let base = String(localized: "\(sessions) sessions unmoved · goal not met")
+        guard let hint = vivo.session.lightWeekHint else { return base }
+        return base + " " + hint
     }
 
     private var tabla: some View {
@@ -224,31 +239,82 @@ struct HojaTarjetaEjercicioSesion: View {
     private func filaSerie(si: Int, set: StrengthSessionModel.WorkingSet, esPrimera: Bool) -> some View {
         let marca: HojaFilaSerie.Marca = set.done ? .hecha : (si == run.currentSet ? .activa : .fantasma)
         let usesReps = run.type == .weightReps || run.type == .bodyweight
-        let workNumber = run.sets.prefix(si + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
+        // Ola 1 (FER-327 · E7 · D2): el contador de trabajo EXCLUYE los escalones de «bajar y
+        // seguir» (`isNumberedWorkSet`, el único oráculo) — pinta «↳» en vez de robarle el número
+        // a la siguiente serie.
+        let workNumber = run.sets.prefix(si + 1).reduce(0) { $0 + ($1.isNumberedWorkSet ? 1 : 0) }
         let repsText: String
         switch run.type {
-        // FER-327: `nil` = AMRAP pendiente — la celda va VACÍA (Q7), nunca un 0 que fingiría un dato.
-        case .weightReps, .bodyweight: repsText = set.reps.map(String.init) ?? ""
+        case .weightReps, .bodyweight:
+            if let reps = set.reps {
+                repsText = String(reps)
+            } else if set.mode == .amrap {
+                // Ola 1 (E7 · ux-B §③): AMRAP pendiente lee «máx» en tinta, no una celda vacía —
+                // «8+» sería un techo que `SetMode` ya prohíbe; «máx» es la palabra de interfaz.
+                repsText = String(localized: "max")
+            } else {
+                repsText = ""
+            }
         case .time: repsText = (set.timeS ?? 0) > 0 ? SessionClock.format(set.timeS ?? 0) : "—"
         case .distance: repsText = (set.distanceM ?? 0) > 0 ? String(format: "%.1f", (set.distanceM ?? 0) / 1000) : "—"
         }
+        // Ola 1 (E7): la marca del tipo, en su propia línea bajo la fila (nunca en el numeral).
+        let tipoEtiqueta: String?
+        let tipoDetalle: String?
+        switch set.mode {
+        case .amrap:
+            tipoEtiqueta = String(localized: "However many you can")   // catalog: es «Las que puedas»
+            tipoDetalle = set.done ? nil : String(localized: "Log how many you got")   // es «anota cuántas salieron»
+        case .drop:
+            // El glifo «↳» va FUERA de la cadena localizada — es un símbolo, no una palabra.
+            tipoEtiqueta = "↳ " + String(localized: "Drop and continue")   // catalog: es «Bajar y seguir»
+            tipoDetalle = set.done ? nil : String(localized: "No rest, −20%")   // es «sin descanso, −20 %»
+        case .standard:
+            tipoEtiqueta = nil
+            tipoDetalle = nil
+        }
         let datos = HojaFilaSerie.Datos(
-            numero: set.kind == .warmup ? String(localized: "C") : "\(workNumber)",
+            numero: set.kind == .warmup ? String(localized: "C") : (set.mode == .drop ? "↳" : "\(workNumber)"),
             esCalentamiento: set.kind == .warmup,
             peso: usesReps ? vivo.plateNumber(vivo.displayWeight(set.weightKg)) : "—",
             unidad: run.type == .weightReps ? vivo.weightUnit() : "",
             conSubida: set.kind == .work && run.proposedRaise?.waiting == false,
             reps: repsText,
             q: marca == .hecha ? set.rpe.map(LiveStrengthSheet.qLabel(fromRPE:)) : nil,
-            ant: marca == .activa ? vivo.antPlayhead(run) : nil,
-            esPrimera: esPrimera
+            ant: marca == .activa ? antPlayheadTexto(run) : nil,   // E11: sufijo «· ligera»
+            esPrimera: esPrimera,
+            tipoEtiqueta: tipoEtiqueta,
+            tipoDetalle: tipoDetalle
         )
-        return HojaFilaSerie(datos: datos, contexto: .sesion, marca: marca) {
-            vivo.confirmOrToggleSet(ei: ei, si: si)
-        }
+        return HojaFilaSerie(
+            datos: datos, contexto: .sesion, marca: marca,
+            onMarcar: { vivo.confirmOrToggleSet(ei: ei, si: si) },
+            // B1 (issue): el chip de marca abre el MISMO menú que la pulsación larga — misma acción,
+            // dos puertas. `HojaFilaSerie` ya lo deja como toque de 44 pt sin agrandar el dibujo.
+            onTipoTap: { vivo.setMenuTarget = HojaSesionViva.SetMenuTarget(runId: run.id, setId: set.id) }
+        )
+        // Ola 1 · E12: consejo «las que puedas» / «bajar y seguir», la primera vez que esta fila
+        // aparece con ese tipo (TipKit gobierna el «una vez», global a los 3 sitios de HojaFilaSerie).
+        .entrenarConsejoTipoSerie(set.mode)
+        // Ola 1 (FER-327 · E7 · ux-B §③): pulsación larga sobre CUALQUIER serie de trabajo (madre o
+        // escalón) abre el menú de la serie — el numeral sigue de solo lectura. `simultaneousGesture`
+        // (no exclusiva): no le quita el tap a `onMarcar`/las tap-zones de abajo.
+        .simultaneousGesture(LongPressGesture(minimumDuration: 0.4).onEnded { _ in
+            guard set.kind == .work else { return }
+            withAnimation(vivo.reduceMotion ? nil : .snappy) {
+                vivo.setMenuTarget = HojaSesionViva.SetMenuTarget(runId: run.id, setId: set.id)
+            }
+        })
+        .liquidMenu(
+            isPresented: Binding(
+                get: { vivo.setMenuTarget == HojaSesionViva.SetMenuTarget(runId: run.id, setId: set.id) },
+                set: { if !$0 { vivo.setMenuTarget = nil } }),
+            items: vivo.setMenuItems(ei: ei, si: si)
+        )
         // R3: tap en peso/reps de una fila activa/fantasma abre la consola sobre ESA celda —
         // paridad de intención con las tap-zones de F1 (`HojaFilaSerieTapZones`). D-r2.2 (ronda 3):
-        // en una fila HECHA la misma zona de reps (donde vive el sufijo «· Q») abre la hoja de RPE —
+        // en una fila HECHA la misma zona de reps (donde vive el sufijo de reps en reserva) abre la
+        // hoja de RPE —
         // el viejo también lo hacía desde la tabla en línea (`tapEntrenarCell` case `.rpe`).
         .overlay {
             if usesReps {
@@ -292,6 +358,39 @@ struct HojaTarjetaEjercicioSesion: View {
         // FER-223: el destello visual de PR no tenía háptico — el patrón de éxito ascendente,
         // reservado para esto y para el cierre de sesión, nunca para una serie más.
         .entrenarHaptic(.prNuevo, trigger: vivo.prFlash)
+        // B9 (ux-B §③): la pulsación larga no es alcanzable por VoiceOver — las MISMAS opciones del
+        // menú viven como acciones personalizadas del rotor. Un escalón solo ofrece «Quitar serie»,
+        // igual que su menú (`setMenuItems`); se escribe explícito (no un `ForEach` sobre los items
+        // del menú) para que cada acción lleve su propio texto sin depender de cómo LiquidMenu arma
+        // sus filas.
+        .accessibilityActions {
+            if set.kind == .work {
+                if set.mode == .drop {
+                    Button(String(localized: "Remove set")) { vivo.removeSetAskingIfNeeded(ei: ei, si: si) }
+                } else {
+                    if usesReps {
+                        Button(String(localized: "However many you can")) { vivo.toggleAmrap(ei: ei, si: si) }
+                    }
+                    Button(String(localized: "Drop and continue · −20%")) {
+                        withAnimation(vivo.reduceMotion ? nil : .snappy) { vivo.addDrop(ei: ei, si: si) }
+                    }
+                    Button(String(localized: "Reached failure")) {
+                        vivo.session.setRPE(exercise: run.id, set: set.id, rpe: set.rpe == 10 ? nil : 10)
+                    }
+                    Button(String(localized: "Remove set")) { vivo.removeSetAskingIfNeeded(ei: ei, si: si) }
+                }
+            }
+        }
+    }
+
+    /// Ola 1 · E11: el playhead de la fila activa lleva «· ligera» cuando ESTA sesión se sirvió en
+    /// semana ligera (`strengthSession.deload`, ola 1 · E10) — «la última vez» sigue siendo la receta
+    /// completa; el sufijo dice por qué hoy se ve distinta, sin tocar `antPlayhead` (el formato base
+    /// sigue siendo de `RoutineSheetLiveLogic`, un solo dueño).
+    private func antPlayheadTexto(_ run: StrengthSessionModel.ExerciseRun) -> String? {
+        guard let base = vivo.antPlayhead(run) else { return nil }
+        guard vivo.session.deload == true else { return base }
+        return base + " · " + String(localized: "light week")
     }
 
     /// B12 (FER-169): el cronómetro compacto de la fila ACTIVA de tiempo/distancia (mapa: nombre ·
@@ -554,13 +653,18 @@ struct HojaTarjetaSuperserieSesion: View {
             let ei = vivo.session.currentIndex
             let run = vivo.session.runs[ei]
             if run.sets.indices.contains(run.currentSet) {
-                let work = run.sets.filter { $0.kind == .work }
-                if let workIdx = work.firstIndex(where: { $0.id == run.sets[run.currentSet].id }) {
+                // Ola 1 (E7 · D2): si el foco cayó en un escalón (mid-cadena de «bajar y seguir»), su
+                // ronda es la de su MADRE — camina hacia atrás hasta la primera serie numerada
+                // (`isNumberedWorkSet`, único oráculo); un escalón nunca tiene índice propio en `work`.
+                var motherIdx = run.currentSet
+                while motherIdx > 0, !run.sets[motherIdx].isNumberedWorkSet { motherIdx -= 1 }
+                let work = run.sets.filter(\.isNumberedWorkSet)
+                if let workIdx = work.firstIndex(where: { $0.id == run.sets[motherIdx].id }) {
                     return min(totalRondas, workIdx + 1)
                 }
             }
         }
-        let maxCerradas = runs.map { r in r.sets.filter { $0.kind == .work && $0.done }.count }.max() ?? 0
+        let maxCerradas = runs.map { r in r.sets.filter { $0.isNumberedWorkSet && $0.done }.count }.max() ?? 0
         return max(1, min(totalRondas, maxCerradas))
     }
 
@@ -573,8 +677,14 @@ struct HojaTarjetaSuperserieSesion: View {
     private var rondaDelDescanso: Int? {
         guard vivo.session.phase == .resting, let ownerId = vivo.session.restOwnerSetId else { return nil }
         for ei in members where vivo.session.runs.indices.contains(ei) {
-            let work = vivo.session.runs[ei].sets.filter { $0.kind == .work }
-            if let workIdx = work.firstIndex(where: { $0.id == ownerId }) { return workIdx + 1 }
+            let sets = vivo.session.runs[ei].sets
+            guard let ownerIdx = sets.firstIndex(where: { $0.id == ownerId }) else { continue }
+            // Ola 1 (E7 · D2): el descanso arranca al palomear el ÚLTIMO escalón (spec), así que el
+            // dueño puede ser un escalón — su ronda es la de su madre, no «no encontrada».
+            var motherIdx = ownerIdx
+            while motherIdx > 0, !sets[motherIdx].isNumberedWorkSet { motherIdx -= 1 }
+            let work = sets.filter(\.isNumberedWorkSet)
+            if let workIdx = work.firstIndex(where: { $0.id == sets[motherIdx].id }) { return workIdx + 1 }
         }
         return nil
     }
@@ -680,10 +790,13 @@ struct HojaTarjetaSuperserieSesion: View {
     }
 
     /// El índice REAL en `run.sets` de la K-ésima serie de TRABAJO (1-based) — N3: los calentamientos
-    /// no cuentan para la numeración de ronda.
+    /// no cuentan para la numeración de ronda. Ola 1 (FER-327 · E7): un escalón de «bajar y seguir»
+    /// TAMPOCO cuenta — de lo contrario robaría un número de ronda que ningún otro miembro del bloque
+    /// tiene, desalineando «ronda 3» entre ellos (mismo filtro que `StrengthSessionModel.supersetRounds`,
+    /// única forma correcta: el escalón vive colgado de su madre, `filaRonda` lo pinta como sub-fila).
     private func workSetIndex(_ run: StrengthSessionModel.ExerciseRun, round r: Int) -> Int? {
         var seen = 0
-        for (si, set) in run.sets.enumerated() where set.kind == .work {
+        for (si, set) in run.sets.enumerated() where set.isNumberedWorkSet {
             seen += 1
             if seen == r { return si }
         }
@@ -695,30 +808,129 @@ struct HojaTarjetaSuperserieSesion: View {
         let esActiva = slot.ei == vivo.session.currentIndex && slot.si == slot.run.currentSet
         let marca: HojaFilaSerie.Marca = set.done ? .hecha : (esActiva ? .activa : .fantasma)
         let usesReps = slot.run.type == .weightReps || slot.run.type == .bodyweight
+        let repsText: String
+        if usesReps {
+            if let reps = set.reps { repsText = String(reps) }
+            // Ola 1 (E7 · ux-B §③): AMRAP pendiente lee «máx», paridad con `filaSerie` de un
+            // ejercicio suelto — un miembro de superserie también puede ser «las que puedas».
+            else if set.mode == .amrap { repsText = String(localized: "max") }
+            else { repsText = "" }
+        } else {
+            repsText = "—"
+        }
+        // Ola 1 (E7): la marca del tipo, misma gramática que `filaSerie` (ejercicio suelto). `set`
+        // aquí NUNCA es un escalón — `workSetIndex` los excluye de la ronda (ver su doc); un escalón
+        // solo llega por `filaDrop`, abajo.
+        let tipoEtiqueta: String? = set.mode == .amrap ? String(localized: "However many you can") : nil
         let datos = HojaFilaSerie.Datos(
             numero: "\(ronda)", esCalentamiento: false,
             peso: usesReps ? vivo.plateNumber(vivo.displayWeight(set.weightKg)) : "—",
             unidad: slot.run.type == .weightReps ? vivo.weightUnit() : "",
             conSubida: false,
-            reps: usesReps ? (set.reps.map(String.init) ?? "") : "—",   // nil = AMRAP pendiente (FER-327)
+            reps: repsText,
             // N4 (spec F3, «filas ssrow … reps(+Q)»): el sufijo Q solo en filas HECHAS, mismo
             // patrón que `HojaTarjetaEjercicioSesion.filaSerie`. Sin playhead ANT: el mock P5 no lo
             // dibuja para miembros de superserie (decisión documentada en el reporte).
             q: marca == .hecha ? set.rpe.map(LiveStrengthSheet.qLabel(fromRPE:)) : nil,
-            ant: nil, esPrimera: esPrimera
+            ant: nil, esPrimera: esPrimera,
+            tipoEtiqueta: tipoEtiqueta,
+            tipoDetalle: nil
         )
         return VStack(alignment: .leading, spacing: LiquidSpace.s100) {
-            Text(slot.run.name)
-                .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500).lineLimit(1)
-                // A11y: «Zancadas, ronda 2 de 3» — el nombre por sí solo no basta para orientar en
-                // una tabla intercalada; `.combine` (abajo) lo funde con el label de `HojaFilaSerie`
-                // en UN elemento («fila = un elemento», spec F3), sin reabrir ese componente sellado.
-                .accessibilityLabel(Text(verbatim: "\(slot.run.name), \(rondaTexto(ronda))"))
-            HojaFilaSerie(datos: datos, contexto: .sesion, marca: marca) {
-                vivo.confirmOrToggleSet(ei: slot.ei, si: slot.si)
+            // A11y: nombre + fila madre se combinan en UN elemento («Zancadas, ronda 2 de 3, serie
+            // 2, 80 kilos…», spec F3) — el escalón (abajo) queda FUERA de este `.combine` a propósito:
+            // sus propias acciones («Quitar serie») no deben mezclarse con las 4 de la madre bajo el
+            // mismo rótulo, así que se queda como su PROPIO elemento (`HojaFilaSerie` ya se declara
+            // `.accessibilityElement(children: .ignore)` con su label, sin que nadie más lo combine).
+            VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+                Text(slot.run.name)
+                    .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500).lineLimit(1)
+                    .accessibilityLabel(Text(verbatim: "\(slot.run.name), \(rondaTexto(ronda))"))
+                HojaFilaSerie(
+                    datos: datos, contexto: .sesion, marca: marca,
+                    onMarcar: { vivo.confirmOrToggleSet(ei: slot.ei, si: slot.si) },
+                    onTipoTap: { vivo.setMenuTarget = HojaSesionViva.SetMenuTarget(runId: slot.run.id, setId: set.id) }
+                )
+                // Ola 1 · E12: consejo «las que puedas» — mismo tip que el ejercicio suelto, TipKit
+                // lo muestra una sola vez sin importar en cuál de los 3 sitios aparezca primero.
+                .entrenarConsejoTipoSerie(set.mode)
+                .simultaneousGesture(LongPressGesture(minimumDuration: 0.4).onEnded { _ in
+                    withAnimation(vivo.reduceMotion ? nil : .snappy) {
+                        vivo.setMenuTarget = HojaSesionViva.SetMenuTarget(runId: slot.run.id, setId: set.id)
+                    }
+                })
+                .liquidMenu(
+                    isPresented: Binding(
+                        get: { vivo.setMenuTarget == HojaSesionViva.SetMenuTarget(runId: slot.run.id, setId: set.id) },
+                        set: { if !$0 { vivo.setMenuTarget = nil } }),
+                    items: vivo.setMenuItems(ei: slot.ei, si: slot.si)
+                )
+                .accessibilityActions {
+                    // `set` aquí nunca es un escalón (ver nota de `tipoEtiqueta` arriba) — las 4
+                    // opciones completas, igual que `filaSerie` de un ejercicio suelto.
+                    if usesReps {
+                        Button(String(localized: "However many you can")) { vivo.toggleAmrap(ei: slot.ei, si: slot.si) }
+                    }
+                    Button(String(localized: "Drop and continue · −20%")) {
+                        withAnimation(vivo.reduceMotion ? nil : .snappy) { vivo.addDrop(ei: slot.ei, si: slot.si) }
+                    }
+                    Button(String(localized: "Reached failure")) {
+                        vivo.session.setRPE(exercise: slot.run.id, set: set.id, rpe: set.rpe == 10 ? nil : 10)
+                    }
+                    Button(String(localized: "Remove set")) { vivo.removeSetAskingIfNeeded(ei: slot.ei, si: slot.si) }
+                }
+            }
+            .accessibilityElement(children: .combine)
+            // Ola 1 (FER-327 · E7): el escalón de esta madre — «una fila por miembro por ronda» no
+            // tiene dónde meter una ronda propia para él (desalinearía a los demás miembros, ver
+            // `workSetIndex`), así que vive como SUB-FILA dentro de la fila de su madre, no como una
+            // ronda más. Decisión documentada en el commit.
+            if vivo.session.hasDropAfter(exercise: slot.ei, set: slot.si), slot.run.sets.indices.contains(slot.si + 1) {
+                filaDrop(slot, dropSi: slot.si + 1)
             }
         }
-        .accessibilityElement(children: .combine)
+    }
+
+    /// El escalón colgado de una madre de superserie — misma gramática que `filaRonda`, sin ronda
+    /// propia (numeral «↳») y sin nombre repetido (ya lo dice la fila madre justo arriba).
+    private func filaDrop(_ slot: MiembroRondaSlot, dropSi: Int) -> some View {
+        let drop = slot.run.sets[dropSi]
+        let esActiva = slot.ei == vivo.session.currentIndex && dropSi == slot.run.currentSet
+        let marca: HojaFilaSerie.Marca = drop.done ? .hecha : (esActiva ? .activa : .fantasma)
+        let usesReps = slot.run.type == .weightReps || slot.run.type == .bodyweight
+        let datos = HojaFilaSerie.Datos(
+            numero: "↳", esCalentamiento: false,
+            peso: usesReps ? vivo.plateNumber(vivo.displayWeight(drop.weightKg)) : "—",
+            unidad: slot.run.type == .weightReps ? vivo.weightUnit() : "",
+            conSubida: false,
+            reps: usesReps ? (drop.reps.map(String.init) ?? "") : "—",
+            q: marca == .hecha ? drop.rpe.map(LiveStrengthSheet.qLabel(fromRPE:)) : nil,
+            ant: nil, esPrimera: false,
+            tipoEtiqueta: "↳ " + String(localized: "Drop and continue"),
+            tipoDetalle: drop.done ? nil : String(localized: "No rest, −20%")
+        )
+        return HojaFilaSerie(
+            datos: datos, contexto: .sesion, marca: marca,
+            onMarcar: { vivo.confirmOrToggleSet(ei: slot.ei, si: dropSi) },
+            onTipoTap: { vivo.setMenuTarget = HojaSesionViva.SetMenuTarget(runId: slot.run.id, setId: drop.id) }
+        )
+        // Ola 1 · E12: consejo «bajar y seguir» — un escalón SIEMPRE es de este tipo (ver el
+        // literal de `tipoEtiqueta` arriba), así que el modo se pasa directo.
+        .entrenarConsejoTipoSerie(.drop)
+        .liquidMenu(
+            isPresented: Binding(
+                get: { vivo.setMenuTarget == HojaSesionViva.SetMenuTarget(runId: slot.run.id, setId: drop.id) },
+                set: { if !$0 { vivo.setMenuTarget = nil } }),
+            items: vivo.setMenuItems(ei: slot.ei, si: dropSi)
+        )
+        .simultaneousGesture(LongPressGesture(minimumDuration: 0.4).onEnded { _ in
+            withAnimation(vivo.reduceMotion ? nil : .snappy) {
+                vivo.setMenuTarget = HojaSesionViva.SetMenuTarget(runId: slot.run.id, setId: drop.id)
+            }
+        })
+        .accessibilityActions {
+            Button(String(localized: "Remove set")) { vivo.removeSetAskingIfNeeded(ei: slot.ei, si: dropSi) }
+        }
     }
 
     // MARK: - Calentamiento (N3: fuera de ronda, antes del primer divisor)

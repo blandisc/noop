@@ -173,75 +173,81 @@ extension CenitStore {
 
     /// Save a routine and replace its ordered exercise list in one transaction.
     public func saveRoutine(_ routine: Routine, exercises: [RoutineExercise]) async throws {
-        try syncWrite { db in
-            let rArgs: [DatabaseValueConvertible?] = [
-                routine.id, routine.name, routine.tag, routine.folderId,
-                routine.createdTs, routine.updatedTs, routine.sortOrder
+        try syncWrite { db in try Self.writeRoutine(db, routine: routine, exercises: exercises) }
+    }
+
+    /// El cuerpo de `saveRoutine`, factorizado para que `installProgram` (ola 1 · E11) pueda escribir
+    /// VARIAS rutinas dentro de la MISMA transacción que el calendario y el programa — nunca N awaits
+    /// desde la pantalla (gate /qa D4). Firma `Database`-first (no async): corre dentro del closure de
+    /// `syncWrite` de quien la llame, sea uno o varios por transacción.
+    private static func writeRoutine(_ db: Database, routine: Routine, exercises: [RoutineExercise]) throws {
+        let rArgs: [DatabaseValueConvertible?] = [
+            routine.id, routine.name, routine.tag, routine.folderId,
+            routine.createdTs, routine.updatedTs, routine.sortOrder
+        ]
+        try db.execute(sql: """
+            INSERT INTO routine (id, name, tag, folderId, createdTs, updatedTs, sortOrder)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                name = excluded.name, tag = excluded.tag, folderId = excluded.folderId,
+                updatedTs = excluded.updatedTs, sortOrder = excluded.sortOrder
+            """, arguments: StatementArguments(rArgs))
+
+        // Replace this routine's exercises and their per-set rows in the same transaction. The
+        // routineSet delete is keyed off the routine's current routineExercise ids, so it must run
+        // before the routineExercise delete.
+        try db.execute(sql: """
+            DELETE FROM routineSet WHERE routineExerciseId IN
+                (SELECT id FROM routineExercise WHERE routineId = ?)
+            """, arguments: [routine.id])
+        try db.execute(sql: "DELETE FROM routineExercise WHERE routineId = ?", arguments: [routine.id])
+        for re in exercises {
+            // `sets` is the source of truth; the legacy target* columns are derived from the work
+            // sets so any legacy reader stays coherent. `plannedSets` normalizes the slot (real sets,
+            // or a 1:1 expansion of target* for a legacy/template slot with none).
+            let planned = re.plannedSets
+            let work = planned.filter { $0.kind == .work }
+            let derivedSets = max(work.count, 1)
+            let derivedReps = work.first?.reps
+            let derivedWeight = work.first?.weightKg
+            // FER-166: normalize here (trim; blank → NULL) so the "note or NULL, never ''" invariant
+            // doesn't depend on the discipline of whichever UI wrote it — same contract `saveSession`
+            // already uses for `strengthExerciseNote`.
+            let noteText = re.note?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let args: [DatabaseValueConvertible?] = [
+                re.id, re.routineId, re.exerciseId, re.position, derivedSets, derivedReps,
+                derivedWeight, encodeJSON(re.warmupPercents), re.restMode.rawValue, re.restSeconds,
+                re.supersetGroup, re.hrRestReference.rawValue, re.hrRestValue,
+                re.progressionEnabled, re.progressionSessions, re.progressionIncrementKg,
+                re.progressionDeload.rawValue, re.progressionIgnoreRecovery,
+                (noteText?.isEmpty == false) ? noteText : nil,
+                re.progressionUseRPE
             ]
             try db.execute(sql: """
-                INSERT INTO routine (id, name, tag, folderId, createdTs, updatedTs, sortOrder)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(id) DO UPDATE SET
-                    name = excluded.name, tag = excluded.tag, folderId = excluded.folderId,
-                    updatedTs = excluded.updatedTs, sortOrder = excluded.sortOrder
-                """, arguments: StatementArguments(rArgs))
-
-            // Replace this routine's exercises and their per-set rows in the same transaction. The
-            // routineSet delete is keyed off the routine's current routineExercise ids, so it must run
-            // before the routineExercise delete.
-            try db.execute(sql: """
-                DELETE FROM routineSet WHERE routineExerciseId IN
-                    (SELECT id FROM routineExercise WHERE routineId = ?)
-                """, arguments: [routine.id])
-            try db.execute(sql: "DELETE FROM routineExercise WHERE routineId = ?", arguments: [routine.id])
-            for re in exercises {
-                // `sets` is the source of truth; the legacy target* columns are derived from the work
-                // sets so any legacy reader stays coherent. `plannedSets` normalizes the slot (real sets,
-                // or a 1:1 expansion of target* for a legacy/template slot with none).
-                let planned = re.plannedSets
-                let work = planned.filter { $0.kind == .work }
-                let derivedSets = max(work.count, 1)
-                let derivedReps = work.first?.reps
-                let derivedWeight = work.first?.weightKg
-                // FER-166: normalize here (trim; blank → NULL) so the "note or NULL, never ''" invariant
-                // doesn't depend on the discipline of whichever UI wrote it — same contract `saveSession`
-                // already uses for `strengthExerciseNote`.
-                let noteText = re.note?.trimmingCharacters(in: .whitespacesAndNewlines)
-                let args: [DatabaseValueConvertible?] = [
-                    re.id, re.routineId, re.exerciseId, re.position, derivedSets, derivedReps,
-                    derivedWeight, encodeJSON(re.warmupPercents), re.restMode.rawValue, re.restSeconds,
-                    re.supersetGroup, re.hrRestReference.rawValue, re.hrRestValue,
-                    re.progressionEnabled, re.progressionSessions, re.progressionIncrementKg,
-                    re.progressionDeload.rawValue, re.progressionIgnoreRecovery,
-                    (noteText?.isEmpty == false) ? noteText : nil,
-                    re.progressionUseRPE
+                INSERT INTO routineExercise
+                    (id, routineId, exerciseId, position, targetSets, targetReps, targetWeightKg,
+                     warmupPercents, restMode, restSeconds, supersetGroup, hrRestReference, hrRestValue,
+                     progressionEnabled, progressionSessions, progressionIncrementKg, progressionDeload,
+                     progressionIgnoreRecovery, note, progressionUseRPE)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, arguments: StatementArguments(args))
+            for (idx, s) in planned.enumerated() {
+                // The four rest columns are written together (FER-715): a non-nil override writes
+                // all four, a nil `rest` writes four NULLs = "inherit the exercise" on read-back.
+                // `repsRangeTop` (E13/FER-94) is a single nullable column: nil = no range, today's
+                // behavior.
+                let sArgs: [DatabaseValueConvertible?] = [
+                    s.id, re.id, idx, s.kind.rawValue, s.reps, s.weightKg,
+                    s.rest?.mode.rawValue, s.rest?.seconds,
+                    s.rest?.hrReference.rawValue, s.rest?.hrValue, s.repsRangeTop,
+                    s.mode == .standard ? nil : s.mode.rawValue
                 ]
                 try db.execute(sql: """
-                    INSERT INTO routineExercise
-                        (id, routineId, exerciseId, position, targetSets, targetReps, targetWeightKg,
-                         warmupPercents, restMode, restSeconds, supersetGroup, hrRestReference, hrRestValue,
-                         progressionEnabled, progressionSessions, progressionIncrementKg, progressionDeload,
-                         progressionIgnoreRecovery, note, progressionUseRPE)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, arguments: StatementArguments(args))
-                for (idx, s) in planned.enumerated() {
-                    // The four rest columns are written together (FER-715): a non-nil override writes
-                    // all four, a nil `rest` writes four NULLs = "inherit the exercise" on read-back.
-                    // `repsRangeTop` (E13/FER-94) is a single nullable column: nil = no range, today's
-                    // behavior.
-                    let sArgs: [DatabaseValueConvertible?] = [
-                        s.id, re.id, idx, s.kind.rawValue, s.reps, s.weightKg,
-                        s.rest?.mode.rawValue, s.rest?.seconds,
-                        s.rest?.hrReference.rawValue, s.rest?.hrValue, s.repsRangeTop,
-                        s.mode == .standard ? nil : s.mode.rawValue
-                    ]
-                    try db.execute(sql: """
-                        INSERT INTO routineSet
-                            (id, routineExerciseId, position, kind, reps, weightKg,
-                             restMode, restSeconds, hrRestReference, hrRestValue, repsRangeTop, mode)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        """, arguments: StatementArguments(sArgs))
-                }
+                    INSERT INTO routineSet
+                        (id, routineExerciseId, position, kind, reps, weightKg,
+                         restMode, restSeconds, hrRestReference, hrRestValue, repsRangeTop, mode)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, arguments: StatementArguments(sArgs))
             }
         }
     }
@@ -374,13 +380,15 @@ extension CenitStore {
     /// Assign a routine to a weekday (1…7) — an idempotent upsert keyed on `weekday`, so re-assigning a
     /// day overwrites rather than duplicating.
     public func setRoutineSchedule(weekday: Int, routineId: String) async throws {
-        try syncWrite { db in
-            try db.execute(sql: """
-                INSERT INTO routineSchedule (weekday, routineId)
-                VALUES (?, ?)
-                ON CONFLICT(weekday) DO UPDATE SET routineId = excluded.routineId
-                """, arguments: [weekday, routineId])
-        }
+        try syncWrite { db in try Self.writeRoutineSchedule(db, weekday: weekday, routineId: routineId) }
+    }
+
+    private static func writeRoutineSchedule(_ db: Database, weekday: Int, routineId: String) throws {
+        try db.execute(sql: """
+            INSERT INTO routineSchedule (weekday, routineId)
+            VALUES (?, ?)
+            ON CONFLICT(weekday) DO UPDATE SET routineId = excluded.routineId
+            """, arguments: [weekday, routineId])
     }
 
     /// Clear a weekday back to a rest day (no routine planned).
@@ -407,17 +415,19 @@ extension CenitStore {
     /// Alta o reemplazo del programa activo — upsert sobre la PK, así que «cambiar de programa» es una
     /// sola escritura, no un borrar-e-insertar que pueda quedar a medias.
     public func setProgram(_ p: Program) async throws {
-        try syncWrite { db in
-            try db.execute(sql: """
-                INSERT INTO program (id, name, weeks, startTs, deloadRule, endMode, templateId, createdTs)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(id) DO UPDATE SET
-                    name = excluded.name, weeks = excluded.weeks, startTs = excluded.startTs,
-                    deloadRule = excluded.deloadRule, endMode = excluded.endMode,
-                    templateId = excluded.templateId
-                """, arguments: [Program.activeId, p.name, p.weeks, p.startTs,
-                                 p.deloadRule.rawValue, p.endMode.rawValue, p.templateId, p.createdTs])
-        }
+        try syncWrite { db in try Self.writeProgram(db, p) }
+    }
+
+    private static func writeProgram(_ db: Database, _ p: Program) throws {
+        try db.execute(sql: """
+            INSERT INTO program (id, name, weeks, startTs, deloadRule, endMode, templateId, createdTs)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                name = excluded.name, weeks = excluded.weeks, startTs = excluded.startTs,
+                deloadRule = excluded.deloadRule, endMode = excluded.endMode,
+                templateId = excluded.templateId
+            """, arguments: [Program.activeId, p.name, p.weeks, p.startTs,
+                             p.deloadRule.rawValue, p.endMode.rawValue, p.templateId, p.createdTs])
     }
 
     /// «Terminar programa»: borra la fila y NADA más. Las rutinas y el split semanal siguen ahí — al
@@ -425,6 +435,27 @@ extension CenitStore {
     public func deleteProgram() async throws {
         try syncWrite { db in
             try db.execute(sql: "DELETE FROM program WHERE id = ?", arguments: [Program.activeId])
+        }
+    }
+
+    /// Instala un `ProgramTemplate.Materialized` completo — rutinas, sus ejercicios, el calendario
+    /// semanal y la fila `program` — en UNA sola transacción (ola 1 · E11, gate /qa D4: nunca N
+    /// awaits desde la pantalla armando un programa a medias si el teléfono se cierra a la mitad).
+    /// Cada rutina se escribe con `writeRoutine` (mismo camino que `saveRoutine`, así que una rutina
+    /// de programa es indistinguible de una copiada a mano), el calendario con `writeRoutineSchedule`
+    /// (upsert por weekday, igual que `setRoutineSchedule`) y el programa con `writeProgram` (upsert
+    /// sobre la PK `'active'`, igual que `setProgram`) — nunca migra el esquema, solo compone escrituras
+    /// que ya existían cada una por su lado.
+    public func installProgram(_ m: ProgramTemplate.Materialized) async throws {
+        try syncWrite { db in
+            for routine in m.routines {
+                let exercises = m.exercises.filter { $0.routineId == routine.id }
+                try Self.writeRoutine(db, routine: routine, exercises: exercises)
+            }
+            for s in m.schedule {
+                try Self.writeRoutineSchedule(db, weekday: s.weekday, routineId: s.routineId)
+            }
+            try Self.writeProgram(db, m.program)
         }
     }
 

@@ -134,7 +134,7 @@ struct HojaTarjetaEjercicio: View {
             peso: sheet.showsWeight(type) ? (set.weightKg.map { StrengthDisplay.weightNumber($0, system: sheet.system) } ?? "—") : "—",
             unidad: sheet.showsWeight(type) ? StrengthDisplay.weightUnit(sheet.system).lowercased() : "",
             conSubida: false,
-            reps: sheet.showsReps(type) ? (set.repsRangeLabel ?? "—") : "—",
+            reps: sheet.showsReps(type) ? (RoutineSetEditing.editorRepsLabel(set) ?? "—") : "—",
             anterior: anterior,
             arrastrable: true,
             esPrimera: si == 0

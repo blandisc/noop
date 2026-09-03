@@ -96,6 +96,17 @@ struct HojaSesionViva: View {
     /// mientras la pregunta está en pantalla.
     @State var confirmRemoveRunId: String?
 
+    // MARK: El menú de 4 opciones de una serie (ola 1 · FER-327 · E7 · ux-B §③)
+    /// La serie cuyo menú («las que puedas» · «bajar y seguir» · «al fallo» · «quitar») está
+    /// abierto — pulsación larga sobre la fila o el chip de marca. Por identidad (regla dura): un
+    /// `Int` de índice no sobreviviría un reorden mientras el popover sigue en pantalla.
+    struct SetMenuTarget: Equatable { let runId: String; let setId: String }
+    @State var setMenuTarget: SetMenuTarget?
+    /// B5: «Quitar serie» sobre una madre con escalones YA HECHOS pide confirmación con el conteo
+    /// exacto; por identidad, igual que `confirmRemoveRunId`.
+    struct RemoveSetTarget: Equatable { let runId: String; let setId: String; let doneDropCount: Int }
+    @State var confirmRemoveSetTarget: RemoveSetTarget?
+
     // MARK: Modo foco (FER-170 · F5, épico FER-165) — expansión de la tarjeta activa, DENTRO de
     // esta misma vista (ya no una instancia efímera de `LiveStrengthSheet`). `focoNS` amarra la
     // continuidad geométrica entre la tarjeta chica (`row(_:)`) y `HojaFoco` a pantalla completa.
@@ -310,7 +321,7 @@ struct HojaSesionViva: View {
                     exerciseName: run.name, currentWeightKg: run.sets.first?.weightKg,
                     derivedIncrementKg: PlateMath.minimumIncrement(for: .from(equipment: ExerciseCatalog.byID(run.exerciseId)?.equipment), inventory: sheet.model.plates.inventory),
                     onBack: { progressionEdit = nil },
-                    onSave: { _, _, _, _, _, _ in progressionEdit = nil }   // La escritura a la rutina sigue F4 (intervención) — F2 solo abre/cierra la hoja intacta.
+                    onSave: { _, _, _, _, _, _, _ in progressionEdit = nil }   // La escritura a la rutina sigue F4 (intervención) — F2 solo abre/cierra la hoja intacta.
                 )
                 .padding(.top, LiquidSpace.s300).presentationDragIndicator(.visible).presentationBackground(LiquidColor.fondoAlto).preferredColorScheme(.light)
             }
@@ -379,6 +390,19 @@ struct HojaSesionViva: View {
                     }
                 }
             }
+            // B5 (ola 1 · FER-327 · E7): confirma antes de quitar una madre cuyos escalones YA
+            // registraron trabajo real — nodo propio (`ScrollViewReader`), distinto del de la
+            // cabecera/avance/VStack exterior (FER-174: dos `.liquidConfirm` en el mismo nodo se rompen).
+            .liquidConfirm(
+                isPresented: Binding(get: { confirmRemoveSetTarget != nil }, set: { if !$0 { confirmRemoveSetTarget = nil } }),
+                title: String(localized: "Remove this set?"),
+                context: String(localized: "SESSION · IN PROGRESS"),
+                message: removeSetMessage,
+                actions: [
+                    .init(String(localized: "Keep set"), role: .primary),
+                    .init(String(localized: "Remove set and drops"), role: .destructive) { confirmRemoveSet() }
+                ]
+            )
         }
         .safeAreaInset(edge: .bottom, spacing: .zero) {
             // B16: sesión llena → el CTA sustituye a la consola (ya no hay nada que capturar).
@@ -480,8 +504,10 @@ struct HojaSesionViva: View {
     }
 
     private func syntheticRE(from run: StrengthSessionModel.ExerciseRun, position: Int) -> RoutineExercise {
+        // Ola 1 (E7 · D2): un escalón de «bajar y seguir» no es una serie prescrita — `targetSets`
+        // solo cuenta series numeradas (`isNumberedWorkSet`, único oráculo).
         RoutineExercise(routineId: session.routineId ?? "", exerciseId: run.exerciseId, position: position,
-                        targetSets: run.sets.filter { $0.kind == .work }.count,
+                        targetSets: run.sets.filter(\.isNumberedWorkSet).count,
                         targetReps: run.sets.first?.reps, targetWeightKg: run.sets.first?.weightKg)
     }
 

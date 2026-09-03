@@ -22,6 +22,52 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 ## Unreleased
 
 - Diseño (FER-358 · loop 6): `LiquidBarraProgreso` con marcas mudas dentro de la pieza y `.pastillaSolida` en vez de `.clipShape(Capsule())` a mano; Dynamic Type (`@ScaledMetric`) en detalle/edición de workout, ejercicio y progresión; `.white`/velo a tokens `LiquidColor`; comentario de etapas de sueño honesto.
+
+### Ola 1 de Entrenar · vocabulario y tutorial (FER-335)
+- Barrido final del vocabulario: la hoja de esfuerzo por serie («RPE») ya no dice «Te quedaban ~2
+  reps» — dice «~2 reps más», igual que sus seis vecinas en la misma escala.
+- Seis consejos de una sola vez (TipKit, iOS 17): «las que puedas» y «bajar y seguir» en la fila de
+  la sesión, «reps en reserva» en el teclado, «esfuerzo estimado» en el primer recibo con la
+  pregunta, «ritmo de subida» en el ajuste de progresión, y «semana ligera» en Tu Plan. Cada uno
+  aparece una vez, se cierra con «Entendido» y no vuelve; estilo tinta sobre vidrio
+  (`CenitDesign.LiquidConsejoTipStyle`).
+- El «?» de Entrenar gana «Palabras del gym»: ocho términos (las que puedas, bajar y seguir, reps en
+  reserva, semana ligera, esfuerzo estimado, descansos, programa, 1RM estimado) con una línea cada
+  uno.
+- «Nuevo programa» gana el enlace «¿Qué es una semana ligera?» hacia ese glosario, junto a la línea
+  de porqué que ya traía FER-334 — ambos SOLO en la primera creación de un programa
+  (`entrenar.programa.primeraGuiaVista`); de la segunda en adelante, la guía ya no vuelve (fix QA
+  D2, AC#5 — antes se repetía en cada creación).
+- Sin tour: la enseñanza vive en el lugar donde el concepto aparece, nunca en un modal que bloquea.
+- GAP de backlog (QA D1, AC#2): el test del ciclo del consejo (aparece una vez / «Entendido» lo
+  cierra / `Tips.resetDatastore` lo revive) no tiene una costura testeable hoy. No hay infraestructura
+  de navegación (`ScreenshotNav`) hacia las 6 pantallas ancla ni hacia el glosario, y la suite de
+  screenshots ya es frágil por tocar UI en vivo (histórico del repo) — construir esa infra queda
+  fuera de este cambio por decisión del director. Se probó además una costura sin simulador
+  (`Tip.status` en un test de `swift test`, sin UI): `status` queda en `.pending` incluso justo
+  después de `Tips.configure()` + `invalidate()` — TipKit lo resuelve por un motor async
+  (`statusUpdates`), no de forma síncrona, así que una aserción inmediata sería un test frágil por
+  diseño. Sin costura razonable: el test del ciclo TipKit queda como issue de backlog, no algo que
+  este cambio deba resolver.
+
+### Ola 1 de Entrenar · pantallas de programa (FER-334)
+- El motor de programas de FER-329 ya tiene dónde prenderse: «Programa · 4 a 6 semanas» en Tu Plan
+  (junto a Plantillas e Importar) abre los 4 motores de fábrica y, en tres pasos, arma semanas ·
+  semana ligera · al terminar el ciclo antes de crear tus rutinas y tu calendario en un solo paso.
+- Si ya tienes una semana armada, «Convertir en programa ›» le pone las mismas tres decisiones a la
+  semana que ya usas, sin motor ni rutinas nuevas.
+- Con un programa activo, Tu Plan muestra la semana en curso y una tira con las semanas hecha /
+  hoy / futura / ligera; «···» ofrece cambiar «al terminar» o terminar el programa (tus rutinas y tu
+  calendario quedan intactos, solo se va el conteo). La línea distingue «Ciclo 2 · semana 1» al
+  repetir el ciclo y «Semana 3 · la semana pasada quedó en blanco» cuando el contador no avanzó por
+  eso — nunca «Semana 3 de 5» a secas cuando algo fuera de lo normal pasó.
+- En la semana ligera, el héroe de Entrenar cambia el «Hoy · tu sesión» por «Semana ligera · N de M»
+  y, cuando no hay subida que ofrecer, explica la ligera en el mismo lugar donde iría la subida. En la
+  sesión, la fila activa de cada serie marca «· ligera» junto a la última vez, y el chip de
+  estancamiento avisa «la semana ligera llega en la N» cuando aplica.
+- El prompt de importación ya enseña `semanas`, `semana_ligera`, `al_terminar` y `dia` — la IA los
+  llena si tu plan los tiene; un archivo sin ellos importa exactamente igual que antes.
+
 - Diseño (FER-342 · loop 5): tipografía de hoja en Interval Timer; `LiquidAviso` / `SegmentedPillControl` en vez de `Capsule()` a mano; tokens `LiquidColor` por `.white`; se borra `TodayBanner`; `LiquidCampoTexto` en import; `liquidTarjetaSeccion` en ShareCard; comentarios Instrumento alineados al código Liquid.
 ### Ola 1 de Entrenar · esfuerzo al cerrar (FER-330)
 ### ES
@@ -35,6 +81,22 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 - Diseño (FER-340): un héroe por pantalla en Intervalos y recibo de fuerza; material solo vía receta (`.dialogo` / `.confirmacion` + `LiquidGlow`); ritmo de sección s700 en Cuerpo y Ajustes; Dynamic Type en RestEditor; `FocoMetrics` alias a `LiquidSpace`.
 - Diseño (FER-339): una pieza por rol en el catálogo (toast de error de guardado, pastilla de estado, selector de periodo, campo de texto `LiquidCampoTexto`, aviso Liquid; sin `NoteStrip`; toolbar de Ajustes al `fondoAlto`).
+
+### Ola 1 de Entrenar · importar historial (FER-333)
+- Trae tu historial de fuerza desde Strong o Hevy: un bloque nuevo bajo Ajustes › Datos y fuentes ›
+  Importar (junto a la exportación de Apple Health) y, si tu historial está vacío, una invitación
+  directa a la misma hoja. Cénit reconoce cuál de las dos apps exportó el archivo por sus columnas —
+  también acepta su propio CSV — y todo se lee en el teléfono, sin red.
+- Cuatro pasos: Archivo → Revisar (sesiones detectadas, ejercicios reconocidos, con cuánto esfuerzo,
+  posibles duplicados fuera por defecto, la unidad de peso real del archivo) → Resolver (mapea los
+  nombres de ejercicio que Cénit no reconoce contra tu catálogo, con sugerencias automáticas y alias
+  que se recuerdan) → Listo (récords, 1RM y mapa muscular ya recalculados con tu historia).
+- El Strong viejo que no declara unidad de peso pregunta kg/lb con un estimado inmediato y deja
+  cambiar de opinión sin perder el archivo; los posibles duplicados entre orígenes (±30 min) se listan
+  y quedan fuera hasta que tú los fuerces a entrar. Cada sesión importada lleva su sello «Strong» /
+  «Hevy» en el historial y el detalle — nunca «Medido en el dispositivo».
+- La lectura corre fuera del hilo principal (antes se congelaba con archivos grandes) y Cancelar de
+  verdad cancela.
 
 ### Ola 1 de Entrenar · programa de varias semanas (FER-329)
 - Tu plan semanal puede correr como un programa de varias semanas (4 a 6 en la app, hasta 8 si lo
@@ -53,10 +115,35 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
   completo 3 días, push/pull/legs 6 días, torso/pierna 4 días), y «al terminar el ciclo» puedes
   repetirlo con los pesos ganados o dejar que el programa se termine solo. Terminar un programa borra
   solo el programa: tus rutinas y tu calendario quedan intactos. **Todo esto es el motor**: la pantalla
-  para prender un programa y elegir sus opciones llega con FER-334; hasta entonces no hay dónde
-  activarlo.
+  para prender un programa y elegir sus opciones se agrega en FER-334, arriba.
 - El formato de importación desde tu IA aprende `semanas`, `semana_ligera`, `al_terminar` y el `dia` de
   cada rutina. Un archivo que trae semanas distintas entre sí no falla: importa la primera y te lo dice.
+
+### Ola 1 de Entrenar · «las que puedas» y «bajar y seguir» en pantalla (FER-332)
+- Editor de rutina: al escribir el techo de reps de una serie de trabajo, la tecla de acción del
+  keypad dice «máx» — quita el techo y marca la serie «las que puedas» sin un gesto nuevo. El «···»
+  del ejercicio gana el atajo «Última serie: las que puedas» para el caso más común. La receta abierta
+  ahora lee «8 a máx» en vez del dato crudo «8+».
+- Sesión en vivo: pulsación larga sobre cualquier serie de trabajo (ejercicio suelto o miembro de
+  superserie) abre el menú de la serie con sus 4 opciones — «Las que puedas» (marca la serie,
+  celda de reps vacía/«máx», ✓ bloqueado hasta escribir; una serie ya hecha conserva su número real),
+  «Bajar y seguir · −20 %» (cuelga un escalón al 80 % de peso, redondeado a los discos reales del
+  usuario), «Llegué al fallo» (la misma escritura que QUEDABAN «0», ahora también desde aquí) y
+  «Quitar serie». Sobre un escalón, el menú se reduce a «Quitar serie». Las 4 opciones (o 1 sobre un
+  escalón) también viven en el rotor de VoiceOver; los chips de la fila son solo informativos, el menú
+  es la acción. La fila gana una línea propia con el tipo de serie («Las que puedas» / «↳ Bajar y
+  seguir»); el contador de series excluye los escalones y un escalón pinta «↳» en vez de robarle el
+  número a la siguiente — también en superseries, donde el escalón vive como sub-fila de su madre
+  (nunca como una ronda propia: desalinearía la numeración entre los demás miembros del bloque). Quitar
+  una madre con escalones YA HECHOS pide confirmación con el conteo exacto; con escalones pendientes o
+  sin escalones, se quita en el acto.
+- Detalle del entrenamiento: el contador por ejercicio también excluye los escalones («↳ Bajar y
+  seguir»); un AMRAP hecho lee «× N máx». Una serie al fallo (RPE 10) lee «· fallo» en vez de «· Q0» en
+  toda la sesión y el historial. Live Activity y Watch: «al volver» dice «80 kg × máx» / «↳ 64 kg × 9».
+- Detalle de ejercicio: pie nuevo bajo la gráfica de 1RM estimado — «El 1RM estimado usa máximo 12
+  reps» (`OneRepMax.maxReps`).
+- GAP: el modo Foco de superserie (`RoutineSheetLiveFoco.swift`) no gana la sub-fila del escalón —
+  solo se beneficia del conteo de rondas corregido.
 
 ### Ola 1 de Entrenar · ritmo «según reps en reserva» (FER-326)
 - La regla de subida gana un ritmo: en un ejercicio con el interruptor encendido, terminar la sesión con
@@ -67,6 +154,23 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 - El veredicto sigue mandando encima: una subida adelantada se retiene igual en un día de «Hoy ve leve».
 - Sin cambios en ninguna rutina existente: el interruptor nace apagado y, apagado, la regla es idéntica
   a la de siempre. Un ejercicio sin RPE en sus series también se comporta igual que antes.
+
+### Ola 1 de Entrenar · ritmo por reps en reserva: pantallas (FER-331)
+- Progresión de un ejercicio, más sencilla: una frase arriba dice qué va a pasar («Subes 2.5 kg cuando
+  cumples 8 reps con ritmo constante. Si te estancas tres veces, bajas 7,5 %.»), tres controles a la
+  vista (progresión automática, reps objetivo, paso de carga) y dos ajustes finos plegados. Misma
+  funcionalidad que antes, en menos controles.
+- «Ritmo» (Constante, Rápido, Reps en reserva) y los dos ajustes finos («Si te estancas 3 sesiones»:
+  Bajar 7,5 % / Solo avisar; «Cuando tu cuerpo dice mantén»: Esperar / Subir igual) se eligen en listas
+  con palomita — nunca en un selector segmentado, sus etiquetas son de más de una palabra. El chip del
+  editor y el hub dicen el mismo ritmo.
+- El hub explica el porqué cuando las reps en reserva cambiaron algo: «Una sesión bastó» si sobraron
+  reps, «Tres veces al fallo y con las reps: subes» si tocó el tope; y una píldora ámbar «Hoy
+  mantienes» cuando cumpliste al fallo y el ritmo te deja invisible al ciclo. Nada de esto aparece en
+  la semana ligera (D-Q10): ahí solo cambian el kicker y la meta del héroe.
+- Teclado y filas de sesión: la fila de captura dice «REPS EN RESERVA» (nunca «QUEDABAN») y una serie
+  hecha con 0 en reserva lee «al fallo» en vez de «Q0» — ninguna cadena visible ahí dice ya «Q» ni
+  «Quedaban».
 
 ### Ola 1 de Entrenar · la carga sin reloj (FER-325)
 - Una sesión de fuerza sin reloj ya cuenta. Antes, un día en el que entrenaste sin pulso se leía como

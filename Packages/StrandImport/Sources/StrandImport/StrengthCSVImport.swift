@@ -97,11 +97,16 @@ public enum StrengthCSVImporter {
         public var skipped: [RowIssue]
         /// Cross-origin overlaps at ±30 min. Default **out** of the import (N5); UI toggles force-in.
         public var possibleDuplicates: [PossibleDuplicate]
+        /// The weight unit this file actually carries — Strong's own header/user pick, `.kg` for
+        /// Hevy/Cénit (always normalized to kg on parse). QA D7 / E9: the screen's «Weight unit» row
+        /// reads this instead of assuming kg.
+        public var declaredUnit: WorkoutWeightUnit?
 
         public init(sessions: [ImportedSession], skipped: [RowIssue] = [],
-                    possibleDuplicates: [PossibleDuplicate] = []) {
+                    possibleDuplicates: [PossibleDuplicate] = [], declaredUnit: WorkoutWeightUnit? = nil) {
             self.sessions = sessions; self.skipped = skipped
             self.possibleDuplicates = possibleDuplicates
+            self.declaredUnit = declaredUnit
         }
     }
 
@@ -138,15 +143,21 @@ public enum StrengthCSVImporter {
         switch dialect {
         case .hevy:
             guard isHevy(colSet) else { throw ImportError.unknownHeader }
-            return try parseHevy(rows: rows, columns: columns)
+            var result = try parseHevy(rows: rows, columns: columns)
+            result.declaredUnit = .kg
+            return result
         case .strong:
             guard isStrong(colSet) else { throw ImportError.unknownHeader }
             let unit = strongUnit(from: colSet) ?? weightUnit
             guard let unit else { throw ImportError.unitRequired }
-            return try parseStrong(rows: rows, columns: columns, unit: unit)
+            var result = try parseStrong(rows: rows, columns: columns, unit: unit)
+            result.declaredUnit = unit
+            return result
         case .cenit:
             guard isCenit(colSet) else { throw ImportError.unknownHeader }
-            return try parseCenit(rows: rows, columns: columns)
+            var result = try parseCenit(rows: rows, columns: columns)
+            result.declaredUnit = .kg
+            return result
         }
     }
 
@@ -156,6 +167,38 @@ public enum StrengthCSVImporter {
         let firstLine = normalized.split(whereSeparator: \.isNewline).first.map(String.init) ?? ""
         guard let dialect = detectDialect(header: firstLine) else { throw ImportError.unknownHeader }
         return try parse(text: normalized, dialect: dialect, weightUnit: weightUnit)
+    }
+
+    /// Decode raw file bytes (UTF-8 / UTF-16 LE/BE with or without BOM) then parse. QA D3 / E9.
+    public static func parse(data: Data, dialect: Dialect? = nil,
+                             weightUnit: WorkoutWeightUnit? = nil) throws -> ImportedStrengthHistory {
+        let text = try decodeCSVData(data)
+        if let dialect {
+            return try parse(text: text, dialect: dialect, weightUnit: weightUnit)
+        }
+        return try parse(text: text, weightUnit: weightUnit)
+    }
+
+    /// Highest numeric value in Strong's `Weight` column before unit conversion — drives the
+    /// «315 → 143 kg» hint when the file omits the unit and the UI must ask (E9).
+    public static func strongMaxWeightRaw(text: String) -> Double? {
+        let normalized = normalizeText(text)
+        let rows = CSV.parse(normalized)
+        guard let header = rows.first else { return nil }
+        let cols = header.map { normalizeColumnName($0) }
+        guard isStrong(Set(cols)) else { return nil }
+        // Prefer an explicit unit column name; legacy Strong uses plain `Weight`.
+        let weightKeys = ["weight (kg)", "weight (lbs)", "weight (lb)", "weight"]
+        guard let wi = cols.firstIndex(where: { weightKeys.contains($0) }) else { return nil }
+        var maxV: Double?
+        for row in rows.dropFirst() {
+            guard wi < row.count else { continue }
+            let raw = row[wi].trimmingCharacters(in: .whitespacesAndNewlines)
+                .replacingOccurrences(of: ",", with: ".")
+            guard let v = Double(raw), v > 0 else { continue }
+            maxV = max(maxV ?? v, v)
+        }
+        return maxV
     }
 
     // MARK: - Duplicates (pure)
@@ -639,6 +682,35 @@ private extension StrengthCSVImporter {
         guard let s else { return nil }
         let t = s.trimmingCharacters(in: .whitespacesAndNewlines)
         return t.isEmpty ? nil : t
+    }
+
+    /// Decode CSV file bytes: UTF-8 BOM, UTF-16 LE/BE BOM, then plain UTF-8 / UTF-16 fallbacks (E9).
+    static func decodeCSVData(_ data: Data) throws -> String {
+        if data.isEmpty { throw ImportError.emptyInput }
+        // UTF-8 BOM EF BB BF — strip then decode the rest as UTF-8.
+        if data.count >= 3, data[0] == 0xEF, data[1] == 0xBB, data[2] == 0xBF {
+            guard let s = String(data: data.dropFirst(3), encoding: .utf8) else {
+                throw ImportError.emptyInput
+            }
+            return s
+        }
+        // UTF-16 LE BOM FF FE / BE BOM FE FF — include BOM so String drops it.
+        if data.count >= 2, data[0] == 0xFF, data[1] == 0xFE {
+            guard let s = String(data: data, encoding: .utf16LittleEndian) else {
+                throw ImportError.emptyInput
+            }
+            return s
+        }
+        if data.count >= 2, data[0] == 0xFE, data[1] == 0xFF {
+            guard let s = String(data: data, encoding: .utf16BigEndian) else {
+                throw ImportError.emptyInput
+            }
+            return s
+        }
+        if let s = String(data: data, encoding: .utf8) { return s }
+        if let s = String(data: data, encoding: .utf16LittleEndian) { return s }
+        if let s = String(data: data, encoding: .utf16BigEndian) { return s }
+        throw ImportError.emptyInput
     }
 
     /// Strip UTF-8 BOM; decode UTF-16 LE/BE when a BOM is present; prefer `;` when it dominates.

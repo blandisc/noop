@@ -21,7 +21,8 @@ extension AppModel {
     /// había programa.
     func startStrengthSession(routineId: String?, routineName: String,
                               slots: [StrengthSessionModel.PlanSlot],
-                              programWeek: Int? = nil, deload: Bool? = nil) {
+                              programWeek: Int? = nil, deload: Bool? = nil,
+                              lightWeekHint: String? = nil) {
         guard strengthSession == nil else { strengthSheetPresented = true; return }
         pendingHrFlush.removeAll()
         lastAcceptedHrTs = nil
@@ -29,6 +30,10 @@ extension AppModel {
                                                     slots: slots, startTs: Int(Date().timeIntervalSince1970))
         strengthSession?.programWeek = programWeek
         strengthSession?.deload = deload
+        // Ola 1 · E11 (P8): «· la semana ligera llega en la N» para el chip de estancamiento — ya
+        // calculado por quien arrancó la sesión (el mismo `ProgramServing.Context` que sembró los
+        // slots), nunca una segunda consulta al store desde dentro de la sesión viva.
+        strengthSession?.lightWeekHint = lightWeekHint
         // r22 (owner): un ejercicio con calentamiento ACTIVADO nace con su rampa «C» puesta — la de
         // PlateMath sobre el peso de trabajo del día (solo barra, como la hoja de discos). Insertar
         // la rampa una vez lo activó; quitar su última «C» en sesión lo apaga (LiveStrengthSheet).
@@ -468,9 +473,18 @@ extension AppModel {
                 let done = run.sets.filter(\.done)
                 switch run.type {
                 case .weightReps, .bodyweight:
-                    let top = done.map(\.weightKg).max()
-                    return .init(name: run.name, setCount: done.count, topWeightKg: top,
-                                 topTimeS: nil, topDistanceM: nil, trend: trend(top, run.lastWeightKg))
+                    // D7 (ola 1 · FER-327 · E7 · issue): «8 · 8 · 11 máx» lista solo las series
+                    // NUMERADAS; los escalones van aparte («↳ bajar y seguir 64 kg · 9», D2 mismo
+                    // oráculo `isNumberedWorkSet`) y nunca inflan `setCount`/`topWeightKg`.
+                    let numbered = done.filter(\.isNumberedWorkSet)
+                    let drops = done.filter { $0.mode == .drop }
+                    let top = numbered.map(\.weightKg).max()
+                    return .init(name: run.name, setCount: numbered.count, topWeightKg: top,
+                                 topTimeS: nil, topDistanceM: nil, trend: trend(top, run.lastWeightKg),
+                                 repsSequence: numbered.map(\.reps),
+                                 amrapFlags: numbered.map { $0.mode == .amrap },
+                                 dropLines: drops.map { .init(weightKg: $0.weightKg, reps: $0.reps) },
+                                 failureCount: done.filter { $0.rpe == 10 }.count)
                 case .time:
                     let top = done.compactMap(\.timeS).max()
                     return .init(name: run.name, setCount: done.count, topWeightKg: nil,

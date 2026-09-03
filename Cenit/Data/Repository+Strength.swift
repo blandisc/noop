@@ -93,7 +93,8 @@ extension Repository {
                                raise: seed.evaluation?.raise,
                                progressionState: seed.evaluation?.state,
                                lightLoad: ProgramServing.lightLoad(context: serving, equipment: ex?.equipment,
-                                                                   inventory: inventory)))
+                                                                   inventory: inventory),
+                               raiseRhythmNote: seed.evaluation?.rhythmNote))
         }
         return slots
     }
@@ -114,7 +115,12 @@ extension Repository {
         let trained = ProgramCalendar.trainedWeekStarts(sessionStartTs: starts, calendar: calendar)
         let position = ProgramCalendar.position(of: program, trainedWeekStarts: trained,
                                                 now: now, calendar: calendar)
-        return ProgramServing.Context(program: program, position: position)
+        // Ola 1 · E11 (P7): «la semana pasada quedó en blanco» — mismo insumo (`trained`) que ya
+        // calculó `position`, ninguna segunda consulta al store.
+        let lastWeekBlank = ProgramServing.lastWeekWasBlank(startTs: program.startTs,
+                                                            trainedWeekStarts: trained,
+                                                            now: now, calendar: calendar)
+        return ProgramServing.Context(program: program, position: position, lastWeekBlank: lastWeekBlank)
     }
 
     /// Alta/actualización y baja del programa activo. «Terminar programa» borra solo la fila: las
@@ -122,6 +128,14 @@ extension Repository {
     func setProgram(_ program: Program) async throws {
         guard let store = await storeHandle() else { return }
         try await store.setProgram(program)
+    }
+
+    /// Instala un motor materializado (rutinas + calendario + `program`) en UNA transacción — la
+    /// puerta de «Empezar programa» (ola 1 · E11). Nunca N awaits desde la pantalla: si el teléfono se
+    /// cierra a la mitad, o queda el programa completo o no queda nada nuevo.
+    func installProgram(_ materialized: ProgramTemplate.Materialized) async throws {
+        guard let store = await storeHandle() else { return }
+        try await store.installProgram(materialized)
     }
 
     func endProgram() async throws {
@@ -202,7 +216,9 @@ extension Repository {
                      inventory: [PlateMath.PlateStock],
                      advice: TrainingRegulation.Advice,
                      isLightWeek: Bool = false) async
-        -> (lastSets: [SetEntry], evaluation: (state: ProgressionState, raise: ProgressionPlanner.Raise?)?) {
+        -> (lastSets: [SetEntry],
+            evaluation: (state: ProgressionState, raise: ProgressionPlanner.Raise?,
+                        rhythmNote: ProgressionPlanner.RaiseRhythmNote?)?) {
         guard let store = await storeHandle() else { return ([], nil) }
         let last = (try? await store.lastWorkSets(exerciseId: re.exerciseId, limit: 4)) ?? []
         guard re.progressionEnabled, exercise?.type == .weightReps else { return (last, nil) }
@@ -334,6 +350,24 @@ extension Repository {
     func saveSession(_ session: StrengthSession, sets: [SetEntry]) async throws {
         guard let store = await storeHandle() else { return }
         try await store.saveSession(session, sets: sets)
+    }
+
+    /// Batch upsert for CSV import (FER-333 · E9) — one store transaction for the whole lote.
+    func saveSessions(_ batch: [(session: StrengthSession, sets: [SetEntry])]) async throws {
+        guard let store = await storeHandle() else { return }
+        try await store.saveSessions(batch)
+    }
+
+    /// Which of `ids` already exist — «Ya estaban» for re-import (FER-333 · E9).
+    func existingSessionIds(_ ids: [String]) async -> Set<String> {
+        guard let store = await storeHandle() else { return [] }
+        return (try? await store.existingSessionIds(ids)) ?? []
+    }
+
+    /// Compact provenance for «Posibles duplicados» ±30 min (FER-333 · E9).
+    func sessionSummariesForImportOverlap() async -> [(id: String, source: String?, title: String?, startTs: Int)] {
+        guard let store = await storeHandle() else { return [] }
+        return (try? await store.sessionSummariesForImportOverlap()) ?? []
     }
 
     /// Edit a saved session (sets / exercise / date / notes / routine) and recompute the affected PRs

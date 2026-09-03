@@ -73,9 +73,14 @@ enum ReceiptMapping {
     /// from the stored session; the per-exercise lines are grouped from the session's work sets.
     static func summary(session: StrengthSession, sets: [SetEntry],
                         exerciseNames: [String: String], routineName: String) -> StrengthSummary {
-        let work = sets.filter { $0.kind == .work && $0.done }
+        // Ola 1 (E7 · D2): el volumen SÍ cuenta escalones (`SetMode.counts(.volume)` es `true` para
+        // los tres modos, `Training.swift`); `setCount`/la gramática del recibo (D7) NO — un escalón
+        // no es una serie numerada.
+        let allDone = sets.filter { $0.kind == .work && $0.done }
+        let work = allDone.filter { $0.mode != .drop }
+        let drops = allDone.filter { $0.mode == .drop }
         let end = session.endTs ?? session.startTs
-        let volume = work.reduce(0.0) { $0 + ($1.weightKg ?? 0) * Double($1.reps ?? 0) }
+        let volume = allDone.reduce(0.0) { $0 + ($1.weightKg ?? 0) * Double($1.reps ?? 0) }
 
         var order: [String] = []
         var byEx: [String: [SetEntry]] = [:]
@@ -83,15 +88,24 @@ enum ReceiptMapping {
             if byEx[s.exerciseId] == nil { order.append(s.exerciseId) }
             byEx[s.exerciseId, default: []].append(s)
         }
+        var byExDrops: [String: [SetEntry]] = [:]
+        for s in drops.sorted(by: { $0.position < $1.position }) {
+            byExDrops[s.exerciseId, default: []].append(s)
+        }
         let exercises: [StrengthSummary.ExerciseLine] = order.map { id in
             let es = byEx[id] ?? []
+            let esDrops = byExDrops[id] ?? []
             return StrengthSummary.ExerciseLine(
                 name: exerciseNames[id] ?? String(localized: "Exercise"),
                 setCount: es.count,
                 topWeightKg: es.compactMap(\.weightKg).max(),
                 topTimeS: es.compactMap(\.timeS).max().map { Int($0.rounded()) },
                 topDistanceM: es.compactMap(\.distanceM).max(),
-                trend: nil
+                trend: nil,
+                repsSequence: es.map(\.reps),
+                amrapFlags: es.map { $0.mode == .amrap },
+                dropLines: esDrops.map { .init(weightKg: $0.weightKg ?? 0, reps: $0.reps) },
+                failureCount: es.filter { $0.rpe == 10 }.count
             )
         }
         return StrengthSummary(

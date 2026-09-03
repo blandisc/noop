@@ -85,13 +85,39 @@ extension RoutineSheet {
                 reps: items[p.idx].re.sets[p.si].reps, top: items[p.idx].re.sets[p.si].repsRangeTop,
                 mode: items[p.idx].re.sets[p.si].mode)
         case .repsTop:
-            items[p.idx].re.sets[p.si].repsRangeTop = RoutineSet.normalizedRepsRangeTop(
-                reps: items[p.idx].re.sets[p.si].reps, top: Int(p.value.filter(\.isNumber)),
-                mode: items[p.idx].re.sets[p.si].mode)
+            if p.setsAmrap {
+                items[p.idx].re.sets[p.si].repsRangeTop = nil
+                items[p.idx].re.sets[p.si].mode = .amrap
+            } else {
+                items[p.idx].re.sets[p.si].repsRangeTop = RoutineSet.normalizedRepsRangeTop(
+                    reps: items[p.idx].re.sets[p.si].reps, top: Int(p.value.filter(\.isNumber)),
+                    mode: items[p.idx].re.sets[p.si].mode)
+            }
         }
         dirty = true
         mirrorAcrossRoundsIfSuperset(idx: p.idx, si: p.si)
         pendingMirror = nil
+    }
+
+    /// «máx» (ola 1 · N16, E7): la MISMA tecla `confirmSet` del keypad, contextual al techo de una
+    /// serie de TRABAJO — sin quinta tecla ni barra de accesorios. Quita el techo (rango abierto) y
+    /// marca la serie AMRAP («las que puedas»). Pasa por el MISMO candado de rondas desiguales que
+    /// teclear un valor (R8): si la superserie ya tiene rondas distintas, espera el confirm en vez de
+    /// mezclar `mode` a medias con las demás rondas.
+    func setAmrap(_ cell: EditorCell) {
+        guard !locked, cell.field == .repsTop,
+              items.indices.contains(cell.idx), items[cell.idx].re.sets.indices.contains(cell.si),
+              items[cell.idx].re.sets[cell.si].kind == .work else { return }
+        if RoutineSetEditing.inSuperset(items.map(\.re), cell.idx), !roundsAreEven(cell.idx) {
+            pendingMirror = PendingMirror(idx: cell.idx, si: cell.si, field: .repsTop, value: "", setsAmrap: true)
+            return
+        }
+        items[cell.idx].re.sets[cell.si].repsRangeTop = nil
+        items[cell.idx].re.sets[cell.si].mode = .amrap
+        dirty = true
+        mirrorAcrossRoundsIfSuperset(idx: cell.idx, si: cell.si)
+        buffer = ""
+        bufferTyped = false
     }
 
     /// El TECHO del rango (E13/FER-94): vacío = sin rango, un solo piso fijo (comportamiento de
@@ -152,6 +178,13 @@ extension RoutineSheet {
 
     @ViewBuilder var keypadInset: some View {
         if let cell = activeCell {
+            // N16 (ola 1 · E7): «máx» reutiliza el mismo slot — visible SOLO tecleando el techo de
+            // una serie de TRABAJO; en piso y peso se atenúa (mismo patrón que `stepDownEnabled`:
+            // el editor prescribe, no registra, así que la tecla se calla en vez de desaparecer y
+            // mover la rejilla).
+            let showsMax = cell.field == .repsTop && items.indices.contains(cell.idx)
+                && items[cell.idx].re.sets.indices.contains(cell.si)
+                && items[cell.idx].re.sets[cell.si].kind == .work
             SessionKeypad(
                 stepLabel: cell.field == .weight ? (system == .imperial ? "±5" : "±2,5") : "±1",
                 canCopyPrevious: false,
@@ -166,7 +199,15 @@ extension RoutineSheet {
                 // «Copiar arriba»: el editor copia la MISMA columna de la serie anterior. Oculto en
                 // la primera serie — no hay «arriba» de qué copiar.
                 onCopyAbove: cell.si > 0 ? { copyAbove(cell) } : nil,
-                confirmSetEnabled: false,
+                onConfirmSet: { setAmrap(cell) },
+                confirmSetEnabled: showsMax,
+                // D5 (QA ronda 2): fuera de `repsTop` (piso, peso) el slot vuelve a su etiqueta
+                // NORMAL («✓ Serie», el default de `SessionKeypad`) atenuada — como antes de N16, no
+                // «máx» atenuado. «Sigue oculta» es la palabra del contrato: mismo dibujo de siempre.
+                confirmSetLabel: showsMax ? String(localized: "max") : String(localized: "✓ Serie"),
+                confirmSetAccessibilityLabel: showsMax
+                    ? Text(String(localized: "Mark as however many you can"))
+                    : Text("Mark set as done"),
                 onHide: { withAnimation(.snappy(duration: 0.22)) { activeCell = nil } }
             )
             .transition(.move(edge: .bottom))

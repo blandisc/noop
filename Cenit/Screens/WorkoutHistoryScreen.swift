@@ -117,6 +117,8 @@ struct WorkoutHistoryScreen: View {
     @State private var progressDetailExercise: Exercise?
     /// «Registrar entreno a mano» (FER-136 · V7) — el mismo `ManualWorkoutSheet` que «Mis entrenamientos».
     @State private var showManualEntry = false
+    /// FER-333 · E9: hoja de import CSV Strong/Hevy desde el vacío del historial.
+    @State private var showStrengthCSVImport = false
     /// Inject: recarga en caliente para esta pantalla (dev-only, no-op en Release).
     @ObserveInjection private var inject
 
@@ -507,6 +509,7 @@ struct WorkoutHistoryScreen: View {
 
     /// Una `StrengthSession` como `EntrenarFilaFuerza` (glifo de familia + marca + esfuerzo).
     /// Nombre, meta, familia, marcas — una sola fila compartida con el dialecto Fuerza.
+    /// FER-333: sello Strong/Hevy/Cénit cuando la sesión vino de un CSV importado.
     private func fuerzaRow(_ s: StrengthSession) -> some View {
         let family: EntrenarFamily = s.routineId.flatMap { routineRegions[$0] }?.family ?? .fullBody
         return EntrenarFilaFuerza(
@@ -514,7 +517,8 @@ struct WorkoutHistoryScreen: View {
             nombre: name(for: s),
             meta: sessionMeta(s),
             marcas: marksBySession[s.id] ?? 0,
-            esfuerzo: s.strain.map { StrengthHistoryFormat.strain($0) }
+            esfuerzo: s.strain.map { StrengthHistoryFormat.strain($0) },
+            origen: StrengthImportSource.label(s.source)
         ) { openWorkoutSession?(route(for: s)) }
     }
 
@@ -1099,9 +1103,40 @@ struct WorkoutHistoryScreen: View {
             Text("When you finish a strength session, it shows up here with its breakdown, volume and effort.")
                 .font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
                 .fixedSize(horizontal: false, vertical: true)
+            // FER-333 · E9: misma hoja de 4 pasos que Ajustes › Datos y fuentes › Importar.
+            Button { showStrengthCSVImport = true } label: {
+                HStack(spacing: LiquidSpace.s100) {
+                    Text("Coming from Strong or Hevy? Import your history")
+                        .font(LiquidType.tituloFilaMedia)
+                        .foregroundStyle(LiquidColor.tinta900)
+                        .multilineTextAlignment(.leading)
+                    Spacer(minLength: LiquidSpace.s100)
+                    LiquidIcon(.chevron, size: 12, color: LiquidColor.tinta500)
+                        .accessibilityHidden(true)
+                }
+                .frame(minHeight: EntrenarMetrics.row)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.liquidPress)
+            .accessibilityHint(Text("Opens the CSV import sheet"))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, LiquidSpace.s400)
+        .sheet(isPresented: $showStrengthCSVImport) {
+            #if os(iOS)
+            StrengthHistoryImportSheet(
+                onComplete: { await load() },
+                // QA D4: `onOpenHistory` no aplica — el usuario YA está en el historial; `onArmWeek`
+                // se deja fuera porque `WorkoutHistoryScreen` no recibe una ruta al planificador de
+                // semana (su init no trae `openWeeklyPlan`, a diferencia de `EntrenarView`) — cablearla
+                // significaría propagar un closure nuevo por `CuerpoView`/`AppMap`, fuera del hunk de
+                // esta pantalla. «Listo» sigue siendo la salida real.
+                onOpenHistory: nil,
+                onArmWeek: nil)
+                .environmentObject(repo)
+                .preferredColorScheme(.light)
+            #endif
+        }
     }
 
     /// «Error de lectura» (Estados, decisión #16 del épico): sustituye la ilustración de «sin datos» —
@@ -1195,7 +1230,12 @@ struct WorkoutHistoryScreen: View {
     // MARK: - Derived
 
     private func name(for session: StrengthSession) -> String {
-        session.routineId.flatMap { routineNames[$0] } ?? String(localized: "Strength workout")
+        if let routine = session.routineId.flatMap({ routineNames[$0] }) { return routine }
+        // FER-333: imported sessions keep the title Strong/Hevy gave them.
+        if let title = session.title?.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty {
+            return title
+        }
+        return String(localized: "Strength workout")
     }
 
     private func route(for session: StrengthSession) -> WorkoutSessionRoute {
@@ -1490,6 +1530,7 @@ struct WorkoutSessionDetailScreen: View {
                     noteBlock(note)
                 }
                 sourceBadge
+                importLoadNote
                 if loaded {
                     // Handoff: exercise blocks breathe compact (16), not the section's 28.
                     VStack(alignment: .leading, spacing: LiquidSpace.s400) {
@@ -1614,7 +1655,9 @@ struct WorkoutSessionDetailScreen: View {
         typealias Group = (exerciseId: String, name: String, sets: [SetEntry])
         return groups.compactMap { (g: Group) -> SeedItem? in
             guard let ex: Exercise = exercisesByID[g.exerciseId] else { return nil }
-            let work: [SetEntry] = g.sets.filter { (s: SetEntry) in s.kind == .work }
+            // Ola 1 (E7 · D2): un escalón de «bajar y seguir» no se repite como serie prescrita — se
+            // OMITE (la rutina nueva refleja el trabajo de verdad, no una reducción de esa sesión).
+            let work: [SetEntry] = g.sets.filter { (s: SetEntry) in s.kind == .work && s.mode != .drop }
             let sets: [RoutineSet] = work.enumerated().map { (i: Int, s: SetEntry) -> RoutineSet in
                 RoutineSet(position: i, kind: .work, reps: s.reps, weightKg: s.weightKg)
             }
@@ -1927,10 +1970,19 @@ struct WorkoutSessionDetailScreen: View {
             tono: LiquidColor.tinta10)
     }
 
-    /// «FUENTE» — measured (journal join, or a pulse that covered the session) vs nothing. An effort-
-    /// estimated session says «estimado» ONCE, in its own pill, so the badge stays out (ola 1 · E3, A6).
+    /// «FUENTE» — la procedencia de import (Strong/Hevy) SIEMPRE se muestra y nunca dice «Medido en el
+    /// dispositivo» (FER-333 · C10); si no es import, el badge aparece solo cuando el número fue MEDIDO
+    /// (journal o un pulso que cubrió la sesión), y una sesión estimada por esfuerzo dice «estimado»
+    /// una sola vez en su pastilla, así que el badge se queda fuera (ola 1 · E3, A6).
     @ViewBuilder private var sourceBadge: some View {
-        if Self.sourceBadgeIsMeasured(journal: journalRow != nil, strainSource: fullSession?.strainSource) {
+        if let label = StrengthImportSource.label(fullSession?.source) {
+            HStack(spacing: LiquidSpace.s200) {
+                Text("Source").liquidLabel().foregroundStyle(LiquidColor.tinta500)
+                LiquidOrigenBadge(label, tono: nil)
+                Spacer(minLength: 0)
+            }
+            .accessibilityElement(children: .combine)
+        } else if Self.sourceBadgeIsMeasured(journal: journalRow != nil, strainSource: fullSession?.strainSource) {
             HStack(spacing: LiquidSpace.s200) {
                 Text("Source").liquidLabel().foregroundStyle(LiquidColor.tinta500)
                 LiquidOrigenBadge(String(localized: "Measured on device"),
@@ -1944,6 +1996,24 @@ struct WorkoutSessionDetailScreen: View {
     /// The single rule behind the FUENTE badge: shown only when the number was MEASURED.
     static func sourceBadgeIsMeasured(journal: Bool, strainSource: StrainSource?) -> Bool {
         journal || strainSource == .hr
+    }
+
+    /// Load honesty under Fuente for imported sessions (FER-333 · C9/C11).
+    @ViewBuilder
+    private var importLoadNote: some View {
+        if StrengthImportSource.label(fullSession?.source) != nil {
+            if fullSession?.strainSource == .rpe {
+                Text("Estimated from your imported history")
+                    .font(LiquidType.captionLectura)
+                    .foregroundStyle(LiquidColor.tinta500)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else if fullSession?.strain == nil {
+                Text("No load · the file has no effort")
+                    .font(LiquidType.captionLectura)
+                    .foregroundStyle(LiquidColor.tinta500)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
     }
 
     /// Match this strength session to a journal workout by interval overlap
@@ -1971,14 +2041,26 @@ struct WorkoutSessionDetailScreen: View {
             exerciseTitle(g)
                 .padding(.bottom, LiquidSpace.s150)
             ForEach(Array(g.sets.enumerated()), id: \.element.id) { idx, set in
+                // Ola 1 (FER-327 · E7 · Grok H7): el contador excluye los escalones de «bajar y
+                // seguir» — un escalón no es una serie de trabajo numerada, así que la etiqueta dice
+                // «↳ Bajar y seguir» en vez de robarle el número a la serie que sigue.
+                let workNumber = g.sets.prefix(idx + 1).reduce(0) { $0 + ($1.mode == .drop ? 0 : 1) }
                 HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s200) {
-                    Text("Set \(idx + 1)").font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
+                    Text(set.mode == .drop
+                         ? "↳ " + String(localized: "Drop and continue")   // catalog: es «Bajar y seguir»
+                         : String(localized: "Set \(workNumber)"))
+                        .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
+                        // D8 (QA ronda 2): el glifo «↳ » es puramente visual — VoiceOver lee «bajar y
+                        // seguir» sin él.
+                        .accessibilityLabel(set.mode == .drop
+                                            ? Text(String(localized: "Drop and continue"))
+                                            : Text("Set \(workNumber)"))
                     if isPRSet(set, exerciseId: g.exerciseId) {
                         LiquidStatePill(valencia: "PR", tono: LiquidColor.atencionTexto)
                             .accessibilityLabel(Text("Personal record"))
                     }
                     Spacer(minLength: LiquidSpace.s200)
-                    Text(StrengthHistoryFormat.setLine(set, system: system))
+                    Text(StrengthHistoryFormat.setLine(set, system: system, mode: set.mode))
                         .font(LiquidType.valorS).foregroundStyle(LiquidColor.tinta900)
                 }
                 .padding(.vertical, LiquidSpace.s125)
@@ -1986,6 +2068,14 @@ struct WorkoutSessionDetailScreen: View {
                     if idx > 0 { LiquidCapilar(eje: .horizontal) }
                 }
                 .accessibilityElement(children: .combine)
+            }
+            // D7 (ola 1 · FER-327 · E7 · issue): «· N al fallo» — cuántas series de ESTE ejercicio
+            // llegaron a RPE 10, leyendo el dato ya guardado (sin campo nuevo).
+            let failureCount = g.sets.filter { $0.rpe == 10 }.count
+            if failureCount > 0 {
+                Text("· " + String(localized: "\(failureCount) at failure"))
+                    .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
+                    .padding(.top, LiquidSpace.s100)
             }
         }
     }
@@ -2146,12 +2236,15 @@ enum StrengthHistoryFormat {
         return lo == hi ? label(lo) : "\(label(lo))-\(label(hi))"
     }
 
-    /// One performed set as "20 kg × 6", "8 reps" (bodyweight), or a time/distance fallback.
-    static func setLine(_ s: SetEntry, system: UnitSystem) -> String {
+    /// One performed set as "20 kg × 6", "8 reps" (bodyweight), or a time/distance fallback. Ola 1
+    /// (FER-327 · E7): un AMRAP hecho lee «× 11 máx» — el techo era abierto, así que el número solo
+    /// no dice que no había tope; el default `.standard` deja cada llamador viejo intacto.
+    static func setLine(_ s: SetEntry, system: UnitSystem, mode: SetMode = .standard) -> String {
+        let maxSuffix = mode == .amrap ? " " + String(localized: "max") : ""
         if let w = s.weightKg, w > 0, let r = s.reps {
-            return "\(StrengthDisplay.weight(w, system: system)) × \(r)"
+            return "\(StrengthDisplay.weight(w, system: system)) × \(r)" + maxSuffix
         }
-        if let r = s.reps { return String(localized: "\(r) reps") }
+        if let r = s.reps { return String(localized: "\(r) reps") + maxSuffix }
         if let t = s.timeS { return "\(Int(t)) s" }
         if let d = s.distanceM { return "\(Int(d)) m" }
         return "—"
