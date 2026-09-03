@@ -284,7 +284,7 @@ struct WeeklyPlanEditorView: View {
                         .fixedSize(horizontal: false, vertical: true)
                         // Ola 1 · E12: consejo «Semana ligera», la primera vez que Tu Plan muestra un
                         // programa con semana ligera configurada (TipKit gobierna el «una vez»).
-                        .popoverTip(ctx.program.deloadRule != .none ? SemanaLigeraTip() : nil)
+                        .popoverTipIf(ctx.program.deloadRule != .none, SemanaLigeraTip())
                     if !ctx.position.ended {
                         LiquidTiraSemanas(semanaEstados(ctx), etiquetaAccesibilidad: Text(programaAccesibilidad(ctx)))
                     }

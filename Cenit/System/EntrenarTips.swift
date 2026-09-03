@@ -18,6 +18,16 @@ import StrandTraining
 
 /// Arranca TipKit una sola vez al lanzar la app (`CenitApp.init`). 100% on-device: TipKit persiste
 /// su datastore local (qué tip ya se mostró) sin red — no rompe la regla offline del repo.
+/// Ancla un consejo SOLO si `condition` — el overload de `popoverTip` que acepta un `Tip?` opcional
+/// es iOS 26+, así que en iOS 17 la condición va aquí, no en el argumento (ola 1 · E12, fix build).
+extension View {
+    @ViewBuilder
+    func popoverTipIf<T: Tip>(_ condition: Bool, _ tip: @autoclosure () -> T) -> some View {
+        if condition { self.popoverTip(tip()) } else { self }
+    }
+
+}
+
 enum EntrenarTips {
     static func configure() {
         do {
