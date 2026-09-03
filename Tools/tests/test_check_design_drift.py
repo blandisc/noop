@@ -297,6 +297,16 @@ class Fer271CommentGaps(unittest.TestCase):
             hits = drift.check([src], ["no-weight-on-grotesk"])
             self.assertEqual([i for _p, i, _r, _s in hits], [1, 2])
 
+    def test_capsule_in_background(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src = _swift(tmp, "Cenit/Screens/C.swift", [
+                ".background(LiquidColor.tinta900, in: Capsule())",   # 1 sí (FER-342)
+                ".background(activo ? LiquidColor.tinta900 : Color.clear, in: Capsule())",  # 2 sí
+                ".background(LiquidColor.tinta900, in: Capsule())  // token-exempt(chrome): pieza del catálogo",  # no
+                "SegmentedPillControl(items)",                         # no
+            ])
+            self.assertEqual([i for _p, i, _r, _s in drift.check([src], ["no-capsule-a-mano"])], [1, 2])
+
 if __name__ == "__main__":
     unittest.main()
 
