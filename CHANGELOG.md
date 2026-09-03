@@ -22,6 +22,10 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 ## Unreleased
 
 ### Correcciones de robustez (auditoría de estrés)
+- **Sueño con dos apps:** si el Apple Watch y otra app de sueño (o el Sleep Schedule del iPhone)
+  registran la misma noche, Cénit ya no suma sus etapas — antes inflaba tu sueño total, profundo y REM,
+  y disparaba la eficiencia a un falso 100 %. Ahora toma una sola fuente por noche, con prioridad al
+  Watch; el tiempo «en cama» sigue siendo el envolvente de siempre.
 - **Detalle de métrica (Hoy):** con una sola lectura en el rango, el gráfico ya no dice «No hay
   lecturas» (era falso: sí había una) — dice «No hay suficientes mediciones para trazar una tendencia»,
   igual que las demás pantallas.
