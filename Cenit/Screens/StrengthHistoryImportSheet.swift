@@ -166,7 +166,7 @@ struct StrengthHistoryImportSheet: View {
 
             parseErrorBanner
 
-            Text("Cénit recognizes which one it is by its columns. Nothing leaves your phone.")
+            Text("Cénit recognizes which one it is by its columns. Cénit uploads nothing.")
                 .font(LiquidType.caption)
                 .foregroundStyle(LiquidColor.tinta500)
                 .multilineTextAlignment(.center)

@@ -55,7 +55,7 @@ struct StressDayMapBlock: View {
             Image(systemName: "calendar.badge.clock")
                 .font(LiquidType.infoGlifoTitular)
                 .foregroundStyle(LiquidColor.tinta500)
-            Text("Cross today's stress curve with your calendar to see what your most activated moments coincided with. Everything stays on your iPhone.")
+            Text("Cross today's stress curve with your calendar to see what your most activated moments coincided with. It all runs on your iPhone.")
                 .font(LiquidType.cuerpo)
                 .lineSpacing(LiquidType.cuerpoLineSpacing)
                 .foregroundStyle(LiquidColor.tinta700)

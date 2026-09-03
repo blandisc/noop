@@ -69,7 +69,7 @@ struct SupportView: View {
                 Spacer(minLength: 0)
             }
 
-            Text("A health app built on Apple Health. Everything stays on this device: your history, your nights, your numbers. Nothing is uploaded. \(ProjectInfo.appName) is an independent, experimental project.")
+            Text("A health app built on Apple Health. It all runs on this device: your history, your nights, your numbers. Cénit uploads nothing. \(ProjectInfo.appName) is an independent, experimental project.")
                 .font(LiquidType.cuerpo)
                 .foregroundStyle(LiquidColor.tinta500)
                 .fixedSize(horizontal: false, vertical: true)

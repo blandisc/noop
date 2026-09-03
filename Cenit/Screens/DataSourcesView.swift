@@ -119,7 +119,7 @@ struct DataSourcesView: View {
             Text(String(localized: "Data Sources"))
                 .font(LiquidType.displayS).tracking(LiquidType.displaySTracking)
                 .foregroundStyle(LiquidColor.tinta900)
-            Text(String(localized: "Everything stays on this iPhone. Bring your history in once, then it's yours."))
+            Text(String(localized: "It all runs on this iPhone. Bring your history in once, then it's yours."))
                 .font(LiquidType.cuerpo)
                 .foregroundStyle(LiquidColor.tinta500)
                 .fixedSize(horizontal: false, vertical: true)
@@ -220,7 +220,7 @@ struct DataSourcesView: View {
     private var strengthHistoryImportBlock: some View {
         blockPlano(
             String(localized: "Strong or Hevy history (CSV)"),
-            subtitle: String(localized: "Bring your lifting history from Strong or Hevy. Cénit reads the CSV on this iPhone. Nothing leaves your phone.")) {
+            subtitle: String(localized: "Bring your lifting history from Strong or Hevy. Cénit reads the CSV on this iPhone. Cénit uploads nothing.")) {
             HStack(spacing: LiquidSpace.s300) {
                 LiquidGlassButton(String(localized: "Import history…"), variant: .glass) {
                     showStrengthCSVImport = true
@@ -261,7 +261,7 @@ struct DataSourcesView: View {
     @ViewBuilder
     private var appleHealthLiveBody: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s300) {
-            Text(String(localized: "Sync the last few weeks, on-device: Cénit reads your Apple Health HR, HRV, sleep, SpO₂ and steps. Nothing leaves your iPhone; your strength workouts are saved back to Apple Health when you allow it. (For a one-time bulk history, use the export import above.)"))
+            Text(String(localized: "Sync the last few weeks, on-device: Cénit reads your Apple Health HR, HRV, sleep, SpO₂ and steps. Cénit uploads nothing; your strength workouts are saved back to Apple Health when you allow it. (For a one-time bulk history, use the export import above.)"))
                 .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
                 .fixedSize(horizontal: false, vertical: true)
 
