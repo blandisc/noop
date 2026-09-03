@@ -222,12 +222,13 @@ struct RoutineSheet: View {
                 derivedIncrementKg: PlateMath.minimumIncrement(
                     for: .from(equipment: ex.equipment), inventory: plates.inventory),
                 onBack: { progressionTarget = nil },
-                onSave: { enabled, targetReps, sessions, incrementKg, deload, ignoreRecovery in
+                onSave: { enabled, targetReps, sessions, incrementKg, deload, ignoreRecovery, useRPE in
                     items[t.ei].re.progressionEnabled = enabled
                     items[t.ei].re.progressionSessions = sessions
                     items[t.ei].re.progressionIncrementKg = incrementKg
                     items[t.ei].re.progressionDeload = deload
                     items[t.ei].re.progressionIgnoreRecovery = ignoreRecovery
+                    items[t.ei].re.progressionUseRPE = useRPE
                     dirty = true
                     guard enabled else { return }
                     for si in items[t.ei].re.sets.indices where items[t.ei].re.sets[si].kind == .work {

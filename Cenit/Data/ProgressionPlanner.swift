@@ -13,6 +13,23 @@ import CenitStore
 
 enum ProgressionPlanner {
 
+    /// Ola 1 · E5: por qué el ritmo «según reps en reserva» hizo lo que hizo — SOLO para la línea 2
+    /// del hub (`EntrenarView.raiseText`/`mantieneText`). No es una nueva regla: es una lectura
+    /// adicional de la MISMA sesión más reciente que `ProgressionMath.classify` ya vio, usando sus
+    /// funciones públicas (`effort`, `atLimitStreak`) — nunca reinterpreta `ProgressionState`.
+    enum RaiseRhythmNote: Equatable {
+        /// Subió antes de tiempo: la sesión más reciente cumplió con `reserveReps` de sobra
+        /// (Helms 2016 — «able to complete sets with more than [target] RIR»).
+        case comfortable(reserveReps: Int)
+        /// Cumplió, pero al fallo (0 en reserva): invisible al ciclo, así que mantiene. Gate QA
+        /// FER-331 O2: carga el peso de la sesión (`visible.last?.session.workingKg`) desde AQUÍ —
+        /// la píldora del hub no debe re-derivarlo de `lastSets` (que puede incluir una sesión
+        /// opted-out/deload más nueva que el planner ya excluyó de `visible`).
+        case atLimitHold(workingKg: Double)
+        /// Tres (o más) sesiones al fallo seguidas por fin cuentan como estándar y suben de todos modos.
+        case atLimitCap
+    }
+
     /// A proposed weight raise for one exercise, carried into the live session (FER-E · 2b).
     struct Raise: Equatable, Codable {
         let fromKg: Double
@@ -57,15 +74,18 @@ enum ProgressionPlanner {
     /// `TrainingRegulation`. It has no default — the day this parameter was optional, three screens
     /// kept deciding by the old 0–100 score and the app contradicted itself on the same day.
     ///
-    /// Returns (state, raise). `raise` is non-nil for `.readyToAdvance` (applied to the seed) AND for
-    /// `.deferred` (`waiting == true`: earned, held by today's verdict, offered one tap away).
+    /// Returns (state, raise, rhythmNote). `raise` is non-nil for `.readyToAdvance` (applied to the
+    /// seed) AND for `.deferred` (`waiting == true`: earned, held by today's verdict, offered one tap
+    /// away). `rhythmNote` is non-nil only under `useRPE` and only for the hub's line-2 copy (E5) —
+    /// it never feeds back into `classify`. `isLightWeek` (ola 1 · E10) withholds the raise entirely —
+    /// see the guard below.
     static func evaluate(re: RoutineExercise,
                          history: [WorkSetHistoryRow],
                          inventory: [PlateMath.PlateStock],
                          equipment: String?,
                          advice: TrainingRegulation.Advice,
                          isLightWeek: Bool = false)
-        -> (state: ProgressionState, raise: Raise?)? {
+        -> (state: ProgressionState, raise: Raise?, rhythmNote: RaiseRhythmNote?)? {
         guard re.progressionEnabled else { return nil }
         // E13/FER-94: with a rep range (e.g. 8-12) the raise fires once every work set touches the
         // TOP, not the floor — `repsRangeTop` outranks the fixed `reps` it replaces. `nil` (no range,
@@ -87,6 +107,38 @@ enum ProgressionPlanner {
             deferRaise: honoursRecovery && !TrainingRegulation.allowsRaise(advice),
             useRPE: re.progressionUseRPE)
         let state = ProgressionMath.classify(input)
+        // Ola 1 · E10: la semana ligera es FRONTERA también aquí — las sesiones servidas ligeras no
+        // pueden ser «la última vez» del `fromKg` ni aparecer entre las fechas del «por qué»: se
+        // hicieron con la mitad de las series (y quizá menos peso), así que nombrarlas como prueba de
+        // la subida sería una frase que miente.
+        let visible = sessions.filter { !$0.session.optedOut && !$0.session.deload }
+        // Ola 1 · E5: la nota de ritmo para la línea 2 del hub — lee `ProgressionMath.effort` y
+        // `atLimitStreak` (ambas públicas) sobre la MISMA sesión más reciente que `classify` ya vio.
+        // `useRPE == false` es byte-idéntico a como esta pantalla se veía antes de E4/E5: `nil`.
+        let rhythmNote: RaiseRhythmNote? = {
+            // Gate QA FER-331 O3 (D-Q10): la semana ligera solo cambia kicker y meta — ninguna
+            // nota de ritmo nueva nace ahí, sin importar el estado.
+            guard re.progressionUseRPE, !isLightWeek else { return nil }
+            switch state {
+            case .readyToAdvance, .deferred:
+                if ProgressionMath.atLimitStreak(input) >= ProgressionMath.atLimitStreakCap {
+                    return .atLimitCap
+                }
+                guard let current = visible.last?.session,
+                      ProgressionMath.effort(current) == .comfortable else { return nil }
+                // El peor caso (RPE más alto) de las series de trabajo — «te sobraban N» es la
+                // afirmación más conservadora que la sesión respalda, no un promedio optimista.
+                let maxRPE = current.workSetRPE.compactMap { $0 }.max() ?? ProgressionMath.rpeComfortableMax
+                let reserve = max(0, Int((10 - maxRPE).rounded()))
+                return .comfortable(reserveReps: reserve)
+            case .inCycle:
+                guard ProgressionMath.atLimitStreak(input) > 0,
+                      let workingKg = visible.last?.session.workingKg else { return nil }
+                return .atLimitHold(workingKg: workingKg)
+            default:
+                return nil
+            }
+        }()
         // Ola 1 · E10: en la semana ligera NO se propone subida. El estado se sigue calculando y se
         // sigue mostrando (el ciclo no se pierde: la subida ganada aparece la semana que sigue), pero
         // esta sesión se sirvió con menos volumen — ofrecer más kilos encima contradiría lo que la
@@ -97,16 +149,16 @@ enum ProgressionPlanner {
             // ser frontera (solo series). Esta sesión avisa el estancamiento; la propuesta íntegra
             // reaparece en la semana 1 del ciclo siguiente (gate /biomecanico FER-329 #3).
             if case .deloading = state {
-                return (.stalled(sessions: ProgressionMath.deloadStallThreshold), nil)
+                return (.stalled(sessions: ProgressionMath.deloadStallThreshold), nil, rhythmNote)
             }
-            return (state, nil)
+            return (state, nil, rhythmNote)
         }
         let newKg: Double
         let waiting: Bool
         switch state {
         case .readyToAdvance(let kg): newKg = kg; waiting = false
         case .deferred(let kg):       newKg = kg; waiting = true
-        default: return (state, nil)
+        default: return (state, nil, rhythmNote)
         }
         // FER-82: TODO lo que se muestra sale de las sesiones que el ciclo ve. Una sesión marcada
         // opt-out (se tomó la subida a media sesión, o se pulsó «Volver a X») tiene como peso tope el
@@ -114,12 +166,7 @@ enum ProgressionPlanner {
         // incluso en un día que retiene la subida— y cortaba la racha de fechas, dejando la frase
         // del «por qué» sin ninguna («Hiciste 3×8 con 82.5 kg el —»). El clasificador ya las ignora;
         // estas dos derivaciones también.
-        // Ola 1 · E10: la semana ligera es FRONTERA también aquí — las sesiones servidas ligeras no
-        // pueden ser «la última vez» del `fromKg` ni aparecer entre las fechas del «por qué»: se
-        // hicieron con la mitad de las series (y quizá menos peso), así que nombrarlas como prueba de
-        // la subida sería una frase que miente.
-        let visible = sessions.filter { !$0.session.optedOut && !$0.session.deload }
-        guard let fromKg = visible.last?.session.workingKg else { return (state, nil) }
+        guard let fromKg = visible.last?.session.workingKg else { return (state, nil, rhythmNote) }
         // The qualifying dates: the trailing run of met sessions at the current weight, oldest first.
         let met = visible.reversed().prefix {
             abs($0.session.workingKg - fromKg) < 0.0001 &&
@@ -139,6 +186,6 @@ enum ProgressionPlanner {
             phrase = String(format: String(localized: "You did %lld×%lld with %@ kg on %@."),
                             targetSets, targetReps, kgFmt, dates.last ?? "—")
         }
-        return (state, Raise(fromKg: fromKg, toKg: newKg, phrase: phrase, waiting: waiting))
+        return (state, Raise(fromKg: fromKg, toKg: newKg, phrase: phrase, waiting: waiting), rhythmNote)
     }
 }

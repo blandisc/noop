@@ -21,18 +21,27 @@ struct ProgressionChip: View {
             .disabled(disabled)
     }
 
-    /// «+2,5 kg cada 2 ✓» — el plan activo, SIEMPRE con su incremento.
+    /// «+2,5 kg · constante ✓» — el plan activo, SIEMPRE con su incremento y su ritmo.
     ///
     /// Antes, sin `progressionIncrementKg` explícito decía «Progresión · activa» a secas. Pero ese nil no
     /// significa «sin configurar»: significa que el incremento se DERIVA de tus discos en vez de estar
     /// guardado a mano. El chip acababa distinguiendo «explícito vs. derivado» —una diferencia interna que
     /// no le importa a nadie— y dejando de decir el dato justo en el caso más común, el del valor por
     /// defecto (bug Fer 2026-07-18). Ahora cae al mínimo derivado: si va a subir 2,5 kg, lo dice.
+    ///
+    /// Ola 1 · E5: el «cada N» (jerga de motor) se sustituye por el nombre del ritmo — el mismo
+    /// mapeo que `ProgressionSetupScreen.ritmo` (constante/rápido = `progressionUseRPE == false` +
+    /// `progressionSessions`; reps en reserva = `progressionUseRPE == true`).
     static func summary(_ re: RoutineExercise, system: UnitSystem, derived: Double) -> String {
         let inc = re.progressionIncrementKg ?? derived
         let unit = StrengthDisplay.weightUnit(system).lowercased()
-        return "+\(StrengthDisplay.incrementNumber(inc, system: system)) \(unit) "
-            + String(localized: "every \(re.progressionSessions)") + " ✓"
+        let ritmo: String
+        if re.progressionUseRPE {
+            ritmo = String(localized: "reps in reserve")
+        } else {
+            ritmo = re.progressionSessions <= 1 ? String(localized: "fast") : String(localized: "constant")
+        }
+        return "+\(StrengthDisplay.incrementNumber(inc, system: system)) \(unit) · \(ritmo) ✓"
     }
 }
 

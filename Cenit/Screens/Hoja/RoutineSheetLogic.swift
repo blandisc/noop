@@ -18,7 +18,8 @@ extension RoutineSheet {
     /// `EditorItem.raise` sin re-filtrarla. Estática y pura para que un test la truene si alguien
     /// la envuelve en un gate de `advice`.
     static func raiseForEditorItem(
-        _ evaluation: (state: ProgressionState, raise: ProgressionPlanner.Raise?)?
+        _ evaluation: (state: ProgressionState, raise: ProgressionPlanner.Raise?,
+                       rhythmNote: ProgressionPlanner.RaiseRhythmNote?)?
     ) -> ProgressionPlanner.Raise? {
         evaluation?.raise
     }

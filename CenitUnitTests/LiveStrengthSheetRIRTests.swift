@@ -69,7 +69,8 @@ final class LiveStrengthSheetRIRTests: XCTestCase {
         XCTAssertNil(LiveStrengthSheet.rirScoped(selectedRIR: nil, selectedRIRTarget: nil, registering: target))
     }
 
-    // MARK: - qLabel(fromRPE:): la lectura «Q n» de la tabla en filas hechas (ronda 3, hallazgo grave/menor)
+    // MARK: - qLabel(fromRPE:): la lectura «reps en reserva» de la tabla en filas hechas (ronda 3,
+    // hallazgo grave/menor; reescrita en ola 1 · E5 — «Q»/«Quedaban» quedan prohibidas)
 
     /// La vuelta exacta del RIR guardado: `rpe(fromRIR:)` seguida de `qLabel(fromRPE:)` debe
     /// devolver el mismo número que eligió el segmento — el redondeo no debe perder el valor exacto
@@ -77,17 +78,17 @@ final class LiveStrengthSheetRIRTests: XCTestCase {
     func testQLabelRoundTripsExactRIRValues() {
         for rir in 0...4 {
             let rpe = LiveStrengthSheet.rpe(fromRIR: rir)
-            let expected = rir >= 4 ? "Q 4+" : "Q \(rir)"
+            let expected = rir == 0 ? "at failure" : (rir >= 4 ? "4+ in reserve" : "\(rir) in reserve")
             XCTAssertEqual(LiveStrengthSheet.qLabel(fromRPE: rpe), expected)
         }
     }
 
     /// Un RPE puesto a mano por la hoja de RPE (fuera de la escala RIR, p.ej. 9,5 o 5) también
-    /// convierte y satura — la columna nunca imprime «Q» fuera de 0…4+.
+    /// convierte y satura — la columna nunca imprime «Q» fuera de 0…4+, ni la palabra «Q»/«Quedaban».
     func testQLabelSaturatesForRPEOutsideTheRIRSegment() {
-        XCTAssertEqual(LiveStrengthSheet.qLabel(fromRPE: 9.5), "Q 0")
-        XCTAssertEqual(LiveStrengthSheet.qLabel(fromRPE: 5), "Q 4+")
-        XCTAssertEqual(LiveStrengthSheet.qLabel(fromRPE: 0), "Q 4+")
+        XCTAssertEqual(LiveStrengthSheet.qLabel(fromRPE: 9.5), "at failure")
+        XCTAssertEqual(LiveStrengthSheet.qLabel(fromRPE: 5), "4+ in reserve")
+        XCTAssertEqual(LiveStrengthSheet.qLabel(fromRPE: 0), "4+ in reserve")
     }
 
     // MARK: - focusDoneTiming: HECHO nunca se cuela delante de un descanso que sigue corriendo

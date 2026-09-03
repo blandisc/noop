@@ -93,7 +93,8 @@ extension Repository {
                                raise: seed.evaluation?.raise,
                                progressionState: seed.evaluation?.state,
                                lightLoad: ProgramServing.lightLoad(context: serving, equipment: ex?.equipment,
-                                                                   inventory: inventory)))
+                                                                   inventory: inventory),
+                               raiseRhythmNote: seed.evaluation?.rhythmNote))
         }
         return slots
     }
@@ -202,7 +203,9 @@ extension Repository {
                      inventory: [PlateMath.PlateStock],
                      advice: TrainingRegulation.Advice,
                      isLightWeek: Bool = false) async
-        -> (lastSets: [SetEntry], evaluation: (state: ProgressionState, raise: ProgressionPlanner.Raise?)?) {
+        -> (lastSets: [SetEntry],
+            evaluation: (state: ProgressionState, raise: ProgressionPlanner.Raise?,
+                        rhythmNote: ProgressionPlanner.RaiseRhythmNote?)?) {
         guard let store = await storeHandle() else { return ([], nil) }
         let last = (try? await store.lastWorkSets(exerciseId: re.exerciseId, limit: 4)) ?? []
         guard re.progressionEnabled, exercise?.type == .weightReps else { return (last, nil) }

@@ -34738,18 +34738,18 @@
     },
     "Reps left kicker" : {
       "extractionState" : "manual",
-      "comment" : "Kicker QUEDABAN de la fila RIR del teclado de sesión (FER-134). Clave propia, distinta de «Remaining» (usada por IntervalTimerView para el tiempo restante del temporizador) para no pisar esa traducción.",
+      "comment" : "Kicker de la fila RIR del teclado de sesión (FER-134; reps en reserva desde ola 1 · E5 / D-Q1: nunca «Q»/«Quedaban»). Clave propia, distinta de «Remaining» (usada por IntervalTimerView para el tiempo restante del temporizador) para no pisar esa traducción.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Remaining"
+            "value" : "Reps in reserve"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "quedaban"
+            "value" : "reps en reserva"
           }
         }
       }
@@ -67214,6 +67214,618 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Incluye %lld sesión con esfuerzo estimado"
+          }
+        }
+      }
+    },
+    "Rhythm" : {
+      "comment" : "Ola 1 · E5: rótulo de la sección «Ritmo» en ProgressionSetupScreen (lista con palomita).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rhythm"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ritmo"
+          }
+        }
+      }
+    },
+    "Steady rhythm" : {
+      "comment" : "Ola 1 · E5: título de la opción «Constante» del selector Ritmo (progressionUseRPE=false, sessions=2).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steady rhythm"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Constante"
+          }
+        }
+      }
+    },
+    "Fast rhythm" : {
+      "comment" : "Ola 1 · E5: título de la opción «Rápido» del selector Ritmo (progressionUseRPE=false, sessions=1).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fast rhythm"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rápido"
+          }
+        }
+      }
+    },
+    "Reps in reserve rhythm" : {
+      "comment" : "Ola 1 · E5: título de la opción «Reps en reserva» del selector Ritmo (progressionUseRPE=true).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reps in reserve rhythm"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reps en reserva"
+          }
+        }
+      }
+    },
+    "raises after 2 sessions in a row" : {
+      "comment" : "Ola 1 · E5: subtítulo de «Constante» en el selector Ritmo.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "raises after 2 sessions in a row"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "subes tras 2 sesiones cumplidas"
+          }
+        }
+      }
+    },
+    "raises after 1" : {
+      "comment" : "Ola 1 · E5: subtítulo de «Rápido» en el selector Ritmo.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "raises after 1"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "subes tras 1"
+          }
+        }
+      }
+    },
+    "1 if you had 2 to spare · waits if you hit failure" : {
+      "comment" : "Ola 1 · E5: subtítulo de «Reps en reserva» en el selector Ritmo.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 if you had 2 to spare · waits if you hit failure"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 si te sobraron 2 · espera si llegaste al fallo"
+          }
+        }
+      }
+    },
+    "Fine-tune" : {
+      "comment" : "Ola 1 · E5: disclosure «Ajustes finos ▾» en ProgressionSetupScreen (Pasada 2).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fine-tune"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajustes finos"
+          }
+        }
+      }
+    },
+    "Load step" : {
+      "comment" : "Ola 1 · E5: rótulo del incremento en ProgressionSetupScreen (antes «Increment»).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Load step"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paso de carga"
+          }
+        }
+      }
+    },
+    "from your plates" : {
+      "comment" : "Ola 1 · E5: nota corta del paso de carga cuando no hay override a mano.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "from your plates"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "de tus discos"
+          }
+        }
+      }
+    },
+    "When your body says hold" : {
+      "comment" : "Ola 1 · E5: renombre de «Days that aren't in range» — describe el veredicto, no un calendario.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When your body says hold"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuando tu cuerpo dice mantén"
+          }
+        }
+      }
+    },
+    "Raise anyway" : {
+      "comment" : "Ola 1 · E5: opción del segmentado «Cuando tu cuerpo dice mantén» (progressionIgnoreRecovery=true).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Raise anyway"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subir igual"
+          }
+        }
+      }
+    },
+    "Wait" : {
+      "comment" : "Ola 1 · E5: opción del segmentado «Cuando tu cuerpo dice mantén» (progressionIgnoreRecovery=false).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wait"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esperar"
+          }
+        }
+      }
+    },
+    "constant" : {
+      "comment" : "Ola 1 · E5: palabra de ritmo embebida en la frase-resumen «Subes X kg cuando cumples Y reps con ritmo…».",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "constant"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "constante"
+          }
+        }
+      }
+    },
+    "fast" : {
+      "comment" : "Ola 1 · E5: palabra de ritmo embebida en la frase-resumen (ver «constant»).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "fast"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "rápido"
+          }
+        }
+      }
+    },
+    "reps in reserve" : {
+      "comment" : "Ola 1 · E5: palabra de ritmo embebida en la frase-resumen (ver «constant») y en ProgressionChip.summary.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "reps in reserve"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "reps en reserva"
+          }
+        }
+      }
+    },
+    "Stall three times and you drop %@%%." : {
+      "comment" : "Ola 1 · E5: cola de la frase-resumen cuando el deload es «Propose». Gate QA FER-331 O1: espacio antes de % en es, como la clave hermana «bajas ~7,5 % y reconstruyes».",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stall three times and you drop %@%%."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si te estancas tres veces, bajas %@ %%."
+          }
+        }
+      }
+    },
+    "Stall three times and Cénit just warns you." : {
+      "comment" : "Ola 1 · E5: cola de la frase-resumen cuando el deload es «Warn only».",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stall three times and Cénit just warns you."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si te estancas tres veces, Cénit solo te avisa."
+          }
+        }
+      }
+    },
+    "You hit the reps with %lld to spare. One session was enough." : {
+      "comment" : "Ola 1 · E5: línea 2 del héroe — caso cómodo (RaiseRhythmNote.comfortable).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You hit the reps with %lld to spare. One session was enough."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Llegaste a las reps y te sobraban %lld. Una sesión bastó."
+          }
+        }
+      }
+    },
+    "Three sessions at your limit and you still hit the reps: you raise, or change the rhythm." : {
+      "comment" : "Ola 1 · E5: línea 2 del héroe — caso tope (RaiseRhythmNote.atLimitCap).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Three sessions at your limit and you still hit the reps: you raise, or change the rhythm."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tres veces al fallo y con las reps: subes, o cambia el ritmo."
+          }
+        }
+      }
+    },
+    "Today you maintain" : {
+      "comment" : "Ola 1 · E5: prefijo de la píldora ámbar del héroe (paralelo a «Today you raise»).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today you maintain"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy mantienes"
+          }
+        }
+      }
+    },
+    "You hit the reps, but at your limit. One easier session and it counts toward the raise." : {
+      "comment" : "Ola 1 · E5: línea 2 de la píldora ámbar «Hoy mantienes» (RaiseRhythmNote.atLimitHold).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You hit the reps, but at your limit. One easier session and it counts toward the raise."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Llegaste, pero al fallo. Una sesión más holgada y cuenta para subir."
+          }
+        }
+      }
+    },
+    "at failure" : {
+      "comment" : "Ola 1 · E5: LiveStrengthSheet.qLabel con 0 en reserva — antes «Q 0». Nunca «Q»/«Quedaban».",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "at failure"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "al fallo"
+          }
+        }
+      }
+    },
+    "%lld in reserve" : {
+      "comment" : "Ola 1 · E5: LiveStrengthSheet.qLabel con 1-3 en reserva — antes «Q 1»/«Q 2»/«Q 3».",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld in reserve"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld en reserva"
+          }
+        }
+      }
+    },
+    "4+ in reserve" : {
+      "comment" : "Ola 1 · E5: LiveStrengthSheet.qLabel en el tope — antes «Q 4+».",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "4+ in reserve"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "4+ en reserva"
+          }
+        }
+      }
+    },
+    "You raise %@ kg when you hit %lld reps %@." : {
+      "comment" : "Ola 1 · E5: frase-resumen de ProgressionSetupScreen (Pasada 2). Gate QA FER-331 O1: la cláusula de ritmo (%@) viaja completa — «con ritmo constante» / «con ritmo rápido» / «según reps en reserva», nunca «con ritmo reps en reserva».",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You raise %@ kg when you hit %lld reps %@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subes %@ kg cuando cumples %lld reps %@."
+          }
+        }
+      }
+    },
+    "with a constant rhythm" : {
+      "comment" : "Ola 1 · E5: cláusula de ritmo de la frase-resumen, ritmo Constante.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "with a constant rhythm"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "con ritmo constante"
+          }
+        }
+      }
+    },
+    "with a fast rhythm" : {
+      "comment" : "Ola 1 · E5: cláusula de ritmo de la frase-resumen, ritmo Rápido.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "with a fast rhythm"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "con ritmo rápido"
+          }
+        }
+      }
+    },
+    "by reps in reserve" : {
+      "comment" : "Ola 1 · E5: cláusula de ritmo de la frase-resumen, ritmo Reps en reserva (gate QA FER-331 O1: «según», no «con ritmo»).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "by reps in reserve"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "según reps en reserva"
+          }
+        }
+      }
+    },
+    "Drop 7.5%" : {
+      "comment" : "Ola 1 · E5: opción de la lista con palomita «Si te estancas 3 sesiones» (gate QA FER-331 D1/D2 — reemplaza el segmentado «Propose»; NO reutiliza esa clave, y el espacio antes de % sigue a «bajas ~7,5 % y reconstruyes»).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drop 7.5%"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bajar 7,5 %"
+          }
+        }
+      }
+    },
+    "drops the weight and rebuilds" : {
+      "comment" : "Ola 1 · E5: subtítulo de «Drop 7.5%» en la lista con palomita.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "drops the weight and rebuilds"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "baja el peso y reconstruye"
+          }
+        }
+      }
+    },
+    "keeps the weight, just warns you" : {
+      "comment" : "Ola 1 · E5: subtítulo de «Warn only» en la lista con palomita «Si te estancas 3 sesiones».",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "keeps the weight, just warns you"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "no toca el peso, solo avisa"
+          }
+        }
+      }
+    },
+    "the raise waits for a better day" : {
+      "comment" : "Ola 1 · E5: subtítulo de «Wait» en la lista con palomita «Cuando tu cuerpo dice mantén».",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "the raise waits for a better day"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "la subida espera a un día mejor"
+          }
+        }
+      }
+    },
+    "takes the raise, verdict aside" : {
+      "comment" : "Ola 1 · E5: subtítulo de «Raise anyway» en la lista con palomita «Cuando tu cuerpo dice mantén».",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "takes the raise, verdict aside"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "toma la subida, veredicto aparte"
           }
         }
       }

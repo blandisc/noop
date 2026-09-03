@@ -43,7 +43,8 @@ public struct HojaFilaSerie: View {
         public let conSubida: Bool
         /// `"8"` o `"8-10"`.
         public let reps: String
-        /// `"Q2"` → sufijo small `· Q2` en reps (solo hechas).
+        /// Reps en reserva ya formateadas («2 en reserva», «al fallo») → sufijo small `· …` en reps
+        /// (solo hechas). Ola 1 · E5: antes decía «Q2»; el vocabulario del dueño prohíbe «Q».
         public let q: String?
         /// Edición: columna ANTERIOR (`"80 × 8 · Q2"`, tinta500, derecha).
         public let anterior: String?
@@ -322,10 +323,9 @@ public struct HojaFilaSerie: View {
         switch marca {
         case .hecha:
             parts.append(String(localized: "done"))
-            if let q = datos.q {
-                let resto = q.hasPrefix("Q") ? String(q.dropFirst()) : q
-                if let n = Int(resto) { parts.append(String(localized: "\(n) left")) }
-            }
+            // Ola 1 · E5: `q` ya es prosa localizada («2 en reserva», «al fallo»), no «Q2» — se lee
+            // tal cual, sin re-extraer un número para reconstruir una frase en inglés a mano.
+            if let q = datos.q { parts.append(q) }
         case .pendiente:
             parts.append(String(localized: "pending"))
         case .activa:
