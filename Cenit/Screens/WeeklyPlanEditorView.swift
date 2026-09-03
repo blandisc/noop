@@ -360,9 +360,10 @@ struct WeeklyPlanEditorView: View {
         let maxV = vol.map(\.value).max() ?? 1
         HStack(spacing: LiquidSpace.s075) {
             ForEach(Array(vol.enumerated()), id: \.offset) { _, e in
-                Capsule(style: .continuous)
-                    .fill(e.key.tint())
-                    .frame(width: max(12, CGFloat(e.value) / CGFloat(maxV) * 34), height: 4)
+                LiquidBarraProgreso(fraccion: 1, tono: e.key.tint(), pista: e.key.tint(),
+                                    altura: LiquidSpace.s100, animada: false)
+                    .frame(width: max(12, CGFloat(e.value) / CGFloat(maxV) * 34),
+                           height: LiquidSpace.s100)
             }
         }
         .accessibilityHidden(true)

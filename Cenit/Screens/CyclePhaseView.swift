@@ -359,19 +359,10 @@ private struct CyclePhaseProgressBar: View {
     private var fraction: Double { needed > 0 ? Double(soFar) / Double(needed) : 0 }
 
     var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                Capsule(style: .continuous)
-                    .fill(LiquidColor.tinta10)
-                Capsule(style: .continuous)
-                    .fill(LiquidColor.verdePrimario)
-                    .frame(width: max(0, min(1, fraction)) * geo.size.width)
-            }
-        }
-        .frame(height: 6)
-        .accessibilityElement()
-        // `soFar`/`needed` directly, not re-derived from `fraction` — the day `needed` changes from
-        // `minUsableNights`, a re-derived label would silently disagree with what the caller passed.
-        .accessibilityLabel(Text("\(soFar) of ~\(needed) nights learned"))
+        LiquidBarraProgreso(fraccion: fraction, altura: LiquidSpace.s150)
+            .accessibilityElement()
+            // `soFar`/`needed` directly, not re-derived from `fraction` — the day `needed` changes from
+            // `minUsableNights`, a re-derived label would silently disagree with what the caller passed.
+            .accessibilityLabel(Text("\(soFar) of ~\(needed) nights learned"))
     }
 }

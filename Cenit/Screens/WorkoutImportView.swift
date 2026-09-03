@@ -568,9 +568,9 @@ struct WorkoutImportView: View {
         return VStack(alignment: .leading, spacing: LiquidSpace.s200) {
             HStack(spacing: LiquidSpace.s200) {
                 ForEach(0..<labels.count, id: \.self) { i in
-                    Capsule(style: .continuous)
-                        .fill(i <= currentIndex ? LiquidColor.ambar : LiquidColor.vidrioBorde)
-                        .frame(height: 3)
+                    let tono = i <= currentIndex ? LiquidColor.ambar : LiquidColor.vidrioBorde
+                    LiquidBarraProgreso(fraccion: 1, tono: tono, pista: tono,
+                                        altura: LiquidSpace.s075, animada: false)
                         .frame(maxWidth: .infinity)
                 }
             }

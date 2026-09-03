@@ -54,25 +54,28 @@ struct EntrenarHubDosis: View {
                 .font(EntrenarHubMetrics.microLabel9).tracking(EntrenarHubMetrics.microLabel9Tracking)
                 .foregroundStyle(LiquidColor.tinta500)
                 .frame(width: EntrenarHubMetrics.dosisLabelWidth, alignment: .leading)
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule(style: .continuous)
-                        .fill(LiquidColor.papelTarjeta.opacity(EntrenarHubMetrics.dosisTrackFondoAlfa))
-                    Capsule(style: .continuous)
-                        .fill(fila.low ? LiquidColor.cian.opacity(EntrenarHubMetrics.dosisFillBajoAlfa) : LiquidColor.cian)
-                        .frame(width: max(0, geo.size.width * min(1, fila.fraction)))
-                    // Los dos ticks MUDOS de referencia — 50 % y el tope, sin texto (mock `.band`/`::after`).
-                    Rectangle().fill(LiquidColor.tinta900.opacity(EntrenarHubMetrics.dosisTickAlfa))
-                        .frame(width: EntrenarHubMetrics.dosisTickWidth)
-                        .position(x: geo.size.width * 0.5, y: geo.size.height / 2)
-                    Rectangle().fill(LiquidColor.tinta900.opacity(EntrenarHubMetrics.dosisTickAlfa))
-                        .frame(width: EntrenarHubMetrics.dosisTickWidth)
-                        .position(x: geo.size.width - EntrenarHubMetrics.dosisTickWidth / 2, y: geo.size.height / 2)
+            LiquidBarraProgreso(
+                fraccion: min(1, fila.fraction),
+                tono: fila.low
+                    ? LiquidColor.cian.opacity(EntrenarHubMetrics.dosisFillBajoAlfa)
+                    : LiquidColor.cian,
+                pista: LiquidColor.papelTarjeta.opacity(EntrenarHubMetrics.dosisTrackFondoAlfa),
+                altura: EntrenarHubMetrics.dosisTrackHeight,
+                animada: false)
+                .overlay {
+                    GeometryReader { geo in
+                        // Los dos ticks MUDOS de referencia — 50 % y el tope, sin texto (mock `.band`/`::after`).
+                        Rectangle().fill(LiquidColor.tinta900.opacity(EntrenarHubMetrics.dosisTickAlfa))
+                            .frame(width: EntrenarHubMetrics.dosisTickWidth)
+                            .position(x: geo.size.width * 0.5, y: geo.size.height / 2)
+                        Rectangle().fill(LiquidColor.tinta900.opacity(EntrenarHubMetrics.dosisTickAlfa))
+                            .frame(width: EntrenarHubMetrics.dosisTickWidth)
+                            .position(x: geo.size.width - EntrenarHubMetrics.dosisTickWidth / 2,
+                                      y: geo.size.height / 2)
+                    }
                 }
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: EntrenarHubMetrics.dosisTrackHeight)
-            .clipShape(Capsule())
+                .frame(maxWidth: .infinity)
+                .clipShape(Capsule())
             Text(verbatim: MuscleFatigueMap.formattedSets(fila.sets))
                 .font(EntrenarHubMetrics.subLsDelta)   // grotesk 10.5/700 tabular — mismo peldaño que `.drow b`
                 .foregroundStyle(LiquidColor.tinta700)
