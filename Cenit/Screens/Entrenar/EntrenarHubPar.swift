@@ -128,9 +128,9 @@ struct EntrenarHubPar: View {
     private func restTrack(real: Int, planS: Int) -> some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                Capsule()
+                Capsule(style: .continuous)
                     .fill(LiquidColor.tinta900.opacity(EntrenarHubMetrics.vbarsEmptyAlfa))
-                Capsule()
+                Capsule(style: .continuous)
                     .fill(LiquidColor.cian.opacity(EntrenarHubMetrics.restFillAlfa))
                     .frame(width: geo.size.width * min(1, planS > 0 ? Double(real) / Double(planS) : 1))
                 Rectangle().fill(LiquidColor.tinta900.opacity(EntrenarHubMetrics.restPlanTickAlfa))

@@ -421,7 +421,7 @@ struct RoutineSheet: View {
     private func compactBlock(_ block: ReorderBlock) -> some View {
         HStack(spacing: LiquidSpace.s250) {
             if block.isSuperset {
-                Capsule()
+                Capsule(style: .continuous)
                     .fill(LiquidColor.cian)
                     .frame(width: 2.5)
             }

@@ -29,6 +29,7 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 - El export CSV de fuerza gana la columna `set_mode` al final (vacía para una serie normal).
 - Nuevo `docs/specs/ola1-entrenar/` con los specs del taller, y DECISIONS.md con FER-85 transcrito y las
   decisiones de la ola 1.
+- Diseño (FER-338): las 26 `Capsule()` a mano del gate `no-capsule-a-mano` quedan drenadas (tracks de dato a `Capsule(style: .continuous)` como `LiquidBarraMarca`, sin deuda nueva de `token-exempt`; chrome a `OutlineCapsule` / ShapeStyle-in-Shape).
 
 - Limpieza: desaparece `SetActionPills` (vista sin consumidores) y el ancla de contraste de Entrenar pasa del papel Instrumento al lienzo Liquid `fondoAlto` (FER-307).
 

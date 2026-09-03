@@ -594,7 +594,7 @@ struct MetricDetailView: View {
                 Rectangle().fill(LiquidColor.tinta10)
                     .frame(width: 1, height: 14)
                     .position(x: medio, y: cy)
-                Capsule()
+                Capsule(style: .continuous)
                     .fill(tono)
                     .frame(width: ancho, height: 6)
                     .position(x: r < 0 ? medio - ancho / 2 : medio + ancho / 2, y: cy)

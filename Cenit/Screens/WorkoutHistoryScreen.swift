@@ -752,12 +752,12 @@ struct WorkoutHistoryScreen: View {
                             .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta700)
                             .lineLimit(1).minimumScaleFactor(0.8)
                             .frame(width: 86, alignment: .leading)
-                        Capsule()
+                        Capsule(style: .continuous)
                             .fill(LiquidColor.tinta7)
                             .frame(height: 12)
                             .overlay(alignment: .leading) {
                                 GeometryReader { geo in
-                                    Capsule()
+                                    Capsule(style: .continuous)
                                         .fill(v.setsPerWeek <= 0 ? LiquidColor.tinta10 : muscleTint(v.muscle))
                                         .frame(width: max(6, geo.size.width * CGFloat(min(v.setsPerWeek, maxV) / maxV)))
                                 }

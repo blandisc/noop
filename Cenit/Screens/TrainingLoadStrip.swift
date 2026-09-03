@@ -91,7 +91,7 @@ struct TrainingLoadStrip: View {
             ZStack(alignment: .topLeading) {
                 HStack(spacing: LiquidSpace.s050) {
                     ForEach(LoadScale.bounds, id: \.lo) { seg in
-                        Capsule()
+                        Capsule(style: .continuous)
                             .fill(seg.band == band ? seg.band.flag.color() : LiquidColor.tinta10)
                             .frame(width: max(0, w * (seg.hi - seg.lo) / LoadScale.max - 2), height: 6)
                     }
