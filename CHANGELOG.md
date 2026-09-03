@@ -20,6 +20,8 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- Limpieza: desaparece `SetActionPills` (vista sin consumidores) y el ancla de contraste de Entrenar pasa del papel Instrumento al lienzo Liquid `fondoAlto` (FER-307).
+
 - Diseño, remates del loop 3 (FER-321): fuera los últimos dos usos de API retirada (`StrandPalette.disabledOpacity`, `PaperStepper` en Intervalos), dos lecturas muertas del tema Instrumento y baseline del gate regrabado tras el loop 2.
 - Gate y CI (retro FER-309): test de contraste AA de `LiquidOLED` sobre negro, regla `no-iphone-tone-on-oled` en `CenitWatch/`, y el workflow `ios-app` deja de cancelar el compile-check cuando el PR nace con la etiqueta `ci-app`.
 
