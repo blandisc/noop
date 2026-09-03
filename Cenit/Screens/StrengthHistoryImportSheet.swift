@@ -28,7 +28,7 @@ struct StrengthHistoryImportSheet: View {
 
     @State private var phase: Phase = .archivo
     @State private var showFileImporter = false
-    @State private var parseErrorKey: LocalizedStringKey?
+    @State private var parseErrorKey: String?
     @State private var fileData: Data?
     @State private var history: StrengthCSVImporter.ImportedStrengthHistory?
     @State private var dialectLabel = ""
@@ -161,7 +161,7 @@ struct StrengthHistoryImportSheet: View {
             if let parseErrorKey {
                 LiquidAviso(
                     titulo: String(localized: "Couldn’t read the file"),
-                    cuerpo: String(localized: parseErrorKey),
+                    cuerpo: parseErrorKey,
                     tono: LiquidColor.negativo,
                     cta: String(localized: "Choose another"),
                     accion: { showFileImporter = true })
@@ -261,7 +261,7 @@ struct StrengthHistoryImportSheet: View {
                 .foregroundStyle(LiquidColor.tinta500)
                 .fixedSize(horizontal: false, vertical: true)
 
-            ForEach(reviewNotes(stats: stats), id: \.self) { note in
+            ForEach(reviewNotes(stats: stats), id: \.self) { (note: String) in
                 Text(note)
                     .font(LiquidType.caption)
                     .foregroundStyle(LiquidColor.tinta500)
@@ -296,7 +296,7 @@ struct StrengthHistoryImportSheet: View {
     private func duplicatesSection(stats: ReviewStats) -> some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s200) {
             Button {
-                withAnimation(LiquidMotion.interactive) { duplicatesExpanded.toggle() }
+                withAnimation(LiquidMotion.toque) { duplicatesExpanded.toggle() }
             } label: {
                 reviewRowContent(
                     String(localized: "Possible duplicates"),
@@ -347,7 +347,8 @@ struct StrengthHistoryImportSheet: View {
                 .padding(.bottom, LiquidSpace.s300)
                 if let maxWeightRaw {
                     let kg = (maxWeightRaw * WorkoutWeightUnit.lbToKg * 10).rounded() / 10
-                    Text("Highest weight in file: \(Int(maxWeightRaw)) → \(kg, format: .number.precision(.fractionLength(0...1))) kg")
+                    let kgText = kg.formatted(.number.precision(.fractionLength(0...1)))
+                    Text("Highest weight in file: \(Int(maxWeightRaw)) → \(kgText) kg")
                         .font(LiquidType.caption)
                         .foregroundStyle(LiquidColor.tinta500)
                         .padding(.horizontal, LiquidSpace.s400)
@@ -562,14 +563,14 @@ struct StrengthHistoryImportSheet: View {
         return parts.joined(separator: " · ")
     }
 
-    private func reviewNotes(stats: ReviewStats) -> [LocalizedStringKey] {
-        var notes: [LocalizedStringKey] = []
+    private func reviewNotes(stats: ReviewStats) -> [String] {
+        var notes: [String] = []
         if stats.illegibleDates > 0 {
-            notes.append("Illegible dates in \(stats.illegibleDates) rows")
+            notes.append(String(localized: "Illegible dates in \(stats.illegibleDates) rows"))
         }
-        notes.append("Times are read in your current time zone.")
+        notes.append(String(localized: "Times are read in your current time zone."))
         if dialectLabel == "Hevy" {
-            notes.append("Supersets are saved as consecutive exercises.")
+            notes.append(String(localized: "Supersets are saved as consecutive exercises."))
         }
         return notes
     }
@@ -595,7 +596,7 @@ struct StrengthHistoryImportSheet: View {
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
         guard let data = try? Data(contentsOf: url) else {
-            parseErrorKey = "We couldn’t read that file. Pick the original .csv and try again."
+            parseErrorKey = String(localized: "We couldn’t read that file. Pick the original .csv and try again.")
             return
         }
         fileData = data
@@ -635,7 +636,7 @@ struct StrengthHistoryImportSheet: View {
                 await MainActor.run { handleParseError(err, data: data) }
             } catch {
                 await MainActor.run {
-                    parseErrorKey = "We couldn’t read that file. Pick the original .csv and try again."
+                    parseErrorKey = String(localized: "We couldn’t read that file. Pick the original .csv and try again.")
                     resetToArchivo()
                 }
             }
@@ -666,7 +667,7 @@ struct StrengthHistoryImportSheet: View {
                 }
             } catch {
                 await MainActor.run {
-                    parseErrorKey = "We couldn’t read that file. Pick the original .csv and try again."
+                    parseErrorKey = String(localized: "We couldn’t read that file. Pick the original .csv and try again.")
                     phase = .revisar
                 }
             }
@@ -685,10 +686,10 @@ struct StrengthHistoryImportSheet: View {
             history = nil
             phase = .revisar
         case .unknownHeader:
-            parseErrorKey = "I don’t recognize this file. Cénit reads the CSV Strong and Hevy export. Make sure it’s the original .csv, unedited."
+            parseErrorKey = String(localized: "I don’t recognize this file. Cénit reads the CSV Strong and Hevy export. Make sure it’s the original .csv, unedited.")
             resetToArchivo()
         case .emptyInput:
-            parseErrorKey = "That file is empty. Export again from the app and try once more."
+            parseErrorKey = String(localized: "That file is empty. Export again from the app and try once more.")
             resetToArchivo()
         }
     }
@@ -897,22 +898,24 @@ struct StrengthHistoryImportSheet: View {
                 if let id = learnedAliases[key] { return id }
                 return nil
             }
-            guard var pair = StrengthCSVImporter.materialize(session, exerciseIdByName: mapped)
+            guard let materialized = StrengthCSVImporter.materialize(session, exerciseIdByName: mapped)
             else { continue }
+            var strengthSession = materialized.0
+            let sets = materialized.1
 
-            if let rpe = pair.session.sessionRpe,
-               let end = pair.session.endTs {
-                let duration = end - pair.session.startTs
+            if let rpe = strengthSession.sessionRpe,
+               let end = strengthSession.endTs {
+                let duration = end - strengthSession.startTs
                 if duration > 0,
                    let strain = SessionRPELoad.strain(durationS: duration, rpe: rpe,
                                                      trimpPerAU: trimpPerAU) {
-                    pair.session.strain = strain
-                    pair.session.strainSource = .rpe
-                    pair.session.trimpPerAU = trimpPerAU
+                    strengthSession.strain = strain
+                    strengthSession.strainSource = .rpe
+                    strengthSession.trimpPerAU = trimpPerAU
                     loadCount += 1
                 }
             }
-            batch.append(pair)
+            batch.append((session: strengthSession, sets: sets))
         }
 
         try await repo.saveSessions(batch)

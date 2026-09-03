@@ -144,11 +144,11 @@ struct ExerciseNameMappingPanel: View {
                             Text("Use")
                                 .font(LiquidType.tituloFilaNegrita)
                                 .foregroundStyle(LiquidColor.papelTarjeta)
-                                .padding(.horizontal, 11).padding(.vertical, LiquidSpace.s100)  // token-exempt(falta-pieza): chip handoff 11 sin token exacto
+                                .padding(.horizontal, LiquidSpace.s250).padding(.vertical, LiquidSpace.s100)
                                 .background(LiquidColor.tinta900,
                                             in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
                         }
-                        .padding(.horizontal, LiquidSpace.s250).padding(.vertical, LiquidSpace.s200)  // token-exempt(falta-pieza): edge handoff 10 → s250
+                        .padding(.horizontal, LiquidSpace.s250).padding(.vertical, LiquidSpace.s200)
                         .liquidGlass(.superficieSolida)
                         .contentShape(Rectangle())
                     }
@@ -194,7 +194,7 @@ struct ExerciseNameMappingPanel: View {
             Text(title)
                 .font(LiquidType.tituloFila)
                 .foregroundStyle(LiquidColor.tinta700)
-                .padding(.horizontal, 13).padding(.vertical, LiquidSpace.s150)  // token-exempt(falta-pieza): chip handoff 13 sin token exacto
+                .padding(.horizontal, LiquidSpace.s300).padding(.vertical, LiquidSpace.s150)
                 .outlineCapsule(
                     .outline,
                     size: .aMedida(

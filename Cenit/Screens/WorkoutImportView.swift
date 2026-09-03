@@ -255,13 +255,17 @@ struct WorkoutImportView: View {
                 .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta700)
                 .fixedSize(horizontal: false, vertical: true)
 
-            VStack(alignment: .leading, spacing: .zero) {
-                ForEach(Array(unmatched.enumerated()), id: \.offset) { index, name in
-                    mappingRow(name)
-                    if index < unmatched.count - 1 {
-                        Rectangle().fill(LiquidColor.vidrioBorde).frame(height: 0.5)
-                    }
-                }
+            // FER-333 · E9: componente compartido con la importación de historial CSV — misma
+            // interacción de mapeo, mismo copy («Ignore»/«Catalog»/«Create own»), un solo oráculo.
+            if let reconciler {
+                ExerciseNameMappingPanel(
+                    names: unmatched.map { UnresolvedName(name: $0) },
+                    reconciler: reconciler,
+                    resolution: $resolution,
+                    omitted: $omitted,
+                    autoMatched: $autoMatched,
+                    onPickCatalog: { mappingTarget = MappingName(name: $0) },
+                    onCreateOwn: { creationTarget = MappingName(name: $0) })
             }
 
             // A name is "settled" once it's matched OR omitted — both let you continue.
@@ -271,109 +275,6 @@ struct WorkoutImportView: View {
             }
             .disabled(remaining != 0)
         }
-    }
-
-    private func mappingRow(_ name: String) -> some View {
-        let key = norm(name)
-        let resolved = resolution[key]
-        let isOmitted = omitted.contains(key)
-        return VStack(alignment: .leading, spacing: LiquidSpace.s200) {
-            Text(verbatim: name).font(LiquidType.cuerpo)
-                .foregroundStyle(isOmitted ? LiquidColor.tinta500 : LiquidColor.tinta900)
-            if isOmitted {
-                HStack(spacing: LiquidSpace.s200) {
-                    // Ronda 2 revisión final, hallazgo grave (g4-a11y): `.combine` vivía en el HStack
-                    // completo, fundiendo «Undo» (un Button hermano) en un elemento estático — VoiceOver
-                    // no podía deshacer un «Omitir». Solo el texto se combina; el botón queda suelto.
-                    Text("Omitted").font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
-                        .accessibilityElement(children: .combine)
-                    Spacer(minLength: LiquidSpace.s200)
-                    undoLink { omitted.remove(key) }
-                }
-            } else if let resolved {
-                let isAuto = autoMatched.contains(key)   // FER-794: pre-resolved, marked as automatic
-                HStack(spacing: LiquidSpace.s200) {
-                    // Handoff: el match como pill verde lavada — el veredicto se lee de un vistazo.
-                    HStack(spacing: LiquidSpace.s125) {
-                        Image(systemName: isAuto ? "sparkles" : "checkmark.circle.fill")
-                            .font(LiquidType.caption)
-                            .accessibilityHidden(true)
-                        Group {
-                            if isAuto { Text("Matched automatically · \(StrengthDisplay.name(resolved))") }
-                            else { Text("Matched · \(StrengthDisplay.name(resolved))") }
-                        }
-                        .font(LiquidType.captionFuerte)
-                        .lineLimit(1).minimumScaleFactor(0.85)
-                    }
-                    .foregroundStyle(LiquidColor.verdePrimario)
-                    .padding(.horizontal, LiquidSpace.s225).padding(.vertical, LiquidSpace.s075)  // chip handoff 9/3 → s225/s075
-                    .background(LiquidColor.verdePrimario.opacity(CenitOpacity.tintFill), in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
-                    .accessibilityElement(children: .combine)
-                    Spacer(minLength: LiquidSpace.s200)
-                    undoLink { resolution[key] = nil; autoMatched.remove(key) }
-                }
-                Button { mappingTarget = MappingName(name: name) } label: {
-                    Text("Change mapping").font(LiquidType.tituloFilaMedia).foregroundStyle(LiquidColor.tinta500).underline()
-                }
-                .buttonStyle(.plain)
-            } else {
-                let suggestions = reconciler?.suggestions(for: name) ?? []
-                if !suggestions.isEmpty {
-                    Text("Did you mean…").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
-                    ForEach(suggestions, id: \.id) { s in
-                        // Handoff: la sugerencia como tarjeta — sparkle ember, nombre, y «Usar» como botón oscuro.
-                        Button { resolve(name, with: s) } label: {
-                            HStack(spacing: LiquidSpace.s200) {
-                                Image(systemName: "sparkles")
-                                    .font(LiquidType.caption)
-                                    .foregroundStyle(LiquidColor.ambar)
-                                Text(StrengthDisplay.name(s))
-                                    .font(LiquidType.cuerpo.weight(.medium))
-                                    .foregroundStyle(LiquidColor.tinta900)
-                                Spacer(minLength: LiquidSpace.s200)
-                                Text("Use").font(LiquidType.tituloFilaNegrita).foregroundStyle(LiquidColor.papelTarjeta)
-                                    .padding(.horizontal, 11).padding(.vertical, LiquidSpace.s100)  // token-exempt(falta-pieza): chip handoff 11 sin token exacto
-                                    .background(LiquidColor.tinta900, in: RoundedRectangle(cornerRadius: LiquidRadius.chip, style: .continuous))
-                            }
-                            .padding(.horizontal, LiquidSpace.s250).padding(.vertical, LiquidSpace.s200)  // token-exempt(falta-pieza): edge handoff 10 → s250
-                            .liquidGlass(.superficieSolida)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityHint(Text("Use \(StrengthDisplay.name(s)) for \(name)"))
-                    }
-                }
-                HStack(spacing: LiquidSpace.s200) {
-                    chip("Match") { mappingTarget = MappingName(name: name) }
-                    chip("Create new") { creationTarget = MappingName(name: name) }
-                    chip("Omit") { omitted.insert(key) }
-                }
-            }
-        }
-        .padding(.vertical, LiquidSpace.s300)
-    }
-
-    /// A small underlined «Undo» link — reverts a suggestion/omit so the row goes back to unmatched.
-    private func undoLink(_ action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text("Undo").font(LiquidType.tituloFilaMedia).foregroundStyle(LiquidColor.tinta500).underline()
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func chip(_ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title).font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta700)
-                .padding(.horizontal, 13).padding(.vertical, LiquidSpace.s150)  // token-exempt(falta-pieza): chip handoff 13 sin token exacto
-                .outlineCapsule(
-                    .outline,
-                    size: .aMedida(
-                        insets: EdgeInsets(top: .zero, leading: .zero,
-                                           bottom: .zero, trailing: .zero),
-                        minHeight: nil,
-                        touchInset: .zero))
-        }
-        .buttonStyle(.plain)
     }
 
     // MARK: - Confirm

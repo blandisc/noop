@@ -220,7 +220,7 @@ struct DataSourcesView: View {
     private var strengthHistoryImportBlock: some View {
         blockPlano(
             String(localized: "Strong or Hevy history (CSV)"),
-            subtitle: String(localized: "Bring your lifting history from Strong or Hevy. Cénit reads the CSV on this iPhone — nothing leaves your phone.")) {
+            subtitle: String(localized: "Bring your lifting history from Strong or Hevy. Cénit reads the CSV on this iPhone. Nothing leaves your phone.")) {
             HStack(spacing: LiquidSpace.s300) {
                 LiquidGlassButton(String(localized: "Import history…"), variant: .glass) {
                     showStrengthCSVImport = true
