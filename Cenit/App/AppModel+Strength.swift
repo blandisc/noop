@@ -362,7 +362,11 @@ extension AppModel {
 
         // NEW records: this session's per-exercise bests that strictly beat the prior PR.
         var prs: [StrengthSummary.PR] = []
-        for (id, exSets) in Dictionary(grouping: work, by: \.exerciseId) {
+        // Ola 1 · FER-327: los RÉCORDS del recibo leen la MISMA tabla que la base (`SetMode.counts`) —
+        // el drop queda fuera. `work` de arriba NO se toca: ese sí alimenta el volumen, donde un drop
+        // cuenta (movió kilos de verdad). Es el único punto de esta pantalla donde el modo importa.
+        let recordEligible = work.filter { (s: SetEntry) in s.counts(for: .records) }
+        for (id, exSets) in Dictionary(grouping: recordEligible, by: \.exerciseId) {
             let name = exercise(id)?.name ?? String(localized: "Exercise")
             let p = prior[id] ?? [:]
             if let w = exSets.compactMap(\.weightKg).max(), let was = p[.maxWeight], w > (was.valueKg ?? 0) {

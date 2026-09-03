@@ -71,7 +71,8 @@ extension RoutineSheet {
         for i in built.indices {
             for si in built[i].re.sets.indices {
                 built[i].re.sets[si].repsRangeTop = RoutineSet.normalizedRepsRangeTop(
-                    reps: built[i].re.sets[si].reps, top: built[i].re.sets[si].repsRangeTop)
+                    reps: built[i].re.sets[si].reps, top: built[i].re.sets[si].repsRangeTop,
+                    mode: built[i].re.sets[si].mode)   // ola 1 · FER-327: un AMRAP nunca guarda techo
             }
         }
         items = built
@@ -284,7 +285,9 @@ extension RoutineSheet {
         guard showsReps(type), let r = work.first?.reps else {
             return String(localized: "\(work.count) sets")
         }
-        var head = "\(work.count) × \(r)"
+        // Ola 1 (FER-327): un AMRAP se lee «8+», nunca «8» — la receta no puede prometer una cuota
+        // cerrada sobre una serie que dice «las que puedas».
+        var head = "\(work.count) × \(r)" + (work.first?.mode == .amrap ? "+" : "")
         if showsWeight(type), let w = work.first?.weightKg, w > 0 {
             head += " · \(StrengthDisplay.weightNumber(w, system: system)) \(StrengthDisplay.weightUnit(system).lowercased())"
         }
@@ -294,13 +297,7 @@ extension RoutineSheet {
     /// A3 (pirámide sin castigo): cuántas recetas DISTINTAS hay entre las series de trabajo, cuando
     /// no son iguales — «2 recetas ›» en vez de fingir una sola línea.
     func recetaCount(_ idx: Int) -> Int {
-        let work = items[idx].re.sets.filter { $0.kind == .work }
-        var seen: [String] = []
-        for s in work {
-            let key = "\(s.weightKg ?? -1)-\(s.reps ?? -1)-\(s.repsRangeTop ?? -1)"
-            if !seen.contains(key) { seen.append(key) }
-        }
-        return max(seen.count, 1)
+        RoutineSetEditing.recetaCount(items[idx].re.sets)
     }
 
     /// «80 × 8 · Q 2» — la columna ANTERIOR. El peso/reps ya vivían en `RoutineEditorScreen`
@@ -320,13 +317,8 @@ extension RoutineSheet {
     }
 
     func equalizeAll(_ idx: Int) {
-        guard !locked, items.indices.contains(idx),
-              let first = items[idx].re.sets.first(where: { $0.kind == .work }) else { return }
-        for si in items[idx].re.sets.indices where items[idx].re.sets[si].kind == .work {
-            items[idx].re.sets[si].weightKg = first.weightKg
-            items[idx].re.sets[si].reps = first.reps
-            items[idx].re.sets[si].repsRangeTop = first.repsRangeTop
-        }
+        guard !locked, items.indices.contains(idx) else { return }
+        RoutineSetEditing.equalizeWorkSets(&items[idx].re.sets)
         dirty = true
     }
 

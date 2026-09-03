@@ -1191,4 +1191,149 @@ final class StrengthStoreTests: XCTestCase {
         XCTAssertTrue(s1.isEmpty, "deleteSession must cascade-delete its HR samples")
         XCTAssertEqual(s2, [HRSample(ts: 1, bpm: 110)], "another session's HR samples survive")
     }
+    // MARK: - Ola 1 · FER-327 — el drop no alimenta progresión, semilla, récords ni 1RM
+
+    /// `workSetHistory` (progresión + 1RM) NO ve los drops: solo las series de trabajo al peso de
+    /// trabajo. Si los viera, el ciclo leería una bajada de peso que nadie decidió.
+    func testWorkSetHistoryExcludesDrop() async throws {
+        let store = try await CenitStore.inMemory()
+        let sets = [
+            SetEntry(id: "a", sessionId: "s1", exerciseId: "bench", position: 0,
+                     weightKg: 80, reps: 8, done: true, ts: 1100),
+            SetEntry(id: "b", sessionId: "s1", exerciseId: "bench", position: 1,
+                     weightKg: 64, reps: 12, done: true, ts: 1200, mode: .drop),
+            SetEntry(id: "c", sessionId: "s1", exerciseId: "bench", position: 2,
+                     weightKg: 80, reps: 11, done: true, ts: 1300, mode: .amrap),
+        ]
+        try await store.saveSession(StrengthSession(id: "s1", startTs: 1000), sets: sets)
+
+        let history = try await store.workSetHistory(exerciseId: "bench")
+        XCTAssertEqual(history.map(\.weightKg), [80, 80], "el drop de 64 kg no entra a la historia")
+        XCTAssertEqual(history.map(\.reps), [8, 11])
+        XCTAssertEqual(Set(history.map(\.mode)), [SetMode.standard, .amrap],
+                       "el AMRAP sí entra, y se proyecta con su modo")
+    }
+
+    /// «La última vez» tampoco ve los drops: la próxima sesión abre al peso de TRABAJO, no al −20 %.
+    func testLastWorkSetsSkipDrop() async throws {
+        let store = try await CenitStore.inMemory()
+        let sets = [
+            SetEntry(id: "a", sessionId: "s1", exerciseId: "bench", position: 0,
+                     weightKg: 80, reps: 8, done: true, ts: 1100),
+            SetEntry(id: "b", sessionId: "s1", exerciseId: "bench", position: 1,
+                     weightKg: 64, reps: 12, done: true, ts: 1200, mode: .drop),
+        ]
+        try await store.saveSession(StrengthSession(id: "s1", startTs: 1000), sets: sets)
+
+        let last = try await store.lastWorkSets(exerciseId: "bench")
+        XCTAssertEqual(last.map(\.id), ["a"])
+        XCTAssertEqual(last.first?.weightKg, 80, "la semilla es el peso de trabajo, no el escalón")
+    }
+
+    /// Un drop MÁS PESADO que el récord vigente no lo mueve — ni al guardar (`updatePersonalRecords`)
+    /// ni al recomputar tras un borrado (`recomputePR`). El drop movió kilos reales (suma volumen),
+    /// pero no es una marca al peso de trabajo.
+    func testPRsIgnoreDropHeavierThanRecord() async throws {
+        let store = try await CenitStore.inMemory()
+        try await store.saveSession(StrengthSession(id: "s1", startTs: 1000), sets: [
+            SetEntry(id: "a", sessionId: "s1", exerciseId: "bench", position: 0,
+                     weightKg: 80, reps: 8, done: true, ts: 1100),
+        ])
+        // Un drop de 100 kg (dato absurdo a propósito: si el modo no se leyera, sería récord nuevo).
+        try await store.saveSession(StrengthSession(id: "s2", startTs: 2000), sets: [
+            SetEntry(id: "b", sessionId: "s2", exerciseId: "bench", position: 0,
+                     weightKg: 85, reps: 8, done: true, ts: 2100),
+            SetEntry(id: "c", sessionId: "s2", exerciseId: "bench", position: 1,
+                     weightKg: 100, reps: 20, done: true, ts: 2200, mode: .drop),
+        ])
+
+        let prs = try await store.personalRecords(exerciseId: "bench")
+        XCTAssertEqual(prs.first(where: { $0.metric == .maxWeight })?.valueKg, 85)
+        XCTAssertEqual(prs.first(where: { $0.metric == .maxReps })?.reps, 8, "20 reps de un drop no es marca")
+        XCTAssertEqual(prs.first(where: { $0.metric == .maxVolume })?.valueKg, 85)
+
+        // El camino de recomputar (borrar otra sesión) llega a la misma respuesta.
+        try await store.deleteSession(id: "s1")
+        let after = try await store.personalRecords(exerciseId: "bench")
+        XCTAssertEqual(after.first(where: { $0.metric == .maxWeight })?.valueKg, 85)
+        XCTAssertEqual(after.first(where: { $0.metric == .maxReps })?.reps, 8)
+    }
+
+    /// v3 · N4: un drop sin madre (la serie de la que colgaba se borró) NO se promueve a serie de
+    /// trabajo. Conserva `mode = .drop`, se queda en su lugar y nada se borra.
+    func testAdjacencyInvariantKeepsOrphanAsDrop() async throws {
+        let store = try await CenitStore.inMemory()
+        let sets = [
+            SetEntry(id: "huerfano", sessionId: "s1", exerciseId: "bench", position: 0,
+                     weightKg: 64, reps: 12, done: true, ts: 1100, mode: .drop),
+            SetEntry(id: "trabajo", sessionId: "s1", exerciseId: "bench", position: 1,
+                     weightKg: 80, reps: 8, done: true, ts: 1200),
+        ]
+        try await store.saveSession(StrengthSession(id: "s1", startTs: 1000), sets: sets)
+
+        let back = try await store.setEntries(sessionId: "s1")
+        XCTAssertEqual(back.map(\.id), ["huerfano", "trabajo"], "nada se borra ni se reordena")
+        XCTAssertEqual(back.first?.mode, .drop, "el huérfano NUNCA se promueve a serie de trabajo")
+        // Y sigue fuera de la progresión y de los récords: solo cuenta para volumen.
+        let history = try await store.workSetHistory(exerciseId: "bench")
+        XCTAssertEqual(history.map(\.weightKg), [80])
+        let prs = try await store.personalRecords(exerciseId: "bench")
+        XCTAssertEqual(prs.first(where: { $0.metric == .maxReps })?.reps, 8)
+    }
+
+    /// La relación drop→madre es el ORDEN (sin FK), así que al guardar el store la vuelve verdad: un
+    /// drop separado de su madre por una serie de OTRO ejercicio se pega de vuelta a ella, con los
+    /// escalones en su orden y las posiciones renumeradas.
+    func testReorderMovesDropsWithMother() async throws {
+        let store = try await CenitStore.inMemory()
+        let sets = [
+            SetEntry(id: "madre", sessionId: "s1", exerciseId: "bench", position: 0,
+                     weightKg: 80, reps: 8, done: true, ts: 1100),
+            SetEntry(id: "otro", sessionId: "s1", exerciseId: "row", position: 1,
+                     weightKg: 60, reps: 10, done: true, ts: 1200),
+            SetEntry(id: "drop1", sessionId: "s1", exerciseId: "bench", position: 2,
+                     weightKg: 64, reps: 10, done: true, ts: 1300, mode: .drop),
+            SetEntry(id: "drop2", sessionId: "s1", exerciseId: "bench", position: 3,
+                     weightKg: 50, reps: 8, done: true, ts: 1400, mode: .drop),
+        ]
+        try await store.saveSession(StrengthSession(id: "s1", startTs: 1000), sets: sets)
+
+        let back = try await store.setEntries(sessionId: "s1")
+        XCTAssertEqual(back.map(\.id), ["madre", "drop1", "drop2", "otro"],
+                       "los escalones viajan con su madre, en orden")
+        XCTAssertEqual(back.map(\.position), [0, 1, 2, 3], "posiciones renumeradas 0…n−1")
+    }
+
+    /// La invariante es IDENTIDAD para toda sesión sin drops (o sea, todo lo grabado antes de ola 1):
+    /// mismo orden, mismas posiciones, ni una fila movida.
+    func testAdjacencyInvariantIsIdentityWithoutDrops() async throws {
+        let store = try await CenitStore.inMemory()
+        let sets = [
+            SetEntry(id: "a", sessionId: "s1", exerciseId: "bench", position: 0, kind: .warmup,
+                     weightKg: 40, reps: 10, done: true, ts: 1100),
+            SetEntry(id: "b", sessionId: "s1", exerciseId: "row", position: 7,
+                     weightKg: 60, reps: 10, done: true, ts: 1200),
+            SetEntry(id: "c", sessionId: "s1", exerciseId: "bench", position: 9,
+                     weightKg: 80, reps: 8, done: true, ts: 1300),
+        ]
+        try await store.saveSession(StrengthSession(id: "s1", startTs: 1000), sets: sets)
+
+        let back = try await store.setEntries(sessionId: "s1")
+        XCTAssertEqual(back.map(\.id), ["a", "b", "c"])
+        XCTAssertEqual(back.map(\.position), [0, 7, 9], "sin drops no se renumera nada")
+    }
+
+    /// El drop SÍ suma volumen: es trabajo real, aunque no sea una marca ni gate del ciclo.
+    func testDropStillCountsTowardVolume() async throws {
+        let store = try await CenitStore.inMemory()
+        try await store.saveSession(StrengthSession(id: "s1", startTs: 1000), sets: [
+            SetEntry(id: "a", sessionId: "s1", exerciseId: "bench", position: 0,
+                     weightKg: 80, reps: 8, done: true, ts: 1100),
+            SetEntry(id: "b", sessionId: "s1", exerciseId: "bench", position: 1,
+                     weightKg: 64, reps: 10, done: true, ts: 1200, mode: .drop),
+        ])
+        let volumes = try await store.sessionVolumes()
+        XCTAssertEqual(volumes["s1"]?.volumeKg, 80 * 8 + 64 * 10)
+        XCTAssertEqual(volumes["s1"]?.setCount, 2)
+    }
 }

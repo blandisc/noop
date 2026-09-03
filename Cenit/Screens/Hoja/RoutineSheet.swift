@@ -232,7 +232,8 @@ struct RoutineSheet: View {
                         // gateado) — re-normaliza aquí también, el piso que la progresión acaba
                         // de subir puede alcanzar/pasar un techo ya puesto.
                         items[t.ei].re.sets[si].repsRangeTop = RoutineSet.normalizedRepsRangeTop(
-                            reps: items[t.ei].re.sets[si].reps, top: items[t.ei].re.sets[si].repsRangeTop)
+                            reps: items[t.ei].re.sets[si].reps, top: items[t.ei].re.sets[si].repsRangeTop,
+                            mode: items[t.ei].re.sets[si].mode)   // ola 1 · FER-327
                     }
                 }
             )

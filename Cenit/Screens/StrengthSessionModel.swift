@@ -123,7 +123,11 @@ final class StrengthSessionModel: ObservableObject {
     struct WorkingSet: Identifiable, Equatable {
         let id: String
         var weightKg: Double
-        var reps: Int
+        /// Repeticiones capturadas. Ola 1 (FER-327): OPCIONAL — `nil` = **pendiente**, el estado en que
+        /// nace un AMRAP («las que puedas»: el número no existe hasta que la serie termina). El ✓ está
+        /// bloqueado mientras siga en nil (`canRegisterCurrentSet`) y al guardar nunca se escribe un 0
+        /// en su lugar. Las series normales siguen naciendo con su número, así que nada cambia para ellas.
+        var reps: Int?
         /// Captured seconds for `time`/`distance` sets (nil until the stopwatch is stopped).
         var timeS: Int?
         /// Captured meters for `distance` sets.
@@ -150,6 +154,11 @@ final class StrengthSessionModel: ObservableObject {
         /// `closeOpenRest`. nil = no rest was measured for this set (not yet closed, never started —
         /// «Sin descanso» — or an intra-round superset jump).
         var restTakenS: Int? = nil
+        /// Cómo se hace la serie (ola 1 · FER-327): `.standard`, `.amrap` («las que puedas») o `.drop`
+        /// (el escalón de «bajar y seguir», una serie propia que cuelga de la anterior por ORDEN, sin
+        /// FK). Sigue siendo `kind == .work`: los ~60 filtros de «¿es serie de trabajo?» del app no se
+        /// tocan; solo las cuatro reglas (volumen/progresión/récords/1RM) leen el modo.
+        var mode: SetMode = .standard
     }
 
     /// One exercise's run: its plan, the editable sets, which set the Foco is on, and whether it was skipped.
@@ -456,7 +465,9 @@ final class StrengthSessionModel: ObservableObject {
     /// borra la fila, no se baja a cero. Los ejercicios de tiempo/distancia no se juzgan por reps.
     func bumpReps(_ delta: Int) {
         let piso = (current?.type == .weightReps || current?.type == .bodyweight) ? 1 : 0
-        mutateCurrentSet { $0.reps = max(piso, $0.reps + delta) }
+        // FER-327: una serie PENDIENTE (AMRAP sin número todavía) arranca desde el piso al primer ±,
+        // nunca desde un 0 implícito que dejaría la fila imposible de registrar.
+        mutateCurrentSet { $0.reps = max(piso, ($0.reps ?? 0) + delta) }
     }
     func bumpDistance(byMeters delta: Double) { mutateCurrentSet { $0.distanceM = max(0, ($0.distanceM ?? 0) + delta) } }
 
@@ -553,7 +564,9 @@ final class StrengthSessionModel: ObservableObject {
         let run = runs[currentIndex]
         guard run.sets.indices.contains(run.currentSet) else { return false }
         let usaReps = run.type == .weightReps || run.type == .bodyweight
-        return !(usaReps && run.sets[run.currentSet].reps <= 0)
+        // FER-327: `nil` = AMRAP pendiente — el ✓ está bloqueado hasta que haya un número, igual que
+        // con un 0: una serie sin repeticiones no es trabajo registrable, y nunca se guarda un 0.
+        return !(usaReps && (run.sets[run.currentSet].reps ?? 0) <= 0)
     }
 
     func registerCurrentSet(now: Date = Date(), restingHR: Double? = nil, maxHR: Double? = nil,
@@ -602,6 +615,18 @@ final class StrengthSessionModel: ObservableObject {
                     return
                 }
             }
+        }
+
+        // FER-327: «bajar y seguir» es literal — si la serie que se acaba de cerrar tiene un escalón de
+        // drop pegado detrás, NO se abre descanso: se pasa directo al escalón. Misma convención que el
+        // salto intra-superserie de arriba (FER-167): sin descanso iniciado no hay `restTakenS` que
+        // medir, así que se queda en nil en vez de un 0 que fingiría una pausa de cero segundos.
+        if hasDropAfter(exercise: currentIndex, set: i) {
+            phase = .capturing
+            clearRest()
+            timerStart = nil
+            runs[currentIndex].currentSet = i + 1
+            return
         }
 
         // FER-715: rest is resolved per set — the active set's own override, else the exercise's default.
@@ -834,12 +859,70 @@ final class StrengthSessionModel: ObservableObject {
     }
 
     /// Remove a set from a specific exercise (the inline swipe / accessible delete action).
+    ///
+    /// FER-327: borrar una serie MADRE se lleva sus escalones de drop contiguos — un drop es «bajar y
+    /// seguir» DESDE esa serie; sin ella, la bajada no significa nada y quedaría flotando en el acta a
+    /// un peso que nadie levantó como trabajo. Borrar un drop suelto no toca a los demás.
     func removeSet(exercise ei: Int, set si: Int) {
         guard runs.indices.contains(ei), runs[ei].sets.indices.contains(si) else { return }
-        runs[ei].sets.remove(at: si)
+        var last = si
+        if runs[ei].sets[si].mode != .drop {
+            while last + 1 < runs[ei].sets.count && runs[ei].sets[last + 1].mode == .drop { last += 1 }
+        }
+        runs[ei].sets.removeSubrange(si...last)
         if runs[ei].currentSet >= runs[ei].sets.count {
             runs[ei].currentSet = max(0, runs[ei].sets.count - 1)
         }
+    }
+
+    // MARK: - «Bajar y seguir»: el drop como sub-serie (FER-327 · E6)
+
+    /// Cuelga un escalón de drop de la serie `si` (o del último escalón que ya colgaba de ella): una
+    /// `WorkingSet` PROPIA con `mode = .drop`, insertada justo detrás —la relación con su madre es el
+    /// ORDEN, sin FK— al 80 % del peso de la serie de la que baja (`SetVariants.dropFraction`,
+    /// redondeado a un peso construible con `PlateMath.snap`), con las mismas repeticiones de la madre
+    /// y sin descanso propio.
+    ///
+    /// `implement` viene de la pantalla (el equipo del ejercicio, `PlateMath.Implement.from(equipment:)`)
+    /// porque el modelo no resuelve el catálogo. Devuelve `false` cuando no había nada que colgar o
+    /// cuando la cadena ya llegó al tope (`SetVariants.maxDropSteps`), para que la interfaz se calle en
+    /// vez de fingir que insertó algo.
+    @discardableResult
+    func addDrop(exercise ei: Int, set si: Int, implement: PlateMath.Implement = .barbell,
+                 inventory: [PlateMath.PlateStock] = PlateMath.defaultInventory,
+                 barKg: Double = PlateMath.defaultBarKg,
+                 fixedStepKg: Double = 2.5) -> Bool {
+        guard runs.indices.contains(ei), runs[ei].sets.indices.contains(si) else { return false }
+        guard runs[ei].sets[si].kind == .work else { return false }
+        // La madre es la serie tocada, o —si se tocó un escalón— la no-drop de la que cuelga.
+        var motherIndex = si
+        while motherIndex > 0 && runs[ei].sets[motherIndex].mode == .drop { motherIndex -= 1 }
+        guard runs[ei].sets[motherIndex].mode != .drop else { return false }   // huérfano: no cuelga nada
+        var tail = motherIndex
+        var steps = 0
+        while tail + 1 < runs[ei].sets.count && runs[ei].sets[tail + 1].mode == .drop {
+            tail += 1; steps += 1
+        }
+        guard steps < SetVariants.maxDropSteps else { return false }
+
+        let from = runs[ei].sets[tail]
+        let target = SetVariants.dropTargetKg(fromKg: from.weightKg)
+        let weight = PlateMath.snap(targetKg: target, implement: implement, barKg: barKg,
+                                    inventory: inventory, fixedStepKg: fixedStepKg)
+        let drop = WorkingSet(id: UUID().uuidString, weightKg: weight,
+                              reps: runs[ei].sets[motherIndex].reps, done: false,
+                              rest: nil, mode: .drop)
+        runs[ei].sets.insert(drop, at: tail + 1)
+        if runs[ei].currentSet > tail { runs[ei].currentSet += 1 }
+        return true
+    }
+
+    /// ¿La serie `si` de `ei` tiene un drop pegado detrás? «Bajar y seguir» significa exactamente eso:
+    /// no hay descanso entre la serie y su escalón (misma convención que el salto intra-superserie,
+    /// FER-167: sin descanso medido, `restTakenS` se queda en nil).
+    func hasDropAfter(exercise ei: Int, set si: Int) -> Bool {
+        guard runs.indices.contains(ei), runs[ei].sets.indices.contains(si + 1) else { return false }
+        return runs[ei].sets[si + 1].mode == .drop
     }
     /// Copy «la última vez» into a row (the tap-ANTERIOR prefill). Weight×reps types fill weight+reps;
     /// distance fills the distance. Time's goal is a view concern, handled in the sheet.
@@ -1172,7 +1255,7 @@ final class StrengthSessionModel: ObservableObject {
                                         position: position, kind: set.kind,
                                         weightKg: f.weightKg, reps: f.reps, timeS: f.timeS, distanceM: f.distanceM,
                                         done: true, ts: set.doneTs ?? endTs, rpe: set.rpe,
-                                        restTakenS: set.restTakenS))
+                                        restTakenS: set.restTakenS, mode: set.mode))
                 position += 1
             }
         }
@@ -1198,7 +1281,8 @@ final class StrengthSessionModel: ObservableObject {
                             id: s.id, weightKg: s.weightKg, reps: s.reps, timeS: s.timeS,
                             distanceM: s.distanceM, done: s.done, doneTs: s.doneTs,
                             rest: s.rest, kind: s.kind, rpe: s.rpe, note: s.note,
-                            touched: s.touched ? true : nil, restTakenS: s.restTakenS)
+                            touched: s.touched ? true : nil, restTakenS: s.restTakenS,
+                            mode: s.mode == .standard ? nil : s.mode)
                     },
                     currentSet: run.currentSet, skipped: run.skipped,
                     raiseOptedOut: run.raiseOptedOut ? true : nil,
@@ -1240,7 +1324,8 @@ final class StrengthSessionModel: ObservableObject {
                             WorkingSet(id: s.id, weightKg: s.weightKg, reps: s.reps, timeS: s.timeS,
                                        distanceM: s.distanceM, done: s.done, doneTs: s.doneTs,
                                        rest: s.rest, kind: s.kind, touched: s.touched ?? false,
-                                       rpe: s.rpe, note: s.note, restTakenS: s.restTakenS)
+                                       rpe: s.rpe, note: s.note, restTakenS: s.restTakenS,
+                                       mode: s.mode ?? .standard)
                         },
                         currentSet: r.currentSet, skipped: r.skipped,
                         // The held offer is re-armed exactly as it was: the table already opened at
@@ -1331,9 +1416,14 @@ final class StrengthSessionModel: ObservableObject {
                 // Nancy · ronda 3: `max(1, …)` — una rutina con `targetReps` 0, o un historial viejo con
                 // series de 0 reps, sembraba filas imposibles de registrar (ver `canRegisterCurrentSet`).
                 let reps = usesReps ? max(1, lastReps ?? p.repsRangeTop ?? p.reps ?? 8) : 0
+                // FER-327 (Q7): un AMRAP nace con la celda VACÍA — «las que puedas» no tiene número
+                // hasta que la serie termina, y prellenarlo con «la última vez» convertiría un objetivo
+                // abierto en una cuota. El ✓ queda bloqueado hasta que se escriba (`canRegisterCurrentSet`).
+                let seededReps: Int? = (p.mode == .amrap && usesReps) ? nil : reps
                 // FER-715: keep the planned `RoutineSet` id (so a per-set rest edit can persist back to the
                 // routine) and carry the set's own rest override (nil = inherit the exercise at rest time).
-                return WorkingSet(id: p.id, weightKg: weight, reps: reps, done: false, rest: p.rest)
+                return WorkingSet(id: p.id, weightKg: weight, reps: seededReps, done: false, rest: p.rest,
+                                  mode: p.mode)
             }
             return ExerciseRun(id: slot.re.id, exerciseId: slot.re.exerciseId,
                                name: slot.exercise.map(StrengthDisplay.name) ?? String(localized: "Exercise"),

@@ -203,7 +203,11 @@ extension AppModel {
             ?? .metric
         // «al volver» / «peso × reps» detail: weight×reps exercises show the load; time/distance carry none.
         let usesWeightReps = run.type == .weightReps || run.type == .bodyweight
-        let detail = usesWeightReps ? "\(StrengthDisplay.weight(set.weightKg, system: unit)) × \(set.reps)" : ""
+        // FER-327: `reps == nil` = AMRAP pendiente — la tarjeta muestra solo el peso, nunca «× 0».
+        let detail = usesWeightReps
+            ? set.reps.map { "\(StrengthDisplay.weight(set.weightKg, system: unit)) × \($0)" }
+                ?? StrengthDisplay.weight(set.weightKg, system: unit)
+            : ""
         // no band → no live HR to push outward; wrist uses its own HKWorkoutSession HR
         let bandBpm: Int? = nil
         // FER-789 — rest phase drives the card's primary action + context line: the routine's last pending
@@ -244,7 +248,11 @@ extension AppModel {
         let unit = UnitSystem(rawValue: UserDefaults.standard.string(forKey: UnitPrefs.systemKey) ?? "")
             ?? .metric
         let usesWeightReps = run.type == .weightReps || run.type == .bodyweight
-        let detail = usesWeightReps ? "\(StrengthDisplay.weight(set.weightKg, system: unit)) × \(set.reps)" : ""
+        // FER-327: `reps == nil` = AMRAP pendiente — la tarjeta muestra solo el peso, nunca «× 0».
+        let detail = usesWeightReps
+            ? set.reps.map { "\(StrengthDisplay.weight(set.weightKg, system: unit)) × \($0)" }
+                ?? StrengthDisplay.weight(set.weightKg, system: unit)
+            : ""
         // no band → no live HR to push outward
         let bandBpm: Int? = nil
         return WorkoutCaptureSnapshot(
