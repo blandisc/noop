@@ -21,8 +21,12 @@ final class MediaDownloadCoordinator: ObservableObject {
     private static let missedIdsKey = "noop.exerciseMediaMissedIds"
 
     /// The bulk thumb download's observable progress (FER-778) — Ajustes reads this instead of a
-    /// mute button. A miss (no baked `gifUrl` for that exercise, or its download failed) is expected;
-    /// `.failed` is reserved for the case where NOTHING downloaded at all (almost certainly no connection).
+    /// mute button. A miss (no baked `gifUrl` for that exercise) is expected and never retried.
+    /// `.failed` covers two cases: NOTHING downloaded at all, or ≥1 exercise hit a network failure
+    /// this run — `.completed` must never claim success while a retriable download is still pending,
+    /// so a partial run with any network failure reports `.failed` too, even if others matched
+    /// (P0-2, Sev-5: a flaky connection used to be indistinguishable from "no gifUrl" and got
+    /// permanently blacklisted, then a later run lied "already fully downloaded").
     enum DownloadState: Equatable {
         case idle
         case downloading(completed: Int, total: Int)
@@ -78,40 +82,49 @@ final class MediaDownloadCoordinator: ObservableObject {
 
         downloadState = .downloading(completed: 0, total: toDownload.count)
         var completed = 0
+        var networkFailures = 0
 
-        // Misses are collected here and persisted once at the end, not per-download — up to ~1500
+        // Only `.noMedia` results are collected into `newMisses` and persisted — up to ~1500
         // individual UserDefaults read-modify-writes would otherwise pile up during one bulk run.
-        let newMisses = await withTaskGroup(of: String?.self) { group -> Set<String> in
+        // `.networkFailure` is counted but never recorded: a dropped connection is transient, not a
+        // verdict on the exercise, and persisting it would permanently blacklist an exercise that DOES
+        // have a `gifUrl` (P0-2, Sev-5 — a flaky run used to poison `missedIds`, and a later run then
+        // found nothing left to try and reported "already fully downloaded").
+        let newMisses = await withTaskGroup(of: ThumbResult.self) { group -> Set<String> in
             var inFlight = 0
             var newMisses: Set<String> = []
-            for exercise in toDownload {
-                if inFlight >= 6 {
-                    if let missedId = await group.next() {
-                        if let missedId { newMisses.insert(missedId) }
-                        completed += 1
-                        if completed % 10 == 0 || completed == toDownload.count {
-                            downloadState = .downloading(completed: completed, total: toDownload.count)
-                        }
-                    }
-                    inFlight -= 1
+            func record(_ result: ThumbResult) {
+                switch result {
+                case .stored: break
+                case .noMedia(let id): newMisses.insert(id)
+                case .networkFailure: networkFailures += 1
                 }
-                group.addTask { [weak self] in
-                    await self?.downloadThumb(exercise, cache: cache)
-                }
-                inFlight += 1
-            }
-            for await missedId in group {
-                if let missedId { newMisses.insert(missedId) }
                 completed += 1
                 if completed % 10 == 0 || completed == toDownload.count {
                     downloadState = .downloading(completed: completed, total: toDownload.count)
                 }
             }
+            for exercise in toDownload {
+                if inFlight >= 6 {
+                    if let result = await group.next() { record(result) }
+                    inFlight -= 1
+                }
+                group.addTask { [weak self] in
+                    guard let self else { return .stored }
+                    return await self.downloadThumb(exercise, cache: cache)
+                }
+                inFlight += 1
+            }
+            for await result in group { record(result) }
             return newMisses
         }
         if !newMisses.isEmpty { recordMisses(newMisses) }
-        let matched = toDownload.count - newMisses.count
-        downloadState = matched == 0 ? .failed : .completed(matched: matched, total: toDownload.count)
+        let matched = toDownload.count - newMisses.count - networkFailures
+        // Any network failure keeps this run out of `.completed`, even if others matched — claiming
+        // "complete" while a retriable exercise is still missing is exactly the lie this fixes.
+        downloadState = (matched == 0 || networkFailures > 0)
+            ? .failed
+            : .completed(matched: matched, total: toDownload.count)
     }
 
     /// The exercise's media file (the animated GIF) for the detail hero, on demand. Returns the
@@ -126,6 +139,9 @@ final class MediaDownloadCoordinator: ObservableObject {
             if isEnabled { recordMisses([exercise.id]) }
             return nil
         }
+        // A network failure here (throw or non-200) returns nil WITHOUT recording a miss, unlike the
+        // guard above — a bad connection isn't a verdict on the exercise (P0-2, Sev-5): the next tap
+        // retries the same GET instead of being permanently blacklisted.
         guard let (data, response) = try? await session.data(from: url),
               (response as? HTTPURLResponse)?.statusCode == 200 else { return nil }
         try? cache.storeThumb(data, for: exercise.id)
@@ -153,14 +169,24 @@ final class MediaDownloadCoordinator: ObservableObject {
         userDefaults.removeObject(forKey: Self.missedIdsKey)
     }
 
-    /// Downloads one exercise's thumb from its baked `gifUrl`; returns its id if it has no media / the
-    /// download failed, so the caller can batch that into a single miss-list write.
-    private func downloadThumb(_ exercise: Exercise, cache: MediaCache) async -> String? {
-        guard let thumbURL = mediaURL(for: exercise) else { return exercise.id }
+    /// Why one thumb download didn't end in `.stored` — only `.noMedia` is a verdict on the exercise;
+    /// `.networkFailure` is transient and must never be persisted the same way (P0-2, Sev-5).
+    private enum ThumbResult {
+        case stored
+        case noMedia(String)
+        case networkFailure(String)
+    }
+
+    /// Downloads one exercise's thumb from its baked `gifUrl`, distinguishing why it didn't store:
+    /// `.noMedia` (no `gifUrl` at all — permanent, retrying tomorrow won't produce one) from
+    /// `.networkFailure` (the GET threw or came back non-200 — transient, the exercise DOES have
+    /// media, this attempt just couldn't fetch it).
+    private func downloadThumb(_ exercise: Exercise, cache: MediaCache) async -> ThumbResult {
+        guard let thumbURL = mediaURL(for: exercise) else { return .noMedia(exercise.id) }
         guard let (data, response) = try? await session.data(from: thumbURL),
-              (response as? HTTPURLResponse)?.statusCode == 200 else { return exercise.id }
+              (response as? HTTPURLResponse)?.statusCode == 200 else { return .networkFailure(exercise.id) }
         try? cache.storeThumb(data, for: exercise.id)
-        return nil
+        return .stored
     }
 
     private var missedIds: Set<String> {
