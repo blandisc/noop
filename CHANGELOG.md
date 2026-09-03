@@ -21,6 +21,16 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+### Correcciones de robustez (auditoría de estrés)
+- **Miniaturas de ejercicio:** una miniatura que no se pudo bajar por una conexión intermitente ya no
+  queda marcada para siempre como «sin imagen» — el siguiente intento la vuelve a pedir. Antes, un
+  tramo de red floja envenenaba la lista y una corrida posterior mentía «ya está todo descargado».
+- **Botones de la pantalla bloqueada (sesión de fuerza):** «+30 s», «Saltar», «Serie hecha» y
+  «Terminar» ahora solo afectan a la sesión que estaba viva cuando los tocaste — un toque rezagado de
+  una sesión ya terminada no puede alterar (ni cerrar) una nueva.
+- **Recordatorios de dieta:** los recordatorios de comidas de la pantalla Dieta (ya retirada) que
+  podían seguir sonando sin forma de apagarlos se limpian al abrir la app.
+
 - Diseño (FER-358 · loop 6): `LiquidBarraProgreso` con marcas mudas dentro de la pieza y `.pastillaSolida` en vez de `.clipShape(Capsule())` a mano; Dynamic Type (`@ScaledMetric`) en detalle/edición de workout, ejercicio y progresión; `.white`/velo a tokens `LiquidColor`; comentario de etapas de sueño honesto.
 
 ### Ola 1 de Entrenar · vocabulario y tutorial (FER-335)

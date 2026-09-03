@@ -117,6 +117,13 @@ struct CenitApp: App {
                 // FER-96: push the watch's idle-face context once at launch (today's routine + the daily
                 // verdict, once resolved) — best-effort, a no-op without a paired watch.
                 .task { await model.pushWatchIdleContext() }
+                // La pantalla Dieta se archivó (FER-92/FER-239) y con ella el código que programaba o
+                // cancelaba estos recordatorios — pero quien los encendió en una versión previa sigue con
+                // `UNCalendarNotificationTrigger`s `repeats: true` vivos en iOS y SIN forma de apagarlos
+                // dentro de la app (el switch ya no existe). Barremos los nuestros (prefijo
+                // `diet-reminder-`) una vez por arranque; es idempotente: tras el primer barrido no queda
+                // ninguno, así que la consulta siguiente es un no-op que no toca nada más.
+                .task { await DietReminderScheduler.cancelAll() }
                 // El color scheme ya NO se fuerza global aquí: lo decide ContentView según la pestaña
                 // activa (Hoy = papel claro → barra de estado en tinta oscura; resto = oscuro), con el
                 // gate de onboarding/terms en oscuro. Ponerlo aquí (lo más cercano a la raíz) ganaba

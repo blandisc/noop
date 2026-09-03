@@ -34,10 +34,12 @@ final class RestActivityController {
     private let restStaleMargin: TimeInterval = 5
     private let activeStaleWindow: TimeInterval = 60 * 60   // 1 h — comfortably longer than any rest
 
-    /// Installed by `AppModel`: applies a lock-screen action (+30 s / Saltar) to the live session.
-    /// The `Date` is when the user actually tapped (the `ts` the intent enqueued) — the inbox is durable
-    /// and can drain late, so the receiver needs it to discard actions from a rest that already ended.
-    var onAction: ((RestActivityBridge.Action, Date) -> Void)?
+    /// Installed by `AppModel`: applies a lock-screen action (+30 s / Saltar / …) to the live session.
+    /// Hands over the whole `PendingAction`, not just the `.action` — the inbox is durable and can drain
+    /// late, so the receiver needs BOTH the `ts` (to discard actions from a rest that already ended) and
+    /// the `sessionId` it was sealed with (P0-3: to discard actions sealed for a session that isn't the
+    /// live one anymore — a stale one from session A must never reach session B).
+    var onAction: ((RestActivityBridge.PendingAction) -> Void)?
 
     private var darwinObserverInstalled = false
 
@@ -83,6 +85,10 @@ final class RestActivityController {
             Task { await activity.end(nil, dismissalPolicy: .immediate) }
         }
         self.activity = nil
+        // P0-3: no recoverable session survived the kill — any inbox action still queued was sealed for
+        // it (or for whatever ran before it) and belongs to nothing that exists anymore. Drop it now so
+        // it can't outlive the app that orphaned it and land on the NEXT session that starts.
+        _ = RestActivityBridge.drain()
     }
 
     // MARK: Start
@@ -109,7 +115,7 @@ final class RestActivityController {
     private func drainInbox() {
         let pending = RestActivityBridge.drain()
         guard !pending.isEmpty, let onAction else { return }
-        for item in pending { onAction(item.action, item.ts) }
+        for item in pending { onAction(item) }
     }
 
     private func installDarwinObserverIfNeeded() {

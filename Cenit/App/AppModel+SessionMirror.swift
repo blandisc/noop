@@ -298,18 +298,24 @@ extension AppModel {
     /// adds ±30, complete-set and finish-workout. Completar ≠ Saltar: `completeSet` logs the upcoming set
     /// (`registerCurrentSet`) and rests again; `skip` only cuts the timer and leaves the set pending.
     // AppModel-internal (split D1)
-    func applyRestAction(_ action: RestActivityBridge.Action, requestedAt: Date = Date()) {
+    func applyRestAction(_ action: RestActivityBridge.PendingAction) {
         // FER-806: actions arrive across the whole session now (the Activity lives the whole session), so
         // the guard is only «there's a live session without a receipt» — each action gates its own phase.
         guard let s = strengthSession, s.summary == nil else { return }
+        // P0-3: an action sealed for a DIFFERENT session (enqueued while session A was live, drained
+        // after session B already started) must never reach B — a stray ±30/Saltar/Completar/Terminar
+        // could otherwise mutate, or even CLOSE, a session the user never touched. `sessionId == nil` is
+        // an old payload written before this field existed — accepted for compat; the `lastRestStartedAt`
+        // guard right below still covers those exactly as it did before this fix.
+        guard action.sessionId == nil || action.sessionId == s.id else { return }
         // Nancy · ronda 6: el inbox del App Group es durable y puede drenar TARDE (app suspendida,
         // Darwin con retraso). Un toque anterior al inicio del ÚLTIMO descanso que haya arrancado
         // pertenece a un contexto ya cerrado — aplicarlo extendería/cortaría el descanso equivocado
         // o registraría una serie que la usuaria no estaba viendo. Se descarta, no se reinterpreta.
         // El ancla es `lastRestStartedAt` (sobrevive a `clearRest`): si NINGÚN descanso arrancó
         // después del toque, la serie enfocada sigue siendo la que la tarjeta prometía.
-        if let anchor = s.lastRestStartedAt, requestedAt < anchor { return }
-        switch action {
+        if let anchor = s.lastRestStartedAt, action.ts < anchor { return }
+        switch action.action {
         case .resume:
             resumeStrengthSessionFromPause()   // FER-823 — leave «En pausa»; re-arms the reconcile loop
         case .completeSet:
