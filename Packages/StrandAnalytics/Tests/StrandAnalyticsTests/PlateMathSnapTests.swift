@@ -43,4 +43,9 @@ final class PlateMathSnapTests: XCTestCase {
                        "por debajo de la barra: la barra sola es lo mínimo construible")
         XCTAssertEqual(PlateMath.snap(targetKg: 2, implement: .dumbbell), 0, accuracy: 0.0001)
     }
+
+    func testEmptyInventoryBuildsOnlyTheBar() {
+        XCTAssertEqual(PlateMath.snap(targetKg: 64, implement: .barbell, inventory: []), 20, accuracy: 0.0001,
+                       "sin discos, la barra sola es todo lo construible")
+    }
 }

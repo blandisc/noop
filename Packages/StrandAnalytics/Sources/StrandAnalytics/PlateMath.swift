@@ -156,8 +156,10 @@ public enum PlateMath {
     ///   que el peso cae al múltiplo inferior de `minimumIncrement` (16 kg con paso 2,5 → 15).
     ///
     /// Nunca devuelve más que `targetKg` (proponer de más sería pedir una carga que no se pidió) ni un
-    /// número negativo. Un objetivo por debajo de lo mínimo construible devuelve la barra sola (barra) o
-    /// 0 (rack): «no hay nada que cargar», no una mentira redondeada hacia arriba.
+    /// número negativo — con UNA excepción explícita: un objetivo por debajo de lo mínimo construible
+    /// devuelve la barra sola (barra, aunque pese más que el objetivo: es el peso mínimo que existe) o
+    /// 0 (rack). Sin discos en el inventario, la barra sola es todo lo construible. Quien pida una
+    /// BAJADA (drop) debe comprobar que el resultado quede por debajo de donde viene.
     public static func snap(targetKg: Double, implement: Implement, barKg: Double = defaultBarKg,
                             inventory: [PlateStock] = defaultInventory,
                             fixedStepKg: Double = 2.5) -> Double {

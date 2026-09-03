@@ -177,11 +177,11 @@ struct HojaFoco: View {
             }
             VStack(spacing: .zero) {
                 FocoHeroe(
-                    valor: "\(vivo.session.currentSet?.reps ?? 0)",
+                    valor: vivo.session.currentSet?.reps.map { "\($0)" } ?? "",
                     unidad: " " + String(localized: "Reps").lowercased(),
                     onMenos: { vivo.session.bumpReps(-1) },
                     onMas: { vivo.session.bumpReps(1) },
-                    etiquetaAccesible: "\(String(localized: "Reps")), \(vivo.session.currentSet?.reps ?? 0)",
+                    etiquetaAccesible: "\(String(localized: "Reps")), \(vivo.session.currentSet?.reps.map { "\($0)" } ?? String(localized: "pending"))",
                     etiquetaMenos: String(localized: "Decrease reps"),
                     etiquetaMas: String(localized: "Increase reps")
                 )
@@ -194,11 +194,11 @@ struct HojaFoco: View {
             .padding(.top, FocoMetrics.heroGap)
         case .bodyweight:
             FocoHeroe(
-                valor: "\(vivo.session.currentSet?.reps ?? 0)",
+                valor: vivo.session.currentSet?.reps.map { "\($0)" } ?? "",
                 unidad: " " + String(localized: "Reps").lowercased(),
                 onMenos: { vivo.session.bumpReps(-1) },
                 onMas: { vivo.session.bumpReps(1) },
-                etiquetaAccesible: "\(String(localized: "Reps")), \(vivo.session.currentSet?.reps ?? 0)",
+                etiquetaAccesible: "\(String(localized: "Reps")), \(vivo.session.currentSet?.reps.map { "\($0)" } ?? String(localized: "pending"))",
                 etiquetaMenos: String(localized: "Decrease reps"),
                 etiquetaMas: String(localized: "Increase reps")
             )

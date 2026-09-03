@@ -1289,6 +1289,52 @@ final class StrengthSessionModelTests: XCTestCase {
         XCTAssertTrue(s.runs[0].sets[0].done)
     }
 
+    /// H6: en superserie el escalón va ANTES del salto al compañero — «bajar y seguir» es de la misma serie.
+    func testDropBeatsTheSupersetJump() {
+        let s = make([StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 2, reps: 8, weight: 80, superset: 1),
+                                                    exercise: ex("bench", "Bench"), lastSets: []),
+                      StrengthSessionModel.PlanSlot(re: re("b", exerciseId: "row", sets: 2, reps: 8, weight: 60, superset: 1),
+                                                    exercise: ex("row", "Row"), lastSets: [])])
+        XCTAssertTrue(s.addDrop(exercise: 0, set: 0))
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 5000))
+        XCTAssertEqual(s.currentIndex, 0, "el foco se queda en el ejercicio del escalón, no salta al compañero")
+        XCTAssertEqual(s.runs[0].currentSet, 1)
+        XCTAssertEqual(s.phase, .capturing)
+        s.registerCurrentSet(now: Date(timeIntervalSince1970: 5100))
+        XCTAssertEqual(s.currentIndex, 1, "cerrado el escalón, ahora sí toca el compañero")
+    }
+
+    /// H5: «Agregar serie» después de un escalón clona a la MADRE, no al escalón rebajado.
+    func testAddSetAfterADropClonesTheMother() {
+        let s = make([StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 1, reps: 8, weight: 80),
+                                                    exercise: ex("bench", "Bench"), lastSets: [])])
+        XCTAssertTrue(s.addDrop(exercise: 0, set: 0))
+        s.addSet()
+        let added = s.runs[0].sets.last!
+        XCTAssertEqual(added.mode, .standard)
+        XCTAssertEqual(added.weightKg, 80, accuracy: 0.0001, "nace al peso de trabajo, no al del escalón")
+    }
+
+    /// H3: «−» sobre una serie pendiente no fabrica una rep; «+» la arranca en el piso.
+    func testMinusOnAPendingSetKeepsItPending() {
+        var slot = re("a", exerciseId: "bench", sets: 1, reps: 8, weight: 80)
+        slot.sets = [RoutineSet(id: "p0", position: 0, kind: .work, reps: 8, weightKg: 80, mode: .amrap)]
+        let s = make([StrengthSessionModel.PlanSlot(re: slot, exercise: ex("bench", "Bench"), lastSets: [])])
+        s.bumpReps(-1)
+        XCTAssertNil(s.runs[0].sets[0].reps)
+        XCTAssertFalse(s.canRegisterCurrentSet)
+        s.bumpReps(1)
+        XCTAssertEqual(s.runs[0].sets[0].reps, 1)
+    }
+
+    /// H8: si lo construible no baja (madre en la barra sola), no se inserta un escalón.
+    func testDropFromTheBareBarIsRefused() {
+        let s = make([StrengthSessionModel.PlanSlot(re: re("a", exerciseId: "bench", sets: 1, reps: 8, weight: 20),
+                                                    exercise: ex("bench", "Bench"), lastSets: [])])
+        XCTAssertFalse(s.addDrop(exercise: 0, set: 0))
+        XCTAssertEqual(s.runs[0].sets.count, 1)
+    }
+
     /// Un AMRAP planeado nace con la celda VACÍA (Q7) y el ✓ bloqueado hasta que se escriba un número.
     func testAmrapSeedsPendingAndBlocksTheCheck() {
         var slot = re("a", exerciseId: "bench", sets: 1, reps: 8, weight: 80)

@@ -201,5 +201,5 @@ adversarial (`docs/specs/ola1-entrenar/`):
 10. **Un «bajar y seguir» es sub-serie de su madre en la sesión viva** (E6, director 2026-09-02, gate
     /qa D3): borrar la madre en la hoja borra sus escalones (no tienen sentido sin ella). En la base
     el invariante es el opuesto y sigue: un escalón huérfano conserva `mode = drop`, nunca se promueve
-    y nada se borra al guardar. Superserie: el salto FER-931 corre antes que «bajar y seguir»; el
-    escalón espera a cerrar la ronda (queda anotado para E7).
+    y nada se borra al guardar. En superserie el escalón va ANTES del salto al compañero: «bajar y
+    seguir» pertenece a la misma serie. Un escalón que no baja (madre en la barra sola) no se inserta.

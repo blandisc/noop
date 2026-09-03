@@ -547,11 +547,15 @@ struct EditSet: Identifiable, Equatable {
     /// `save()` used to reconstruct every `SetEntry` from scratch, and `EditSet` never carried `rpe` in
     /// the first place, so it silently dropped to `nil` on every edit.
     var rpe: Double?
+    /// «Las que puedas» / «bajar y seguir» (FER-327). The editor shows no control for it, so it rides
+    /// through untouched — otherwise every edit promoted a drop to a standard set and fed it to
+    /// progression, records and 1RM (revisión adversarial E6, H1).
+    var mode: SetMode
 
     init(_ s: SetEntry) {
         id = s.id; weightKg = s.weightKg ?? 0; reps = s.reps ?? 0
         timeS = s.timeS; distanceM = s.distanceM; ts = s.ts
-        restTakenS = s.restTakenS; rpe = s.rpe
+        restTakenS = s.restTakenS; rpe = s.rpe; mode = s.mode
     }
     init(new ts: Int, template: EditSet?) {
         id = UUID().uuidString
@@ -561,6 +565,7 @@ struct EditSet: Identifiable, Equatable {
         self.ts = ts
         restTakenS = nil   // a freshly added set never had a measured rest
         rpe = nil          // nor a reported RPE
+        mode = .standard   // nor a variant: an added row is a plain work set
     }
 
     /// Rebuilds the persisted `SetEntry` for this row on save: only weight/reps (the editor's own
@@ -569,7 +574,8 @@ struct EditSet: Identifiable, Equatable {
     func toSetEntry(sessionId: String, exerciseId: String, position: Int, usesWeightReps: Bool) -> SetEntry {
         SetEntry(id: id, sessionId: sessionId, exerciseId: exerciseId, position: position, kind: .work,
                  weightKg: usesWeightReps ? weightKg : nil, reps: usesWeightReps ? reps : nil,
-                 timeS: timeS, distanceM: distanceM, done: true, ts: ts, rpe: rpe, restTakenS: restTakenS)
+                 timeS: timeS, distanceM: distanceM, done: true, ts: ts, rpe: rpe, restTakenS: restTakenS,
+                 mode: mode)
     }
 }
 

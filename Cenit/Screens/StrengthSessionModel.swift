@@ -465,9 +465,16 @@ final class StrengthSessionModel: ObservableObject {
     /// borra la fila, no se baja a cero. Los ejercicios de tiempo/distancia no se juzgan por reps.
     func bumpReps(_ delta: Int) {
         let piso = (current?.type == .weightReps || current?.type == .bodyweight) ? 1 : 0
-        // FER-327: una serie PENDIENTE (AMRAP sin número todavía) arranca desde el piso al primer ±,
-        // nunca desde un 0 implícito que dejaría la fila imposible de registrar.
-        mutateCurrentSet { $0.reps = max(piso, ($0.reps ?? 0) + delta) }
+        // FER-327: una serie PENDIENTE (AMRAP sin número todavía) arranca desde el piso al primer «+»;
+        // un «−» sobre nada la deja pendiente — bajar desde nil fabricaría una rep que nadie hizo y
+        // desbloquearía el ✓ (revisión adversarial E6, H3).
+        mutateCurrentSet {
+            guard let r = $0.reps else {
+                if delta > 0 { $0.reps = max(piso, delta) }
+                return
+            }
+            $0.reps = max(piso, r + delta)
+        }
     }
     func bumpDistance(byMeters delta: Double) { mutateCurrentSet { $0.distanceM = max(0, ($0.distanceM ?? 0) + delta) } }
 
@@ -602,6 +609,20 @@ final class StrengthSessionModel: ObservableObject {
         // rest leaked between A and B. While any LATER member of the group still has pending work,
         // the jump is rest-free. Warm-ups don't participate; only `.work` cycles the group. A
         // standalone exercise (group of one) skips this entirely — pre-931 path below, untouched.
+        // FER-327: «bajar y seguir» es literal — si la serie que se acaba de cerrar tiene un escalón de
+        // drop pegado detrás, NO se abre descanso: se pasa directo al escalón, ANTES del salto de
+        // superserie (el escalón pertenece a esta misma serie; el compañero espera al escalón, no al
+        // revés — revisión adversarial E6, H6). Misma convención que el salto intra-superserie: sin
+        // descanso iniciado no hay `restTakenS` que medir, así que se queda en nil en vez de un 0 que
+        // fingiría una pausa de cero segundos.
+        if hasDropAfter(exercise: currentIndex, set: i) {
+            phase = .capturing
+            clearRest()
+            timerStart = nil
+            runs[currentIndex].currentSet = i + 1
+            return
+        }
+
         let group = supersetMembers(at: currentIndex)
         if justCompletedKind == .work, group.count > 1,
            let posInGroup = group.firstIndex(of: currentIndex) {
@@ -615,18 +636,6 @@ final class StrengthSessionModel: ObservableObject {
                     return
                 }
             }
-        }
-
-        // FER-327: «bajar y seguir» es literal — si la serie que se acaba de cerrar tiene un escalón de
-        // drop pegado detrás, NO se abre descanso: se pasa directo al escalón. Misma convención que el
-        // salto intra-superserie de arriba (FER-167): sin descanso iniciado no hay `restTakenS` que
-        // medir, así que se queda en nil en vez de un 0 que fingiría una pausa de cero segundos.
-        if hasDropAfter(exercise: currentIndex, set: i) {
-            phase = .capturing
-            clearRest()
-            timerStart = nil
-            runs[currentIndex].currentSet = i + 1
-            return
         }
 
         // FER-715: rest is resolved per set — the active set's own override, else the exercise's default.
@@ -707,7 +716,9 @@ final class StrengthSessionModel: ObservableObject {
     /// Append a fresh set to the current exercise (copying the last row's load), and focus it.
     func addSet() {
         guard runs.indices.contains(currentIndex) else { return }
-        let template = runs[currentIndex].sets.last
+        // La plantilla es la última serie NO escalón: clonar un drop nacería standard al peso rebajado
+        // y esa serie ligera sí alimentaría progresión y «la última vez» (revisión adversarial E6, H5).
+        let template = runs[currentIndex].sets.last(where: { $0.mode != .drop }) ?? runs[currentIndex].sets.last
         let usaReps = runs[currentIndex].type == .weightReps || runs[currentIndex].type == .bodyweight
         let reps = usaReps ? max(1, template?.reps ?? 8) : (template?.reps ?? 0)   // Nancy · ronda 5
         let set = WorkingSet(id: UUID().uuidString,
@@ -839,7 +850,7 @@ final class StrengthSessionModel: ObservableObject {
     /// Append a set to a specific exercise (copying its last row's load) — the inline «Agregar serie».
     func addSet(exercise ei: Int) {
         guard runs.indices.contains(ei) else { return }
-        let template = runs[ei].sets.last
+        let template = runs[ei].sets.last(where: { $0.mode != .drop }) ?? runs[ei].sets.last   // H5, ver addSet()
         let usaReps = runs[ei].type == .weightReps || runs[ei].type == .bodyweight
         let reps = usaReps ? max(1, template?.reps ?? 8) : (template?.reps ?? 0)   // Nancy · ronda 3
         runs[ei].sets.append(WorkingSet(id: UUID().uuidString,
@@ -909,6 +920,9 @@ final class StrengthSessionModel: ObservableObject {
         let target = SetVariants.dropTargetKg(fromKg: from.weightKg)
         let weight = PlateMath.snap(targetKg: target, implement: implement, barKg: barKg,
                                     inventory: inventory, fixedStepKg: fixedStepKg)
+        // Si lo construible no queda por DEBAJO de donde venimos (madre en la barra sola, rack en su
+        // mínimo), no hay bajada que hacer: no se inserta un escalón que miente (H8).
+        guard weight < from.weightKg else { return false }
         let drop = WorkingSet(id: UUID().uuidString, weightKg: weight,
                               reps: runs[ei].sets[motherIndex].reps, done: false,
                               rest: nil, mode: .drop)
