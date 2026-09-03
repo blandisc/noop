@@ -52,6 +52,8 @@ struct StarterTemplatesSheet: View {
     /// «Ya tienes un programa en la semana N de M. Empezar otro lo termina.»).
     @State private var programaActivo: ProgramServing.Context?
     @State private var confirmReemplazoPrograma = false
+    /// Ola 1 · E12, capa 4: enlace terciario «¿Qué es una semana ligera?» → el glosario del «?».
+    @State private var showGlossary = false
 
     /// Catálogo completo (`grupo == nil`) o acotado a un programa. En modo grupo abre SIEMPRE con
     /// la primera rutina en preview (ronda 2 del gate FER-251: el CTA «Usar este plan» nunca es
@@ -109,6 +111,12 @@ struct StarterTemplatesSheet: View {
             }
         } message: {
             Text(programaActivoAviso)
+        }
+        // Ola 1 · E12, capa 4: el enlace terciario «¿Qué es una semana ligera?» abre el glosario
+        // del «?» en una hoja propia — esta hoja ya no trae NavigationStack (FER-171), así que el
+        // glosario trae el suyo.
+        .sheet(isPresented: $showGlossary) {
+            NavigationStack { WorkshopTricksScreen() }
         }
         .enableInjection()
     }
@@ -368,6 +376,13 @@ struct StarterTemplatesSheet: View {
                 Text("The last week is active recovery: you'll see it marked from today.")
                     .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta500)
                     .fixedSize(horizontal: false, vertical: true)
+                // Ola 1 · E12, capa 4: los 3 pasos ya llevan su porqué (línea de arriba, E11); solo
+                // falta el enlace terciario al glosario del «?» — no se duplica el resto.
+                Button { showGlossary = true } label: {
+                    Text("What's a light week?")
+                        .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
+                }
+                .buttonStyle(.plain)
             }
 
             CenitCTAButton("Start program") { startProgram(motor) }

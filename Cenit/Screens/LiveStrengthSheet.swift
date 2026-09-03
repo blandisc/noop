@@ -5,6 +5,7 @@ import CenitDesign
 import StrandTraining
 import StrandAnalytics
 import CenitStore
+import TipKit
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // 2026-07-19: `plateNumber` y `massString` vivían aquí como copias privadas y se habían desfasado de
@@ -1612,6 +1613,9 @@ struct LiveStrengthSheet: View {
         return VStack(alignment: .leading, spacing: LiquidSpace.s200) {
             Text("How hard was it?")
                 .font(LiquidType.tituloGemela).foregroundStyle(LiquidColor.tinta900)
+                // Ola 1 · E12: consejo «Esfuerzo estimado», el primer recibo que trae la pregunta
+                // (TipKit gobierna el «una vez»).
+                .popoverTip(EsfuerzoEstimadoTip())
             EntrenarFilaEsfuerzo(
                 opciones: labels,
                 seleccion: seleccion,

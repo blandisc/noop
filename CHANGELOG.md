@@ -23,6 +23,21 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 - Diseño (FER-358 · loop 6): `LiquidBarraProgreso` con marcas mudas dentro de la pieza y `.pastillaSolida` en vez de `.clipShape(Capsule())` a mano; Dynamic Type (`@ScaledMetric`) en detalle/edición de workout, ejercicio y progresión; `.white`/velo a tokens `LiquidColor`; comentario de etapas de sueño honesto.
 
+### Ola 1 de Entrenar · vocabulario y tutorial (FER-335)
+- Barrido final del vocabulario: la hoja de esfuerzo por serie («RPE») ya no dice «Te quedaban ~2
+  reps» — dice «~2 reps más», igual que sus seis vecinas en la misma escala.
+- Seis consejos de una sola vez (TipKit, iOS 17): «las que puedas» y «bajar y seguir» en la fila de
+  la sesión, «reps en reserva» en el teclado, «esfuerzo estimado» en el primer recibo con la
+  pregunta, «ritmo de subida» en el ajuste de progresión, y «semana ligera» en Tu Plan. Cada uno
+  aparece una vez, se cierra con «Entendido» y no vuelve; estilo tinta sobre vidrio
+  (`CenitDesign.LiquidConsejoTipStyle`).
+- El «?» de Entrenar gana «Palabras del gym»: ocho términos (las que puedas, bajar y seguir, reps en
+  reserva, semana ligera, esfuerzo estimado, descansos, programa, 1RM estimado) con una línea cada
+  uno.
+- «Nuevo programa» gana el enlace «¿Qué es una semana ligera?» hacia ese glosario — los 3 pasos con
+  su porqué ya los trae FER-334.
+- Sin tour: la enseñanza vive en el lugar donde el concepto aparece, nunca en un modal que bloquea.
+
 ### Ola 1 de Entrenar · pantallas de programa (FER-334)
 - El motor de programas de FER-329 ya tiene dónde prenderse: «Programa · 4 a 6 semanas» en Tu Plan
   (junto a Plantillas e Importar) abre los 4 motores de fábrica y, en tres pasos, arma semanas ·

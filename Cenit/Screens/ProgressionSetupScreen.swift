@@ -2,6 +2,7 @@ import SwiftUI
 import CenitDesign
 import StrandTraining
 import StrandAnalytics
+import TipKit
 
 // MARK: - Progression setup (2c, FER-D · FER-293 Liquid Glass · El Eje)
 //
@@ -112,6 +113,9 @@ struct ProgressionSetupScreen: View {
         // Sin filete propio: `incrementRow` (la fila de arriba) ya cierra con el suyo — dos filetes
         // pegados se leerían como uno solo, más grueso, sin espacio entre ellos.
         opcionesSection(titulo: String(localized: "Rhythm"), dividerAbove: false,
+                        // Ola 1 · E12: consejo «Ritmo de subida», una sola vez, la primera vez que
+                        // esta sección aparece (TipKit gobierna el «una vez»).
+                        tip: RitmoDeSubidaTip(),
                         opciones: Ritmo.allCases.map { r in
             Opcion(title: ritmoTitulo(r), subtitle: ritmoSubtitulo(r), seleccionado: ritmo == r,
                   action: { selectRitmo(r) })
@@ -132,7 +136,8 @@ struct ProgressionSetupScreen: View {
     /// no-sheet-glass: esta hoja ya es papel opaco, `.superficieSolida`), con su padding horizontal
     /// compensado (`LiquidSpace.s300`) para alinear el texto con el resto de las filas de la tarjeta
     /// (`LiquidSpace.s400` − `LiquidListRow`'s `LiquidSpace.s100`).
-    private func opcionesSection(titulo: String, dividerAbove: Bool, opciones: [Opcion]) -> some View {
+    private func opcionesSection(titulo: String, dividerAbove: Bool, tip: (any Tip)? = nil,
+                                  opciones: [Opcion]) -> some View {
         VStack(alignment: .leading, spacing: .zero) {
             Text(verbatim: titulo)
                 .font(LiquidType.tituloFila)
@@ -146,6 +151,7 @@ struct ProgressionSetupScreen: View {
                         Rectangle().fill(LiquidColor.tinta10).frame(height: 0.5)
                     }
                 }
+                .popoverTip(tip)
             VStack(spacing: .zero) {
                 ForEach(Array(opciones.enumerated()), id: \.offset) { idx, o in
                     LiquidListRow(title: o.title, subtitle: o.subtitle,

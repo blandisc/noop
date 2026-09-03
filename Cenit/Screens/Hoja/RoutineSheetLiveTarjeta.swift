@@ -293,6 +293,9 @@ struct HojaTarjetaEjercicioSesion: View {
             // dos puertas. `HojaFilaSerie` ya lo deja como toque de 44 pt sin agrandar el dibujo.
             onTipoTap: { vivo.setMenuTarget = HojaSesionViva.SetMenuTarget(runId: run.id, setId: set.id) }
         )
+        // Ola 1 · E12: consejo «las que puedas» / «bajar y seguir», la primera vez que esta fila
+        // aparece con ese tipo (TipKit gobierna el «una vez», global a los 3 sitios de HojaFilaSerie).
+        .entrenarConsejoTipoSerie(set.mode)
         // Ola 1 (FER-327 · E7 · ux-B §③): pulsación larga sobre CUALQUIER serie de trabajo (madre o
         // escalón) abre el menú de la serie — el numeral sigue de solo lectura. `simultaneousGesture`
         // (no exclusiva): no le quita el tap a `onMarcar`/las tap-zones de abajo.
@@ -848,6 +851,9 @@ struct HojaTarjetaSuperserieSesion: View {
                     onMarcar: { vivo.confirmOrToggleSet(ei: slot.ei, si: slot.si) },
                     onTipoTap: { vivo.setMenuTarget = HojaSesionViva.SetMenuTarget(runId: slot.run.id, setId: set.id) }
                 )
+                // Ola 1 · E12: consejo «las que puedas» — mismo tip que el ejercicio suelto, TipKit
+                // lo muestra una sola vez sin importar en cuál de los 3 sitios aparezca primero.
+                .entrenarConsejoTipoSerie(set.mode)
                 .simultaneousGesture(LongPressGesture(minimumDuration: 0.4).onEnded { _ in
                     withAnimation(vivo.reduceMotion ? nil : .snappy) {
                         vivo.setMenuTarget = HojaSesionViva.SetMenuTarget(runId: slot.run.id, setId: set.id)
@@ -908,6 +914,9 @@ struct HojaTarjetaSuperserieSesion: View {
             onMarcar: { vivo.confirmOrToggleSet(ei: slot.ei, si: dropSi) },
             onTipoTap: { vivo.setMenuTarget = HojaSesionViva.SetMenuTarget(runId: slot.run.id, setId: drop.id) }
         )
+        // Ola 1 · E12: consejo «bajar y seguir» — un escalón SIEMPRE es de este tipo (ver el
+        // literal de `tipoEtiqueta` arriba), así que el modo se pasa directo.
+        .entrenarConsejoTipoSerie(.drop)
         .liquidMenu(
             isPresented: Binding(
                 get: { vivo.setMenuTarget == HojaSesionViva.SetMenuTarget(runId: slot.run.id, setId: drop.id) },

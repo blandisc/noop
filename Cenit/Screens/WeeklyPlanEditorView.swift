@@ -2,6 +2,7 @@
 import SwiftUI
 import CenitDesign
 import StrandTraining
+import TipKit
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 
 // MARK: - «Tu Plan» — the single home for the week + the routines (FER-890, was FER-533 + FER-534)
@@ -281,6 +282,9 @@ struct WeeklyPlanEditorView: View {
                 VStack(alignment: .leading, spacing: LiquidSpace.s100) {
                     Text(programaLinea(ctx)).font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
                         .fixedSize(horizontal: false, vertical: true)
+                        // Ola 1 · E12: consejo «Semana ligera», la primera vez que Tu Plan muestra un
+                        // programa con semana ligera configurada (TipKit gobierna el «una vez»).
+                        .popoverTip(ctx.program.deloadRule != .none ? SemanaLigeraTip() : nil)
                     if !ctx.position.ended {
                         LiquidTiraSemanas(semanaEstados(ctx), etiquetaAccesibilidad: Text(programaAccesibilidad(ctx)))
                     }

@@ -33,7 +33,6 @@
 %lld breaths
 %lld days
 %lld exercises
-%lld left
 %lld nights
 %lld packets
 %lld pieces
