@@ -714,7 +714,6 @@ private struct AjustesLanding: View {
             .environmentObject(health)
             .environmentObject(behavior)
             .environmentObject(autoBackup)
-            .preferredColorScheme(.light)
         case .support:
             NavigationStack {
                 SupportView()
@@ -732,7 +731,6 @@ private struct AjustesLanding: View {
             .environmentObject(health)
             .environmentObject(behavior)
             .environmentObject(autoBackup)
-            .preferredColorScheme(.light)
         }
     }
 }

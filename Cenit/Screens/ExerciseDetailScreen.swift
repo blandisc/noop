@@ -186,7 +186,6 @@ struct ExerciseDetailScreen: View {
             }
             .environmentObject(repo)
             .environmentObject(mediaCoordinator)
-            .preferredColorScheme(.light)
         }
     }
 

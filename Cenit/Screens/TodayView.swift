@@ -670,7 +670,6 @@ struct TodayView: View {
             .environment(model)
             .environmentObject(repo)
             .environmentObject(health)
-            .preferredColorScheme(.light)
         }
         // El acta del veredicto: la hoja que contesta la pregunta que el héroe provoca.
         .sheet(isPresented: $showVeredictoActa) {
@@ -683,7 +682,6 @@ struct TodayView: View {
                     tabRouter.select(.body)
                 })
             }
-            .preferredColorScheme(.light)
         }
         // La hoja del guardián: qué vigila (temp + respiración) y por qué no vota (FER-33 · F3).
         .sheet(isPresented: $showGuardianHoja) {
@@ -695,7 +693,6 @@ struct TodayView: View {
                     tempLoader: trendLoader(for: "skin_temp"),
                     respLoader: trendLoader(for: "resp_rate"))
             }
-            .preferredColorScheme(.light)
         }
         // FER-54 · El manual del modelo: «¿Qué decide tu día?» — estático y pedagógico,
         // en tinta neutra (no toma el tono del veredicto: no habla de hoy).
@@ -703,21 +700,18 @@ struct TodayView: View {
             LiquidMetricSheet(tono: LiquidColor.tinta700, detent: .porContenido) {
                 HojaDecideTuDia()
             }
-            .preferredColorScheme(.light)
         }
         // FER-61 · El manual «Tu contexto»: el hogar único del «no deciden tu día».
         .sheet(isPresented: $showContextoManual) {
             LiquidMetricSheet(tono: LiquidColor.tinta700, detent: .porContenido) {
                 HojaContexto()
             }
-            .preferredColorScheme(.light)
         }
         // La hoja del eje autonómico: el desglose de sus tres señales.
         .sheet(isPresented: $showAutonomicoHoja) {
             LiquidMetricSheet(tono: liquidAutonomicoTono, detent: .porContenido) {
                 LiquidAutonomicoScreen(liquidAutonomico)
             }
-            .preferredColorScheme(.light)
         }
     }
 

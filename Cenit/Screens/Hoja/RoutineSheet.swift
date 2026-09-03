@@ -251,7 +251,6 @@ struct RoutineSheet: View {
         }
         .sheet(isPresented: $showLibrary) {
             ExerciseLibraryScreen { picks in addOrReplace(with: picks) }
-                .environmentObject(repo).environmentObject(mediaCoordinator).preferredColorScheme(.light)
         }
         .sheet(item: $detailExercise) { ex in
             NavigationStack {
@@ -262,7 +261,6 @@ struct RoutineSheet: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
             }
-            .environmentObject(repo).environmentObject(mediaCoordinator).preferredColorScheme(.light)
         }
         .sheet(item: $noteTarget) { target in
             noteSheet(target)
@@ -497,7 +495,6 @@ struct RoutineSheet: View {
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
             .presentationBackground(LiquidColor.fondoAlto)
-            .preferredColorScheme(.light)
         }
     }
 

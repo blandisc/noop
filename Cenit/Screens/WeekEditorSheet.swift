@@ -79,7 +79,6 @@ struct WeekEditorSheet: View {
             }
         }
         .animation(LiquidMotion.fundido, value: lockedToast)
-        .preferredColorScheme(.light)
     }
 
     // MARK: - Rows

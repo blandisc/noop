@@ -28,7 +28,6 @@ struct VeredictoActaSheet: View {
                                       verdictPending: prep == nil && !fullyLoaded),
                 onVerMas: nil)
         }
-        .preferredColorScheme(.light)
     }
 }
 
@@ -293,12 +292,10 @@ private struct EntrenarLanding: View {
             StarterTemplatesSheet(grupo: templatesGroup, onApplied: { showPlanAppliedToast = true }) {
                 await load()
             }
-            .environmentObject(repo).preferredColorScheme(.light)
         }
         // FER-952: the hub's Import chip opens the importer right here (same sheet as Tu Plan).
         .sheet(isPresented: $showHubImport) {
             WorkoutImportView { await load() }
-                .environmentObject(repo).preferredColorScheme(.light)
         }
         // FER-251: «Desde cero» del primer uso — Biblioteca → crear (3×8), directo, sin menú previo.
         // «Tres caminos» (CrearPlanScreen) se archivó aquí mismo: la opción A del dueño dejó sus

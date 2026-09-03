@@ -197,7 +197,6 @@ struct TrainingBodyScreen: View {
                 hits: hitsByMuscle[sel.muscle] ?? [],
                 systemicGate: systemicGate
             )
-            .preferredColorScheme(.light)
         }
         // El hilo del veredicto abre la MISMA boleta que Entrenar (`EntrenarView.showVeredictoActa`)
         // y la sesión en vivo (`LiveStrengthSheet.bodyVeredictoActaSheet`) — el mismo contenido, para

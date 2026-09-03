@@ -239,7 +239,6 @@ struct DataSourcesView: View {
                 onOpenHistory: nil,
                 onArmWeek: nil)
                 .environmentObject(repo)
-                .preferredColorScheme(.light)
         }
     }
     #endif

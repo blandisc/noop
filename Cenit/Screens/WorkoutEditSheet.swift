@@ -132,7 +132,6 @@ struct WorkoutEditSheet: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
             }
-            .environmentObject(repo).preferredColorScheme(.light)
         }
         .task {
             routines = await repo.routines()

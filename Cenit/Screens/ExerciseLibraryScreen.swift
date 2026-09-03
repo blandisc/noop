@@ -111,13 +111,11 @@ struct ExerciseLibraryScreen: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
             }
-            .environmentObject(repo).preferredColorScheme(.light)
         }
         .sheet(isPresented: $showCreate) {
             CreateExerciseSheet(catalog: exercises) { ex in
                 Task { try? await repo.saveCustomExercise(ex); await reload() }
             }
-            .environmentObject(repo).preferredColorScheme(.light)
         }
         // FER-995: completing an exercise created before the muscle was required — the same form,
         // pre-filled, keeping the id so the save edits in place.
@@ -125,7 +123,6 @@ struct ExerciseLibraryScreen: View {
             CreateExerciseSheet(catalog: exercises, editing: ex) { updated in
                 Task { try? await repo.saveCustomExercise(updated); await reload() }
             }
-            .environmentObject(repo).preferredColorScheme(.light)
         }
         .enableInjection()
     }

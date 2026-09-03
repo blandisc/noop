@@ -56,7 +56,6 @@ struct PlatesScreen: View {
             .onAppear { if startAtWarmup { proxy.scrollTo("warmup", anchor: .top) } }
         }
         .entrenarHojaFondo(tono: .ambar)
-        .preferredColorScheme(.light)
         .edgeSwipeToExit(onClose)
     }
 

@@ -1270,7 +1270,6 @@ private struct CuerpoLanding: View {
                 .environmentObject(repo)
         .environment(model)
         .environmentObject(health)
-        .preferredColorScheme(.light)
     }
 
     // MARK: - Loading (memoize once per refresh)

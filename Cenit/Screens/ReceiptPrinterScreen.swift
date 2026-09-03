@@ -82,7 +82,6 @@ struct ReceiptPrinterScreen: View {
         // ticket, en pantalla y en el `ImageRenderer` exportable) NO se toca: conserva su
         // identidad térmica (decisión del dueño).
         .entrenarHojaFondo(tono: .neutro)
-        .preferredColorScheme(.light)
         // El arrastre del ticket es VERTICAL, así que el guard de dominancia horizontal del gesto
         // de borde los mantiene separados.
         .edgeSwipeToExit(onClose)

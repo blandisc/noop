@@ -192,7 +192,6 @@ struct WorkoutHistoryScreen: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
             }
-            .environmentObject(repo).preferredColorScheme(.light)
         }
         // «Registrar entreno a mano ›» — el MISMO `ManualWorkoutSheet` que «Mis entrenamientos».
         .sheet(isPresented: $showManualEntry) {
@@ -209,7 +208,6 @@ struct WorkoutHistoryScreen: View {
                     }
                 }
             }
-            .preferredColorScheme(.light)
         }
         .enableInjection()
     }
@@ -1134,7 +1132,6 @@ struct WorkoutHistoryScreen: View {
                 onOpenHistory: nil,
                 onArmWeek: nil)
                 .environmentObject(repo)
-                .preferredColorScheme(.light)
             #endif
         }
     }
@@ -1601,12 +1598,10 @@ struct WorkoutSessionDetailScreen: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
             }
-            .environmentObject(repo).preferredColorScheme(.light)
         }
         .sheet(isPresented: $showEdit) {
             if let s = fullSession {
                 WorkoutEditSheet(session: s, sets: allSets) { await onEdited() }
-                    .environmentObject(repo).preferredColorScheme(.light)
             }
         }
         .sheet(isPresented: $showEffortRate) {
@@ -1618,7 +1613,6 @@ struct WorkoutSessionDetailScreen: View {
                 },
                 onClose: { showEffortRate = false }
             )
-            .preferredColorScheme(.light)
         }
         .saveErrorToast(isPresented: $duplicateError)
         .task { await load() }
