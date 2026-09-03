@@ -2039,14 +2039,21 @@ struct WorkoutSessionDetailScreen: View {
             exerciseTitle(g)
                 .padding(.bottom, LiquidSpace.s150)
             ForEach(Array(g.sets.enumerated()), id: \.element.id) { idx, set in
+                // Ola 1 (FER-327 · E7 · Grok H7): el contador excluye los escalones de «bajar y
+                // seguir» — un escalón no es una serie de trabajo numerada, así que la etiqueta dice
+                // «↳ Bajar y seguir» en vez de robarle el número a la serie que sigue.
+                let workNumber = g.sets.prefix(idx + 1).reduce(0) { $0 + ($1.mode == .drop ? 0 : 1) }
                 HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s200) {
-                    Text("Set \(idx + 1)").font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
+                    Text(set.mode == .drop
+                         ? "↳ " + String(localized: "Drop and continue")   // catalog: es «Bajar y seguir»
+                         : String(localized: "Set \(workNumber)"))
+                        .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
                     if isPRSet(set, exerciseId: g.exerciseId) {
                         LiquidStatePill(valencia: "PR", tono: LiquidColor.atencionTexto)
                             .accessibilityLabel(Text("Personal record"))
                     }
                     Spacer(minLength: LiquidSpace.s200)
-                    Text(StrengthHistoryFormat.setLine(set, system: system))
+                    Text(StrengthHistoryFormat.setLine(set, system: system, mode: set.mode))
                         .font(LiquidType.valorS).foregroundStyle(LiquidColor.tinta900)
                 }
                 .padding(.vertical, LiquidSpace.s125)
@@ -2214,12 +2221,15 @@ enum StrengthHistoryFormat {
         return lo == hi ? label(lo) : "\(label(lo))-\(label(hi))"
     }
 
-    /// One performed set as "20 kg × 6", "8 reps" (bodyweight), or a time/distance fallback.
-    static func setLine(_ s: SetEntry, system: UnitSystem) -> String {
+    /// One performed set as "20 kg × 6", "8 reps" (bodyweight), or a time/distance fallback. Ola 1
+    /// (FER-327 · E7): un AMRAP hecho lee «× 11 máx» — el techo era abierto, así que el número solo
+    /// no dice que no había tope; el default `.standard` deja cada llamador viejo intacto.
+    static func setLine(_ s: SetEntry, system: UnitSystem, mode: SetMode = .standard) -> String {
+        let maxSuffix = mode == .amrap ? " " + String(localized: "max") : ""
         if let w = s.weightKg, w > 0, let r = s.reps {
-            return "\(StrengthDisplay.weight(w, system: system)) × \(r)"
+            return "\(StrengthDisplay.weight(w, system: system)) × \(r)" + maxSuffix
         }
-        if let r = s.reps { return String(localized: "\(r) reps") }
+        if let r = s.reps { return String(localized: "\(r) reps") + maxSuffix }
         if let t = s.timeS { return "\(Int(t)) s" }
         if let d = s.distanceM { return "\(Int(d)) m" }
         return "—"

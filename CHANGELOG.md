@@ -74,6 +74,25 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 - El formato de importación desde tu IA aprende `semanas`, `semana_ligera`, `al_terminar` y el `dia` de
   cada rutina. Un archivo que trae semanas distintas entre sí no falla: importa la primera y te lo dice.
 
+### Ola 1 de Entrenar · «las que puedas» y «bajar y seguir» en pantalla (FER-332)
+- Editor de rutina: al escribir el techo de reps de una serie de trabajo, la tecla de acción del
+  keypad dice «máx» — quita el techo y marca la serie «las que puedas» sin un gesto nuevo. El «···»
+  del ejercicio gana el atajo «Última serie: las que puedas» para el caso más común. La receta abierta
+  ahora lee «8 a máx» en vez del dato crudo «8+».
+- Sesión en vivo: pulsación larga sobre una serie de trabajo o «las que puedas» cuelga un escalón de
+  «bajar y seguir» al 80 % de peso, redondeado a los discos reales del usuario (también alcanzable
+  desde el rotor de VoiceOver). La fila gana una línea propia con el tipo de serie («Las que puedas» /
+  «↳ Bajar y seguir»); el contador de series excluye los escalones y un escalón pinta «↳» en vez de
+  robarle el número a la siguiente. Una serie «las que puedas» pendiente lee «máx» en tinta.
+- Detalle del entrenamiento: el contador por ejercicio también excluye los escalones («↳ Bajar y
+  seguir»); un AMRAP hecho lee «× N máx». Una serie al fallo (RPE 10) lee «· fallo» en vez de «· Q0» en
+  toda la sesión y el historial. Live Activity y Watch: «al volver» dice «80 kg × máx» / «↳ 64 kg × 9».
+- Detalle de ejercicio: pie nuevo bajo la gráfica de 1RM estimado — «El 1RM estimado usa máximo 12
+  reps» (`OneRepMax.maxReps`).
+- GAP: el menú de 4 opciones de la sesión (las que puedas / bajar y seguir / llegué al fallo / quitar
+  serie) y la confirmación al quitar una madre con escalones hechos quedan fuera de este lote — «al
+  fallo» ya se captura con QUEDABAN «0» (sin cambios) y «quitar serie» en sesión sigue sin UI.
+
 ### Ola 1 de Entrenar · ritmo «según reps en reserva» (FER-326)
 - La regla de subida gana un ritmo: en un ejercicio con el interruptor encendido, terminar la sesión con
   reps de sobra (esfuerzo 8 o menos) adelanta la subida a una sola sesión; llegar al límite (9,5 o más)

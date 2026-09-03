@@ -177,6 +177,21 @@ extension HojaSesionViva {
     /// Descarta el aviso sin registrar nada — la fila queda pendiente, tal como estaba antes del tap.
     func dismissAbsurdCapture() { absurdCapture = nil }
 
+    // MARK: - «Bajar y seguir» en sesión (ola 1 · FER-327 · E7)
+
+    /// Cuelga un escalón de la serie `si` con el inventario REAL de discos del usuario — la piel solo
+    /// resuelve el equipo del ejercicio y pasa el inventario/barra guardados; el modelo
+    /// (`StrengthSessionModel.addDrop`) decide el peso, el tope de 3 escalones y si hay bajada
+    /// construible. Sin efecto si el modelo devuelve `false` (nada que fingir).
+    func addDrop(ei: Int, si: Int) {
+        guard session.runs.indices.contains(ei) else { return }
+        let equipment = ExerciseCatalog.byID(session.runs[ei].exerciseId)?.equipment
+        _ = session.addDrop(exercise: ei, set: si,
+                            implement: .from(equipment: equipment),
+                            inventory: sheet.model.plates.inventory,
+                            barKg: sheet.model.plates.barKg)
+    }
+
     // MARK: - B16b · «¿La rutina se queda así?» (FER-169)
 
     /// Compara la marcha contra la rutina base (`routineREs`, cargada al abrir) — solo dos cosas

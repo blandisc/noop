@@ -224,16 +224,42 @@ struct HojaTarjetaEjercicioSesion: View {
     private func filaSerie(si: Int, set: StrengthSessionModel.WorkingSet, esPrimera: Bool) -> some View {
         let marca: HojaFilaSerie.Marca = set.done ? .hecha : (si == run.currentSet ? .activa : .fantasma)
         let usesReps = run.type == .weightReps || run.type == .bodyweight
-        let workNumber = run.sets.prefix(si + 1).reduce(0) { $0 + ($1.kind == .work ? 1 : 0) }
+        // Ola 1 (FER-327 · E7 · Grok H7): el contador de trabajo EXCLUYE los escalones de «bajar y
+        // seguir» — un drop sigue siendo `kind == .work` (cuenta a volumen), pero NO es una serie de
+        // trabajo numerada; pinta «↳» en vez de robarle el número a la siguiente.
+        let workNumber = run.sets.prefix(si + 1).reduce(0) { $0 + (($1.kind == .work && $1.mode != .drop) ? 1 : 0) }
         let repsText: String
         switch run.type {
-        // FER-327: `nil` = AMRAP pendiente — la celda va VACÍA (Q7), nunca un 0 que fingiría un dato.
-        case .weightReps, .bodyweight: repsText = set.reps.map(String.init) ?? ""
+        case .weightReps, .bodyweight:
+            if let reps = set.reps {
+                repsText = String(reps)
+            } else if set.mode == .amrap {
+                // Ola 1 (E7 · ux-B §③): AMRAP pendiente lee «máx» en tinta, no una celda vacía —
+                // «8+» sería un techo que `SetMode` ya prohíbe; «máx» es la palabra de interfaz.
+                repsText = String(localized: "max")
+            } else {
+                repsText = ""
+            }
         case .time: repsText = (set.timeS ?? 0) > 0 ? SessionClock.format(set.timeS ?? 0) : "—"
         case .distance: repsText = (set.distanceM ?? 0) > 0 ? String(format: "%.1f", (set.distanceM ?? 0) / 1000) : "—"
         }
+        // Ola 1 (E7): la marca del tipo, en su propia línea bajo la fila (nunca en el numeral).
+        let tipoEtiqueta: String?
+        let tipoDetalle: String?
+        switch set.mode {
+        case .amrap:
+            tipoEtiqueta = String(localized: "However many you can")   // catalog: es «Las que puedas»
+            tipoDetalle = set.done ? nil : String(localized: "Log how many you got")   // es «anota cuántas salieron»
+        case .drop:
+            // El glifo «↳» va FUERA de la cadena localizada — es un símbolo, no una palabra.
+            tipoEtiqueta = "↳ " + String(localized: "Drop and continue")   // catalog: es «Bajar y seguir»
+            tipoDetalle = set.done ? nil : String(localized: "No rest, −20%")   // es «sin descanso, −20 %»
+        case .standard:
+            tipoEtiqueta = nil
+            tipoDetalle = nil
+        }
         let datos = HojaFilaSerie.Datos(
-            numero: set.kind == .warmup ? String(localized: "C") : "\(workNumber)",
+            numero: set.kind == .warmup ? String(localized: "C") : (set.mode == .drop ? "↳" : "\(workNumber)"),
             esCalentamiento: set.kind == .warmup,
             peso: usesReps ? vivo.plateNumber(vivo.displayWeight(set.weightKg)) : "—",
             unidad: run.type == .weightReps ? vivo.weightUnit() : "",
@@ -241,11 +267,21 @@ struct HojaTarjetaEjercicioSesion: View {
             reps: repsText,
             q: marca == .hecha ? set.rpe.map(LiveStrengthSheet.qLabel(fromRPE:)) : nil,
             ant: marca == .activa ? vivo.antPlayhead(run) : nil,
-            esPrimera: esPrimera
+            esPrimera: esPrimera,
+            tipoEtiqueta: tipoEtiqueta,
+            tipoDetalle: tipoDetalle
         )
         return HojaFilaSerie(datos: datos, contexto: .sesion, marca: marca) {
             vivo.confirmOrToggleSet(ei: ei, si: si)
         }
+        // Ola 1 (FER-327 · E7): pulsación larga sobre una serie de trabajo/AMRAP → «bajar y seguir»
+        // (inserta un escalón con el inventario real de discos). Sin gesto nuevo sobre un escalón —
+        // «quitar» queda fuera de este lote (GAP, ver reporte). `simultaneousGesture` (no exclusiva):
+        // no le quita el tap a `onMarcar`/las tap-zones de abajo.
+        .simultaneousGesture(LongPressGesture(minimumDuration: 0.4).onEnded { _ in
+            guard set.kind == .work, set.mode != .drop else { return }
+            withAnimation(vivo.reduceMotion ? nil : .snappy) { vivo.addDrop(ei: ei, si: si) }
+        })
         // R3: tap en peso/reps de una fila activa/fantasma abre la consola sobre ESA celda —
         // paridad de intención con las tap-zones de F1 (`HojaFilaSerieTapZones`). D-r2.2 (ronda 3):
         // en una fila HECHA la misma zona de reps (donde vive el sufijo de reps en reserva) abre la
@@ -293,6 +329,15 @@ struct HojaTarjetaEjercicioSesion: View {
         // FER-223: el destello visual de PR no tenía háptico — el patrón de éxito ascendente,
         // reservado para esto y para el cierre de sesión, nunca para una serie más.
         .entrenarHaptic(.prNuevo, trigger: vivo.prFlash)
+        // B9 (ux-B §③): la pulsación larga no es alcanzable por VoiceOver — la MISMA acción vive
+        // como acción personalizada del rotor, solo sobre una madre de trabajo/AMRAP.
+        .accessibilityActions {
+            if set.kind == .work, set.mode != .drop {
+                Button(String(localized: "Drop and continue")) {
+                    withAnimation(vivo.reduceMotion ? nil : .snappy) { vivo.addDrop(ei: ei, si: si) }
+                }
+            }
+        }
     }
 
     /// B12 (FER-169): el cronómetro compacto de la fila ACTIVA de tiempo/distancia (mapa: nombre ·

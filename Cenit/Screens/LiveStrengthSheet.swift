@@ -586,6 +586,14 @@ struct LiveStrengthSheet: View {
     /// vocabulario del dueño prohíbe «Q»/«Quedaban» en cualquier cadena visible — 0 en reserva lee
     /// «al fallo», el resto «N en reserva» / «4+ en reserva».
     static func qLabel(fromRPE rpe: Double) -> String {
+        // Ola 1 (FER-327 · E7 · ux-B §③): RPE 10 YA es «al fallo» (QUEDABAN «0», existe desde antes
+        // de esta ola) — la fila hecha lee «· fallo», no «· Q0», misma honestidad que el resto del
+        // vocabulario del dueño («las que puedas», «bajar y seguir»). Mismo dato, mejor palabra.
+        // N7 (v3): la hoja de RPE conserva 9,5 — «casi al fallo» sigue siendo «Q 0», no «fallo».
+        // Solo el 10 EXACTO (QUEDABAN «0» del keypad, o el 10 de la hoja de RPE) es «al fallo».
+        guard rpe < 10 else {
+            return String(localized: "failure")   // catalog: es «fallo»
+        }
         let rir = 10 - Int(rpe.rounded())
         let clamped = min(max(rir, 0), 4)
         if clamped == 0 { return String(localized: "at failure") }

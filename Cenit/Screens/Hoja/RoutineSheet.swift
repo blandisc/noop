@@ -86,7 +86,12 @@ struct RoutineSheet: View {
     /// R8 (QA D10, adjudicado): una superserie legada con rondas YA desiguales no se aplana en
     /// silencio — la primera edición que dispararía el espejo queda aquí hasta que el confirm
     /// («¿Igualar todas las rondas?») la libere.
-    struct PendingMirror { let idx: Int; let si: Int; let field: EditorCell.Field; let value: String }
+    struct PendingMirror {
+        let idx: Int; let si: Int; let field: EditorCell.Field; let value: String
+        /// N16 (ola 1 · E7): la tecla «máx» también dispara este candado (mismo campo `.repsTop`) —
+        /// `true` = «al liberar, marca AMRAP» en vez de escribir `value` como techo tecleado.
+        var setsAmrap: Bool = false
+    }
     @State var pendingMirror: PendingMirror? = nil
 
     // MARK: Captura con el keypad de la sesión
