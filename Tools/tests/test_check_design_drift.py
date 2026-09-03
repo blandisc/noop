@@ -420,13 +420,15 @@ class DefaultRootsByRule(unittest.TestCase):
                 "    .fill(LiquidColor.tinta10)",
                 "Capsule()",                                                    # 6 exenta por el modifier
                 "    .fill(LiquidColor.tinta10)   // token-exempt(dato): track",
-                ".confirmationDialog(\"x\", isPresented: $a) {}",              # 8
-                "Menu { Text(\"a\") }",                                       # 9
+                "Capsule(style: .continuous)",                                  # 8 esquive: cuenta igual
+                "    .fill(LiquidColor.tinta10)",
+                ".confirmationDialog(\"x\", isPresented: $a) {}",              # 10
+                "Menu { Text(\"a\") }",                                       # 11
                 ".liquidMenu(items) {}",                                        # no
                 "LiquidMenu(items)",                                            # no
             ])
             caps = drift.check([src], ["no-capsule-a-mano"])
-            self.assertEqual([i for _p, i, _r, _s in caps], [1, 2])
-            self.assertEqual([i for _p, i, _r, _s in drift.check([src], ["no-confirmation-dialog"])], [8])
-            self.assertEqual([i for _p, i, _r, _s in drift.check([src], ["no-native-menu"])], [9])
+            self.assertEqual([i for _p, i, _r, _s in caps], [1, 2, 8])
+            self.assertEqual([i for _p, i, _r, _s in drift.check([src], ["no-confirmation-dialog"])], [10])
+            self.assertEqual([i for _p, i, _r, _s in drift.check([src], ["no-native-menu"])], [11])
 

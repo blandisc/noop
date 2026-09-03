@@ -255,9 +255,10 @@ RE_IPHONE_TONE_ON_OLED = re.compile(r"\bLiquidColor\.(?:rosa|negativo|ambar|aten
 # FER-338 — gate de «pieza reinventada»: el gate revisaba ingredientes (tokens), no recetas. Un chip
 # hecho a mano con tokens válidos pasaba; el catálogo ya tiene la pieza. Tres patrones con deuda 0 al
 # estreno (prohibición pura). Los tracks de DATO (barra de progreso, rampa) llevan `token-exempt(dato)`
-# en la línea del `Capsule()` o en la del modifier.
-RE_CAPSULE_INLINE = re.compile(r"\bCapsule\(\)\s*\.(?:fill|stroke|strokeBorder)\(")
-RE_CAPSULE_ALONE = re.compile(r"\bCapsule\(\)\s*$")
+# en la línea del `Capsule()` o en la del modifier. `Capsule(style: .continuous)` cuenta igual
+# (Grok lo usó para esquivar la primera versión de la regla, FER-338).
+RE_CAPSULE_INLINE = re.compile(r"\bCapsule\([^)]*\)\s*\.(?:fill|stroke|strokeBorder)\(")
+RE_CAPSULE_ALONE = re.compile(r"\bCapsule\([^)]*\)\s*$")
 RE_CAPSULE_MODIFIER = re.compile(r"^\s*\.(?:fill|stroke|strokeBorder)\(")
 RE_CONFIRMATION_DIALOG = re.compile(r"\.confirmationDialog\(")
 RE_NATIVE_MENU = re.compile(r"(?<![A-Za-z.])Menu\s*(?:\{|\()")
