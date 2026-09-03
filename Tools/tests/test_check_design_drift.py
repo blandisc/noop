@@ -432,3 +432,11 @@ class DefaultRootsByRule(unittest.TestCase):
             self.assertEqual([i for _p, i, _r, _s in drift.check([src], ["no-confirmation-dialog"])], [10])
             self.assertEqual([i for _p, i, _r, _s in drift.check([src], ["no-native-menu"])], [11])
 
+    def test_native_material_solo_en_recetas(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src = _swift(tmp, "Cenit/Screens/M.swift", [".background(.ultraThinMaterial)", ".liquidGlass(.lente)"])
+            pkg = _swift(tmp, "Packages/CenitDesign/Sources/CenitDesign/ConfirmCard.swift", [".background(.regularMaterial)"])
+            rec = _swift(tmp, "Packages/CenitDesign/Sources/CenitDesign/LiquidGlass/LiquidGlassRecipes.swift", [".background(.ultraThinMaterial)"])
+            hits = drift.check([src, pkg, rec], ["no-native-material"])
+            self.assertEqual(sorted(os.path.basename(p) for p, _i, _r, _s in hits), ["ConfirmCard.swift", "M.swift"])
+

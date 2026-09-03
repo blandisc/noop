@@ -22,6 +22,7 @@ Rules (each activated in the PR that finishes its migration — pass `--rules` t
     no-capsule-a-mano      `Capsule().fill/stroke/strokeBorder` drawn by hand (same line or the next) — the catalog has OutlineCapsule / HojaCapsulaAccion / LiquidStatePill; data tracks carry `token-exempt(dato)` (FER-338; pure)
     no-confirmation-dialog  a native `.confirmationDialog(` — the catalog has `.liquidConfirm` (FER-338; pure)
     no-native-menu          a native `Menu {` / `Menu(` — the catalog has `.liquidMenu` (FER-338; pure)
+    no-native-material      a bare SwiftUI `Material` (`.ultraThinMaterial`, …) outside `LiquidGlassRecipes.swift` — glass is a recipe, `liquidGlass(_:)` (FER-340; pure)
     token-exempt       pseudo-rule: counts the escape hatches themselves        (FER-263; ratchet — an exemption
                        is frozen debt too, so a NEW `token-exempt` fails unless its budget allows it)
 
@@ -56,7 +57,7 @@ DEFAULT_ROOTS = [
 DESIGN_PKG = "Packages/CenitDesign"
 EXEMPT = re.compile(r"//\s*token-exempt\b")
 
-ALL_RULES = ["no-hex", "no-adhoc-font", "no-radius-literal", "no-opacity-literal", "no-emdash-string", "no-raw-shadow", "no-sheet-glass", "no-spacing-literal", "no-legacy-api", "token-exempt", "no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic", "no-motion-literal", "no-dt-cap-adhoc", "no-deprecated-metrics", "no-instrumento-theme", "no-weight-on-grotesk", "no-iphone-tone-on-oled", "no-capsule-a-mano", "no-confirmation-dialog", "no-native-menu"]
+ALL_RULES = ["no-hex", "no-adhoc-font", "no-radius-literal", "no-opacity-literal", "no-emdash-string", "no-raw-shadow", "no-sheet-glass", "no-spacing-literal", "no-legacy-api", "token-exempt", "no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic", "no-motion-literal", "no-dt-cap-adhoc", "no-deprecated-metrics", "no-instrumento-theme", "no-weight-on-grotesk", "no-iphone-tone-on-oled", "no-capsule-a-mano", "no-confirmation-dialog", "no-native-menu", "no-native-material"]
 
 # Per-rule default roots — mirrors `.github/workflows/design-lint.yml` exactly (FER-282).
 # A bare `python3 Tools/check-design-drift.py --baseline …` (no roots) must not paint red on
@@ -92,6 +93,7 @@ DEFAULT_ROOTS_BY_RULE = {
     "no-capsule-a-mano": list(_ROOTS_SPACING_MOTION),
     "no-confirmation-dialog": list(_ROOTS_SPACING_MOTION),
     "no-native-menu": list(_ROOTS_SPACING_MOTION),
+    "no-native-material": list(_ROOTS_SPACING_MOTION) + ["Packages/CenitDesign/Sources"],
 }
 # no-emdash-string: an em-dash (—, U+2014) inside a user-facing Swift string literal. ADN copy rule
 # (FER-878): on-screen copy uses «:», «·» or a comma, never an em-dash. Scoped to STRING LITERALS so the
@@ -262,6 +264,10 @@ RE_CAPSULE_ALONE = re.compile(r"\bCapsule\([^)]*\)\s*$")
 RE_CAPSULE_MODIFIER = re.compile(r"^\s*\.(?:fill|stroke|strokeBorder)\(")
 RE_CONFIRMATION_DIALOG = re.compile(r"\.confirmationDialog\(")
 RE_NATIVE_MENU = re.compile(r"(?<![A-Za-z.])Menu\s*(?:\{|\()")
+# no-native-material (FER-340, auditoría 6 de principios): el vidrio es una RECETA (`liquidGlass(_:)`,
+# LIQUID-GLASS.md); un `.ultraThinMaterial` suelto en un diálogo es vidrio fuera de sistema. La única
+# casa legítima del Material es `LiquidGlassRecipes.swift`.
+RE_NATIVE_MATERIAL = re.compile(r"\.(?:ultraThin|thin|regular|thick|ultraThick|bar)Material\b")
 
 RULE_PATTERNS = {
     "no-hex": RE_HEX,
@@ -284,6 +290,7 @@ RULE_PATTERNS = {
     "no-capsule-a-mano": RE_CAPSULE_INLINE,
     "no-confirmation-dialog": RE_CONFIRMATION_DIALOG,
     "no-native-menu": RE_NATIVE_MENU,
+    "no-native-material": RE_NATIVE_MATERIAL,
 }
 
 
@@ -377,6 +384,8 @@ def check(paths, rules):
                 if rule == "token-exempt":
                     continue
                 if rule in ("no-hex", "no-legacy-api", "no-raw-color", "no-token-arithmetic", "no-deprecated-metrics", "no-instrumento-theme", "no-weight-on-grotesk", "no-iphone-tone-on-oled", "no-capsule-a-mano", "no-confirmation-dialog", "no-native-menu") and in_design_pkg:
+                    continue
+                if rule == "no-native-material" and norm.endswith("LiquidGlassRecipes.swift"):
                     continue
                 if rule in ("no-raw-color", "no-edgeinsets-literal", "no-token-arithmetic", "no-motion-literal") and in_widget_watch:
                     continue

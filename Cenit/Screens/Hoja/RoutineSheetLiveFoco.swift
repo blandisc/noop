@@ -515,8 +515,7 @@ struct HojaFoco: View {
 /// viven en `EntrenarTokens`: son geometría propia de ESTA composición, no un molde reusado en otra
 /// pantalla — mismo criterio que `FocoHeroeMetrics`/`FocoCabeceraMetrics` en CenitDesign.
 private enum FocoMetrics {
-    /// 26 — sin token exacto en la escala (s600=24, s700=28).
-    static let contentTop: CGFloat = 26  // token-exempt(falta-pieza): tope de foco 26 sin escalón
+    static let contentTop = LiquidSpace.s700
     static let heroGap = LiquidSpace.s400
     static let capcionTop = LiquidSpace.s150
     static var antTracking: CGFloat { 0.4 }
