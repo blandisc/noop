@@ -43,4 +43,20 @@ final class SleepSourceSelectionTests: XCTestCase {
         XCTAssertEqual(SleepSourceSelection.pick(asleepMinutesBySource: ["b.app": 300, "a.app": 300]),
                        "a.app")
     }
+
+    /// D1 (gate /qa): una fuente Apple con 0 min (asleep genérico de watchOS ≤ 8 / awake) NO debe ganar
+    /// la prioridad y tirar una fuente no-Apple con sueño válido. Antes del filtro, esto devolvía la de
+    /// Apple con 0 → la noche se descartaba (pérdida de datos).
+    func test_apple_con_cero_minutos_no_gana_sobre_tercera_valida() {
+        let pick = SleepSourceSelection.pick(asleepMinutesBySource: [
+            "com.apple.health.OLDWATCH": 0,
+            "com.tantsissa.AutoSleep": 450,
+        ])
+        XCTAssertEqual(pick, "com.tantsissa.AutoSleep")
+    }
+
+    /// Todas las fuentes con 0 min → nil (no hay noche real que emitir).
+    func test_todas_cero_es_nil() {
+        XCTAssertNil(SleepSourceSelection.pick(asleepMinutesBySource: ["com.apple.x": 0, "y.app": 0]))
+    }
 }

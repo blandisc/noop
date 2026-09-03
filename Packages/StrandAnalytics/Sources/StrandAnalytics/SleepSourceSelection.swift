@@ -17,9 +17,14 @@ public enum SleepSourceSelection {
     /// La fuente ganadora para las etapas de una noche, dado el total de minutos dormidos por fuente.
     /// `nil` si el mapa viene vacío. Determinista ante empates (gana el bundleId menor).
     public static func pick(asleepMinutesBySource: [String: Double]) -> String? {
-        guard !asleepMinutesBySource.isEmpty else { return nil }
-        let apple = asleepMinutesBySource.filter { $0.key.hasPrefix("com.apple") }
-        let pool = apple.isEmpty ? asleepMinutesBySource : apple
+        // D1 (gate /qa): considera SOLO fuentes con sueño real (> 0 min). Una fuente Apple con 0 min
+        // —el `.asleep` genérico de watchOS ≤ 8 o `.awake`, que quedan presentes con 0— no debe ganar
+        // la prioridad Apple y provocar que se descarte una fuente no-Apple con etapas válidas. Si
+        // ninguna fuente tiene sueño, no hay noche que emitir → nil.
+        let real = asleepMinutesBySource.filter { $0.value > 0 }
+        guard !real.isEmpty else { return nil }
+        let apple = real.filter { $0.key.hasPrefix("com.apple") }
+        let pool = apple.isEmpty ? real : apple
         return pool.max { a, b in
             a.value != b.value ? a.value < b.value : a.key > b.key
         }?.key

@@ -858,20 +858,22 @@ final class HealthKitBridge: ObservableObject {
                 // nunca se suma entre fuentes (mezclar etapas de dos fuentes no tiene sentido: ¿qué etapa
                 // sería ese minuto?).
                 //
-                // `inBed` SÍ se sigue sumando entre fuentes, a propósito. Es el denominador (envolvente)
-                // de la eficiencia (FER-1006): solaparlo solo puede BAJARLA, nunca inventar una favorable
-                // — y el Apple Watch NO escribe `inBed`, así que hay que tomarlo de quien sí lo haga (el
-                // iPhone), aunque la fuente ganadora de las etapas sea el reloj.
+                // `inBed` (el denominador/envolvente de la eficiencia, FER-1006) se agrupa por fuente y por
+                // noche se toma el MÁXIMO entre fuentes, NO la suma (D2 del gate /qa): ahora que `asleep`
+                // es de una sola fuente, sumar el inBed de dos fuentes solaparía el denominador y
+                // subestimaría la eficiencia. El máximo es el envolvente más grande sin doble-contar — y
+                // el Apple Watch no escribe `inBed`, así que sale del iPhone. Dentro de UNA fuente sus
+                // bloques sí se suman (ese es su envolvente).
                 var byDaySource: [String: [String: (asleep: Double, deep: Double, rem: Double, core: Double)]] = [:]
-                var inBed: [String: Double] = [:]
+                var inBedBySource: [String: [String: Double]] = [:]
                 for case let s as HKCategorySample in samples ?? [] {
                     let mins = s.endDate.timeIntervalSince(s.startDate) / 60
                     let day = HealthKitBridge.dayString(s.endDate)
+                    let src = s.sourceRevision.source.bundleIdentifier
                     if s.value == HKCategoryValueSleepAnalysis.inBed.rawValue {
-                        inBed[day, default: 0] += mins
+                        inBedBySource[day, default: [:]][src, default: 0] += mins
                         continue
                     }
-                    let src = s.sourceRevision.source.bundleIdentifier
                     var acc = byDaySource[day]?[src] ?? (asleep: 0, deep: 0, rem: 0, core: 0)
                     switch s.value {
                     case HKCategoryValueSleepAnalysis.asleepDeep.rawValue:
@@ -885,6 +887,9 @@ final class HealthKitBridge: ObservableObject {
                     }
                     byDaySource[day, default: [:]][src] = acc
                 }
+                // inBed por noche = el mayor envolvente entre fuentes (no la suma; ver la nota de arriba).
+                var inBed: [String: Double] = [:]
+                for (day, srcs) in inBedBySource { inBed[day] = srcs.values.max() }
                 // Una sola fuente por noche para las etapas — la ganadora; las demás se descartan.
                 var asleep: [String: Double] = [:], deep: [String: Double] = [:]
                 var rem: [String: Double] = [:], core: [String: Double] = [:]
