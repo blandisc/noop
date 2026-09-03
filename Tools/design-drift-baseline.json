@@ -16,7 +16,6 @@
   "no-spacing-literal": {
     "Cenit/App/AppMap.swift": 3,
     "Cenit/App/AppMapSerieActiva.swift": 1,
-    "Cenit/Screens/ActivityRecoverySheet.swift": 1,
     "Cenit/Screens/BreathingView.swift": 1,
     "Cenit/Screens/CuerpoView.swift": 4,
     "Cenit/Screens/Entrenar/EntrenarHubConstancia.swift": 1,
@@ -27,7 +26,6 @@
     "Cenit/Screens/Hoy/HojaDecideTuDia.swift": 1,
     "Cenit/Screens/Hoy/HoyModosHost.swift": 1,
     "Cenit/Screens/InstrumentoAddButton.swift": 1,
-    "Cenit/Screens/IntervalTimerView.swift": 1,
     "Cenit/Screens/LiveStrengthSheet.swift": 2,
     "Cenit/Screens/RoutineSetEditing.swift": 1,
     "Cenit/Screens/ShareCardView.swift": 1,
@@ -57,7 +55,6 @@
     "Cenit/Screens/Hoy/HojaDecideTuDia.swift": 1,
     "Cenit/Screens/Hoy/HoyModosHost.swift": 4,
     "Cenit/Screens/Hoy/LiquidMetricSheetView.swift": 2,
-    "Cenit/Screens/LiveStrengthSheet.swift": 1,
     "Cenit/Screens/LiveStrengthSheets.swift": 1,
     "Cenit/Screens/MetricDetailScreen.swift": 13,
     "Cenit/Screens/MetricDetailSupport.swift": 4,
