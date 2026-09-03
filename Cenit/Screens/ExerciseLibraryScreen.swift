@@ -196,8 +196,7 @@ struct ExerciseLibraryScreen: View {
             }
         }
         // FER-121: el chip visible mide ~28pt de alto; el toque real crece a 44 (HIG) SOLO en
-        // vertical (mismo truco que `PaperStepper.hitTarget`, FER-947 en CenitDesign) para no
-        // invadir al chip vecino del mismo renglón.
+        // vertical (`verticalHitTarget`, CenitDesign) para no invadir al chip vecino del renglón.
         .verticalHitTarget(visible: 28)
         .liquidMenu(isPresented: isPresented, items: rows)
     }
