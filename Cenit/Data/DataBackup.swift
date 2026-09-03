@@ -79,7 +79,7 @@ enum DataBackup {
     /// backup over the live database path (removing the `-wal`/`-shm` siblings). The store stays
     /// open, so the swapped-in file only takes effect after a relaunch — the caller informs the user.
     @MainActor
-    static func runImport() async -> BackupResult {
+    static func runImport(beforeSwap: @MainActor () async -> Void = {}) async -> BackupResult {
         let dbPath: String
         do { dbPath = try StorePaths.defaultDatabasePath() }
         catch { return .failure("Couldn't locate the Cénit database. \(error.localizedDescription)") }
@@ -94,6 +94,9 @@ enum DataBackup {
         }
 
         do {
+            // P0-1: cerrar el store vivo ANTES de reemplazar el archivo, para que ninguna escritura
+            // caiga al inodo que el swap deja huérfano. Default no-op para cualquier otro caller.
+            await beforeSwap()
             return .imported(sidecar: try swapIn(source: source, dbPath: dbPath))
         } catch {
             return .failure("Import failed: \(error.localizedDescription)")

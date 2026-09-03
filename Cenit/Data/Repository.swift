@@ -226,6 +226,29 @@ final class Repository: ObservableObject {
     /// honest state with retry/restore instead of an eternally empty dashboard. Reset on success.
     @Published private(set) var storeOpenFailed = false
 
+    /// Auditoría de estrés (P0-1): un restore de respaldo intercambia el archivo `.sqlite` en disco.
+    /// Si el handle vivo sigue abierto apunta al inodo VIEJO (huérfano tras el swap), y toda escritura
+    /// hasta el relanzamiento se pierde. Mientras `quiescedForRestore` esté activo, `ensureStore`
+    /// devuelve nil → TODA lectura/escritura del store es no-op (el chokepoint por el que ya pasa cada
+    /// write), así que nada toca el inodo huérfano. El archivo intercambiado carga en el próximo
+    /// arranque en frío (relanzamiento limpio, sin cachés ni sesiones a medias del estado viejo).
+    @Published private(set) var quiescedForRestore = false
+
+    /// Llamado JUSTO ANTES del swap del archivo (ver `DataBackup.runImport(beforeSwap:)`): vuelca el
+    /// WAL al archivo actual, suelta el handle (el `DatabasePool` se desaloca → libera el inodo) y
+    /// cancela cualquier apertura en vuelo. Deja el store bloqueado hasta relanzar.
+    func quiesceForRestore() async {
+        _ = await checkpointForBackup()
+        storeInit?.cancel()
+        storeInit = nil
+        store = nil
+        quiescedForRestore = true
+    }
+
+    /// El swap falló: el `.sqlite` original quedó intacto (rollback de `DataBackup`). Reabre ese
+    /// archivo original en el próximo acceso, en vez de dejar la app sin store.
+    func unquiesceAfterFailedRestore() { quiescedForRestore = false }
+
     /// «Reintentar» from the store-failure state: re-attempt the open and the launch refresh that
     /// never ran. `ensureStore` re-tries naturally once `store`/`storeInit` are nil. (FER-969, X-03)
     func retryStoreOpen() async {
@@ -235,6 +258,9 @@ final class Repository: ObservableObject {
     }
 
     private func ensureStore() async -> CenitStore? {
+        // P0-1: durante/tras un restore de respaldo el store está cerrado a propósito hasta relanzar.
+        // Devolver nil aquí convierte toda lectura/escritura en no-op → nada escribe al inodo huérfano.
+        if quiescedForRestore { return nil }
         if let store { return store }
         if let storeInit { return await storeInit.value }   // a creation is already in flight — join it
         let task = Task { () -> CenitStore? in

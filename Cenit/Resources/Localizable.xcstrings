@@ -63428,6 +63428,40 @@
         }
       }
     },
+    "restore.reopen.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your data is back on this phone. Close Cénit completely and open it again to load it. Nothing is written until you do."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus datos ya están de vuelta en este teléfono. Cierra Cénit por completo y vuelve a abrirlo para cargarlos. No se escribe nada hasta que lo hagas."
+          }
+        }
+      }
+    },
+    "restore.reopen.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Backup restored."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Respaldo restaurado."
+          }
+        }
+      }
+    },
     "store.failure.body" : {
       "extractionState" : "manual",
       "localizations" : {
