@@ -175,7 +175,12 @@ struct MetricTrendChart<Empty: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: LiquidSpace.s250) {
             if showsSelector {
-                SegmentedPillControl(ExploreRange.allCases, selection: $range) { $0.label }
+                LiquidRangeSelector(
+                    opciones: ExploreRange.allCases.map(\.label),
+                    seleccion: Binding(
+                        get: { ExploreRange.allCases.firstIndex(of: range) ?? 0 },
+                        set: { range = ExploreRange.allCases[$0] }),
+                    tono: LiquidColor.tinta700)
                 if window.fellBack {
                     Text("Showing the last \(window.rows.count) days")
                         .font(LiquidType.unidad)

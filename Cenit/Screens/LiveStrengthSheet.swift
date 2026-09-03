@@ -263,12 +263,17 @@ struct LiveStrengthSheet: View {
             // un solo `fullScreenCover`, un solo fondo compartido; ninguna cambia su header (no
             // traen uno propio) ni su lógica de cierre.
             .entrenarHojaFondo(tono: .neutro)
-            
-            .safeAreaInset(edge: .top) { if session.saveError { saveErrorBanner } }
-            // FER-969: mid-session routine write failure (insert / superset / progression) — toast only;
-            // the FINAL session save failure is the persistent `saveErrorBanner` above (X-01), not this.
-            // Componente compartido desde 2026-07-19 (era la misma copia en tres pantallas).
+            // FER-969 / FER-339: mid-session write → toast auto-descarte; fallo FINAL de sesión
+            // (X-01) → mismo modifier con Retry persistente (antes banner local).
             .saveErrorToast(isPresented: $saveError)
+            .saveErrorToast(
+                isPresented: Binding(
+                    get: { session.saveError },
+                    set: { session.saveError = $0 }),
+                message: String(localized: "Couldn't save the workout. Try again."),
+                detail: String(localized: "Your sets are safe on this phone."),
+                retryTitle: String(localized: "Retry"),
+                onRetry: { model.retryStrengthSave() })
             // FER-935: hoisted from `emptyAdHocSession` to the shared root so the «＋» rail node also opens
             // the picker in a populated (routine-backed) session, not just the ad-hoc empty state.
             .sheet(isPresented: $showLibraryPicker) {
@@ -960,35 +965,6 @@ struct LiveStrengthSheet: View {
                 }
                 .buttonStyle(.plain).padding(.leading, LiquidSpace.s050)}
         }
-    }
-
-    /// FER-969 (X-01): the final save failed — the workout is still on this phone (FER-798 snapshot);
-    /// say so and offer retry instead of pretending the receipt is coming.
-    private var saveErrorBanner: some View {
-        HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s200) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(LiquidType.infoGlifoCompacto).foregroundStyle(LiquidColor.negativo)
-                .accessibilityHidden(true)
-            // Ronda 2 revisión final, hallazgo grave (g4-a11y): `.combine` vivía en el HStack completo,
-            // fundiendo el único botón «Retry» del camino de recuperación de errores — VoiceOver no
-            // podía reintentar el guardado. Solo el bloque de texto se combina; el botón queda suelto.
-            VStack(alignment: .leading, spacing: LiquidSpace.s025) {
-                Text("Couldn't save the workout. Try again.")
-                    .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta900)
-                Text("Your sets are safe on this phone.")
-                    .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta700)
-            }
-            .accessibilityElement(children: .combine)
-            Spacer(minLength: LiquidSpace.s200)
-            Button { model.retryStrengthSave() } label: {
-                Text("Retry").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta900)
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.horizontal, LiquidSpace.s600)
-        .padding(.vertical, LiquidSpace.s250)
-        .background(LiquidColor.fondoAlto)
-        .overlay(alignment: .bottom) { Rectangle().fill(LiquidColor.tinta10).frame(height: 1) }
     }
 
     /// Apply an edited rest from the 1e editor (FER-716): to the live session at the chosen scope, and —

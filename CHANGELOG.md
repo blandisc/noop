@@ -21,6 +21,8 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+- Diseño (FER-339): una pieza por rol en el catálogo (toast de error de guardado, pastilla de estado, selector de periodo, campo de texto `LiquidCampoTexto`, aviso Liquid; sin `NoteStrip`; toolbar de Ajustes al `fondoAlto`).
+
 ### Ola 1 de Entrenar · esquema (FER-324)
 - Base de datos v42/v43: columnas para el esfuerzo de sesión y su origen, la procedencia de sesiones
   importadas, el ritmo «según reps en reserva» por ejercicio, el modo de cada serie («las que puedas»,

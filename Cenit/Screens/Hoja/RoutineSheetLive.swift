@@ -168,6 +168,15 @@ struct HojaSesionViva: View {
         // «Sustituir», o una restauración post-crash), para traer los PR del movimiento nuevo.
         .task(id: session.runs.map(\.exerciseId).joined(separator: "|")) { await loadPersonalRecords() }
         .saveErrorToast(isPresented: $routineWriteError)   // B8: falló persistir a la rutina (no la sesión)
+        // B14 / FER-339: fallo FINAL de sesión → mismo toast con Retry (antes banner local).
+        .saveErrorToast(
+            isPresented: Binding(
+                get: { session.saveError },
+                set: { session.saveError = $0 }),
+            message: String(localized: "Couldn't save the workout. Try again."),
+            detail: String(localized: "Your sets are safe on this phone."),
+            retryTitle: String(localized: "Retry"),
+            onRetry: { sheet.model.retryStrengthSave() })
         .onChange(of: session.phase) { previous, phase in
             // FER-250 / FER-257 D2: al salir del primer descanso caído a reloj, bloquea el aviso
             // one-shot. Cubrir ambas rutas con la misma bandera: sin pulso al entrar
@@ -347,7 +356,6 @@ struct HojaSesionViva: View {
                         .init(String(localized: "Keep as is"), role: .secondary)
                     ]
                 )
-            if session.saveError { saveErrorBanner }   // B14
             // R14 (Grok 6): scroll-to cuando el foco avanza — paridad `LiveStrengthSheet` (línea 646),
             // ancla por `run.id` (regla dura), nunca por índice.
             ScrollViewReader { proxy in
@@ -428,32 +436,6 @@ struct HojaSesionViva: View {
                     Color.clear.matchedGeometryEffect(id: HojaFoco.namespaceId, in: focoNS)
                 }
             }
-    }
-
-    // MARK: - B14 — fallo de guardado
-
-    private var saveErrorBanner: some View {
-        HStack(alignment: .firstTextBaseline, spacing: LiquidSpace.s200) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(LiquidType.infoGlifoCompacto).foregroundStyle(LiquidColor.negativo)
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: LiquidSpace.s025) {
-                Text("Couldn't save the workout. Try again.")
-                    .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta900)
-                Text("Your sets are safe on this phone.")
-                    .font(LiquidType.caption).foregroundStyle(LiquidColor.tinta700)
-            }
-            .accessibilityElement(children: .combine)
-            Spacer(minLength: LiquidSpace.s200)
-            Button { sheet.model.retryStrengthSave() } label: {
-                Text("Retry").font(LiquidType.caption).foregroundStyle(LiquidColor.tinta900)
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.horizontal, LiquidSpace.s600)
-        .padding(.vertical, LiquidSpace.s250)
-        .entrenarHojaBarraFondo(tono: .indigo)
-        .overlay(alignment: .bottom) { Rectangle().fill(LiquidColor.tinta10).frame(height: 1) }
     }
 
     // MARK: - B15b — sesión zombie («quedó abierta ayer»; ver `isZombie` en el archivo de lógica)

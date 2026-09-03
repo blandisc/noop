@@ -749,7 +749,7 @@ struct ExerciseDetailScreen: View {
     }
 
     /// «RECORDS» — 3 plain text rows (FER-149; replaces the retired best-set/volume mini-cards and
-    /// the cycle NoteStrip wholesale). Each row is independently optional and hidden on its own —
+    /// the cycle notice wholesale). Each row is independently optional and hidden on its own —
     /// the block itself only renders once at least one has something to say.
     @ViewBuilder private var recordsSection: some View {
         let bestSet = bestSetLine
