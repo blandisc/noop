@@ -243,11 +243,8 @@ private struct AjustesLanding: View {
             .labelsHidden().pickerStyle(.menu).tint(LiquidColor.tinta700)
             .accessibilityLabel(String(localized: "settings.appearance", defaultValue: "Appearance"))
         }
-        .padding(.vertical, 11)  // token-exempt(paridad): paridad fila LiquidListRow (padding interno no público)
+        .padding(.vertical, LiquidSpace.s300)
         .padding(.horizontal, LiquidSpace.s100)
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(LiquidColor.tinta10).frame(height: 0.5)  // token-exempt(paridad): paridad divisor LiquidListRow (no público)
-        }
     }
 
     private var sexRow: some View {
@@ -289,9 +286,9 @@ private struct AjustesLanding: View {
         VStack(alignment: .leading, spacing: LiquidSpace.s700) {
             section(String(localized: "App")) {
                 VStack(spacing: .zero) {
-                    aparienciaRow
                     LiquidListRow(title: String(localized: "Units & format"), subtitle: unitsSubtitle,
-                                  divider: false) { showUnits = true }
+                                  divider: true) { showUnits = true }
+                    aparienciaRow
                 }
                 .liquidTarjetaSeccion(padding: LiquidSpace.s300)
             }
