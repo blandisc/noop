@@ -339,6 +339,24 @@ extension Repository {
         try await store.saveSession(session, sets: sets)
     }
 
+    /// Batch upsert for CSV import (FER-333 · E9) — one store transaction for the whole lote.
+    func saveSessions(_ batch: [(session: StrengthSession, sets: [SetEntry])]) async throws {
+        guard let store = await storeHandle() else { return }
+        try await store.saveSessions(batch)
+    }
+
+    /// Which of `ids` already exist — «Ya estaban» for re-import (FER-333 · E9).
+    func existingSessionIds(_ ids: [String]) async -> Set<String> {
+        guard let store = await storeHandle() else { return [] }
+        return (try? await store.existingSessionIds(ids)) ?? []
+    }
+
+    /// Compact provenance for «Posibles duplicados» ±30 min (FER-333 · E9).
+    func sessionSummariesForImportOverlap() async -> [(id: String, source: String?, title: String?, startTs: Int)] {
+        guard let store = await storeHandle() else { return [] }
+        return (try? await store.sessionSummariesForImportOverlap()) ?? []
+    }
+
     /// Edit a saved session (sets / exercise / date / notes / routine) and recompute the affected PRs
     /// exactly — for the exercises in the old sets ∪ the new sets (FER-556). Never touches strain/avgHr.
     func updateSession(_ session: StrengthSession, sets: [SetEntry]) async throws {

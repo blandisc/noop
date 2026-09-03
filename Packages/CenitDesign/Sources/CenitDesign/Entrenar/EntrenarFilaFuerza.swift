@@ -15,6 +15,8 @@ public struct EntrenarFilaFuerza: View {
     private let meta: String
     private let marcas: Int
     private let esfuerzo: String?
+    /// Optional import provenance seal («Strong» / «Hevy» / «Cénit») — FER-333.
+    private let origen: String?
     private let onTap: () -> Void
 
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -25,14 +27,17 @@ public struct EntrenarFilaFuerza: View {
     ///   - meta: ya formateada («vie 10 jul · 48 min · 4.320 kg»).
     ///   - marcas: `0` = sin chip; `>0` = `EntrenarMarcaChip`.
     ///   - esfuerzo: numeral ya formateado («12»); `nil` = «—» (sin `/21`).
+    ///   - origen: sello de procedencia importada; `nil` = sesión nacida en Cénit.
     ///   - onTap: navegación al detalle rico.
     public init(family: EntrenarFamily, nombre: String, meta: String,
-                marcas: Int = 0, esfuerzo: String? = nil, onTap: @escaping () -> Void) {
+                marcas: Int = 0, esfuerzo: String? = nil, origen: String? = nil,
+                onTap: @escaping () -> Void) {
         self.family = family
         self.nombre = nombre
         self.meta = meta
         self.marcas = marcas
         self.esfuerzo = esfuerzo
+        self.origen = origen
         self.onTap = onTap
     }
 
@@ -63,6 +68,7 @@ public struct EntrenarFilaFuerza: View {
                 HStack(spacing: LiquidSpace.s100) {
                     nombreText.lineLimit(1).minimumScaleFactor(0.8)
                     if marcas > 0 { EntrenarMarcaChip(marcas) }
+                    if let origen { LiquidOrigenBadge(origen, tono: nil) }
                 }
                 metaText.lineLimit(1).minimumScaleFactor(0.8)
             }
@@ -79,6 +85,7 @@ public struct EntrenarFilaFuerza: View {
                 HStack(spacing: LiquidSpace.s100) {
                     nombreText.fixedSize(horizontal: false, vertical: true)
                     if marcas > 0 { EntrenarMarcaChip(marcas) }
+                    if let origen { LiquidOrigenBadge(origen, tono: nil) }
                 }
                 metaText.fixedSize(horizontal: false, vertical: true)
                 datoDerecho
@@ -127,10 +134,11 @@ public struct EntrenarFilaFuerza: View {
 
     private var a11yLabel: Text {
         let dato = esfuerzo.map { "\($0) /21" } ?? "—"
+        let origenTxt = origen.map { ". \($0)" } ?? ""
         return Text("Strength")
             + Text(verbatim: ". ")
             + Text(family.label)
-            + Text(verbatim: ". \(nombre). \(meta). \(dato)")
+            + Text(verbatim: ". \(nombre)\(origenTxt). \(meta). \(dato)")
     }
 }
 

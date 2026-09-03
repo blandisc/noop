@@ -36,6 +36,22 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 - Diseño (FER-340): un héroe por pantalla en Intervalos y recibo de fuerza; material solo vía receta (`.dialogo` / `.confirmacion` + `LiquidGlow`); ritmo de sección s700 en Cuerpo y Ajustes; Dynamic Type en RestEditor; `FocoMetrics` alias a `LiquidSpace`.
 - Diseño (FER-339): una pieza por rol en el catálogo (toast de error de guardado, pastilla de estado, selector de periodo, campo de texto `LiquidCampoTexto`, aviso Liquid; sin `NoteStrip`; toolbar de Ajustes al `fondoAlto`).
 
+### Ola 1 de Entrenar · importar historial (FER-333)
+- Trae tu historial de fuerza desde Strong o Hevy: un bloque nuevo bajo Ajustes › Datos y fuentes ›
+  Importar (junto a la exportación de Apple Health) y, si tu historial está vacío, una invitación
+  directa a la misma hoja. Cénit reconoce cuál de las dos apps exportó el archivo por sus columnas —
+  también acepta su propio CSV — y todo se lee en el teléfono, sin red.
+- Cuatro pasos: Archivo → Revisar (sesiones detectadas, ejercicios reconocidos, con cuánto esfuerzo,
+  posibles duplicados fuera por defecto, la unidad de peso real del archivo) → Resolver (mapea los
+  nombres de ejercicio que Cénit no reconoce contra tu catálogo, con sugerencias automáticas y alias
+  que se recuerdan) → Listo (récords, 1RM y mapa muscular ya recalculados con tu historia).
+- El Strong viejo que no declara unidad de peso pregunta kg/lb con un estimado inmediato y deja
+  cambiar de opinión sin perder el archivo; los posibles duplicados entre orígenes (±30 min) se listan
+  y quedan fuera hasta que tú los fuerces a entrar. Cada sesión importada lleva su sello «Strong» /
+  «Hevy» en el historial y el detalle — nunca «Medido en el dispositivo».
+- La lectura corre fuera del hilo principal (antes se congelaba con archivos grandes) y Cancelar de
+  verdad cancela.
+
 ### Ola 1 de Entrenar · programa de varias semanas (FER-329)
 - Tu plan semanal puede correr como un programa de varias semanas (4 a 6 en la app, hasta 8 si lo
   importas de tu propia IA) con una semana ligera al final. La semana en la que vas NO se guarda: se

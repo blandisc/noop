@@ -7,6 +7,7 @@ import StrandTraining
 #if os(iOS)
 import HealthKit   // HKAuthorizationStatus, for the write-back permission tally
 import UIKit       // UIApplication.openSettingsURLString
+import StrandImport
 #endif
 
 // MARK: - Fuentes de datos — Liquid Glass · El Eje (FER-108)
@@ -59,6 +60,8 @@ struct DataSourcesView: View {
     /// full-data Backup/Restore above — this is a human-readable spreadsheet, not a restore file.
     @State private var strengthCSVBusy = false
     @State private var strengthCSVError = false
+    /// FER-333 · E9: Strong/Hevy/Cénit CSV import sheet (4 steps).
+    @State private var showStrengthCSVImport = false
 
     var body: some View {
         ScrollView {
@@ -170,6 +173,9 @@ struct DataSourcesView: View {
     private var importSection: some View {
         section(String(localized: "Import")) {
             appleHealthImportBlock
+            #if os(iOS)
+            strengthHistoryImportBlock
+            #endif
         }
     }
 
@@ -208,6 +214,35 @@ struct DataSourcesView: View {
             #endif
         }
     }
+
+    #if os(iOS)
+    /// FER-333 · E9: segundo bloque bajo Apple Health — historial Strong/Hevy/Cénit (CSV).
+    private var strengthHistoryImportBlock: some View {
+        blockPlano(
+            String(localized: "Strong or Hevy history (CSV)"),
+            subtitle: String(localized: "Bring your lifting history from Strong or Hevy. Cénit reads the CSV on this iPhone. Nothing leaves your phone.")) {
+            HStack(spacing: LiquidSpace.s300) {
+                LiquidGlassButton(String(localized: "Import history…"), variant: .glass) {
+                    showStrengthCSVImport = true
+                }
+                Spacer(minLength: 0)
+            }
+        }
+        .sheet(isPresented: $showStrengthCSVImport) {
+            StrengthHistoryImportSheet(
+                onComplete: { },
+                // QA D4: ninguna de las dos tiene ruta hoy — `DataSourcesView()` se construye sin
+                // parámetros en sus tres call sites (CuerpoView/AjustesView/TodayView) y ninguno le
+                // pasa un coordinador de navegación hacia Historial o el planificador de semana.
+                // Cablearla exigiría un closure nuevo en 3+ archivos fuera del hunk de este issue;
+                // se deja documentado en vez de improvisar una ruta. «Listo» sigue siendo la salida.
+                onOpenHistory: nil,
+                onArmWeek: nil)
+                .environmentObject(repo)
+                .preferredColorScheme(.light)
+        }
+    }
+    #endif
 
     // MARK: - Apple Health (live sync + permissions + "View imported data")
 
