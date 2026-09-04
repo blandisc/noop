@@ -243,12 +243,20 @@ extension AppModel {
             profile: userProfile, hrMax: Double(hrMax))
         record.energySource = hrSamples.count >= Calories.strengthEnergyMinSamples
             ? .bandCalculated : .estimated
+        // C1 (FER-361): a watch-BORN session has no iPhone HR samples (it ran on the wrist). Use the
+        // avgHr / energy the watch MEASURED, carried over `.syncSnapshot` — never a re-run MET estimate.
+        if let watchEnergy = session.watchSyncedEnergy {
+            record.avgHr = watchEnergy.avgHr
+            record.energyKcal = watchEnergy.kcal
+            record.energySource = .bandCalculated
+        }
         // FER-969 (X-01): stash the fully built payload so a failed save can be retried verbatim —
         // duration/energy stay what the user saw, and the watch isn't ordered to end twice.
         pendingStrengthSave = PendingStrengthSave(
             record: record, sets: sets, progressionOptOuts: built.progressionOptOuts, notes: built.notes,
             endTs: endTs, wasMirroring: wasMirroring, notifyWatch: notifyWatch,
-            userProfile: userProfile, hrSamples: hrSamples, hrMax: hrMax)
+            userProfile: userProfile, hrSamples: hrSamples, hrMax: hrMax,
+            bornOnWatch: session.bornOnWatch)   // C1 (FER-361): keeps the gate honest for a watch-born session
         Task { [weak self] in await self?.attemptStrengthSave() }
     }
 
@@ -340,7 +348,13 @@ extension AppModel {
         // FER-740 — one-HKWorkout invariant. If a watch was mirroring, wait briefly for its save
         // decision: it saved the real FC/kcal workout → the iPhone omits its estimate; it declined
         // or never answered → the iPhone saves as before. Without a watch, save immediately (no wait).
-        let watchSaved = pending.wasMirroring ? await awaitWatchSaveDecision(sessionId: pending.record.id) : false
+        // C1 (FER-361): a watch-BORN session (`wasMirroring == false` — the iPhone never mirrored it)
+        // still needs the gate. Its `.watchDidSaveWorkout` ack arrives over the durable queue during
+        // reconciliation (which precedes this save), so `awaitWatchSaveDecision` finds it in
+        // `watchSavedSessionIds` without a real wait. Without this the iPhone would write a SECOND
+        // HKWorkout for a session the watch already saved — breaking FER-740.
+        let watchImplicated = pending.wasMirroring || pending.bornOnWatch
+        let watchSaved = watchImplicated ? await awaitWatchSaveDecision(sessionId: pending.record.id) : false
         // FER-742: the receipt's origin line says the watch saved the real FC/kcal to Health.
         if watchSaved { session.summary?.watchRecorded = true }
         guard WorkoutSaveGate.iPhoneShouldSaveWorkout(watchDidSaveWorkout: watchSaved) else { return }

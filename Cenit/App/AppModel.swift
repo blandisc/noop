@@ -79,6 +79,9 @@ import StrandTraining
     /// already in HealthKit and idempotent by `externalUUID`, so it need not survive a relaunch.
     // AppModel-internal (split D1)
     var watchSavedSessionIds: Set<String> = []
+    /// C1 (FER-361): watch-born session ids the iPhone has already ADOPTED + saved on reconnect. Guards a
+    /// late duplicate `.syncSnapshot` from the durable queue from re-adopting a session already receipted.
+    var adoptedWatchSessionIds: Set<String> = []
     /// Session ids the watch declined to save (no permission / error) — the iPhone then saves. (FER-740)
     // AppModel-internal (split D1)
     var watchDeclinedSessionIds: Set<String> = []
@@ -291,6 +294,10 @@ import StrandTraining
         var userProfile: UserProfile
         var hrSamples: [HRSample]
         var hrMax: Int
+        /// C1 (FER-361): this session was logged standalone on the watch (`wasMirroring` is false — the
+        /// iPhone never mirrored it). The one-HKWorkout gate must still consult the watch's save decision
+        /// so the iPhone omits its own estimated workout. Default false = an iPhone/mirrored session.
+        var bornOnWatch: Bool = false
     }
     // AppModel-internal (split D1)
     var pendingStrengthSave: PendingStrengthSave?

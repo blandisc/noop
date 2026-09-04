@@ -335,6 +335,14 @@ final class StrengthSessionModel: ObservableObject {
     /// `deload` convierte la sesión en frontera para `ProgressionMath` y la saca de `lastWorkSets`.
     var programWeek: Int?
     var deload: Bool?
+    /// C1 (FER-361): this session was logged standalone on the Apple Watch and adopted by the iPhone on
+    /// reconnect (the iPhone never mirrored it). The save gate still consults the watch's save decision
+    /// (the watch wrote the real HKWorkout), and the energy comes from `watchSyncedEnergy` below, not a
+    /// MET estimate over (absent) iPhone HR samples.
+    var bornOnWatch = false
+    /// C1 (FER-361): the avgHr / energy the watch MEASURED for a `bornOnWatch` session, carried over the
+    /// `.syncSnapshot`. When present, the save persists these with `energySource == .bandCalculated`.
+    var watchSyncedEnergy: (avgHr: Int, kcal: Double)?
     /// «· la semana ligera llega en la N» (ola 1 · E11, P8) — el mismo `ProgramServing.Context` que ya
     /// sirvió los slots, resumido a un texto para el chip de estancamiento. Efímero a propósito: NO
     /// viaja en el snapshot ni se persiste (a diferencia de `programWeek`/`deload`) — es una pista de

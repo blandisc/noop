@@ -572,7 +572,7 @@ struct LiveStrengthSheet: View {
     /// captura leída como reps en reserva. RPE = 10 − RIR; «4+» se guarda como RIR 4 (RPE 6) — el
     /// motor no distingue «4» de «más de 4», las dos leen «con margen». Probada en
     /// `LiveStrengthSheetRIRTests`.
-    static func rpe(fromRIR rir: Int) -> Double { Double(10 - min(4, max(0, rir))) }
+    static func rpe(fromRIR rir: Int) -> Double { RIRScale.rpe(fromRIR: rir) }   // C1 (FER-361): one oracle, shared with the watch
 
     /// La lectura inversa para la tabla (reps en reserva, D-Q1/D-Q6, ola 1 · E5): el motor solo
     /// guarda RPE (`WorkingSet.rpe`), así que la columna de `SetTable` recibe la lectura ya
@@ -583,10 +583,13 @@ struct LiveStrengthSheet: View {
     /// vocabulario del dueño prohíbe «Q»/«Quedaban» en cualquier cadena visible — 0 en reserva lee
     /// «al fallo», el resto «N en reserva» / «4+ en reserva».
     static func qLabel(fromRPE rpe: Double) -> String {
-        let rir = 10 - Int(rpe.rounded())
-        let clamped = min(max(rir, 0), 4)
-        if clamped == 0 { return String(localized: "at failure") }
-        return clamped >= 4 ? String(localized: "4+ in reserve") : String(localized: "\(clamped) in reserve")
+        // C1 (FER-361): the reserve reading lives in `RIRScale` (shared with the watch); this only
+        // localizes the semantic case. The owner's vocabulary: 0 → «al fallo», the rest «N en reserva».
+        switch RIRScale.label(fromRPE: rpe) {
+        case .atFailure:        return String(localized: "at failure")
+        case .fourPlus:         return String(localized: "4+ in reserve")
+        case .inReserve(let n): return String(localized: "\(n) in reserve")
+        }
     }
 
 

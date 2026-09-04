@@ -68,6 +68,14 @@ struct CenitApp: App {
         mirroring.onStartFromWrist = { [weak model] in
             Task { @MainActor in await model?.startTodayFromWrist() }
         }
+        // C1 (FER-361): a set logged standalone on the wrist → fold it by id (best-effort fast-path).
+        mirroring.onWatchLoggedSet = { [weak model] sid, runId, set in
+            model?.applyWatchLoggedSet(sessionId: sid, runId: runId, set: set)
+        }
+        // C1 (FER-361): the authoritative standalone-session reconciliation (+ the watch's measured energy).
+        mirroring.onWatchSyncSnapshot = { [weak model] snapshot, avgHr, kcal in
+            model?.applyWatchSnapshot(snapshot, avgHr: avgHr, energyKcal: kcal)
+        }
         // FER-742: surface the bridge's watch state on AppModel, which the Settings row + strength sheet observe.
         mirroring.onPairingChanged = { [weak model] paired, installed in
             model?.watchPaired = paired

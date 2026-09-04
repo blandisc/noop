@@ -378,6 +378,50 @@ extension AppModel {
         }
     }
 
+    /// C1 (FER-361): the watch LOGGED a set standalone — fold it into a LIVE/adopted session by `id` via
+    /// the reconciler (the ONE fold path), never gated by rest staleness (a set is a fact, not an intent).
+    /// Best-effort fast-path: if the iPhone has no live session with this id (the common standalone case),
+    /// it's a no-op — the authoritative `.syncSnapshot` reconciles the whole session on reconnect.
+    func applyWatchLoggedSet(sessionId: String, runId: String, set: StrengthSessionSnapshot.SetSnapshot) {
+        guard let session = strengthSession, session.id == sessionId, session.summary == nil else { return }
+        var incoming = session.snapshot()
+        guard let ri = incoming.runs.firstIndex(where: { $0.id == runId }) else { return }
+        if let si = incoming.runs[ri].sets.firstIndex(where: { $0.id == set.id }) {
+            incoming.runs[ri].sets[si] = set
+        } else {
+            incoming.runs[ri].sets.append(set)   // a new set (e.g. a watch-created drop)
+        }
+        let merged = StrengthSessionReconciler.merge(base: session.snapshot(), incoming: incoming)
+        strengthSession = StrengthSessionModel.restore(from: merged)
+        scheduleInProgressPersist()
+    }
+
+    /// C1 (FER-361): the authoritative reconciliation of a standalone watch session (+ its MEASURED
+    /// avgHr/energy). If the iPhone never knew the session, ADOPT it (the watch is the source); if a live
+    /// session shares the id, MERGE by id via the reconciler. Then persist through the normal end path —
+    /// which stamps `bornOnWatch`/energy and, via the gate, OMITS the iPhone's own HKWorkout (the watch
+    /// already saved it → one-HKWorkout, FER-740). Idempotent against a late duplicate from the durable queue.
+    func applyWatchSnapshot(_ snapshot: StrengthSessionSnapshot, avgHr: Int?, energyKcal: Double?) {
+        // A late duplicate after this session was already adopted + receipted: don't re-adopt / re-show it.
+        if strengthSession == nil, adoptedWatchSessionIds.contains(snapshot.id) { return }
+        // The watch wrote the real HKWorkout under the shared externalUUID → the iPhone must omit its save.
+        noteWatchSavedWorkout(snapshot.id)
+
+        let merged: StrengthSessionSnapshot
+        if let live = strengthSession, live.id == snapshot.id {
+            merged = StrengthSessionReconciler.merge(base: live.snapshot(), incoming: snapshot)
+        } else {
+            merged = snapshot   // adopt: the iPhone never mirrored this standalone session
+            adoptedWatchSessionIds.insert(snapshot.id)
+        }
+        let model = StrengthSessionModel.restore(from: merged)
+        model.bornOnWatch = true
+        if let avgHr, let energyKcal { model.watchSyncedEnergy = (avgHr: avgHr, kcal: energyKcal) }
+        strengthSession = model
+        // Persist via the shared end path (guarded by `summary == nil`; the gate omits the HKWorkout).
+        endStrengthSessionFromWatch(sessionId: snapshot.id, save: true)
+    }
+
     func openWorkoutReceipt(sessionId: String) async {
         guard let s = await repo.session(id: sessionId) else { return }
         var name = String(localized: "Strength workout")
