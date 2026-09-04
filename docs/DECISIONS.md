@@ -103,6 +103,19 @@ el mismo PR** que la implementa (una línea basta: fecha, decisión, por qué).
   lector CSV, FER-328); «Grok primero» sigue para todo lo demás. Afina el 2026-08-31, no lo revierte.
   Evidencia: E9 (FER-333, #1480) no compiló + re-serializó el catálogo → re-ruteado a Sonnet; E3
   (FER-330, #1479) re-serializó `Localizable.xcstrings`. Se implementa en la skill `/orquesta`.
+- **2026-09-04 · Re-fundamentar el spec PESADO sobre HEAD vigente es paso ejecutado de `/orquesta`, no nota.**
+  En corridas largas multi-peer, `origin/iOS` avanza decenas de commits entre el taller de `/arquitecto` y
+  la implementación; un spec correcto al escribirse **caduca**. Antes de teclear una pieza pesada se verifican
+  los **símbolos-ancla en el árbol vigente** (el tipo/columna/eco/wire que va a tocar), no en el spec, y si
+  cambiaron se re-corre `/arquitecto` sobre el HEAD del día. El mitigante existente (memoria
+  `subagentes-grounding-worktree-viejo` + «fetch fresco» de `ui`/`ux`) no lo previno: cubre la caducidad al
+  AUTORAR o para subagentes de juicio, no el spec pesado que teclea el director sobre su worktree, ni cuando
+  la propia ola previa mergea y mueve el árbol. Corolario: si la pieza cruza un límite de serialización/módulo,
+  la verificación del spec incluye un **probe Codable** (`swift <archivo>` contra los tipos reales) antes de
+  comprometer el acoplamiento. Evidencia (ola 2 de Entrenar): caducaron DOS specs — C1 (el wire `CenitShared`
+  era domain-free, no llevaba los tipos del motor; Decisión A cerrada con probe, #1513) y C4 (el eco YA existía
+  en `UnifiedWorkoutHistory`, mergeado por la ola previa #1502). Misma escalación que «prueba roja» y el ruteo
+  de Grok (2026-09-03). Se implementa en la skill `/orquesta`.
 - **2026-08-31 · Dos agentes nuevos + retro que aprende sin frenar.** (a) `criterio` —
   subagente-espejo del dueño (lee DECISIONS.md + CLAUDE.md + memoria) que el loop consulta para
   dudas de gusto reversibles en vez de adivinar o frenar; marca 🚩 lo que sí requiere al dueño.
