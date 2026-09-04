@@ -2,22 +2,30 @@
 import SwiftUI
 import CenitDesign
 
-// MARK: - Entrenar · MARCAS + VOLUMEN del hub v18 (FER-171 · Parte B)
+// MARK: - Entrenar · MARCAS + VOLUMEN del hub v18 (FER-171 · Parte B; FER-360 ola 2)
 //
 // El par «Marcas · N en {mes}» (rosa, el último PR) + «Volumen · 8 sem» (ámbar, toneladas de la
-// semana). Silencio independiente por tile (mock: sin PRs, MARCAS calla y VOLUMEN toma el ancho;
-// <3 sesiones en 8 semanas, VOLUMEN calla). Si las dos callan, el par no se muestra.
+// semana). VOLUMEN sigue en silencio con <3 sesiones en 8 semanas (toma el ancho MARCAS cuando
+// calla). MARCAS, en cambio, ya NO calla nunca (FER-360): sin ninguna marca todavía muestra un
+// modelo vacío — solo el rótulo «Marcas», sin numeral/unidad/ejercicio — y sigue siendo tappable
+// hacia «Tus marcas» (`PersonalRecordsScreen`).
 
 struct EntrenarHubMarcasVolumen: View {
     struct Marca {
-        /// Ronda 2 · O2: `nil` cuando el conteo del mes es 0 — la regla dice solo «MARCAS» (el PR
-        /// vigente puede ser de un mes anterior; «· 0 en {mes}» sería una mentira honesta pero rara).
-        let countThisMonth: Int?
-        let monthLabel: String        // «ago», ya en minúsculas — el `.uppercased()` lo pone la regla
-        let valueText: String         // «102.5»
-        let unitText: String?         // «kg» — nil para maxReps (el valor ya es un conteo sin unidad)
-        let exerciseAndMetric: String // «Sentadilla · peso máx»
-        let previousText: String?     // «antes 100.0 · hace 2 días» — nil sin PR anterior
+        /// El PR más reciente de todo el historial + cuántos cayeron este mes — `nil` cuando el
+        /// atleta AÚN no tiene ninguna marca (FER-360): la tesela igual se muestra, solo con el
+        /// rótulo «Marcas» a solas, nunca con un numeral/unidad/ejercicio inventado.
+        struct Reciente {
+            /// Ronda 2 · O2: `nil` cuando el conteo del mes es 0 — la regla dice solo «MARCAS» (el PR
+            /// vigente puede ser de un mes anterior; «· 0 en {mes}» sería una mentira honesta pero rara).
+            let countThisMonth: Int?
+            let monthLabel: String        // «ago», ya en minúsculas — el `.uppercased()` lo pone la regla
+            let valueText: String         // «102.5»
+            let unitText: String?         // «kg» — nil para maxReps (el valor ya es un conteo sin unidad)
+            let exerciseAndMetric: String // «Sentadilla · peso máx»
+            let previousText: String?     // «antes 100.0 · hace 2 días» — nil sin PR anterior
+        }
+        let reciente: Reciente?
     }
     struct Volumen {
         let tons: Double
@@ -30,62 +38,67 @@ struct EntrenarHubMarcasVolumen: View {
         let accentIndex: Int
     }
 
-    let marca: Marca?
+    let marca: Marca
     let volumen: Volumen?
+    /// Empuja «Tus marcas» (FER-360) — la tesela ENTERA es el botón, siempre ≥104pt de alto
+    /// (`EntrenarTile.tileMinHeight`), muy por encima del mínimo de 44pt de HIG.
+    let onOpenMarcas: () -> Void
 
     /// Ronda 2 · D2: `marcasUlt`/`marcasPrev` eran `Font.system(size:)` fijo — texto de LECTURA sin
     /// escalar. `@ScaledMetric` vive en la vista; la base sigue en `EntrenarHubMetrics`.
     @ScaledMetric(relativeTo: .caption2) private var marcasUltSize = EntrenarHubMetrics.marcasUltBase
     @ScaledMetric(relativeTo: .caption2) private var marcasPrevSize = EntrenarHubMetrics.marcasPrevBase
 
-    private var hasMarca: Bool { marca != nil }
-    private var hasVolumen: Bool { volumen != nil }
-
     var body: some View {
-        if hasMarca || hasVolumen {
-            HStack(alignment: .top, spacing: LiquidSpace.s300) {
-                if let marca { marcaTile(marca) }
-                if let volumen { volumenTile(volumen) }
-            }
-            .liquidEntrada(index: 5)
+        HStack(alignment: .top, spacing: LiquidSpace.s300) {
+            marcaTile(marca)
+            if let volumen { volumenTile(volumen) }
         }
+        .liquidEntrada(index: 5)
     }
 
     // MARK: - Marcas (rosa)
 
     private func marcaTile(_ m: Marca) -> some View {
-        EntrenarTile(tono: .rosa) {
-            VStack(alignment: .leading, spacing: .zero) {
-                marcaRegla(m).liquidRegla().foregroundStyle(LiquidTono.rosa.rotulo)
-                HStack(alignment: .firstTextBaseline, spacing: EntrenarHubMetrics.numRowGap) {
-                    Text(verbatim: m.valueText)
-                        .font(LiquidType.valorTileM).tracking(LiquidType.valorTileTracking)
-                        .foregroundStyle(LiquidColor.rosa)
-                    if let unitText = m.unitText {
-                        Text(verbatim: unitText).font(LiquidType.unidad).foregroundStyle(LiquidColor.tinta500)
-                    }
-                    Spacer(minLength: LiquidSpace.s100)
-                    EntrenarMiniBarras(alturas: [0.625, 1.0], tono: .rosa)
-                }
-                .padding(.top, EntrenarHubMetrics.numRowTop)
+        Button(action: onOpenMarcas) {
+            EntrenarTile(tono: .rosa) {
                 VStack(alignment: .leading, spacing: .zero) {
-                    Text(verbatim: m.exerciseAndMetric).font(.system(size: marcasUltSize))
-                        .foregroundStyle(LiquidColor.tinta700)
-                    if let previousText = m.previousText {
-                        Text(verbatim: previousText).font(.system(size: marcasPrevSize))
-                            .foregroundStyle(LiquidColor.tinta500)
+                    marcaRegla(m).liquidRegla().foregroundStyle(LiquidTono.rosa.rotulo)
+                    if let reciente = m.reciente {
+                        HStack(alignment: .firstTextBaseline, spacing: EntrenarHubMetrics.numRowGap) {
+                            Text(verbatim: reciente.valueText)
+                                .font(LiquidType.valorTileM).tracking(LiquidType.valorTileTracking)
+                                .foregroundStyle(LiquidColor.rosa)
+                            if let unitText = reciente.unitText {
+                                Text(verbatim: unitText).font(LiquidType.unidad).foregroundStyle(LiquidColor.tinta500)
+                            }
+                            Spacer(minLength: LiquidSpace.s100)
+                            EntrenarMiniBarras(alturas: [0.625, 1.0], tono: .rosa)
+                        }
+                        .padding(.top, EntrenarHubMetrics.numRowTop)
+                        VStack(alignment: .leading, spacing: .zero) {
+                            Text(verbatim: reciente.exerciseAndMetric).font(.system(size: marcasUltSize))
+                                .foregroundStyle(LiquidColor.tinta700)
+                            if let previousText = reciente.previousText {
+                                Text(verbatim: previousText).font(.system(size: marcasPrevSize))
+                                    .foregroundStyle(LiquidColor.tinta500)
+                            }
+                        }
+                        .padding(.top, EntrenarHubMetrics.marcasUltTop)
                     }
                 }
-                .padding(.top, EntrenarHubMetrics.marcasUltTop)
             }
         }
+        .buttonStyle(.liquidPress)
         .accessibilityElement(children: .combine)
+        .accessibilityHint(Text("Opens your personal records"))
     }
 
-    /// «MARCAS · N EN AGO», o solo «MARCAS» cuando `countThisMonth` es `nil` (Ronda 2 · O2).
+    /// «MARCAS · N EN AGO», o solo «MARCAS» sin marca todavía o con el conteo del mes en 0
+    /// (Ronda 2 · O2; FER-360).
     private func marcaRegla(_ m: Marca) -> Text {
-        guard let count = m.countThisMonth else { return Text("Marks") }
-        return Text("Marks · \(count) in \(m.monthLabel)")
+        guard let reciente = m.reciente, let count = reciente.countThisMonth else { return Text("Marks") }
+        return Text("Marks · \(count) in \(reciente.monthLabel)")
     }
 
     // MARK: - Volumen (ámbar)

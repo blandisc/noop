@@ -106,7 +106,7 @@ private struct EntrenarMapCell: View {
     var body: some View {
         EntrenarView(openRoutine: { _ in }, openBreathe: {}, openIntervals: {},
                      openHistory: {}, openWeeklyPlan: {}, openRoutines: {},
-                     openWorkoutSession: { _ in }, openMuscleMap: {})
+                     openWorkoutSession: { _ in }, openMuscleMap: {}, openMarcas: {})
             .environmentObject(model.repo)
             .environment(model)
             .environmentObject(TabRouter())
@@ -412,7 +412,8 @@ private struct EntrenarFlowsMapCell: View {
                         openWeeklyPlan: { path.append(Route.weeklyPlan) },
                         openRoutines: { path.append(Route.weeklyPlan) },
                         openWorkoutSession: { path.append($0) },
-                        openMuscleMap: { path.append(MuscleVolumeRoute()) }
+                        openMuscleMap: { path.append(MuscleVolumeRoute()) },
+                        openMarcas: { path.append(PersonalRecordsRoute()) }
                     )
                     .navigationDestination(for: Route.self) { destination($0) }
                     .navigationDestination(for: RoutineEditorRoute.self) { route in
@@ -425,6 +426,7 @@ private struct EntrenarFlowsMapCell: View {
                     // FER-91 · E10 fusionó el mapa muscular y el volumen en una sola pantalla.
                     .navigationDestination(for: MuscleVolumeRoute.self) { _ in TrainingBodyScreen() }
                     .navigationDestination(for: SavedTicketsRoute.self) { _ in SavedTicketsScreen() }
+                    .navigationDestination(for: PersonalRecordsRoute.self) { _ in PersonalRecordsScreen() }
                 }
             } else {
                 ProgressView()

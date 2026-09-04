@@ -422,6 +422,14 @@ extension Repository {
         return (try? await store.personalRecords(exerciseId: exerciseId)) ?? []
     }
 
+    /// Every personal record, across every exercise — «Tus marcas» (FER-360) groups these by
+    /// `exerciseId` to build its list. Empty when the store can't be opened, same contract as the
+    /// rest of this file.
+    func allPersonalRecords() async -> [PersonalRecord] {
+        guard let store = await storeHandle() else { return [] }
+        return (try? await store.allPersonalRecords()) ?? []
+    }
+
     /// Every completed work set since `sinceTs` (epoch seconds) with its exercise id and session start
     /// time — the raw material the muscle-fatigue map (FER-350) expands over `Exercise.muscleInvolvement`.
     func recentWorkSets(sinceTs: Int) async -> [(exerciseId: String, startTs: Int)] {
@@ -472,6 +480,15 @@ extension Repository {
     func personalRecordCount(sinceTs: Double) async -> Int {
         guard let store = await storeHandle() else { return 0 }
         return (try? await store.personalRecordCount(sinceTs: sinceTs)) ?? 0
+    }
+
+    /// «Tus marcas» (FER-360): `total` = exercises with ≥1 PR ever; `thisMonth` = exercises whose
+    /// MOST RECENT PR falls within `[monthStart, monthEnd)`. DISTINCT exercises, never
+    /// `personalRecordCount`'s row count — the hub tile's badge and the «Tus marcas» screen's header
+    /// both read this same function, so neither can disagree with the other about "how many marks".
+    func personalRecordExerciseStats(monthStart: Double, monthEnd: Double) async -> (total: Int, thisMonth: Int) {
+        guard let store = await storeHandle() else { return (0, 0) }
+        return (try? await store.personalRecordExerciseStats(monthStart: monthStart, monthEnd: monthEnd)) ?? (0, 0)
     }
 
     /// El PR anterior del mismo ejercicio+métrica — «antes X · hace N días».

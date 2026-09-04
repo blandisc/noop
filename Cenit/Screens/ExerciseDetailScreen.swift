@@ -44,7 +44,10 @@ struct ExerciseDetailScreen: View {
     @State private var historyDays: [(ts: Int, weightKg: Double, reps: Int)] = []
     @State private var historyDaysAscending: [(ts: Int, weightKg: Double, reps: Int)] = []
     @State private var seriesCache: [ProgressMetric: [Double]] = [:]
-    /// Stored best-per-metric records for this exercise (FER-504/505). Read-only; derived on save.
+    /// Stored best-per-metric records for this exercise (FER-504/505; re-read directly for the
+    /// RECORDS rows as of FER-360, replacing `history`-derived best-weight/best-volume). Read-only;
+    /// derived on save, up to one row per `PRMetric` (maxWeight/maxReps/maxVolume).
+    @State private var personalRecordsForExercise: [PersonalRecord] = []
     /// Where this exercise's progression cycle stands (FER-F); nil = no slot opted in.
     @State private var cycleState: ProgressionState? = nil
     /// The cycle's own `fromKg` (FER-149) — `ProgressionPlanner.evaluate`'s `Raise.fromKg`, the SAME
@@ -133,9 +136,11 @@ struct ExerciseDetailScreen: View {
         .task(id: [exercise.id, String(repo.refreshSeq)]) {
             async let h = repo.exerciseHistory(exerciseId: exercise.id)
             async let ov = repo.exerciseTypeOverride(exercise.id)
+            async let pr = repo.personalRecords(exerciseId: exercise.id)
             history = await h
             rebuildHistoryDerived()
             hasTypeOverride = await ov != nil
+            personalRecordsForExercise = await pr
             // FER-F: where the progression cycle stands — only if some routine slot opted in for this
             // exercise (first enabled slot wins; multi-routine overlap is rare and reads the same history).
             cycleState = nil
@@ -758,24 +763,35 @@ struct ExerciseDetailScreen: View {
             .formatted(.dateTime.month(.abbreviated)).uppercased()
     }
 
-    /// «RECORDS» — 3 plain text rows (FER-149; replaces the retired best-set/volume mini-cards and
-    /// the cycle notice wholesale). Each row is independently optional and hidden on its own —
-    /// the block itself only renders once at least one has something to say.
+    /// «RECORDS» — up to 4 plain text rows (FER-149; FER-360 rewrite). The first 3 read
+    /// `personalRecordsForExercise` directly (maxWeight / maxReps / maxVolume, each with its own
+    /// date) instead of re-deriving a "best weight" from raw `history` or a per-SESSION "best
+    /// volume" (`bestVolumeLine`/`SessionVolume.best`, retired — a session TOTAL is not a PR):
+    /// the SAME audited PRs (absurd captures already excluded) the hub tile and «Tus marcas» show.
+    /// `cycleLine` is untouched. Each row is independently optional and hidden on its own — the
+    /// block itself only renders once at least one has something to say.
     @ViewBuilder private var recordsSection: some View {
+        let maxWeight = maxWeightLine
+        let mostReps = mostRepsLine
         let bestSet = bestSetLine
-        let bestVolume = bestVolumeLine
         let cycle = cycleLine
-        if bestSet != nil || bestVolume != nil || cycle != nil {
+        if maxWeight != nil || mostReps != nil || bestSet != nil || cycle != nil {
             VStack(alignment: .leading, spacing: .zero) {
                 LiquidSectionHeader("Records")
-                if let bestSet {
-                    recordRow(Text("Best weight"), bestSet)
-                    if bestVolume != nil || cycle != nil {
+                if let maxWeight {
+                    recordRow(Text("Max weight"), maxWeight)
+                    if mostReps != nil || bestSet != nil || cycle != nil {
                         Rectangle().fill(LiquidColor.tinta10).frame(height: LiquidRadius.hairline)
                     }
                 }
-                if let bestVolume {
-                    recordRow(Text("Best volume in one session"), bestVolume)
+                if let mostReps {
+                    recordRow(Text("Most reps"), mostReps)
+                    if bestSet != nil || cycle != nil {
+                        Rectangle().fill(LiquidColor.tinta10).frame(height: LiquidRadius.hairline)
+                    }
+                }
+                if let bestSet {
+                    recordRow(Text("Best set"), bestSet)
                     if cycle != nil {
                         Rectangle().fill(LiquidColor.tinta10).frame(height: LiquidRadius.hairline)
                     }
@@ -800,22 +816,41 @@ struct ExerciseDetailScreen: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// «Mejor peso» — the all-time heaviest set, raw, no hedge («82,5 kg × 8»).
-    private var bestSetLine: Text? {
-        guard let best = history.max(by: { $0.weightKg < $1.weightKg }) else { return nil }
-        return Text(verbatim: "\(StrengthDisplay.weight(best.weightKg, system: system)) × \(best.reps)")
-            .foregroundColor(LiquidColor.tinta900)
+    /// «Peso máximo» — the stored `personalRecord` (FER-360), not a raw `history.max` — the same
+    /// audited PR (absurd-capture guard already applied) the hub tile and «Tus marcas» read. `nil`
+    /// until this exercise has one.
+    private var maxWeightLine: Text? {
+        recordLine(metric: .maxWeight)
     }
 
-    /// «Mejor volumen en una sesión» — grouped by `WorkSetHistoryRow.sessionId`, NEVER by calendar
-    /// day (`SessionVolume.best`, FER-149): two sessions logged the same day stay two records, not
-    /// one merged one. All-time, no window; hidden when nothing logged has positive volume.
-    private var bestVolumeLine: Text? {
-        guard let best = SessionVolume.best(history.map {
-            (sessionId: $0.sessionId, startTs: $0.startTs, weightKg: $0.weightKg, reps: $0.reps)
-        }) else { return nil }
-        return Text(verbatim: StrengthHistoryFormat.volume(best.volumeKg, system: system))
-            .foregroundColor(LiquidColor.tinta900)
+    /// «Más repeticiones» (FER-360, new row — this metric had no RECORDS row before). `nil` until
+    /// this exercise has a maxReps PR.
+    private var mostRepsLine: Text? {
+        recordLine(metric: .maxReps)
+    }
+
+    /// «Mejor serie» — best single-set weight×reps (FER-360, replaces the retired
+    /// `bestVolumeLine`/`SessionVolume.best`, which summed a whole SESSION — a session total is not
+    /// a per-set PR and doesn't belong under «Records»). `nil` until this exercise has a maxVolume PR.
+    private var bestSetLine: Text? {
+        recordLine(metric: .maxVolume)
+    }
+
+    /// One RECORDS metric line: the value (bare number for reps — the row's own label already says
+    /// "reps" — else weight/total-weight) + its date, `StrengthDisplay.recordDate` shared with «Tus
+    /// marcas» so the same PR reads the same date in both places. `nil` when this exercise hasn't
+    /// set that metric yet.
+    private func recordLine(metric: PRMetric) -> Text? {
+        guard let pr = personalRecordsForExercise.first(where: { $0.metric == metric }) else { return nil }
+        let value: String
+        switch metric {
+        case .maxWeight: value = StrengthDisplay.weight(pr.valueKg ?? 0, system: system)
+        case .maxReps:   value = "\(pr.reps ?? 0)"
+        case .maxVolume: value = StrengthDisplay.weight((pr.valueKg ?? 0) * Double(pr.reps ?? 0), system: system)
+        }
+        return Text(verbatim: value).foregroundColor(LiquidColor.tinta900)
+            + Text(verbatim: " · ").foregroundColor(LiquidColor.tinta500)
+            + StrengthDisplay.recordDate(pr.ts).foregroundColor(LiquidColor.tinta500)
     }
 
     /// «Ciclo de progresión» — where this exercise's progression stands, in one sentence with real
