@@ -9,7 +9,7 @@ public extension StrengthSessionSnapshot {
     /// would collide on the session PK. `asTemplate` mints a fresh identity and clears every bit of
     /// *registered* / in-flight state, while preserving the *plan* — the planned weights, reps, `mode`
     /// (incl. AMRAP's `nil` reps), rest config, `programWeek`/`deload`, and any held-raise/deload offer the
-    /// iPhone served. Pure and testable (`StrengthSessionSnapshotTests.testAsTemplateIsFreshPlan`).
+    /// iPhone served. Pure and testable (`StrengthSessionTemplateTests`).
     func asTemplate(newId: String, nowTs: Int) -> StrengthSessionSnapshot {
         var copy = self
         copy.id = newId

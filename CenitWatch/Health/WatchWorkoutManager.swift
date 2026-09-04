@@ -341,9 +341,12 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
     private func endSession(endedAt: Date, save: Bool) async {
         let standaloneToSync = isStandalone ? sessionSnapshot : nil
         var finalStats: (hr: Int?, kcal: Int?)?
+        var didSaveWorkout = false   // /qa D-1: only a real watch save lets the iPhone omit its own (FER-740)
         defer {
-            if let standaloneToSync { syncStandaloneSnapshot(standaloneToSync, avgHr: finalStats?.hr,
-                                                             energyKcal: finalStats?.kcal) }
+            if let standaloneToSync {
+                syncStandaloneSnapshot(standaloneToSync, avgHr: finalStats?.hr,
+                                       energyKcal: finalStats?.kcal, didSaveWorkout: didSaveWorkout)
+            }
             cleanup()
         }
         restEndTask?.cancel()
@@ -364,6 +367,7 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
             let workout = try await builder.finishWorkout()
             session.end()
             if workout != nil {
+                didSaveWorkout = true   // the wrist wrote the real HKWorkout → the iPhone omits its save
                 send(.watchDidSaveWorkout(sessionId: sid, externalUUID: ext))
                 presentSummary(stats, saveState: .saved)
             } else {
@@ -385,9 +389,11 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
     /// because this is exactly the message that must survive the iPhone being unreachable right now (the
     /// reason the session ran standalone at all) and land whenever it reconnects. `energyKcal` travels as
     /// `Double` (the wire's shape); `summaryStatistics` already rounds to `Int` for the wrist's own card.
-    private func syncStandaloneSnapshot(_ snapshot: StrengthSessionSnapshot, avgHr: Int?, energyKcal: Int?) {
-        guard let data = WorkoutMirrorMessage.syncSnapshot(snapshot: snapshot, avgHr: avgHr,
-                                                           energyKcal: energyKcal.map(Double.init)).encoded()
+    private func syncStandaloneSnapshot(_ snapshot: StrengthSessionSnapshot, avgHr: Int?, energyKcal: Int?,
+                                        didSaveWorkout: Bool) {
+        guard let data = WorkoutMirrorMessage.syncSnapshot(
+            snapshot: snapshot, avgHr: avgHr, energyKcal: energyKcal.map(Double.init),
+            didSaveWorkout: didSaveWorkout).encoded()
         else { return }
         transfer(data)
     }

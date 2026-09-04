@@ -60,7 +60,7 @@ final class WorkoutMirroringBridge: NSObject, ObservableObject {
     var onWatchLoggedSet: ((_ sessionId: String, _ runId: String, _ set: StrengthSessionSnapshot.SetSnapshot) -> Void)?
     /// C1 (FER-361): the watch's authoritative reconciliation snapshot + measured avgHr/energyKcal →
     /// the iPhone adopts/amends the session and persists the energy as `.bandCalculated`.
-    var onWatchSyncSnapshot: ((_ snapshot: StrengthSessionSnapshot, _ avgHr: Int?, _ energyKcal: Double?) -> Void)?
+    var onWatchSyncSnapshot: ((_ snapshot: StrengthSessionSnapshot, _ avgHr: Int?, _ energyKcal: Double?, _ didSaveWorkout: Bool) -> Void)?
 
     // FER-742: state the iPhone UI paints, pushed to `AppModel` (which the Settings row + the strength
     // sheet already observe) via these closures — same fire-on-main-actor pattern as the ones above.
@@ -331,8 +331,8 @@ final class WorkoutMirroringBridge: NSObject, ObservableObject {
             onStartFromWrist?()
         case let .logSet(sessionId, runId, set):
             onWatchLoggedSet?(sessionId, runId, set)
-        case let .syncSnapshot(snapshot, avgHr, energyKcal):
-            onWatchSyncSnapshot?(snapshot, avgHr, energyKcal)
+        case let .syncSnapshot(snapshot, avgHr, energyKcal, didSaveWorkout):
+            onWatchSyncSnapshot?(snapshot, avgHr, energyKcal, didSaveWorkout)
         case .start, .rest, .restEnded, .capture, .plan, .sessionModel, .idleContext:
             break   // iPhone → watch only
         }

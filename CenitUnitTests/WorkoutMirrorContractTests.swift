@@ -69,8 +69,8 @@ final class WorkoutMirrorContractTests: XCTestCase {
             // kcal both present, and both absent).
             .sessionModel(c1Snapshot),
             .logSet(sessionId: "s1", runId: "r1", set: c1Set),
-            .syncSnapshot(snapshot: c1Snapshot, avgHr: 132, energyKcal: 410.5),
-            .syncSnapshot(snapshot: c1Snapshot, avgHr: nil, energyKcal: nil),
+            .syncSnapshot(snapshot: c1Snapshot, avgHr: 132, energyKcal: 410.5, didSaveWorkout: true),
+            .syncSnapshot(snapshot: c1Snapshot, avgHr: nil, energyKcal: nil, didSaveWorkout: false),
         ]
 
         for message in messages {

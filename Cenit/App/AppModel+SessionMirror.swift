@@ -401,11 +401,14 @@ extension AppModel {
     /// session shares the id, MERGE by id via the reconciler. Then persist through the normal end path —
     /// which stamps `bornOnWatch`/energy and, via the gate, OMITS the iPhone's own HKWorkout (the watch
     /// already saved it → one-HKWorkout, FER-740). Idempotent against a late duplicate from the durable queue.
-    func applyWatchSnapshot(_ snapshot: StrengthSessionSnapshot, avgHr: Int?, energyKcal: Double?) {
+    func applyWatchSnapshot(_ snapshot: StrengthSessionSnapshot, avgHr: Int?, energyKcal: Double?,
+                            didSaveWorkout: Bool) {
         // A late duplicate after this session was already adopted + receipted: don't re-adopt / re-show it.
         if strengthSession == nil, adoptedWatchSessionIds.contains(snapshot.id) { return }
-        // The watch wrote the real HKWorkout under the shared externalUUID → the iPhone must omit its save.
-        noteWatchSavedWorkout(snapshot.id)
+        // /qa D-1: only when the watch ACTUALLY wrote the HKWorkout does the iPhone omit its own save. A
+        // standalone session with no watch Health permission logs its sets but writes no workout — then
+        // the iPhone must save its estimate, or the workout reaches Apple Health on neither device (FER-740).
+        if didSaveWorkout { noteWatchSavedWorkout(snapshot.id) }
 
         let merged: StrengthSessionSnapshot
         if let live = strengthSession, live.id == snapshot.id {

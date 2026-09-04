@@ -76,7 +76,11 @@ public enum WorkoutMirrorMessage: Codable, Equatable {
     /// `HKWorkout` (the snapshot has no HR/energy fields). The iPhone folds it via the reconciler
     /// (idempotent) and persists those figures with `energySource == .bandCalculated` (never a re-run
     /// MET estimate). Drains from the durable queue on reconnect; supersedes any lost `.logSet`.
-    case syncSnapshot(snapshot: StrengthSessionSnapshot, avgHr: Int?, energyKcal: Double?)
+    /// `didSaveWorkout` (FER-361, /qa D-1): whether the WATCH actually wrote its `HKWorkout` for this
+    /// session. Only then may the iPhone omit its own save (FER-740). Decisive because a standalone
+    /// session with NO watch Health permission logs its sets but writes no workout — the iPhone must
+    /// still save its estimate, or the workout reaches Apple Health on neither device.
+    case syncSnapshot(snapshot: StrengthSessionSnapshot, avgHr: Int?, energyKcal: Double?, didSaveWorkout: Bool)
 
     /// watch → iPhone: skip the current rest from the wrist (FER-808). Same path as the LA's `RestSkipIntent`.
     case skipRest(sessionId: String, ts: Date?)

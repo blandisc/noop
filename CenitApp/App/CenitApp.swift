@@ -73,8 +73,8 @@ struct CenitApp: App {
             model?.applyWatchLoggedSet(sessionId: sid, runId: runId, set: set)
         }
         // C1 (FER-361): the authoritative standalone-session reconciliation (+ the watch's measured energy).
-        mirroring.onWatchSyncSnapshot = { [weak model] snapshot, avgHr, kcal in
-            model?.applyWatchSnapshot(snapshot, avgHr: avgHr, energyKcal: kcal)
+        mirroring.onWatchSyncSnapshot = { [weak model] snapshot, avgHr, kcal, didSave in
+            model?.applyWatchSnapshot(snapshot, avgHr: avgHr, energyKcal: kcal, didSaveWorkout: didSave)
         }
         // FER-742: surface the bridge's watch state on AppModel, which the Settings row + strength sheet observe.
         mirroring.onPairingChanged = { [weak model] paired, installed in
