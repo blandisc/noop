@@ -34,6 +34,13 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 - Al terminar, un resumen mínimo confirma que se guardó en Salud y, en cuanto el iPhone reconecta,
   que ya se sincronizó con tu teléfono.
 
+### Marca tu esfuerzo desde el reloj, en el descanso (FER-372, ola 2 · C1)
+- Al terminar una serie en el logger de fuerza del reloj, durante el descanso puedes marcar —si
+  quieres— cuánto te quedó «en reserva» girando la corona: «al fallo», «2 en reserva», «4+ en
+  reserva». Es opcional: si no la tocas, la serie queda igual que antes, sin esfuerzo registrado.
+- Es la misma corona con la que ajustaste el peso al registrar; el esfuerzo viaja a tu iPhone junto
+  con la serie en cuanto el reloj reconecta. El teléfono sigue siendo la casa del ajuste fino.
+
 ### Fuerza de terceros honesta en «Fuerza» (FER-362, ola 2 · C4)
 - Si Strong, Hevy, Apple Fitness (o cualquier otra app) ya guardó un entrenamiento de fuerza en Apple
   Salud, ahora aparece en «Fuerza» — con su detalle honesto: sin serie por serie (Apple Salud solo
