@@ -122,7 +122,14 @@ extension AppModel {
             guard let store = await self.repo.storeHandle() else { return }
             do {
                 try await store.appendStrengthHR(sessionId: sessionId, samples: batch)
-                self.pendingHrFlush.removeFirst(min(batch.count, self.pendingHrFlush.count))
+                // Solo recorta si SEGUIMOS en la misma sesión (auditoría 2ª ronda, Sev-3):
+                // `startStrengthSession`/`endStrengthSession` hacen `pendingHrFlush.removeAll()`, así que
+                // si otra sesión arrancó mientras este flush estaba en vuelo, el buffer ya es de ELLA y
+                // `removeFirst(batch.count)` le tiraría sus primeras muestras. Las de ESTE batch ya se
+                // limpiaron con aquel removeAll, así que no hay nada de esta sesión que recortar.
+                if self.strengthSession?.id == sessionId {
+                    self.pendingHrFlush.removeFirst(min(batch.count, self.pendingHrFlush.count))
+                }
             } catch {
                 // Left in place — the next flush (30 more samples, or the save-time drain) retries it.
             }
