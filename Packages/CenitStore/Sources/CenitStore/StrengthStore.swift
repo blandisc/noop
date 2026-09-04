@@ -1082,6 +1082,16 @@ extension CenitStore {
         }
     }
 
+    /// Every personal record across every exercise — the raw material for «Tus marcas» (FER-360),
+    /// which groups these by `exerciseId` in Swift. One bulk SELECT beats a query per exercise: even
+    /// a very active athlete has at most 3 rows per exercise (one per `PRMetric`), so the whole table
+    /// is a handful of rows.
+    public func allPersonalRecords() async throws -> [PersonalRecord] {
+        try syncRead { db in
+            try Row.fetchAll(db, sql: "SELECT * FROM personalRecord").map(Self.personalRecord)
+        }
+    }
+
     // MARK: - Consultas del hub v18 (FER-171 · Parte A) — SIN columnas nuevas, solo SELECTs.
 
     /// El PR más reciente de todo el historial (cualquier ejercicio/métrica), por `ts`. `nil` si
@@ -1098,6 +1108,27 @@ extension CenitStore {
         try syncRead { db in
             try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM personalRecord WHERE ts >= ?",
                              arguments: [Int(sinceTs)]) ?? 0
+        }
+    }
+
+    /// «Tus marcas» (FER-360): DISTINCT-exercise counts, never row counts. `personalRecordCount`
+    /// above counts `personalRecord` ROWS — up to 3 per exercise, one per `PRMetric` — so an exercise
+    /// with e.g. both a fresh maxWeight AND maxReps PR would over-count as "2". Here `total` is how
+    /// many exercises hold at least one record EVER, and `thisMonth` is how many exercises' MOST
+    /// RECENT record (`MAX(ts)` across that exercise's own rows) falls within
+    /// `[monthStart, monthEnd)` — an exercise doesn't stay "this month" on an older metric once its
+    /// newest one ages out. One oracle: the hub tile's badge and the «Tus marcas» header both call
+    /// this, never `personalRecordCount`.
+    public func personalRecordExerciseStats(monthStart: Double, monthEnd: Double) async throws
+        -> (total: Int, thisMonth: Int) {
+        try syncRead { db in
+            let total = try Int.fetchOne(db, sql: "SELECT COUNT(DISTINCT exerciseId) FROM personalRecord") ?? 0
+            let thisMonth = try Int.fetchOne(db, sql: """
+                SELECT COUNT(*) FROM (
+                    SELECT MAX(ts) AS maxTs FROM personalRecord GROUP BY exerciseId
+                ) WHERE maxTs >= ? AND maxTs < ?
+                """, arguments: [Int(monthStart), Int(monthEnd)]) ?? 0
+            return (total, thisMonth)
         }
     }
 

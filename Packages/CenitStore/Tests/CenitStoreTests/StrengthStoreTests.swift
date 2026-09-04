@@ -1485,4 +1485,58 @@ final class StrengthStoreTests: XCTestCase {
         let recent = try await store.personalRecordCount(sinceTs: Double(oldTs + 1))
         XCTAssertEqual(recent, 0, "a 2022 PR must not count as recent")
     }
+
+    /// FER-360 · «Tus marcas»: `personalRecordExerciseStats` counts DISTINCT exercises, never PR
+    /// rows. Three sets on the SAME exercise today each win a different metric (maxWeight, maxReps,
+    /// maxVolume) — `personalRecord` ends up with 3 rows, but they're all ONE exercise, set THIS
+    /// month, so the answer must read total=1 / thisMonth=1. `personalRecordCount` (row-based) would
+    /// wrongly say 3.
+    func testPersonalRecordExerciseStatsCountsDistinctExercisesNotRows() async throws {
+        let store = try await CenitStore.inMemory()
+        let now = Int(Date().timeIntervalSince1970)
+        let id = "session-\(now)"
+        try await store.saveSessions([(
+            StrengthSession(id: id, startTs: now, source: "cenit", title: "Hoy"),
+            [
+                // 120 kg × 8 wins maxWeight AND maxVolume (960); 80 kg × 10 wins maxReps.
+                SetEntry(sessionId: id, exerciseId: "squat", position: 0,
+                         weightKg: 100, reps: 5, done: true, ts: now - 20),
+                SetEntry(sessionId: id, exerciseId: "squat", position: 1,
+                         weightKg: 80, reps: 10, done: true, ts: now - 10),
+                SetEntry(sessionId: id, exerciseId: "squat", position: 2,
+                         weightKg: 120, reps: 8, done: true, ts: now),
+            ]
+        )])
+        let prs = try await store.personalRecords(exerciseId: "squat")
+        XCTAssertEqual(prs.count, 3, "sanity: all 3 metrics recorded as separate rows")
+
+        let cal = Calendar.current
+        let monthStart = try XCTUnwrap(cal.date(from: cal.dateComponents([.year, .month], from: Date())))
+        let monthEnd = try XCTUnwrap(cal.date(byAdding: .month, value: 1, to: monthStart))
+        let stats = try await store.personalRecordExerciseStats(
+            monthStart: monthStart.timeIntervalSince1970, monthEnd: monthEnd.timeIntervalSince1970)
+        XCTAssertEqual(stats.total, 1, "one exercise, not one count per metric row")
+        XCTAssertEqual(stats.thisMonth, 1, "same exercise this month, not 3 rows")
+    }
+
+    /// A record from LAST month must not count toward `thisMonth`, even though it's still the
+    /// exercise's only (and therefore most recent) PR.
+    func testPersonalRecordExerciseStatsExcludesLastMonth() async throws {
+        let store = try await CenitStore.inMemory()
+        let cal = Calendar.current
+        let monthStart = try XCTUnwrap(cal.date(from: cal.dateComponents([.year, .month], from: Date())))
+        let monthEnd = try XCTUnwrap(cal.date(byAdding: .month, value: 1, to: monthStart))
+        let lastMonthTs = try XCTUnwrap(cal.date(byAdding: .day, value: -1, to: monthStart))
+        let ts = Int(lastMonthTs.timeIntervalSince1970)
+        let id = "session-\(ts)"
+        try await store.saveSessions([(
+            StrengthSession(id: id, startTs: ts, source: "cenit", title: "El mes pasado"),
+            [SetEntry(sessionId: id, exerciseId: "bench", position: 0,
+                      weightKg: 60, reps: 5, done: true, ts: ts)]
+        )])
+        let stats = try await store.personalRecordExerciseStats(
+            monthStart: monthStart.timeIntervalSince1970, monthEnd: monthEnd.timeIntervalSince1970)
+        XCTAssertEqual(stats.total, 1, "the exercise still has a PR ever")
+        XCTAssertEqual(stats.thisMonth, 0, "but its newest PR is last month, not this one")
+    }
 }

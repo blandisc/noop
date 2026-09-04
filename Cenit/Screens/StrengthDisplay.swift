@@ -150,5 +150,27 @@ enum StrengthDisplay {
     static func weight(_ kg: Double, system: UnitSystem) -> String {
         "\(weightNumber(kg, system: system)) \(weightUnit(system))"
     }
+
+    // MARK: - Record dates (FER-360)
+
+    /// The «nuevo» recency window, in whole calendar days: a mark set today through 6 days ago reads
+    /// as recent. Shared by `recordDate` below (relative-vs-short cutoff) and «Tus marcas»' own
+    /// «nuevo» badge — ONE threshold, not two numbers invented separately.
+    static let recordRecentWindowDays = 6
+
+    /// A `PersonalRecord`'s date, shared by the exercise detail's Records rows and «Tus marcas» so
+    /// the same PR reads the same date in both places: relative within the recent window («hace 3
+    /// días» / «3 days ago» — `Date.FormatStyle`, no catalog key, locale-correct for free), else a
+    /// short day + month («14 ago» / «Aug 14»), same format `historyDayText` already uses.
+    static func recordDate(_ ts: Int, now: Date = Date(), calendar: Calendar = .current) -> Text {
+        let date = Date(timeIntervalSince1970: TimeInterval(ts))
+        let day = calendar.startOfDay(for: date)
+        let today = calendar.startOfDay(for: now)
+        let daysAgo = calendar.dateComponents([.day], from: day, to: today).day ?? 0
+        if daysAgo <= recordRecentWindowDays {
+            return Text(date.formatted(.relative(presentation: .named)))
+        }
+        return Text(date, format: .dateTime.day().month(.abbreviated))
+    }
 }
 #endif
