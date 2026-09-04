@@ -299,7 +299,9 @@ struct AppleHealthView: View {
         }
 
         let loadedRows = await rows
-        let filteredWorkouts = await workouts.filter { $0.source == "apple_health" || $0.source == "apple-health" }
+        // FER-362 · C4: exact-equality missed every "apple-health:<app name>" row `mapWorkouts` now
+        // writes — `classify` is the one gate that recognizes the whole family, named or not.
+        let filteredWorkouts = await workouts.filter { WorkoutSource.classify($0.source) == .apple }
 
         await MainActor.run {
             appleRows = loadedRows.sorted { $0.day < $1.day }

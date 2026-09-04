@@ -66,7 +66,7 @@ private enum Metrics {
                            meta: "vie 10 jul · 48 min · 4.320 kg",
                            marcas: 2, esfuerzo: "14", onTap: {}),
         EntrenarFilaCardio(
-            sfSymbol: "figure.run", deporte: "Correr", origen: .apple,
+            sfSymbol: "figure.run", deporte: "Correr", origen: .apple(name: "Strava"),
             meta: "mié 8 jul · 30 min · 5,2 km",
             dato: .init(valor: "148", unidad: "bpm",
                         tono: LiquidTono.rosa.rotulo),

@@ -79,6 +79,9 @@ struct WorkoutHistoryScreen: View {
     @EnvironmentObject private var health: HealthKitBridge
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var system: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
+    /// FER-362 · C4: shows/hides the third-party strength Apple Health already has (Strong/Hevy/Apple
+    /// Fitness) inside the «Fuerza» dialect — set in `DataSourcesView`, on by default.
+    @AppStorage(WorkoutSource.showThirdPartyStrengthKey) private var showThirdPartyStrengthWorkouts = true
 
     @EnvironmentObject private var coordinator: WorkoutHistoryCoordinator
     /// FER-202: el filtro-dialecto activo (sembrado desde `initialFilter` en `init`). `.strength` →
@@ -297,6 +300,22 @@ struct WorkoutHistoryScreen: View {
     // `mergedEntries` (la línea de tiempo FUNDIDA: fuerza rica + actividad, con el eco de Apple
     // de-duplicado; base de todo el dialecto) es ahora un `@State` memoizado, poblado en `load()`.
     // Antes era una computed que recomputaba el merge O(n×m) en cada acceso (auditoría 2ª ronda, Sev-4).
+    // FER-362 · C4: el merge ahora delega el dedup a `WorkoutHealthKitDedup` (mismo `merge(sessions:rows:)`),
+    // así que la memoización de `load()` sigue válida sin cambios.
+
+    // MARK: - FER-362 · C4 · dialecto FUERZA (rica + terceros honestos)
+
+    /// Las entradas del dialecto «Fuerza»: toda sesión rica de los últimos 90 días + — si el toggle de
+    /// Ajustes está prendido — la fuerza de terceros que Apple Salud ya trae (Strong/Hevy/Apple
+    /// Fitness), sobreviviente del dedup de `mergedEntries` y admitida por
+    /// `UnifiedWorkoutHistory.isAdmissibleThirdPartyStrength`. Misma ventana de 90 días que
+    /// `recentSessions90` (mismo cutoff ancla-`now`).
+    private var fuerzaHistoryEntries: [HistoryEntry] {
+        UnifiedWorkoutHistory.fuerzaEntries(mergedEntries, now: Int(Date().timeIntervalSince1970),
+                                            showThirdParty: showThirdPartyStrengthWorkouts)
+    }
+
+    // MARK: - FER-202 · dialecto ACTIVIDAD («Todo» / deporte)
 
     /// Cutoff NOW-anclado (inicio de hoy − (días−1)); nil para `.all`. Mismo ancla que la teja de
     /// «Entrenamientos» en Tendencias, para que los conteos coincidan.
@@ -429,9 +448,16 @@ struct WorkoutHistoryScreen: View {
 
     /// «Por deporte»: los deportes de la actividad en la ventana (tocar estrecha a `.sport`) + una fila
     /// «Fuerza» que salta al dialecto de fuerza (`.strength`, NO `.sport("Fuerza")` — daría 0 sesiones).
+    /// FER-362 · C4: esa fila cuenta ricas + fuerza de terceros VISIBLE (toggle prendido y admitida por
+    /// `isAdmissibleThirdPartyStrength`) — la misma puerta que `fuerzaEntries` usa, para que «Por
+    /// deporte» y el dialecto Fuerza nunca discrepen.
     @ViewBuilder private func porDeporteSection(base: [HistoryEntry]) -> some View {
         let sports = UnifiedWorkoutHistory.sports(base)
-        let strengthCount = base.filter(\.isStrength).count
+        let strengthCount = base.filter { entry in
+            if entry.isStrength { return true }
+            guard case .cardio(let row) = entry else { return false }
+            return showThirdPartyStrengthWorkouts && UnifiedWorkoutHistory.isAdmissibleThirdPartyStrength(row)
+        }.count
         if !sports.isEmpty || strengthCount > 0 {
             VStack(alignment: .leading, spacing: LiquidSpace.s100) {
                 LiquidSectionHeader("By sport")
@@ -524,9 +550,13 @@ struct WorkoutHistoryScreen: View {
 
     /// Un `WorkoutRow` de actividad como `EntrenarFilaCardio` (SF Symbol neutro + origen + FC/duración).
     /// `detected`/`whoop` (raros en la práctica) caen a `.apple` — el componente solo tiene Apple/Manual;
-    /// extender su `Origen` es refinamiento de v2.
+    /// extender su `Origen` es refinamiento de v2. FER-362 · C4: el badge Apple lleva el nombre real de
+    /// la app que escribió el `HKWorkout` (Strong, Hevy, Apple Fitness, un run de Strava, …) —
+    /// `appleAppName` regresa `nil` para `detected`/`whoop` igual que antes (sin nombre "apple-health:"),
+    /// así que esas filas caen al «Otra app» honesto del componente en vez del «Apple» genérico previo.
     private func cardioRow(_ r: WorkoutRow) -> some View {
-        let origen: EntrenarFilaCardio.Origen = WorkoutSource.classify(r.source) == .manual ? .manual : .apple
+        let origen: EntrenarFilaCardio.Origen = WorkoutSource.classify(r.source) == .manual
+            ? .manual : .apple(name: WorkoutSource.appleAppName(r.source))
         return EntrenarFilaCardio(
             sfSymbol: WorkoutSource.sfSymbol(for: r.sport),
             deporte: WorkoutSource.displaySport(r.sport),
@@ -855,12 +885,15 @@ struct WorkoutHistoryScreen: View {
     /// de la lista COMPLETA — ya no una vista previa de 3 con «See all» empujando a una segunda
     /// pantalla (FER-90 · E9, Alcance puntos 1-2). `ForEach(sessions)` sobre un arreglo vacío no dibuja
     /// nada, así que esta misma vista sirve de cabecera-sola cuando `sessions.isEmpty` (el calendario
-    /// dibuja sus 91 celdas `.empty`) sin una rama aparte.
+    /// dibuja sus 91 celdas `.empty`) sin una rama aparte. FER-362 · C4: la lista pasa de
+    /// `recentSessions90` (solo ricas) a `fuerzaHistoryEntries` (ricas + terceros honestos si el
+    /// toggle está prendido); el trailing del header es un CONTEO honesto de esa misma lista — ya no
+    /// «Effort /21» (los terceros no tienen strain, así que la escala 0–21 mentiría para ellos).
     private var sessionsSection: some View {
-        VStack(alignment: .leading, spacing: LiquidSpace.s100) {
+        let entries = fuerzaHistoryEntries
+        return VStack(alignment: .leading, spacing: LiquidSpace.s100) {
             LiquidSectionHeader("Sessions") {
-                Text(verbatim: "\(String(localized: "Effort")) /21")
-                    .font(LiquidType.titulo).foregroundStyle(LiquidColor.tinta700)
+                Text(verbatim: "\(entries.count)").font(LiquidType.titulo).foregroundStyle(LiquidColor.tinta700)
             }
             TrainingCalendar(
                 days: historyCalendarDays, size: .full, summary: historyCalendarSummary,
@@ -873,12 +906,13 @@ struct WorkoutHistoryScreen: View {
                 monthLabels: historyMonthLabels
             )
             .padding(.top, LiquidSpace.s150).padding(.bottom, LiquidSpace.s050)
-            // FER-136 / FER-294: misma ventana de 90 días que `historialSubtitle`; misma fila
-            // `EntrenarFilaFuerza` que el dialecto Todo (kill-the-class: una sola fila).
-            if recentSessions90.isEmpty {
+            // FER-136 / FER-294 / FER-362: misma ventana de 90 días que `historialSubtitle`; `entryRow`
+            // ya sabe rendir rica → `fuerzaRow` o tercero → `cardioRow` (kill-the-class: una sola fila
+            // por tipo, compartida con el dialecto Todo).
+            if entries.isEmpty {
                 EmptyView()
             } else {
-                EntrenarHistorialLista(filas: recentSessions90.map { AnyView(fuerzaRow($0)) })
+                EntrenarHistorialLista(filas: entries.map { AnyView(entryRow($0)) })
             }
         }
     }

@@ -21,6 +21,18 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+### Fuerza de terceros honesta en «Fuerza» (FER-362, ola 2 · C4)
+- Si Strong, Hevy, Apple Fitness (o cualquier otra app) ya guardó un entrenamiento de fuerza en Apple
+  Salud, ahora aparece en «Fuerza» — con su detalle honesto: sin serie por serie (Apple Salud solo
+  guarda el resumen), sin esfuerzo 0–21 fabricado, y un origen que dice de qué app vino en vez de un
+  «Apple» genérico.
+- Si esa misma sesión también la registraste en Cénit, o dos apps de terceros guardaron la MISMA
+  sesión por duplicado, ya no se cuenta dos veces — Cénit se queda con una sola.
+- Nuevo interruptor en Ajustes → Fuentes de datos: «Mostrar entrenamientos de fuerza de otras apps»
+  (prendido por defecto).
+- Arreglo de bug: una fuente `"apple-health:Whoop"` (una app cuyo nombre contiene «whoop») se
+  clasificaba como WHOOP en vez de Apple.
+
 ### Correcciones de robustez (auditoría de estrés)
 - **Sueño con dos apps:** si el Apple Watch y otra app de sueño (o el Sleep Schedule del iPhone)
   registran la misma noche, Cénit ya no suma sus etapas — antes inflaba tu sueño total, profundo y REM,

@@ -79,6 +79,73 @@ final class UnifiedWorkoutHistoryTests: XCTestCase {
         XCTAssertEqual(out.count, 2, "sin solape, la fuerza de Apple es actividad propia, no un eco")
     }
 
+    // MARK: colapso de dos apps de terceros (FER-362 · C4 — delegado a WorkoutHealthKitDedup)
+    func testDosFilasAppleDeFuerzaSolapadasColapsanAUna() {
+        // Dos apps de terceros (p. ej. Strong Y Apple Fitness) escribieron su propio HKWorkout
+        // solapado para la MISMA sesión real — el motor conserva solo el más largo.
+        let a = row(now, now + 3000, sport: "TraditionalStrengthTraining", source: "apple-health:Strong")
+        let b = row(now + 100, now + 3400, sport: "TraditionalStrengthTraining",
+                    source: "apple-health:Apple Fitness")
+        let out = UnifiedWorkoutHistory.merge(sessions: [], rows: [a, b])
+        XCTAssertEqual(out.count, 1, "dos apps de terceros solapadas para la MISMA sesión colapsan a una")
+        guard case .cardio(let survivor) = out.first else { return XCTFail("se esperaba una fila de cardio") }
+        XCTAssertEqual(survivor.source, "apple-health:Apple Fitness", "sobrevive la más larga (3300 s > 3000 s)")
+    }
+
+    // MARK: sports() excluye la fuerza cerrada de Apple (FER-362 · C4)
+    func testSportsExcludeClosedStrengthAppleRows() {
+        let strengthLike = row(now, now + 2400, sport: "TraditionalStrengthTraining",
+                               source: "apple-health:Strong")
+        let running = row(now - day, now - day + 1800, sport: "Running", source: "apple-health:Strava")
+        let merged = UnifiedWorkoutHistory.merge(sessions: [], rows: [strengthLike, running])
+        XCTAssertEqual(UnifiedWorkoutHistory.sports(merged), ["Running"],
+                       "la fuerza CERRADA de Apple no es su propio \"deporte\" — vive bajo «Fuerza»")
+    }
+
+    // MARK: fuerzaEntries (FER-362 · C4 — fuerza de terceros honesta en el dialecto «Fuerza»)
+    func testFuerzaEntriesIncluyeRicaYTerceroAdmisibleDentroDe90Dias() {
+        let rica = session("A", now, now + 3000)
+        let tercero = row(now - day, now - day + 2400, sport: "TraditionalStrengthTraining",
+                          source: "apple-health:Strong")
+        let merged = UnifiedWorkoutHistory.merge(sessions: [rica], rows: [tercero])
+        let out = UnifiedWorkoutHistory.fuerzaEntries(merged, now: now, showThirdParty: true)
+        XCTAssertEqual(out.count, 2, "rica + tercero admisible entran las dos dentro de 90 días")
+    }
+
+    func testFuerzaEntriesToggleApagadoSueltaTerceros() {
+        let rica = session("A", now, now + 3000)
+        let tercero = row(now - day, now - day + 2400, sport: "TraditionalStrengthTraining",
+                          source: "apple-health:Strong")
+        let merged = UnifiedWorkoutHistory.merge(sessions: [rica], rows: [tercero])
+        let out = UnifiedWorkoutHistory.fuerzaEntries(merged, now: now, showThirdParty: false)
+        XCTAssertEqual(out.count, 1, "con el toggle apagado, solo la rica entra")
+        XCTAssertTrue(out.first?.isStrength ?? false)
+    }
+
+    func testFuerzaEntriesExcluyeRunningAunqueElToggleEstePrendido() {
+        let running = row(now - day, now - day + 1800, sport: "Running", source: "apple-health:Strava")
+        let merged = UnifiedWorkoutHistory.merge(sessions: [], rows: [running])
+        let out = UnifiedWorkoutHistory.fuerzaEntries(merged, now: now, showThirdParty: true)
+        XCTAssertTrue(out.isEmpty, "un deporte ABIERTO (Running) nunca entra a Fuerza, prendido o no el toggle")
+    }
+
+    func testFuerzaEntriesDescartaSobreImplausible() {
+        // Un HKWorkout corrupto: una "sesión de fuerza" de 30 horas — pasa el techo de 24 h.
+        let corrupto = row(now - day, now - day + 30 * 3_600, sport: "TraditionalStrengthTraining",
+                           source: "apple-health:Strong")
+        let merged = UnifiedWorkoutHistory.merge(sessions: [], rows: [corrupto])
+        let out = UnifiedWorkoutHistory.fuerzaEntries(merged, now: now, showThirdParty: true)
+        XCTAssertTrue(out.isEmpty, "un sobre implausible se DESCARTA, nunca se recorta a 24 h")
+    }
+
+    func testFuerzaEntriesRespetaVentanaDe90Dias() {
+        let viejo = row(now - 91 * day, now - 91 * day + 2400, sport: "TraditionalStrengthTraining",
+                        source: "apple-health:Strong")
+        let merged = UnifiedWorkoutHistory.merge(sessions: [], rows: [viejo])
+        let out = UnifiedWorkoutHistory.fuerzaEntries(merged, now: now, showThirdParty: true)
+        XCTAssertTrue(out.isEmpty, "fuera de la ventana de 90 días no entra, aunque sea admisible")
+    }
+
     // MARK: filtros
     func testFiltros() {
         let sessions = [session("A", now, now + 3000)]
