@@ -154,12 +154,10 @@ struct WorkshopTricksScreen: View {
 #if DEBUG
 #Preview("Trucos del taller") {
     NavigationStack { WorkshopTricksScreen() }
-        .preferredColorScheme(.light)
 }
 
 #Preview("Trucos del taller · xxxLarge (AX5)") {
     NavigationStack { WorkshopTricksScreen() }
-        .preferredColorScheme(.light)
         .dynamicTypeSize(.accessibility5)
 }
 #endif
