@@ -21,6 +21,23 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+### Primer uso de Entrenar más claro (FER-373)
+- Los 3 chips de split (Push Pull Legs / Full body / Upper·Lower) ya no repiten cuántas rutinas trae
+  cada uno (eso se ve dentro de la hoja) — ahora traducen el split en lenguaje llano: «Empuja · jala ·
+  pierna», «Todo el cuerpo en cada sesión», «Torso un día, pierna otro».
+- Si ya armaste una rutina pero no le pusiste día, el héroe deja de repetir «Arma tu semana»:
+  reconoce el logro («Casi listo · Ponle un día a tu rutina») y hace de «Asignar día» la acción
+  primaria — los 3 chips de plantilla siguen ahí, subordinados, detrás de «O empieza con una
+  plantilla».
+- «Desde cero» (ahora «Arma la tuya · elige ejercicios»), «Importa el plan de tu IA» y la nueva fila
+  «Entreno en casa, sin equipo» (rutina de peso corporal) se agrupan bajo un solo «¿Prefieres otra
+  forma?», en vez de flotar sueltas.
+- La nota de silencio del primer uso ya no explica una ausencia: promete. «Cuando entrenes, aquí van
+  a aparecer tus músculos trabajados y tu bitácora», más la promesa diferenciadora de la fuerza
+  on-device — progresión sugerida cuando cumples tus reps, sin conexión y sin reloj.
+- El héroe del primer uso pinta de inmediato en un arranque frío: kicker, título, subtítulo y chips ya
+  no esperan a que la base de datos conteste para aparecer bajo el pill del veredicto.
+
 ### Registrar una sesión de fuerza desde el reloj sin el iPhone (FER-361, ola 2 · C1)
 - Si el iPhone no está a la mano al empezar tu rutina, el reloj arranca la sesión por su cuenta
   («Empezar {rutina}» cuando hay un plan guardado; si no, un honesto «Empieza en tu iPhone», nunca un
