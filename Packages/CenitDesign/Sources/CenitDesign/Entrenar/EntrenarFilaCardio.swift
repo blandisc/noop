@@ -9,9 +9,12 @@ import SwiftUI
 // `TarjetaSesion` (queda huérfana al retirar WorkoutsView).
 
 public struct EntrenarFilaCardio: View {
-    /// Origen de la actividad — tiñe el `LiquidOrigenBadge`.
+    /// Origen de la actividad — tiñe el `LiquidOrigenBadge`. FER-362 · C4: `.apple` lleva el nombre
+    /// real de la app que escribió el `HKWorkout` en Apple Salud (Strong, Hevy, Apple Fitness, …) —
+    /// `nil` cuando Apple Salud no reporta nombre (o el origen ya no lo trae), y el badge cae al
+    /// «Otra app» honesto en vez de fingir que sabe cuál fue.
     public enum Origen: Sendable, Hashable {
-        case apple
+        case apple(name: String?)
         case manual
     }
 
@@ -40,7 +43,8 @@ public struct EntrenarFilaCardio: View {
     /// - Parameters:
     ///   - sfSymbol: nombre SF Symbol del deporte (`figure.run`, `dumbbell.fill`, …).
     ///   - deporte: ya localizado («Correr», «Ciclismo»).
-    ///   - origen: `.apple` → badge «Apple» en azul; `.manual` → «Manual» neutro.
+    ///   - origen: `.apple(name:)` → badge con el nombre de la app en azul («Otra app» si `nil`);
+    ///     `.manual` → «Manual» neutro.
     ///   - meta: ya formateada («mié 8 jul · 30 min · 5,2 km»).
     ///   - dato: valor + unidad + tono (rosa AA para FC, tinta para duración).
     ///   - onTap: navegación al detalle Apple/manual.
@@ -131,8 +135,8 @@ public struct EntrenarFilaCardio: View {
 
     private var origenBadge: some View {
         switch origen {
-        case .apple:
-            LiquidOrigenBadge(String(localized: "Apple"), tono: LiquidColor.azul)
+        case .apple(let name):
+            LiquidOrigenBadge(name ?? String(localized: "Other app"), tono: LiquidColor.azul)
         case .manual:
             LiquidOrigenBadge(String(localized: "Manual"), tono: nil)
         }
@@ -148,9 +152,15 @@ public struct EntrenarFilaCardio: View {
     }
 
     private var a11yLabel: Text {
-        let origenTxt: LocalizedStringKey = origen == .apple ? "Apple" : "Manual"
+        let origenTxt: Text
+        switch origen {
+        case .apple(let name):
+            origenTxt = Text(verbatim: name ?? String(localized: "Other app"))
+        case .manual:
+            origenTxt = Text("Manual")
+        }
         return Text(verbatim: "\(deporte). ")
-            + Text(origenTxt)
+            + origenTxt
             + Text(verbatim: ". \(meta). \(dato.valor) \(dato.unidad)")
     }
 }
@@ -161,9 +171,9 @@ private enum Metrics {
 }
 
 #if DEBUG
-#Preview("EntrenarFilaCardio · Apple + FC") {
+#Preview("EntrenarFilaCardio · Apple sin nombre (Otra app)") {
     EntrenarFilaCardio(
-        sfSymbol: "figure.run", deporte: "Correr", origen: .apple,
+        sfSymbol: "figure.run", deporte: "Correr", origen: .apple(name: nil),
         meta: "mié 8 jul · 30 min · 5,2 km",
         dato: .init(valor: "148", unidad: "bpm", tono: LiquidTono.rosa.rotulo),
         onTap: {})
@@ -181,9 +191,9 @@ private enum Metrics {
         .background(LiquidColor.fondoGradient)
 }
 
-#Preview("EntrenarFilaCardio · Apple fuerza-like (no rica)") {
+#Preview("EntrenarFilaCardio · Fuerza de tercero (Strong)") {
     EntrenarFilaCardio(
-        sfSymbol: "dumbbell.fill", deporte: "Fuerza", origen: .apple,
+        sfSymbol: "dumbbell.fill", deporte: "Fuerza", origen: .apple(name: "Strong"),
         meta: "jue 9 jul · 38 min",
         dato: .init(valor: "132", unidad: "bpm", tono: LiquidTono.rosa.rotulo),
         onTap: {})
@@ -193,7 +203,7 @@ private enum Metrics {
 
 #Preview("EntrenarFilaCardio · AX5") {
     EntrenarFilaCardio(
-        sfSymbol: "figure.run", deporte: "Correr", origen: .apple,
+        sfSymbol: "figure.run", deporte: "Correr", origen: .apple(name: "Strava"),
         meta: "mié 8 jul · 30 min · 5,2 km",
         dato: .init(valor: "148", unidad: "bpm", tono: LiquidTono.rosa.rotulo),
         onTap: {})

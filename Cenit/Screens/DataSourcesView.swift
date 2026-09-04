@@ -37,6 +37,9 @@ struct DataSourcesView: View {
     /// FER-742: opt-in — record the strength session on the paired Apple Watch (real HR + calories, closes
     /// the rings). Off by default; the row only appears when a watch is paired.
     @AppStorage(WorkoutMirroringBridge.mirrorToWatchKey) private var recordOnWatch = false
+    /// FER-362 · C4: shows/hides the third-party strength Apple Health already has (Strong, Hevy, Apple
+    /// Fitness) inside «Fuerza». On by default — the honest default is to show what's already there.
+    @AppStorage(WorkoutSource.showThirdPartyStrengthKey) private var showThirdPartyStrengthWorkouts = true
     #if DEBUG
     /// FER-1008 spike (dev-only, never in a store build): export Apple's nocturnal beat-to-beat R-R so a
     /// nocturnal Apple RMSSD can be validated against the strap on paired nights.
@@ -280,6 +283,7 @@ struct DataSourcesView: View {
 
             strengthWorkoutToggle
             watchRecordingRow
+            thirdPartyStrengthToggle
 
             // Reachability for the per-source Apple Health viewer. Pushed within this screen's
             // NavigationStack — «Ver datos importados ›».
@@ -342,6 +346,23 @@ struct DataSourcesView: View {
         .onChange(of: saveStrengthWorkouts) { _, on in
             if on { Task { await health.requestWorkoutShareAuthorization() } }
         }
+        .liquidTarjetaSeccion()
+    }
+
+    /// FER-362 · C4: shows/hides the third-party strength Apple Health already has (Strong, Hevy,
+    /// Apple Fitness) inside «Fuerza». On by default. Read-side only — it doesn't touch what Apple
+    /// Health authorizes or what `mapWorkouts` writes, only which rows `fuerzaEntries` admits.
+    private var thirdPartyStrengthToggle: some View {
+        Toggle(isOn: $showThirdPartyStrengthWorkouts) {
+            VStack(alignment: .leading, spacing: LiquidSpace.s050) {
+                Text(String(localized: "Show strength workouts from other apps"))
+                    .font(LiquidType.tituloFila).foregroundStyle(LiquidColor.tinta900)
+                Text(String(localized: "The ones Strong, Hevy, or Apple Fitness saved to Apple Health. You didn't log these in Cénit."))
+                    .font(LiquidType.captionLectura).foregroundStyle(LiquidColor.tinta500)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .tint(LiquidColor.verdePrimario)
         .liquidTarjetaSeccion()
     }
 

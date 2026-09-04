@@ -1158,14 +1158,21 @@ final class HealthKitBridge: ObservableObject {
         }
     }
 
-    /// Map raw `HKWorkout`s to store rows (same shape as pre-FER-883 `collectWorkouts`).
+    /// Map raw `HKWorkout`s to store rows (same shape as pre-FER-883 `collectWorkouts`). FER-362 · C4:
+    /// `source` now carries the writing app's real name — `"apple-health:" + sourceRevision.source.name`,
+    /// or bare `"apple-health"` when HealthKit reports no name — for EVERY Apple workout, not just
+    /// strength (a run synced from Strava gets its real name too). This rides the existing `source`
+    /// column; no migration, since `upsertWorkouts`' natural key is `(deviceId, startTs, sport)` and
+    /// `source = excluded.source` updates in place. `WorkoutSource.classify`/`appleAppName` read it.
     private nonisolated static func mapWorkouts(_ workouts: [HKWorkout]) -> [WorkoutRow] {
         workouts.map { w in
-            WorkoutRow(
+            let name = w.sourceRevision.source.name
+            let source = name.isEmpty ? "apple-health" : "apple-health:" + name
+            return WorkoutRow(
                 startTs: Int(w.startDate.timeIntervalSince1970),
                 endTs:   Int(w.endDate.timeIntervalSince1970),
                 sport:   Self.activityTypeName(w.workoutActivityType),
-                source:  "apple-health",
+                source:  source,
                 durationS:  w.duration > 0 ? w.duration : nil,
                 energyKcal: w.totalEnergyBurned?.doubleValue(for: .kilocalorie()),
                 avgHr: nil, maxHr: nil, strain: nil,

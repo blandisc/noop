@@ -4,6 +4,7 @@ import CenitDesign
 import StrandAnalytics
 import StrandTraining
 import CenitStore
+import StrandImport   // WorkoutHealthKitDedup.isClosedStrength (FER-362 · C4)
 import Foundation
 import Inject   // recarga en caliente (dev-only, inerte en Release)
 
@@ -32,6 +33,14 @@ struct WorkoutDetailScreen: View {
     /// Imperial/Metric display preference (display-only; nothing on disk changes). Same toggle the list reads.
     @AppStorage(UnitPrefs.systemKey) private var unitSystemRaw = UnitSystem.metric.rawValue
     private var unitSystem: UnitSystem { UnitSystem(rawValue: unitSystemRaw) ?? .metric }
+
+    /// FER-362 · C4: a third-party strength envelope Apple Health already had (Strong, Hevy, Apple
+    /// Fitness — surfaced honestly in «Fuerza», never a Cénit-measured session). Degrades several
+    /// blocks below: no 0–21 method note, no volume join, no notes, no «Duplicate as manual», and the
+    /// origin badge/footer explain where the summary actually came from.
+    private var isThirdPartyStrength: Bool {
+        WorkoutSource.classify(row.source) == .apple && WorkoutHealthKitDedup.isClosedStrength(row.sport)
+    }
 
     /// The add/edit sheet target (edit this manual row, or a manual copy of an imported one). nil = closed.
     @State private var editTarget: EditTarget?
@@ -82,21 +91,29 @@ struct WorkoutDetailScreen: View {
                     blockDivider
                     supportsBlock
                 }
-                if let notes = row.notes, !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                if let notes = row.notes, !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                   !isThirdPartyStrength {
                     blockDivider
                     notesBlock(notes)
                 }
                 blockDivider
                 originBlock
-                methodNote
-                    .padding(.top, LiquidSpace.s300)
+                if isThirdPartyStrength {
+                    thirdPartyStrengthNote
+                        .padding(.top, LiquidSpace.s300)
+                } else {
+                    methodNote
+                        .padding(.top, LiquidSpace.s300)
+                }
             }
             .padding(LiquidSpace.s600)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .task(id: row.startTs) {
             if experimentalMetrics { await loadHRR() }
-            await loadVolume()
+            // FER-362 · C4: a third-party envelope never joins a `volumeKg` (the echo step already
+            // dropped any that overlaps a rich session), so skip the read entirely.
+            if !isThirdPartyStrength { await loadVolume() }
         }
         .entrenarHojaFondo(tono: .neutro)
         .pantallaFondo()
@@ -332,6 +349,19 @@ struct WorkoutDetailScreen: View {
         return "Effort (0–21 scale) isn't available for this session."
     }
 
+    /// FER-362 · C4: replaces `methodNote` for a third-party strength envelope — there's no 0–21 scale
+    /// to explain (that note would be a lie for a session Cénit never measured), so this says what
+    /// Cénit actually has (a summary, not sets) and names the app that logged it, honestly.
+    private var thirdPartyStrengthNote: some View {
+        let app = WorkoutSource.appleAppName(row.source) ?? String(localized: "Other app")
+        return LiquidPatternBlock(
+            lineas: [
+                String(localized: "No set-by-set detail. Apple Health only keeps the summary (duration and energy)."),
+                String(localized: "\(app) logged this workout and we read it from Apple Health. Only the summary is here."),
+            ],
+            tono: LiquidColor.azul)
+    }
+
     // MARK: - Acciones (menú ••• según fuente)
 
     @ViewBuilder private var actionMenu: some View {
@@ -345,8 +375,11 @@ struct WorkoutDetailScreen: View {
         .liquidMenu(isPresented: $showActionMenu, items: actionMenuItems)
     }
 
-    /// The «···» actions as paper-menu rows, per source (FER-837).
+    /// The «···» actions as paper-menu rows, per source (FER-837). FER-362 · C4: a third-party
+    /// strength envelope gets none — "Duplicate as manual" would pre-fill a fake set-by-set session
+    /// from a summary that has no sets, which is exactly the dishonest surface this feature removes.
     private var actionMenuItems: [LiquidMenuItem] {
+        if isThirdPartyStrength { return [] }
         switch WorkoutSource.classify(row.source) {
         case .detected:
             return [
@@ -567,7 +600,10 @@ struct WorkoutDetailScreen: View {
 // MARK: - Shared source badge (detail)
 
 /// Origin badge via `LiquidOrigenBadge`: measured → verdePrimario, Apple → azul, detected → neutro,
-/// manual → atencionTexto. Free function so callers stay identical.
+/// manual → atencionTexto. Free function so callers stay identical. FER-362 · C4: Apple now shows the
+/// real app name (Strong, Hevy, Apple Fitness, Strava, …) instead of the generic "Apple" — every
+/// synced `HKWorkout` carries it (`WorkoutSource.appleAppName`), not just strength; "Other app" is the
+/// honest fallback when Apple Health reports none.
 @ViewBuilder
 func workoutOrigenBadge(for source: String) -> some View {
     switch WorkoutSource.classify(source) {
@@ -575,8 +611,13 @@ func workoutOrigenBadge(for source: String) -> some View {
         LiquidOrigenBadge(String(localized: "Measured on device"), tono: LiquidColor.verdePrimario)
             .accessibilityLabel(Text("Source: measured on device"))
     case .apple:
-        LiquidOrigenBadge(String(localized: "Apple"), tono: LiquidColor.azul)
-            .accessibilityLabel(Text("Source Apple Health"))
+        if let name = WorkoutSource.appleAppName(source) {
+            LiquidOrigenBadge(name, tono: LiquidColor.azul)
+                .accessibilityLabel(Text("Source: \(name), via Apple Health"))
+        } else {
+            LiquidOrigenBadge(String(localized: "Other app"), tono: LiquidColor.azul)
+                .accessibilityLabel(Text("Source Apple Health"))
+        }
     case .detected:
         LiquidOrigenBadge(String(localized: "Detected"), tono: nil)
             .accessibilityLabel(Text("Source on-device detected"))

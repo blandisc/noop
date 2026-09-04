@@ -495,6 +495,32 @@ or Apple-Health-only) draws the same per-epoch hypnogram as a strap night. The r
 band win per night by interval overlap. No migration — the `sleepSession` table already partitions by
 `deviceId`.
 
+**Third-party strength dedup (FER-362, ola 2 · C4).** Apple Health often already holds strength
+workouts a user logged in *another* app (Strong, Hevy, Apple's own Fitness) — surfacing those honestly
+under Cénit's «Fuerza» dialect risks two failure modes: double-counting a workout the user *also*
+tracked live in Cénit (the same session read twice), and two third-party apps each writing their own
+overlapping `HKWorkout` for one real session. `StrandImport.WorkoutHealthKitDedup` (pure,
+Foundation-only, no `CenitStore`/`StrandTraining` import) resolves both, in order: **echo** drops an
+Apple-sourced loose-strength row (sport contains strength/weight/lift/functional) that time-overlaps a
+rich `RichInterval` (a completed `StrengthSession`, Cénit-logged or CSV-imported) — the rich session
+always wins, since it has the actual sets; **collapse** then keeps only the longest of any cluster of
+overlapping Apple **closed**-strength rows (`isClosedStrength`: `TraditionalStrengthTraining`/
+`FunctionalStrengthTraining` only — deliberately narrower than the echo heuristic, since it also gates
+entry into «Fuerza»). `HealthKitBridge.mapWorkouts` tags every synced `HKWorkout`'s `source` with the
+writing app's real name (`"apple-health:" + sourceRevision.source.name`, falling back to bare
+`"apple-health"` when HealthKit reports none) — for *every* Apple workout, not just strength, so a run
+synced from Strava shows its real origin too. This rides the existing `source` column, no migration:
+`upsertWorkouts`' natural key is `(deviceId, startTs, sport)` and `source = excluded.source` updates in
+place. `UnifiedWorkoutHistory.merge` maps `WorkoutRow`/`StrengthSession` into the engine's minimal DTOs
+and keeps only `survivingRows`; `UnifiedWorkoutHistory.fuerzaEntries` is the read-time gate that
+actually admits a surviving third-party envelope into «Fuerza» — Apple origin
+(`WorkoutSource.classify == .apple`) + closed-strength sport + a plausibility guard (span > 0, ≤ 24 h,
+kcal/HR in a human range) that **discards** — never clamps — a corrupt envelope. A user toggle
+(`DataSourcesView`, `workouts.showThirdPartyStrength`, on by default) hides the third-party half of
+that gate without touching the rich-session half. This is a distinct mechanism from the Watch-mirror's
+own single-`HKWorkout` invariant (§5, `HKMetadataKeyExternalUUID`) for Cénit's *own* write-back, which
+is never read back here since `HealthKitBridge.readPredicate` already excludes `HKSource.default()`.
+
 The **recovery** counterpart for a band-less night used to be an **estimate computed read-time**
 (FER-153): `AppleRecoveryEstimator` over `apple-health` daily rows, kept out of
 `days`/`displayDays` and surfaced only on today's display. **That production path is retired**

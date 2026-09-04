@@ -30,6 +30,29 @@ final class WorkoutSourceTests: XCTestCase {
         XCTAssertEqual(WorkoutSource.classify("apple-health"), .apple)
     }
 
+    /// FER-362 · C4: the third-party app name now rides after "apple-health:" (`HealthKitBridge.
+    /// mapWorkouts`) — a name that happens to CONTAIN "whoop" must not fool `classify` into the
+    /// legacy-WHOOP-import branch. Regression guard for the real bug this fixes: before the
+    /// "apple-health"/"apple_health" prefix check moved ahead of the "whoop" substring test,
+    /// `classify("apple-health:Whoop")` returned `.whoop`.
+    func testClassifyAppleHealthPrefixWinsOverWhoopSubstring() {
+        XCTAssertEqual(WorkoutSource.classify("apple-health:Whoop"), .apple)
+        XCTAssertEqual(WorkoutSource.classify("apple-health:Strong"), .apple)
+        XCTAssertEqual(WorkoutSource.classify("apple-health:Apple Fitness"), .apple)
+        XCTAssertEqual(WorkoutSource.classify("apple-health:"), .apple)   // any suffix, even empty
+        XCTAssertEqual(WorkoutSource.classify("apple_health:Whoop"), .apple)   // legacy underscore prefix
+    }
+
+    func testAppleAppNameExtractsSuffixOrNilForNoName() {
+        XCTAssertEqual(WorkoutSource.appleAppName("apple-health:Strong"), "Strong")
+        XCTAssertEqual(WorkoutSource.appleAppName("apple-health:Apple Fitness"), "Apple Fitness")
+        XCTAssertNil(WorkoutSource.appleAppName("apple-health"))     // bare — no name
+        XCTAssertNil(WorkoutSource.appleAppName("apple-health:"))    // empty name — treated as none
+        XCTAssertNil(WorkoutSource.appleAppName("apple_health"))     // legacy XML importer, no name ever
+        XCTAssertNil(WorkoutSource.appleAppName("whoop"))
+        XCTAssertNil(WorkoutSource.appleAppName("manual"))
+    }
+
     func testDisplaySportRenamesDetectedToken() {
         XCTAssertEqual(WorkoutSource.displaySport("detected"), "Activity")
         XCTAssertEqual(WorkoutSource.displaySport("Running"), "Running")

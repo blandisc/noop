@@ -24,7 +24,11 @@ enum WorkoutFormat {
 /// (`WorkoutRow`) carries no `deviceId`, so the row's origin has to be recovered from `source`.
 /// Stored values today:
 ///   - "whoop"        — retired WHOOP CSV import (imported WHOOP session)
-///   - "apple_health" / "apple-health" — AppleHealthImport
+///   - "apple_health" / "apple-health" — the XML export importer (`AppleHealthImport`); no app name
+///   - "apple-health:<name>" — live HealthKit sync (`HealthKitBridge.mapWorkouts`, FER-362 · C4): the
+///                       writing app's real name, e.g. "apple-health:Strong" — bare "apple-health"
+///                       when HealthKit reports no name. Every Apple-sourced workout carries this,
+///                       not just strength; see `appleAppName`.
 ///   - "manual"       — AppModel.endWorkout (v1.67 live session) AND the retro add/edit sheet
 ///   - "strap-noop"   — strap-detected bouts from the retired on-device analysis (source == the
 ///                       computed deviceId, i.e. it ends in "-noop"). Historical/dormant under Apple-only.
@@ -45,8 +49,23 @@ enum WorkoutSource: Equatable {
         let s = source.lowercased()
         if s.hasSuffix("-noop") { return .detected }   // BEFORE whoop (see the ordering note above)
         if s == "manual" { return .manual }
+        // FER-362 · C4: the third-party app name now rides after "apple-health:" (`mapWorkouts`
+        // carries `w.sourceRevision.source.name`, e.g. "apple-health:Whoop" for WHOOP's own iOS app
+        // writing into Apple Health). Checked BEFORE the "whoop" substring test below — a real bug
+        // this fixes, since `classify("apple-health:Whoop")` used to fall through to `.whoop`.
+        if s.hasPrefix("apple-health") || s.hasPrefix("apple_health") { return .apple }
         if s.contains("whoop") { return .whoop }
         return .apple
+    }
+
+    /// The third-party app name carried after "apple-health:" (FER-362 · C4) — e.g. "Strong" from
+    /// "apple-health:Strong", written by `HealthKitBridge.mapWorkouts`. `nil` when the source has no
+    /// name (legacy bare "apple-health"/"apple_health", or a non-Apple source) — callers show the
+    /// honest "Other app" fallback for `nil`.
+    static func appleAppName(_ source: String) -> String? {
+        guard source.hasPrefix("apple-health:") else { return nil }
+        let name = source.dropFirst("apple-health:".count)
+        return name.isEmpty ? nil : String(name)
     }
 
     /// Sport-cell text. Two clean-ups before display:
@@ -105,6 +124,13 @@ enum WorkoutSource: Equatable {
         default:                                        return "figure.mixed.cardio"
         }
     }
+
+    // MARK: - Third-party strength visibility (FER-362 · C4)
+
+    /// UserDefaults key for the "show third-party strength" toggle (`DataSourcesView`) — on by
+    /// default. `WorkoutHistoryScreen` reads the same key so the toggle and the «Fuerza» list never
+    /// drift out of sync on the string.
+    static let showThirdPartyStrengthKey = "workouts.showThirdPartyStrength"
 
     // MARK: - Dismissed detected bouts (durable across re-detection)
     //

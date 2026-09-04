@@ -71055,6 +71055,108 @@
           }
         }
       }
+    },
+    "Show strength workouts from other apps" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show strength workouts from other apps"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar entrenamientos de fuerza de otras apps"
+          }
+        }
+      }
+    },
+    "The ones Strong, Hevy, or Apple Fitness saved to Apple Health. You didn't log these in Cénit." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The ones Strong, Hevy, or Apple Fitness saved to Apple Health. You didn't log these in Cénit."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los que Strong, Hevy o Apple Fitness guardaron en Apple Salud. No los registraste en Cénit."
+          }
+        }
+      }
+    },
+    "Other app" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other app"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Otra app"
+          }
+        }
+      }
+    },
+    "No set-by-set detail. Apple Health only keeps the summary (duration and energy)." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No set-by-set detail. Apple Health only keeps the summary (duration and energy)."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin detalle de series. Apple Salud guarda el resumen (duración y energía), no serie por serie."
+          }
+        }
+      }
+    },
+    "%@ logged this workout and we read it from Apple Health. Only the summary is here." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ logged this workout and we read it from Apple Health. Only the summary is here."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ registró este entrenamiento y lo leímos de Apple Salud. Aquí solo está el resumen."
+          }
+        }
+      }
+    },
+    "Source: %@, via Apple Health" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Source: %@, via Apple Health"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Origen: %@, vía Apple Salud"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"
