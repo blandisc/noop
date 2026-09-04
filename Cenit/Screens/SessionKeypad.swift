@@ -328,6 +328,5 @@ struct SessionKeypad: View {
                       onCopyPrevious: {}, onStep: {})
     }
     .background(LiquidColor.fondoAlto)
-    .preferredColorScheme(.light)
 }
 #endif

@@ -47,7 +47,6 @@ struct CrearPlanChip: View {
     }
     .padding(LiquidSpace.s600)
     .background(LiquidColor.fondoGradient)
-    .preferredColorScheme(.light)
 }
 #endif
 #endif

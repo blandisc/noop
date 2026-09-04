@@ -1806,7 +1806,6 @@ private struct LiquidGuardianHojaHost: View {
         .environmentObject(HealthKitBridge(repo: repo, appleDeviceId: "preview-apple", noopDeviceId: "preview"))
         #endif
         .frame(width: 920, height: 940)
-        .preferredColorScheme(.light)
 }
 
 // FER-38: la MISMA superficie viva al tamaño de texto más grande (AX5). Ejercita Dynamic Type
@@ -1838,7 +1837,6 @@ private struct LiquidGuardianHojaHost: View {
         .environmentObject(HealthKitBridge(repo: repo, appleDeviceId: "preview-apple", noopDeviceId: "preview"))
         #endif
         .frame(width: 920, height: 940)
-        .preferredColorScheme(.light)
         .dynamicTypeSize(.accessibility5)
 }
 #endif
