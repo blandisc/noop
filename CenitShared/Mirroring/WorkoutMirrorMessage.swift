@@ -1,4 +1,5 @@
 import Foundation
+import StrandTraining   // C1 (FER-361): the wire carries the real snapshot/set types (Decision A)
 
 /// The single contract for the strength-session **workout mirroring** channel between the iPhone and
 /// the Apple Watch (FER-740, F1.1 of the Apple Watch epic FER-391). Both processes share this one
@@ -30,6 +31,13 @@ public enum WorkoutMirrorMessage: Codable, Equatable {
     /// name, sets done / total, and which one is current. Additive; sent only when the plan changes.
     case plan(WorkoutPlanSnapshot)
 
+    /// iPhone → watch: the full session model (C1 · FER-361). Serves two roles: (1) the live mirror's
+    /// structural model when connected, and (2) the **seed** the watch caches (via
+    /// `updateApplicationContext`) to start a session standalone when the iPhone is unreachable — the
+    /// watch turns it into a fresh plan with `StrengthSessionSnapshot.asTemplate` (new id/startTs).
+    /// Additive; a pre-C1 watch can't decode it and drops it (`decode` is `try?`).
+    case sessionModel(StrengthSessionSnapshot)
+
     /// iPhone → watch: the rest window ended without ending the session. `recovered == true` means the
     /// pulse dropped back to target (FER-758) → the watch fires the «ready» buzz + banner; `false` means
     /// the user simply returned to the set → the watch cancels its local timer silently, no buzz.
@@ -55,6 +63,20 @@ public enum WorkoutMirrorMessage: Codable, Equatable {
     /// un toque de un contexto ya cerrado — mismo candado que el inbox de la Live Activity. Opcional:
     /// un reloj viejo que no lo manda decodifica a nil y el iPhone aplica sin el candado (como antes).
     case completeSet(sessionId: String, ts: Date?)
+
+    /// watch → iPhone: the watch LOGGED a set standalone (C1 · FER-361) — distinct from `.completeSet`
+    /// (which asks the iPhone, the logger, to advance ITS live set). Here the watch is the logger: it
+    /// carries the actual `SetSnapshot` (weight/reps/mode incl. `.drop`, `doneTs`), id-addressed, so the
+    /// iPhone folds it by `id` via `StrengthSessionReconciler` — never gated by rest staleness (a set is
+    /// a fact, not an intent). `runId` locates the exercise run the set belongs to.
+    case logSet(sessionId: String, runId: String, set: StrengthSessionSnapshot.SetSnapshot)
+
+    /// watch → iPhone: the authoritative reconciliation backup (C1 · FER-361) — the whole standalone
+    /// session as the watch has it, plus the measured `avgHr`/`energyKcal` from the watch's own
+    /// `HKWorkout` (the snapshot has no HR/energy fields). The iPhone folds it via the reconciler
+    /// (idempotent) and persists those figures with `energySource == .bandCalculated` (never a re-run
+    /// MET estimate). Drains from the durable queue on reconnect; supersedes any lost `.logSet`.
+    case syncSnapshot(snapshot: StrengthSessionSnapshot, avgHr: Int?, energyKcal: Double?)
 
     /// watch → iPhone: skip the current rest from the wrist (FER-808). Same path as the LA's `RestSkipIntent`.
     case skipRest(sessionId: String, ts: Date?)
