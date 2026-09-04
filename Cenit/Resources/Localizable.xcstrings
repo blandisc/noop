@@ -14446,6 +14446,23 @@
         }
       }
     },
+    "Couldn't read your marks. Try again." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't read your marks. Try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No pude leer tus marcas. Intenta de nuevo."
+          }
+        }
+      }
+    },
     "Couldn't read your saved tickets. Try again." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -30087,6 +30104,23 @@
         }
       }
     },
+    "Once you log a strength set (weight or reps), your best mark shows up here." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Once you log a strength set (weight or reps), your best mark shows up here."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuando registres una serie de fuerza (peso o repeticiones), tu mejor marca aparece aquí."
+          }
+        }
+      }
+    },
     "One moment." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -31145,6 +31179,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Abre tu experimento en Patrones para registrar el check-in de hoy"
+          }
+        }
+      }
+    },
+    "Opens your personal records" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens your personal records"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre tus marcas"
           }
         }
       }
@@ -47533,6 +47584,23 @@
         }
       }
     },
+    "You don't have any marks yet" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You don't have any marks yet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aún no tienes marcas"
+          }
+        }
+      }
+    },
     "You don't have habits to test yet. Log a few days first." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -48988,6 +49056,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tus niveles salen de tu propia base, con unas noches más aparecen."
+          }
+        }
+      }
+    },
+    "Your marks" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your marks"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus marcas"
           }
         }
       }

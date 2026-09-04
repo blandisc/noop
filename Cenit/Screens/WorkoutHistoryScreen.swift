@@ -95,6 +95,10 @@ struct WorkoutHistoryScreen: View {
     /// (`load()` corre en cada bump del coordinador), para no pisar la elección del usuario.
     @State private var didSeedRange = false
     @State private var sessions: [StrengthSession] = []
+    /// La línea de tiempo FUNDIDA, MEMOIZADA (auditoría 2ª ronda, Sev-4). Antes era una computed que
+    /// recomputaba `UnifiedWorkoutHistory.merge` —O(sesiones × filas)— ~4 veces por evaluación de
+    /// `todoDialect`. Ahora se calcula UNA vez en `load()` (único sitio que asigna `sessions`/`workoutRows`).
+    @State private var mergedEntries: [HistoryEntry] = []
     @State private var routineNames: [String: String] = [:]
     @State private var volumes: [String: (volumeKg: Double, setCount: Int)] = [:]
     /// Trailing-30-day muscle set events for the compact «Volume per muscle» summary (FER-719 math).
@@ -291,12 +295,13 @@ struct WorkoutHistoryScreen: View {
             tono: LiquidColor.azul)
     }
 
-    /// La línea de tiempo FUNDIDA (fuerza rica + actividad, con el eco de Apple de-duplicado). Base
-    /// COMPARTIDA de los dos dialectos (Fuerza y Todo); el rango y el filtro se aplican encima. Pura
-    /// (`UnifiedWorkoutHistory`).
-    private var mergedEntries: [HistoryEntry] {
-        UnifiedWorkoutHistory.merge(sessions: sessions, rows: workoutRows)
-    }
+    // MARK: - FER-202 · dialecto ACTIVIDAD («Todo» / deporte)
+
+    // `mergedEntries` (la línea de tiempo FUNDIDA: fuerza rica + actividad, con el eco de Apple
+    // de-duplicado; base de todo el dialecto) es ahora un `@State` memoizado, poblado en `load()`.
+    // Antes era una computed que recomputaba el merge O(n×m) en cada acceso (auditoría 2ª ronda, Sev-4).
+    // FER-362 · C4: el merge ahora delega el dedup a `WorkoutHealthKitDedup` (mismo `merge(sessions:rows:)`),
+    // así que la memoización de `load()` sigue válida sin cambios.
 
     // MARK: - FER-362 · C4 · dialecto FUERZA (rica + terceros honestos)
 
@@ -1327,9 +1332,12 @@ struct WorkoutHistoryScreen: View {
         self.volumes = volumes
         self.muscleEvents = muscleEvents
         self.workoutRows = await w
+        // Sev-4 (2ª ronda): calcula la línea de tiempo fundida UNA vez aquí —único sitio que asigna
+        // `sessions`/`workoutRows`— en vez de recomputar el merge O(sesiones × filas) ~4× por render.
+        self.mergedEntries = UnifiedWorkoutHistory.merge(sessions: sessions, rows: self.workoutRows)
         // Siembra el rango del dialecto «Todo» al más estrecho con ≥2 entradas, una sola vez.
         if !didSeedRange {
-            self.range = defaultTodoRange(UnifiedWorkoutHistory.merge(sessions: sessions, rows: self.workoutRows))
+            self.range = defaultTodoRange(self.mergedEntries)
             didSeedRange = true
         }
         self.loaded = true

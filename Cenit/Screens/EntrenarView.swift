@@ -55,13 +55,17 @@ struct EntrenarView: View {
     var openWorkoutSession: (WorkoutSessionRoute) -> Void
     /// Push «Tu cuerpo» (`MuscleVolumeRoute`, FER-131) — from the landing's «Músculos cargados» line.
     var openMuscleMap: () -> Void
+    /// Push «Tus marcas» (`PersonalRecordsRoute`, FER-360) — from the hub's «Marcas» tile, ALWAYS
+    /// (the tile no longer hides without PRs; it opens the honest-empty screen instead).
+    var openMarcas: () -> Void
 
     var body: some View {
         EntrenarLanding(openRoutine: openRoutine,
                         openBreathe: openBreathe, openIntervals: openIntervals,
                         openHistory: openHistory, openWeeklyPlan: openWeeklyPlan,
                         openRoutines: openRoutines,
-                        openWorkoutSession: openWorkoutSession, openMuscleMap: openMuscleMap)
+                        openWorkoutSession: openWorkoutSession, openMuscleMap: openMuscleMap,
+                        openMarcas: openMarcas)
             .enableInjection()   // Inject: ver la nota en `inject` arriba (no-op en Release)
     }
 }
@@ -79,6 +83,7 @@ private struct EntrenarLanding: View {
     var openRoutines: () -> Void
     var openWorkoutSession: (WorkoutSessionRoute) -> Void
     var openMuscleMap: () -> Void
+    var openMarcas: () -> Void
 
     @State private var loaded = false
     @State private var loadFailed = false   // store couldn't be read — a real error, NOT «no plan yet»
@@ -452,10 +457,10 @@ private struct EntrenarLanding: View {
             EntrenarHubCuerpo(topMuscleName: cuerpo.name, topMuscleKey: cuerpo.key, onOpenMap: openMuscleMap)
                 .padding(.top, LiquidSpace.s100)
         }
-        if marcasData != nil || volumenData != nil {
-            EntrenarHubMarcasVolumen(marca: marcasData, volumen: volumenData)
-                .padding(.top, LiquidSpace.s100)
-        }
+        // FER-360: la tesela «Marcas» ya no calla sin PRs — siempre se muestra (modelo vacío honesto
+        // + tap → «Tus marcas»); solo VOLUMEN sigue con su propio silencio (<3 sesiones en 8 semanas).
+        EntrenarHubMarcasVolumen(marca: marcasData, volumen: volumenData, onOpenMarcas: openMarcas)
+            .padding(.top, LiquidSpace.s100)
         EntrenarHubConstancia(
             semanas: constanciaSemanas,
             sessionsThisMonth: TrainingWeeks.sessionsThisMonth(
@@ -537,8 +542,10 @@ private struct EntrenarLanding: View {
         }
     }
 
-    private var marcasData: EntrenarHubMarcasVolumen.Marca? {
-        guard let latestPR else { return nil }
+    /// FER-360: ya NO es opcional — sin ninguna marca todavía, `EntrenarHubMarcasVolumen` recibe un
+    /// `Marca(reciente: nil)` y dibuja el modelo vacío (la tesela se muestra SIEMPRE ahora).
+    private var marcasData: EntrenarHubMarcasVolumen.Marca {
+        guard let latestPR else { return .init(reciente: nil) }
         let cal = Calendar.current
         let monthLabel = cal.shortMonthSymbols[cal.component(.month, from: Date()) - 1].lowercased()
         let (valueText, unitText) = prValueText(latestPR)
@@ -555,14 +562,14 @@ private struct EntrenarLanding: View {
                 ? String(localized: "before \(prevText) · 1 day ago")
                 : String(localized: "before \(prevText) · \(daysAgo) days ago")
         }
-        return EntrenarHubMarcasVolumen.Marca(
+        return EntrenarHubMarcasVolumen.Marca(reciente: .init(
             // Ronda 2 · O2: «Marcas · 0 en {mes}» es alcanzable (PR vigente de un mes anterior) —
             // 0 este mes ⇒ `countThisMonth: nil`, la regla dice solo «MARCAS» (decisión registrada).
             countThisMonth: personalRecordCountThisMonth > 0 ? personalRecordCountThisMonth : nil,
             monthLabel: monthLabel,
             valueText: valueText, unitText: unitText,
             exerciseAndMetric: "\(latestPRExerciseName) · \(Self.prMetricLabel(latestPR.metric))",
-            previousText: previousText)
+            previousText: previousText))
     }
 
     // MARK: - VOLUMEN (v18) — 8 semanas de tonelaje; silencio con <3 sesiones en el rango.
@@ -1555,9 +1562,15 @@ private struct EntrenarLanding: View {
         let volumes = await repo.sessionVolumes()
         // FER-171 · hub v18 «Marcas»: el PR más reciente + cuántos cayeron este mes + el PR anterior
         // del mismo ejercicio+métrica (el nombre del ejercicio se resuelve solo si hay marca).
+        // FER-360: el conteo del mes ahora es DISTINCT-exercise (`personalRecordExerciseStats`), la
+        // MISMA función que usa la pantalla «Tus marcas» — no `personalRecordCount`, que cuenta filas
+        // (hasta 3 por ejercicio) y sobre-contaría un ejercicio con dos métricas nuevas este mes.
         let latest = await repo.latestPersonalRecord()
         let startOfMonth = cal.date(from: cal.dateComponents([.year, .month], from: Date())) ?? Date()
-        let countThisMonth = await repo.personalRecordCount(sinceTs: startOfMonth.timeIntervalSince1970)
+        let endOfMonth = cal.date(byAdding: .month, value: 1, to: startOfMonth) ?? startOfMonth
+        let countThisMonth = await repo.personalRecordExerciseStats(
+            monthStart: startOfMonth.timeIntervalSince1970, monthEnd: endOfMonth.timeIntervalSince1970
+        ).thisMonth
         var previous: PersonalRecord?
         var latestName = ""
         if let latest {

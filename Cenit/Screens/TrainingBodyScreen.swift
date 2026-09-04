@@ -136,9 +136,10 @@ struct TrainingBodyScreen: View {
     /// `.recover` gatea, `.lighter` nunca.
     private var systemicGate: Bool { TrainingRegulation.gatesTraining(repo.trainingAdvice) }
 
-    private var loads: [MuscleFatigueMap.MuscleLoad] {
-        MuscleFatigueMap.loads(events: events)
-    }
+    /// Memoized once per refresh (`load()` / `markAllRecovered()`) instead of recomputed by every
+    /// reader below — `rankingLoads`, `loadByMuscle`, `topMuscle`, `focused` and `body` itself each
+    /// used to call `MuscleFatigueMap.loads(events:)` from scratch, 3-5× per render.
+    @State private var loads: [MuscleFatigueMap.MuscleLoad] = []
     /// The «Más cargados» ranking is fixed to the last 7 days (the mock), independent of how far back
     /// the decayed tint reaches. `weeklySets` is the engine's 7-day count — the same window the row
     /// displays — so membership and the shown number are single-sourced.
@@ -640,6 +641,7 @@ struct TrainingBodyScreen: View {
             }
         }
         events = ev
+        loads = MuscleFatigueMap.loads(events: events)
         hitsByMuscle = hits.mapValues { dict in
             dict.values.sorted { ($0.primary ? 0 : 1, $0.name) < ($1.primary ? 0 : 1, $1.name) }
         }

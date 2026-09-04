@@ -110,7 +110,8 @@ struct RootTabView: View {
                 openWeeklyPlan: { trainStack.append(SecondaryScreen.weeklyPlan) },
                 openRoutines: { trainStack.append(SecondaryScreen.weeklyPlan) },
                 openWorkoutSession: { trainStack.append($0) },
-                openMuscleMap: { trainStack.append(MuscleVolumeRoute()) }
+                openMuscleMap: { trainStack.append(MuscleVolumeRoute()) },
+                openMarcas: { trainStack.append(PersonalRecordsRoute()) }
             )
             .barReservation(barHeight)
             .navigationDestination(for: SecondaryScreen.self) { screen in
@@ -136,6 +137,9 @@ struct RootTabView: View {
             }
             .navigationDestination(for: SavedTicketsRoute.self) { _ in
                 trainChrome(SavedTicketsScreen())
+            }
+            .navigationDestination(for: PersonalRecordsRoute.self) { _ in
+                trainChrome(PersonalRecordsScreen())
             }
             // FER-202 (fusión «Historial unificado»): el detalle de una fila de ACTIVIDAD (cardio/manual,
             // `WorkoutRow`) — `WorkoutHistoryScreen.openCardio` lo empuja aquí. Antes lo registraba

@@ -105,19 +105,18 @@
         }
       }
     },
-    "Active" : {
-      "extractionState" : "stale",
+    "Energy" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Active"
+            "value" : "Energy"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Activas"
+            "value" : "Energía"
           }
         }
       }
@@ -373,12 +372,12 @@
         }
       }
     },
-    "Log set" : {
+    "Complete set" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Log set"
+            "value" : "Complete set"
           }
         },
         "es" : {
@@ -407,19 +406,18 @@
         }
       }
     },
-    "Next: set %lld · %@" : {
-      "extractionState" : "stale",
+    "Back to: set %lld · %@" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Next: set %lld · %@"
+            "value" : "Back to: set %lld · %@"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sigue: serie %lld · %@"
+            "value" : "Al volver: serie %lld · %@"
           }
         }
       }
