@@ -365,14 +365,18 @@ struct WorkoutDetailScreen: View {
     // MARK: - Acciones (menú ••• según fuente)
 
     @ViewBuilder private var actionMenu: some View {
-        Button { showActionMenu = true } label: {
-            Image(systemName: "ellipsis")
-                .font(LiquidType.iconSF(size: 15))
-                .foregroundStyle(LiquidColor.tinta900)
+        // FER-362 · C4: a third-party strength envelope has no actions (`actionMenuItems == []`), so
+        // the «···» itself is hidden — an empty menu is worse than no button.
+        if !actionMenuItems.isEmpty {
+            Button { showActionMenu = true } label: {
+                Image(systemName: "ellipsis")
+                    .font(LiquidType.iconSF(size: 15))
+                    .foregroundStyle(LiquidColor.tinta900)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Session actions")
+            .liquidMenu(isPresented: $showActionMenu, items: actionMenuItems)
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Session actions")
-        .liquidMenu(isPresented: $showActionMenu, items: actionMenuItems)
     }
 
     /// The «···» actions as paper-menu rows, per source (FER-837). FER-362 · C4: a third-party
