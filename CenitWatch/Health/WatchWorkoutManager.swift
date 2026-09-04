@@ -453,7 +453,11 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
         guard wc.activationState == .activated else { return }
         if wc.isReachable {
             wc.sendMessageData(data, replyHandler: nil) { [weak self] _ in
-                self?.transfer(data)
+                // errorHandler runs on WatchConnectivity's private queue, not the main actor — hop before
+                // touching `self` (Sev-4, mina de Swift 6; mismo patrón que los delegates nonisolated abajo).
+                Task { @MainActor in
+                    self?.transfer(data)
+                }
             }
         } else {
             transfer(data)

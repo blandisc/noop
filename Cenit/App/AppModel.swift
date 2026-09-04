@@ -340,7 +340,8 @@ import StrandTraining
             if i == 0 {
                 LiquidHaptica.disparar(rol)
             } else {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.12 * Double(i)) {
+                Task {
+                    try? await Task.sleep(for: .milliseconds(120 * i))
                     LiquidHaptica.disparar(rol)
                 }
             }
