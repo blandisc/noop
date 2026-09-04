@@ -89,7 +89,7 @@ private struct WatchFaceMetrics: View {
         Button(action: logSet) {
             Group {
                 if loggedCheck { Image(systemName: "checkmark").accessibilityHidden(true) }
-                else { Text("Log set") }
+                else { Text("Complete set") }
             }
             .font(LiquidType.filaConteo)
             .frame(maxWidth: .infinity, minHeight: WatchMetrics.ctaHeight)
@@ -97,7 +97,7 @@ private struct WatchFaceMetrics: View {
         // token-exempt(sistema): control nativo watchOS
         .buttonStyle(.borderedProminent)
         .tint(LiquidOLED.tinta)
-        .accessibilityLabel(Text("Log set"))
+        .accessibilityLabel(Text("Complete set"))
     }
 
     private func logSet() {
@@ -135,7 +135,7 @@ private struct WatchFaceMetrics: View {
             restControls(rest)
             Spacer(minLength: LiquidSpace.s100)
             heartSecondary
-            Text("Next: set \(rest.setNumber) · \(rest.returnDetail)")
+            Text("Back to: set \(rest.setNumber) · \(rest.returnDetail)")
                 .font(LiquidType.pie).foregroundStyle(LiquidOLED.tintaSecundaria).lineLimit(2)
             // FER-96 — the exercise handoff, additive to the line above: same condition the widget's
             // card already uses (`RestLiveActivity.swift:297-309`, `phaseRaw == "lastSetOfExercise"` AND
@@ -332,7 +332,7 @@ private struct WatchControlPage: View {
                 .buttonStyle(.bordered).tint(LiquidOLED.tintaSecundaria)
             } else {
                 Button { WatchHaptic.actionTapped.play(); manager.completeSetFromWrist() } label: {
-                    Text("Log set").frame(maxWidth: .infinity, minHeight: WatchMetrics.controlHeight)
+                    Text("Complete set").frame(maxWidth: .infinity, minHeight: WatchMetrics.controlHeight)
                 }
                 // token-exempt(sistema): control nativo watchOS
                 .buttonStyle(.borderedProminent).tint(LiquidOLED.tinta)

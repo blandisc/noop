@@ -27,7 +27,7 @@ struct WatchSummaryView: View {
                 HStack(alignment: .top) {
                     stat("Avg HR", summary.averageHeartRate.map { Text(verbatim: "\($0)") })
                     Spacer()
-                    stat("Active", summary.activeEnergyKcal.map { Text("\($0) kcal") })
+                    stat("Energy", summary.activeEnergyKcal.map { Text("\($0) kcal") })
                 }
 
                 saveLine
