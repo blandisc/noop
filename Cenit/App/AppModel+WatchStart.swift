@@ -31,8 +31,24 @@ extension AppModel {
             healthConnected: healthBridge?.auth == .authorized,
             verdictPending: repo.todayPreparedness == nil && !repo.fullyLoaded,
             hasPlan: routine != nil)
+        // C1 (FER-361): also push today's plan as a SEED so the watch can start a session STANDALONE
+        // (offline). Same resolution the wrist start uses; nil on a rest day / empty plan → the watch
+        // shows «Empieza en tu iPhone» (its no-seed branch). The seed's id/startTs are throwaway — the
+        // watch mints a fresh identity via `asTemplate` when it actually starts.
+        var seed: WorkoutMirrorMessage?
+        if let routine {
+            let serving = await repo.programServing()
+            let slots = await resolveTodaySlotsForWatch(routineId: routine.id, serving: serving)
+            if !slots.isEmpty {
+                let model = StrengthSessionModel.make(routineId: routine.id, routineName: routine.name,
+                                                      slots: slots, startTs: Int(Date().timeIntervalSince1970))
+                model.programWeek = serving.flatMap(\.stampWeek)
+                model.deload = serving.flatMap(\.stampDeload)
+                seed = .sessionModel(model.snapshot())
+            }
+        }
         mirroringBridge?.pushIdleContext(word: hilo?.palabra, toneRaw: hilo.map(Self.watchToneRaw(_:)),
-                                         advice: hilo?.consejo, routineName: routine?.name)
+                                         advice: hilo?.consejo, routineName: routine?.name, seed: seed)
     }
 
     /// The wire vocabulary `CenitWatch` decodes (`"clear"/"caution"/"ease"/"hollow"`) for

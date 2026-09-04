@@ -210,6 +210,12 @@ public enum WorkoutMirrorKey {
     /// The single dictionary key the HealthKit mirror payload (`[String: Any]`) carries the encoded
     /// `WorkoutMirrorMessage` under.
     public static let payloadKey = "noop.mirror"
+
+    /// C1 (FER-361): a SECOND key in the same `updateApplicationContext` dict for the standalone SEED
+    /// (`.sessionModel(todayPlan)`). The application context is a single-slot last-known-state channel,
+    /// so the seed rides alongside the idle-face context under its own key rather than clobbering it —
+    /// the watch reads both. Only present when today has a plan.
+    public static let seedKey = "noop.seed"
 }
 
 public extension WorkoutMirrorMessage {

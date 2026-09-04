@@ -688,6 +688,12 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
     /// Called both from the delegate callback (a NEW context arrived) and once at activation (the
     /// context the iPhone already pushed before this app process existed).
     private func adoptApplicationContext(_ context: [String: Any]) {
+        // C1 (FER-361): the standalone SEED (today's plan) rides in its own key alongside the idle-face
+        // context — cache it first so a start tap right after activation already has today's plan.
+        if let seedData = context[WorkoutMirrorKey.seedKey] as? Data,
+           let seedMsg = WorkoutMirrorMessage.decode(seedData) {
+            handle(seedMsg)
+        }
         guard let data = context[WorkoutMirrorKey.payloadKey] as? Data,
               let message = WorkoutMirrorMessage.decode(data) else { return }
         handle(message)
