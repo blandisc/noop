@@ -1,6 +1,7 @@
 import Foundation
 import HealthKit
 import WatchConnectivity
+import StrandTraining   // C1 (FER-361): the standalone logger mutates the real domain types (Decision A)
 import os
 
 /// watchOS side of the strength-session **workout mirroring** (FER-740). The wrist runs the *real*
@@ -72,6 +73,27 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
     /// The end-of-session summary, set when the session ends with something saved.
     @Published var summary: WatchSessionSummary?
 
+    /// C1 (FER-361): the current session's full structural model — every run/set, however we got it.
+    /// Adopted verbatim from `.sessionModel` while a mirrored (iPhone-driven) session is live, or
+    /// authored + mutated locally while `isStandalone`. Distinct from `rest`/`capture`/`plan`, which keep
+    /// driving the existing narrow mirrored faces unchanged; B2's standalone logger reads/mutates THIS.
+    /// nil whenever there's no session (idle, or between end and the next start).
+    @Published private(set) var sessionSnapshot: StrengthSessionSnapshot?
+    /// True only while the WATCH itself is the logger (a local start via `startTodayFromWrist()` while
+    /// the iPhone was unreachable) — false for an iPhone-driven mirrored session, even though
+    /// `sessionSnapshot` may be populated in both cases. Gates `logStandaloneSet`/`addStandaloneDrop`/
+    /// `endStandaloneSession`, and tells B2 which face/copy applies.
+    @Published private(set) var isStandalone = false
+    /// Whether a cached seed (today's plan, pushed by the iPhone as `.sessionModel`) exists to start a
+    /// standalone session from if the iPhone is unreachable. B2 uses this to gate/label the idle face's
+    /// «Empezar» before the person even taps it.
+    @Published private(set) var hasSeed = false
+    /// C1 (FER-361): `startTodayFromWrist()` was tapped with the iPhone unreachable AND no cached seed —
+    /// the one case where the tap truly does nothing. B2 shows «Empieza en tu iPhone» from this rather
+    /// than `Phase` (nothing failed to connect; there was simply nothing to start from). Cleared on the
+    /// next start attempt that isn't this same dead end.
+    @Published private(set) var startNeedsPhone = false
+
     private let healthStore = HKHealthStore()
     private let log = Logger(subsystem: "com.noopapp.noop.watch", category: "WatchWorkout")
 
@@ -80,6 +102,10 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
     /// The shared session identity, injected by the iPhone's `.start`. Drives the idempotency key.
     private var sessionId: String?
     private var externalUUID: String?
+    /// C1 (FER-361): the last seed the iPhone pushed (`.sessionModel`), mirrored in memory from
+    /// `WatchSessionStore` so `startTodayFromWrist()` can decide synchronously whether a local start is
+    /// possible. The store itself, not this cache, is the durable source of truth across relaunches.
+    private var cachedSeed: StrengthSessionSnapshot?
 
     /// Fires the rest-end haptic locally at `restEndsAt` (survives an iPhone disconnect). Cancelled if
     /// the iPhone leaves the rest early (user returned to the set) → no haptic.
@@ -99,6 +125,16 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
             WCSession.default.delegate = self
             WCSession.default.activate()
         }
+        Task { await self.loadCachedSeed() }   // C1 (FER-361): a seed from a prior launch survives here
+    }
+
+    /// C1 (FER-361): prime `cachedSeed`/`hasSeed` from `WatchSessionStore` at launch, so a seed cached
+    /// before the app last quit is available to `startTodayFromWrist()` immediately — not only after the
+    /// iPhone re-pushes `.sessionModel` this session.
+    private func loadCachedSeed() async {
+        guard let seed = await WatchSessionStore.shared.loadSeed() else { return }
+        cachedSeed = seed
+        hasSeed = true
     }
 
     /// Request HealthKit share/read up front (the watch has no in-app rationale screen).
@@ -135,6 +171,17 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
     /// failure here flips `phase` immediately, with its own text.
     func start(configuration: HKWorkoutConfiguration) async throws {
         beginConnecting()
+        try await startHealthKitSession(configuration: configuration, mirrorToCompanion: true)
+    }
+
+    /// The actual `HKWorkoutSession`/builder setup, shared by the iPhone-driven path above and the
+    /// standalone path below (C1 · FER-361) — factored out so the two can never drift on the delicate
+    /// HealthKit choreography (delegate wiring, data source, `externalUUID`-bearing finish downstream).
+    /// `mirrorToCompanion` is the only real difference: a standalone start already knows the phone is
+    /// unreachable (that's why it's standalone), so it skips `startMirroringToCompanionDevice()` rather
+    /// than waiting on a call that can only fail or stall.
+    private func startHealthKitSession(configuration: HKWorkoutConfiguration,
+                                       mirrorToCompanion: Bool) async throws {
         do {
             let session = try HKWorkoutSession(healthStore: healthStore, configuration: configuration)
             let builder = session.associatedWorkoutBuilder()
@@ -144,7 +191,7 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
                                                          workoutConfiguration: configuration)
             self.session = session
             self.builder = builder
-            try await session.startMirroringToCompanionDevice()
+            if mirrorToCompanion { try await session.startMirroringToCompanionDevice() }
             let start = Date()
             session.startActivity(with: start)
             try await builder.beginCollection(at: start)
@@ -153,11 +200,50 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
             enterRunning()
             refreshHealthAccess()
             WatchHaptic.sessionStart.play()
-            log.log("Watch workout started")
+            log.log("Watch workout started (mirrored: \(mirrorToCompanion))")
         } catch {
-            log.error("Failed to start mirrored workout: \(error.localizedDescription, privacy: .public)")
+            log.error("Failed to start workout: \(error.localizedDescription, privacy: .public)")
             failToStart()
             throw error
+        }
+    }
+
+    /// The same configuration the iPhone requests when it wakes the watch
+    /// (`WorkoutMirroringBridge.attemptMirror`) — traditional strength training, default location — so a
+    /// standalone `HKWorkout` reads identically to a mirrored one. A fresh instance per call, matching
+    /// how the iPhone side builds it (HealthKit owns the object once handed off).
+    private static func strengthWorkoutConfiguration() -> HKWorkoutConfiguration {
+        let config = HKWorkoutConfiguration()
+        config.activityType = .traditionalStrengthTraining
+        return config
+    }
+
+    /// Local-start branch of `startTodayFromWrist()` (C1 · FER-361): the iPhone is unreachable but a
+    /// cached seed exists — turn it into a fresh plan (`asTemplate`, so the id/startTs never collide with
+    /// the seed itself or an earlier local start on the same plan), publish it as `sessionSnapshot` +
+    /// `isStandalone` for the UI (B2), persist it via `WatchSessionStore` (debounced like every other
+    /// in-progress edit — a crash within that ~1s window loses the identity, same risk as losing the last
+    /// edit mid-session), and start the real `HKWorkoutSession` with no companion-mirroring attempt.
+    private func startStandalone(from seed: StrengthSessionSnapshot) async {
+        guard sessionId == nil, !sessionActive else { return }
+        let template = seed.asTemplate(newId: UUID().uuidString, nowTs: Int(Date().timeIntervalSince1970))
+        sessionId = template.id
+        externalUUID = WorkoutMirrorKey.externalUUID(for: template.id)
+        if !template.routineName.isEmpty { routineName = template.routineName }
+        isStandalone = true
+        sessionSnapshot = template
+        await WatchSessionStore.shared.saveInProgress(template)
+        do {
+            try await startHealthKitSession(configuration: Self.strengthWorkoutConfiguration(),
+                                            mirrorToCompanion: false)
+        } catch {
+            // `startHealthKitSession` already flipped `phase` to `.healthKitFailure` and logged — undo
+            // the published/persisted state so a retry starts clean instead of finding a dead identity.
+            isStandalone = false
+            sessionSnapshot = nil
+            sessionId = nil
+            externalUUID = nil
+            await WatchSessionStore.shared.clearInProgress()
         }
     }
 
@@ -192,6 +278,7 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
     /// Re-adopt a session that outlived the app (killed / rebooted mid-session). Called at launch. The
     /// user lands back on the running face (state 3/4), not a special screen.
     func recoverIfNeeded() {
+        Task { await self.restoreStandaloneIfNeeded() }
         healthStore.recoverActiveWorkoutSession { [weak self] recovered, error in
             guard let self else { return }
             if let error { self.log.error("Recover failed: \(error.localizedDescription, privacy: .public)"); return }
@@ -211,6 +298,21 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
         }
     }
 
+    /// C1 (FER-361): re-adopt a standalone session's LOGGED DATA after the watch relaunches mid-session —
+    /// sibling of the block above, which re-adopts the raw `HKWorkoutSession`/builder. Independent of
+    /// whether that recovery succeeds: even with a lost HK session, `endStandaloneSession()` can still
+    /// emit one more `.syncSnapshot` from whatever was logged before the relaunch.
+    private func restoreStandaloneIfNeeded() async {
+        guard let snapshot = await WatchSessionStore.shared.loadInProgress() else { return }
+        guard sessionId == nil else { return }   // a mirrored session already claimed identity first
+        isStandalone = true
+        sessionSnapshot = snapshot
+        sessionId = snapshot.id
+        externalUUID = WorkoutMirrorKey.externalUUID(for: snapshot.id)
+        if !snapshot.routineName.isEmpty { routineName = snapshot.routineName }
+        log.log("Restored standalone session from disk")
+    }
+
     /// End the session from the wrist (FER-741). Reuses the existing `.end` contract: the iPhone's bridge
     /// reads a watch-sent `.end` as «ended from the wrist» (`onWatchEndedSession`) and closes its own
     /// session — no new message type needed. We also end locally so the summary appears immediately.
@@ -228,10 +330,25 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
         phase = .idle(couldNotConnect: false)
     }
 
-    /// End the session on the iPhone's order (`.end`). Saves the real workout when `save`, stamped with
-    /// the shared `externalUUID`, then acks `watchDidSaveWorkout` so the iPhone omits its estimate.
+    /// End the session on the iPhone's order (`.end`) OR from `endStandaloneSession()`. Saves the real
+    /// workout when `save`, stamped with the shared `externalUUID`, then acks `watchDidSaveWorkout` so
+    /// the iPhone omits its estimate.
+    ///
+    /// C1 (FER-361): when the session being closed is standalone, this ALSO reconciles it back to the
+    /// iPhone via `.syncSnapshot` — the `defer` below fires it exactly once on every exit path (even the
+    /// early bail-outs, with whatever `avgHr`/`kcal` were actually measured, `nil` if we never got that
+    /// far), using state captured before `cleanup()` clears it.
     private func endSession(endedAt: Date, save: Bool) async {
-        defer { cleanup() }
+        let standaloneToSync = isStandalone ? sessionSnapshot : nil
+        var finalStats: (hr: Int?, kcal: Int?)?
+        var didSaveWorkout = false   // /qa D-1: only a real watch save lets the iPhone omit its own (FER-740)
+        defer {
+            if let standaloneToSync {
+                syncStandaloneSnapshot(standaloneToSync, avgHr: finalStats?.hr,
+                                       energyKcal: finalStats?.kcal, didSaveWorkout: didSaveWorkout)
+            }
+            cleanup()
+        }
         restEndTask?.cancel()
         guard let session, let builder else { sessionActive = false; return }
         let sid = sessionId ?? ""
@@ -245,10 +362,12 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
         do {
             try await builder.endCollection(at: endedAt)
             let stats = summaryStatistics(from: builder, endedAt: endedAt)
+            finalStats = (stats.hr, stats.kcal)
             try await builder.addMetadata([HKMetadataKeyExternalUUID: ext])
             let workout = try await builder.finishWorkout()
             session.end()
             if workout != nil {
+                didSaveWorkout = true   // the wrist wrote the real HKWorkout → the iPhone omits its save
                 send(.watchDidSaveWorkout(sessionId: sid, externalUUID: ext))
                 presentSummary(stats, saveState: .saved)
             } else {
@@ -259,9 +378,24 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
             log.error("Finish failed: \(error.localizedDescription, privacy: .public)")
             send(.watchWillNotSave(sessionId: sid, reason: .sessionError))
             let stats = summaryStatistics(from: builder, endedAt: endedAt)
+            finalStats = (stats.hr, stats.kcal)
             session.end()
             presentSummary(stats, saveState: .failed)
         }
+    }
+
+    /// C1 (FER-361): the authoritative reconciliation backup for a standalone session — sent over the
+    /// DURABLE queue (`transferUserInfo`) directly, never the best-effort live channel `send(_:)` prefers,
+    /// because this is exactly the message that must survive the iPhone being unreachable right now (the
+    /// reason the session ran standalone at all) and land whenever it reconnects. `energyKcal` travels as
+    /// `Double` (the wire's shape); `summaryStatistics` already rounds to `Int` for the wrist's own card.
+    private func syncStandaloneSnapshot(_ snapshot: StrengthSessionSnapshot, avgHr: Int?, energyKcal: Int?,
+                                        didSaveWorkout: Bool) {
+        guard let data = WorkoutMirrorMessage.syncSnapshot(
+            snapshot: snapshot, avgHr: avgHr, energyKcal: energyKcal.map(Double.init),
+            didSaveWorkout: didSaveWorkout).encoded()
+        else { return }
+        transfer(data)
     }
 
     /// Read average heart rate + active energy off the builder for the summary card. Best-effort: any
@@ -301,6 +435,11 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
         startDate = nil
         restEndTask?.cancel()
         restEndTask = nil
+        sessionSnapshot = nil
+        if isStandalone {
+            isStandalone = false
+            Task { await WatchSessionStore.shared.clearInProgress() }
+        }
     }
 
     // MARK: - Rest window (FER-741)
@@ -372,9 +511,126 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
     /// routine/slots travel with this: the watch only asks, the iPhone resolves «today» and starts,
     /// through the exact same path its own «Empezar» button uses. Same guaranteed-channel `send` as
     /// every other wrist action.
+    ///
+    /// C1 (FER-361) extends the table for when the iPhone can't be asked at all:
+    ///
+    /// | iPhone reachable? | cached seed? | outcome |
+    /// |---|---|---|
+    /// | yes | — | ask it, as before (`.startFromWrist`) — it mints, never the watch |
+    /// | no  | yes | mint LOCALLY from the seed (`asTemplate`) and start standalone |
+    /// | no  | no  | nothing to start from → `startNeedsPhone` (B2: «Empieza en tu iPhone») |
     func startTodayFromWrist() {
         guard sessionId == nil, !sessionActive else { return }   // already running → nothing to ask
+        guard iPhoneReachable else {
+            guard let seed = cachedSeed else {
+                startNeedsPhone = true
+                return
+            }
+            startNeedsPhone = false
+            Task { await startStandalone(from: seed) }
+            return
+        }
+        startNeedsPhone = false
         send(.startFromWrist(sessionId: nil))
+    }
+
+    // MARK: - Standalone logging (C1 · FER-361) — the watch itself is the logger
+
+    /// Log a set while running standalone — the wrist IS the logger here (unlike
+    /// `completeSetFromWrist()`, which only asks the iPhone to advance ITS live set). Addressed
+    /// EXPLICITLY by `runId`/`setId` (the same two keys the outgoing `.logSet` uses) rather than an
+    /// implicit "current" cursor — B2's UI already knows which row it's rendering/tapping, and this way
+    /// the manager never has to invent which set becomes focused next (supersets, "bajar y seguir"
+    /// skipping rest, warm-ups…) — that policy stays entirely in the UI/product layer, not here.
+    ///
+    /// Mutates the matching `SetSnapshot` in place (weight/reps/mode/done/doneTs/rpe), persists via
+    /// `WatchSessionStore`, and tells the iPhone via the id-addressed `.logSet` so
+    /// `StrengthSessionReconciler` can fold it in on reconnect.
+    ///
+    /// Covers standard AND AMRAP alike (both are weight×reps; AMRAP's `reps` simply arrives here for the
+    /// first time instead of already being set) — same zero/blank-reps guard
+    /// `StrengthSessionModel.canRegisterCurrentSet` uses on the iPhone, so a volume-less tap is refused
+    /// rather than logging a silent 0. A drop step is its own `SetSnapshot` (`addStandaloneDrop`); once
+    /// on screen, it logs through this exact same path, addressed by its own `setId`.
+    ///
+    /// `mode`, when passed, overrides the set's planned mode (e.g. a set planned `.standard` performed as
+    /// AMRAP); `nil` (the default) leaves whatever the plan already had. `rir` (reps in reserve, optional)
+    /// converts to RPE via `RIRScale.rpe(fromRIR:)` — the same scale the iPhone's live sheet uses.
+    @discardableResult
+    func logStandaloneSet(runId: String, setId: String, weightKg: Double, reps: Int?,
+                          mode: SetMode? = nil, rir: Int? = nil, now: Date = Date()) -> Bool {
+        guard isStandalone, var snap = sessionSnapshot,
+              let ei = snap.runs.firstIndex(where: { $0.id == runId }) else { return false }
+        var run = snap.runs[ei]
+        guard let si = run.sets.firstIndex(where: { $0.id == setId }) else { return false }
+        let usesReps = run.type == .weightReps || run.type == .bodyweight
+        if usesReps, (reps ?? 0) <= 0 { return false }   // never log a blank/zero-rep set
+        var set = run.sets[si]
+        set.weightKg = weightKg
+        set.reps = reps
+        if let mode { set.mode = mode }
+        set.done = true
+        set.doneTs = Int(now.timeIntervalSince1970)
+        if let rir { set.rpe = RIRScale.rpe(fromRIR: rir) }
+        run.sets[si] = set
+        snap.runs[ei] = run
+        snap.updatedTs = Int(now.timeIntervalSince1970)
+        sessionSnapshot = snap
+        Task { await WatchSessionStore.shared.saveInProgress(snap) }
+        send(.logSet(sessionId: snap.id, runId: run.id, set: set))
+        WatchHaptic.actionTapped.play()
+        return true
+    }
+
+    /// Hang a drop-set step off `setId` (the mother set, or an existing step already hanging off it) in
+    /// `runId` while running standalone — mirrors `StrengthSessionModel.addDrop`'s invariants
+    /// (mother-lookup, `SetVariants.maxDropSteps` cap, adjacency) with NO `PlateMath` rounding (the watch
+    /// can't import `StrandAnalytics`): the target weight is the raw `SetVariants.dropTargetKg(fromKg:)`.
+    /// Returns `false` (and changes nothing) when there's no headroom — already at the step cap, the set
+    /// isn't a work set, or the raw target isn't actually lower (e.g. a bodyweight set at 0 kg) — so a
+    /// caller never inserts a step that lies.
+    @discardableResult
+    func addStandaloneDrop(runId: String, afterSetId setId: String) -> Bool {
+        guard isStandalone, var snap = sessionSnapshot,
+              let ei = snap.runs.firstIndex(where: { $0.id == runId }) else { return false }
+        var run = snap.runs[ei]
+        guard let si = run.sets.firstIndex(where: { $0.id == setId }), run.sets[si].kind == .work
+        else { return false }
+        var motherIndex = si
+        while motherIndex > 0 && run.sets[motherIndex].mode == .drop { motherIndex -= 1 }
+        guard run.sets[motherIndex].mode != .drop else { return false }   // orphan: nothing to hang from
+        var tail = motherIndex
+        var steps = 0
+        while tail + 1 < run.sets.count && run.sets[tail + 1].mode == .drop {
+            tail += 1; steps += 1
+        }
+        guard steps < SetVariants.maxDropSteps else { return false }
+        let from = run.sets[tail]
+        let target = SetVariants.dropTargetKg(fromKg: from.weightKg)
+        guard target < from.weightKg else { return false }
+        let drop = StrengthSessionSnapshot.SetSnapshot(id: UUID().uuidString, weightKg: target,
+                                                       reps: run.sets[motherIndex].reps, kind: .work,
+                                                       mode: .drop)
+        run.sets.insert(drop, at: tail + 1)
+        if run.currentSet > tail { run.currentSet += 1 }   // keep the index-based cursor consistent post-insert
+        snap.runs[ei] = run
+        snap.updatedTs = Int(Date().timeIntervalSince1970)
+        sessionSnapshot = snap
+        Task { await WatchSessionStore.shared.saveInProgress(snap) }
+        send(.logSet(sessionId: snap.id, runId: run.id, set: drop))
+        WatchHaptic.actionTapped.play()
+        return true
+    }
+
+    /// «Terminar» from the wrist while running standalone. Closes the real `HKWorkout` through the exact
+    /// same invariant `endFromWrist()` uses (shared `externalUUID`, FER-740's one-workout rule), then
+    /// `endSession` reconciles back to the iPhone via `.syncSnapshot` — no `.end(...)` round-trip first:
+    /// the iPhone never had a live mirror for a session it minted nothing for, so there's nothing on its
+    /// side to close, and `.syncSnapshot` alone carries the whole story (plan + logged sets + measured
+    /// avgHr/kcal).
+    func endStandaloneSession() {
+        guard isStandalone else { return }
+        Task { await endSession(endedAt: Date(), save: true) }
     }
 
     // MARK: - Message handling
@@ -404,6 +660,15 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
             adoptIdentity(snapshot.sessionId)
             if !snapshot.routineName.isEmpty { routineName = snapshot.routineName }
             plan = snapshot
+        case let .sessionModel(snapshot):
+            // C1 (FER-361): always cache as the seed — today's plan, kept fresh for a future local start.
+            cachedSeed = snapshot
+            hasSeed = true
+            Task { await WatchSessionStore.shared.saveSeed(snapshot) }
+            // If a mirrored (iPhone-driven) session is already live, this fuller model becomes its
+            // structural reference too. Never overwrites a STANDALONE session's own snapshot — that one
+            // is the watch's own logged truth, not the plan the iPhone happens to be pushing right now.
+            if sessionActive, !isStandalone { sessionSnapshot = snapshot }
         case let .restEnded(_, recovered):
             // Cancel the local clock timer either way, then decide the signal:
             //  • recovered (FER-758): the pulse dropped to target → fire the «ready» buzz + banner now.
@@ -418,9 +683,9 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
             // FER-96: the resting-face verdict, resolved by the iPhone — adopted as-is, never recomputed.
             idleContext = WatchIdleContext(word: word, advice: advice, routineName: routineName,
                                            toneRaw: toneRaw)
-        case .watchDidSaveWorkout, .watchWillNotSave,
-             .completeSet, .skipRest, .adjustRest, .openReceipt, .watchPulse, .startFromWrist:
-            break   // watch → iPhone only (FER-808/810/1003/96)
+        case .watchDidSaveWorkout, .watchWillNotSave, .completeSet, .logSet, .syncSnapshot,
+             .skipRest, .adjustRest, .openReceipt, .watchPulse, .startFromWrist:
+            break   // watch → iPhone only (FER-808/810/1003/96/361)
         }
     }
 
@@ -429,6 +694,12 @@ final class WatchWorkoutManager: NSObject, ObservableObject {
     /// Called both from the delegate callback (a NEW context arrived) and once at activation (the
     /// context the iPhone already pushed before this app process existed).
     private func adoptApplicationContext(_ context: [String: Any]) {
+        // C1 (FER-361): the standalone SEED (today's plan) rides in its own key alongside the idle-face
+        // context — cache it first so a start tap right after activation already has today's plan.
+        if let seedData = context[WorkoutMirrorKey.seedKey] as? Data,
+           let seedMsg = WorkoutMirrorMessage.decode(seedData) {
+            handle(seedMsg)
+        }
         guard let data = context[WorkoutMirrorKey.payloadKey] as? Data,
               let message = WorkoutMirrorMessage.decode(data) else { return }
         handle(message)

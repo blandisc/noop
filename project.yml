@@ -208,7 +208,7 @@ targets:
         # Marks this as a single-target watchOS app and links it to the iPhone app.
         WKApplication: true
         WKCompanionAppBundleIdentifier: com.feriracheta.cenit
-        WKRunsIndependentlyOfCompanionApp: false
+        WKRunsIndependentlyOfCompanionApp: true   # C1 (FER-361): the watch can start/log a session standalone
         # Required by watchOS for ANY HKWorkoutSession (incl. the mirrored strength session
         # of FER-391 F1). Without it startMirroringToCompanionDevice() fails and the iPhone
         # times out to «El reloj no respondió». Matches Apple's multidevice-workout sample.
@@ -233,6 +233,7 @@ targets:
         SWIFT_EMIT_LOC_STRINGS: NO
     dependencies:
       - package: CenitDesign
+      - package: StrandTraining   # C1 (FER-361): the wire + the on-wrist logger use the real domain types
 
   # ---------------------------------------------------------------------------
   # FER-721: the app's first app-extension target — a WidgetKit extension that hosts the guided

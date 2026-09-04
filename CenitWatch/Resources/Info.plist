@@ -33,6 +33,6 @@
 	<key>WKCompanionAppBundleIdentifier</key>
 	<string>com.feriracheta.cenit</string>
 	<key>WKRunsIndependentlyOfCompanionApp</key>
-	<false/>
+	<true/>
 </dict>
 </plist>

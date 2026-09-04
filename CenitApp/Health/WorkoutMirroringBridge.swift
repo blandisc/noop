@@ -2,6 +2,7 @@
 import Foundation
 import HealthKit
 import WatchConnectivity
+import StrandTraining   // C1 (FER-361): the wire carries StrengthSessionSnapshot / SetSnapshot
 import os
 
 /// iPhone side of the strength-session **workout mirroring** (FER-740, F1.1 of the Apple Watch epic
@@ -54,6 +55,12 @@ final class WorkoutMirroringBridge: NSObject, ObservableObject {
     /// session exactly as the iPhone's «Empezar» button does. The one-oracle invariant: the watch never
     /// resolves routine/slots itself, so this callback carries no payload beyond the ask.
     var onStartFromWrist: (() -> Void)?
+    /// C1 (FER-361): the watch LOGGED a set standalone → the iPhone folds it into the live/adopted
+    /// session by `id` (via `StrengthSessionReconciler`), never gated by rest staleness (a set is a fact).
+    var onWatchLoggedSet: ((_ sessionId: String, _ runId: String, _ set: StrengthSessionSnapshot.SetSnapshot) -> Void)?
+    /// C1 (FER-361): the watch's authoritative reconciliation snapshot + measured avgHr/energyKcal →
+    /// the iPhone adopts/amends the session and persists the energy as `.bandCalculated`.
+    var onWatchSyncSnapshot: ((_ snapshot: StrengthSessionSnapshot, _ avgHr: Int?, _ energyKcal: Double?, _ didSaveWorkout: Bool) -> Void)?
 
     // FER-742: state the iPhone UI paints, pushed to `AppModel` (which the Settings row + the strength
     // sheet already observe) via these closures — same fire-on-main-actor pattern as the ones above.
@@ -244,14 +251,19 @@ final class WorkoutMirroringBridge: NSObject, ObservableObject {
     /// channel WatchConnectivity delivers as «last known state», reachable or not, session or not. A
     /// no-op without WatchConnectivity; best-effort like every other push in this bridge (`AppModel`
     /// never awaits or blocks on it).
-    func pushIdleContext(word: String?, toneRaw: String?, advice: String?, routineName: String?) {
+    func pushIdleContext(word: String?, toneRaw: String?, advice: String?, routineName: String?,
+                         seed: WorkoutMirrorMessage? = nil) {
         guard WCSession.isSupported() else { return }
         let session = WCSession.default
         guard session.activationState == .activated else { return }
         guard let data = WorkoutMirrorMessage
             .idleContext(word: word, toneRaw: toneRaw, advice: advice, routineName: routineName)
             .encoded() else { return }
-        do { try session.updateApplicationContext([WorkoutMirrorKey.payloadKey: data]) }
+        var context: [String: Any] = [WorkoutMirrorKey.payloadKey: data]
+        // C1 (FER-361): the standalone SEED (today's plan) rides in the same single-slot app context
+        // under its own key, so it never clobbers the idle-face context. Absent = no plan today.
+        if let seed, let seedData = seed.encoded() { context[WorkoutMirrorKey.seedKey] = seedData }
+        do { try session.updateApplicationContext(context) }
         catch { log.error("updateApplicationContext failed: \(error.localizedDescription, privacy: .public)") }
     }
 
@@ -317,7 +329,11 @@ final class WorkoutMirroringBridge: NSObject, ObservableObject {
             // FER-96: «Empezar» from the wrist's idle face. The one-oracle invariant — no routine/slots
             // to read here, `AppModel` resolves + starts through the SAME path the iPhone button uses.
             onStartFromWrist?()
-        case .start, .rest, .restEnded, .capture, .plan, .idleContext:
+        case let .logSet(sessionId, runId, set):
+            onWatchLoggedSet?(sessionId, runId, set)
+        case let .syncSnapshot(snapshot, avgHr, energyKcal, didSaveWorkout):
+            onWatchSyncSnapshot?(snapshot, avgHr, energyKcal, didSaveWorkout)
+        case .start, .rest, .restEnded, .capture, .plan, .sessionModel, .idleContext:
             break   // iPhone → watch only
         }
     }

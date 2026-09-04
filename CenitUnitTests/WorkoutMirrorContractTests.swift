@@ -1,4 +1,5 @@
 import XCTest
+import StrandTraining   // C1 (FER-361): the wire now carries StrengthSessionSnapshot / SetSnapshot
 @testable import Cenit
 
 /// Pins the FER-740 Apple Watch mirroring contract: the wire messages round-trip through JSON, the
@@ -19,6 +20,17 @@ final class WorkoutMirrorContractTests: XCTestCase {
             // ignores what it doesn't render, but they must survive the round-trip unchanged.
             sessionPhaseRaw: "resting", sessionStartedAt: Date(timeIntervalSince1970: 900),
             setsDone: 8, setsTotal: 18)
+
+        // C1 (FER-361) fixtures for the standalone-logger wire cases.
+        let c1Set = StrengthSessionSnapshot.SetSnapshot(
+            id: "set1", weightKg: 60, reps: 8, done: true, doneTs: 1_700_000_100, mode: .standard)
+        let c1Run = StrengthSessionSnapshot.RunSnapshot(
+            id: "r1", exerciseId: "sq", name: "Sentadilla", type: .weightReps,
+            restSeconds: 120, restMode: .fixed, hrRestReference: .restingMargin, hrRestValue: 0,
+            sets: [c1Set], currentSet: 0, skipped: false)
+        let c1Snapshot = StrengthSessionSnapshot(
+            id: "s1", routineId: "push", routineName: "Empuje", startTs: 900,
+            runs: [c1Run], currentIndex: 0, updatedTs: 1_700_000_100, programWeek: 3, deload: false)
 
         let messages: [WorkoutMirrorMessage] = [
             .start(sessionId: "s1", routineName: "Empuje", startedAt: Date(timeIntervalSince1970: 900)),
@@ -52,6 +64,13 @@ final class WorkoutMirrorContractTests: XCTestCase {
             .idleContext(word: "En rango", toneRaw: "clear", advice: "tu plan de hoy, tal cual",
                         routineName: "Empuje"),
             .startFromWrist(sessionId: nil),
+            // C1 (FER-361) — the standalone-logger cases: the full session model (iPhone → watch seed),
+            // one logged set (watch → iPhone), and the reconciliation snapshot + measured energy (avgHr /
+            // kcal both present, and both absent).
+            .sessionModel(c1Snapshot),
+            .logSet(sessionId: "s1", runId: "r1", set: c1Set),
+            .syncSnapshot(snapshot: c1Snapshot, avgHr: 132, energyKcal: 410.5, didSaveWorkout: true),
+            .syncSnapshot(snapshot: c1Snapshot, avgHr: nil, energyKcal: nil, didSaveWorkout: false),
         ]
 
         for message in messages {
