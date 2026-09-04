@@ -231,6 +231,18 @@ private struct EntrenarLanding: View {
                 if !loadFailed {
                     hiloDelVeredicto.padding(.top, LiquidSpace.s200)
                 }
+                // FER-373 (C7) «pintado instantáneo»: kicker/título/subtítulo/chips del héroe de
+                // primer uso son copy + catálogo empaquetado (`StarterTemplates`), no una lectura de
+                // la DB — así que pintan ANTES de que `load()` conteste, en vez de dejar la pantalla
+                // vacía bajo el pill del veredicto en un arranque frío. `model.strengthSession` es
+                // estado vivo independiente de este `loaded` (lo sirve `RootTabView` en las 5
+                // pestañas), así que una sesión en curso sigue ganando incluso antes de cargar —
+                // misma precedencia que ya tenía dentro de `if loaded` de abajo. Todo lo que sí
+                // depende de la DB (`routines`, `split`, `todayRoutine`) sigue detrás de `if loaded`.
+                if !loaded, model.strengthSession == nil {
+                    primerUsoSection
+                        .padding(.top, EntrenarMetrics.heroKickerTop)
+                }
                 if loaded {
                     if loadFailed {
                         loadErrorState       // §5 — «No pude leer tu plan» + Reintentar, niveles ocultos
@@ -1067,19 +1079,6 @@ private struct EntrenarLanding: View {
         Rectangle().fill(LiquidColor.tinta10).frame(height: 1)
     }
 
-    /// La cabecera de un nivel del hub (FER-130 «Ritmo 1b»): filo superior de 1 pt + el aire del
-    /// handoff antes de la fila — envuelve el mismo `EntrenarNivel` que ya sirve «Ver toda la
-    /// biblioteca» en la sesión en vivo, sin tocar ese componente ni su otro llamador. El margen
-    /// EXTERNO del nivel (18 el primero, 2 los siguientes) lo pone quien coloca `semanaSection` /
-    /// `muscleSection` / `bitacoraSection`, no esta función — así un mismo nivel sirve como primero
-    /// o como segundo.
-    private func nivelHub<Nivel: View>(@ViewBuilder _ nivel: () -> Nivel) -> some View {
-        VStack(alignment: .leading, spacing: .zero) {
-            filoDelPliegue
-            nivel().padding(.top, EntrenarMetrics.levelPadTop)
-        }
-    }
-
     /// Una fila del pliegue: glifo, título y subtítulo. Sin «›» al final — dos de las cuatro no
     /// navegan, arrancan, y «›» ya significa «navega» en esta pantalla.
     ///
@@ -1179,17 +1178,25 @@ private struct EntrenarLanding: View {
                                    strain: session.strain, avgHr: session.avgHr, routineName: name)
     }
 
-    /// «Músculos cargados e Historial aparecen después de tu primera sesión. Mientras, silencio.» —
-    /// plan armado, cero sesiones registradas todavía (copy.md «Primer uso»).
+    /// FER-373 (C4 · C5): la nota de silencio se reescribe como DOS promesas, no una explicación de
+    /// ausencia — «no hay nada aquí todavía» se cambia por «esto es lo que viene». C4 promete lo
+    /// genérico (músculos + bitácora, mismo momento que antes: cero sesiones registradas). C5 añade
+    /// LA promesa diferenciadora on-device de la fuerza: progresión sugerida por reps cumplidas
+    /// («propone», nunca «ajusta» — opt-in) + que funciona sin conexión y sin reloj. Sin claims
+    /// clínicos ni de recuperación/HRV (eso exige Health y no aplica sin él).
     private var silencioPrimeraSesion: some View {
-        // Mismo filo superior que cualquier otro nivel (`nivelHub`): sin él el corte entre TU SEMANA y
-        // este mensaje no se leía igual que el corte entre dos niveles cualesquiera.
+        // Mismo filo superior que cualquier otro nivel: sin él el corte entre TU SEMANA y este
+        // mensaje no se leía igual que el corte entre dos niveles cualesquiera.
         VStack(alignment: .leading, spacing: .zero) {
             filoDelPliegue
-            Text("Loaded muscles and History appear after your first session. Until then, silence.")
+            Text("Once you train, your worked muscles and log show up here.")
                 .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta700)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, EntrenarMetrics.levelPadTop)
+            Text("Once you hit your reps, Entrenar suggests raising the weight. Strength works offline and without a watch.")
+                .font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta700)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, LiquidSpace.s150)
         }
     }
 
@@ -1210,103 +1217,156 @@ private struct EntrenarLanding: View {
         return nil
     }
 
-    // MARK: - ④ Primer uso (`split` vacío) — «Arma tu semana» (FER-132 · FER-251)
+    // MARK: - ④ Primer uso (`split` vacío) — «Arma tu semana» (FER-132 · FER-251 · FER-373)
     //
     // Sin ningún día asignado: héroe de arranque intacto + UNA primaria (3 chips honestos, cada uno
-    // abre SU grupo con preview) + DOS secundarias («Desde cero», «Importar»). FER-251 apaga el CTA
-    // «Crear mi plan» y la tira WeekTokens vacía. Si ya hay rutinas sin día (`!routines.isEmpty`),
-    // aparece «TU SEMANA — Asigna un día» hacia el editor semanal. SIN «Otra forma» / Músculos /
-    // Bitácora — la nota de silencio los explica. `loadErrorState` gana sobre esta sección.
+    // abre SU grupo con preview) + una ruta secundaria callada bajo un overline (FER-373 C2: «Desde
+    // cero», «Importar», «En casa»). FER-251 apaga el CTA «Crear mi plan» y la tira WeekTokens vacía.
+    // Si ya hay rutinas sin día (`!routines.isEmpty`), el héroe se vuelve adaptativo (FER-373 C3):
+    // «Asignar día» pasa a ser la acción primaria en vez de repetir «Arma tu semana» — la fila
+    // «TU SEMANA — Asigna un día» que existía aparte se retira, absorbida por ese CTA (mismo destino,
+    // `openWeeklyPlan`). SIN «Otra forma» / Músculos / Bitácora — la nota de promesa
+    // (`silencioPrimeraSesion`) los explica. `loadErrorState` gana sobre esta sección.
+    //
+    // FER-373 (C7): kicker/título/subtítulo/chips son copy + catálogo empaquetado — `body` los pinta
+    // antes de que `loaded` sea `true` (ver el `if !loaded` que antecede a `if loaded` ahí). Lo único
+    // que sigue detrás de `loaded` AQUÍ DENTRO es la rama adaptativa de abajo, que necesita saber si
+    // `routines` ya trae algo real (con el default `[]` de antes de cargar cae al héroe estándar).
 
     private var primerUsoSection: some View {
         VStack(alignment: .leading, spacing: .zero) {
             EntrenarModulo(tono: .neutro, intensidad: LiquidTonoMetrics.intensidadDefault,
                            insets: EntrenarHubMetrics.heroInsets) {
                 VStack(alignment: .leading, spacing: .zero) {
-                    Text("Let's start")
-                        .entrenarCabeceraKicker().foregroundStyle(LiquidColor.tinta500)
-                    Text("Build your week")
-                        .font(LiquidType.displayL).tracking(LiquidType.displayLTracking)
-                        .foregroundStyle(LiquidColor.tinta900)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.top, EntrenarMetrics.heroTitleTop)
-                    Text("Choose a template or build your own routine · Entrenar serves it to you every day after that")
-                        .font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.top, EntrenarMetrics.heroSubTop)
-                    primerUsoChips.padding(.top, LiquidSpace.s300)
-                    // Secundarias: «Desde cero» (biblioteca) + «Importar» — sin «Crear mi plan».
-                    Button { showLibrary = true } label: {
-                        HStack(spacing: LiquidSpace.s100) {
-                            Text("From scratch").font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
-                            CenitIcon.disclosure.image
-                                .font(LiquidType.iconSF(size: 12).weight(.semibold)).foregroundStyle(LiquidColor.tinta500)
-                                .accessibilityHidden(true)
-                        }
-                        .frame(minHeight: EntrenarMetrics.row, alignment: .leading)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(EntrenarPressStyle())
-                    .accessibilityElement(children: .combine)
-                    Button { showHubImport = true } label: {
-                        HStack(spacing: LiquidSpace.s100) {
-                            Text("Import your AI's plan").font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
-                            CenitIcon.disclosure.image
-                                .font(LiquidType.iconSF(size: 12).weight(.semibold)).foregroundStyle(LiquidColor.tinta500)
-                                .accessibilityHidden(true)
-                        }
-                        .frame(minHeight: EntrenarMetrics.row, alignment: .leading)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(EntrenarPressStyle())
-                    .accessibilityElement(children: .combine)
-                }
-            }
-            // FER-251: rutinas creadas pero sin día — fila hacia el editor; ausente con 0 rutinas.
-            if !routines.isEmpty {
-                nivelHub {
-                    EntrenarNivel("Your week", value: "Assign a day", kickerStyle: .handoff) {
-                        openWeeklyPlan()
+                    if loaded, !routines.isEmpty {
+                        primerUsoHeroAsignarDia
+                    } else {
+                        primerUsoHeroEstandar
                     }
                 }
-                .padding(.top, EntrenarMetrics.firstLevelTop)
             }
             silencioPrimeraSesion.padding(.top, EntrenarMetrics.levelTop)
         }
     }
 
+    /// El héroe de siempre: kicker + título + subtítulo + los 3 chips (decisión primaria) + la ruta
+    /// secundaria (FER-373 C2). Copy + catálogo empaquetado — pinta sin esperar a `loaded`.
+    private var primerUsoHeroEstandar: some View {
+        VStack(alignment: .leading, spacing: .zero) {
+            Text("Let's start")
+                .entrenarCabeceraKicker().foregroundStyle(LiquidColor.tinta500)
+            Text("Build your week")
+                .font(LiquidType.displayL).tracking(LiquidType.displayLTracking)
+                .foregroundStyle(LiquidColor.tinta900)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, EntrenarMetrics.heroTitleTop)
+            Text("Choose a template or build your own routine · Entrenar serves it to you every day after that")
+                .font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, EntrenarMetrics.heroSubTop)
+            primerUsoChips.padding(.top, LiquidSpace.s300)
+            primerUsoOtrasFormas.padding(.top, EntrenarMetrics.firstLevelTop)
+        }
+    }
+
+    /// FER-373 (C3) · héroe adaptativo: ya hay 1+ rutinas armadas pero ninguna tiene día — en vez de
+    /// repetir «Arma tu semana», reconoce el logro y hace de «Asignar día» (`openWeeklyPlan`) la
+    /// acción primaria. Los chips siguen presentes pero subordinados, detrás de un enlace quieto —
+    /// para quien prefiere partir de una plantilla en vez de asignarle día a lo que ya armó. Vive
+    /// detrás de `loaded` (necesita `routines` real) — el llamador nunca lo pinta con el `[]` default.
+    private var primerUsoHeroAsignarDia: some View {
+        VStack(alignment: .leading, spacing: .zero) {
+            Text("Almost ready")
+                .entrenarCabeceraKicker().foregroundStyle(LiquidColor.tinta500)
+            Text("Give your routine a day")
+                .font(LiquidType.displayL).tracking(LiquidType.displayLTracking)
+                .foregroundStyle(LiquidColor.tinta900)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, EntrenarMetrics.heroTitleTop)
+            Text(routines.count == 1
+                 ? "You already have your routine. Assign it a day and Entrenar serves it to you every week."
+                 : "You already have your routines. Assign them days and Entrenar serves them to you every week.")
+                .font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, EntrenarMetrics.heroSubTop)
+            LiquidGlassButton(String(localized: "Assign day"), variant: .primary) { openWeeklyPlan() }
+                .padding(.top, EntrenarMetrics.ctaRowTop)
+            primerUsoLinkRow("Or start with a template") {
+                templatesGroup = nil
+                showTemplates = true
+            }
+            .padding(.top, LiquidSpace.s200)
+            primerUsoChips.padding(.top, LiquidSpace.s300)
+        }
+    }
+
+    /// FER-373 (C2): las rutas que NO son plantilla, agrupadas bajo un solo overline — antes eran dos
+    /// filas sueltas sin cabecera. El overline reusa `EntrenarNivel` sin `value`/acción (mismo
+    /// componente, mismo estilo default, que ya usa «See full library» en la sesión en vivo) en vez
+    /// de un `Text` + `.instrumentoOverline()` a mano: ese modificador es de la generación Instrumento
+    /// retirada — `no-legacy-api` lo rechaza en esta capa. «Desde cero» ahora nombra qué hace («elige
+    /// ejercicios»); «Importa el plan de tu IA» no cambia; «Entreno en casa, sin equipo» es nueva y
+    /// reusa `StarterTemplatesSheet(grupo: .home)` (la hoja ya sabe nombrar ese grupo, FER-251). Los 3
+    /// chips de arriba siguen siendo la decisión primaria — este cluster es callado.
+    private var primerUsoOtrasFormas: some View {
+        VStack(alignment: .leading, spacing: .zero) {
+            EntrenarNivel("Prefer another way?")
+            primerUsoLinkRow("Build your own · pick exercises") { showLibrary = true }
+            primerUsoLinkRow("Import your AI's plan") { showHubImport = true }
+            primerUsoLinkRow("Home workout, no equipment") {
+                templatesGroup = .home
+                showTemplates = true
+            }
+        }
+    }
+
+    /// Una fila quieta de ruta alterna: rótulo + «›», toque completo a `EntrenarMetrics.row`. Mismo
+    /// patrón que ya usaban «Desde cero» / «Importar» sueltas — factorizado porque ahora hay tres
+    /// (FER-373 C2) más el enlace del héroe adaptativo (FER-373 C3).
+    private func primerUsoLinkRow(_ label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: LiquidSpace.s100) {
+                Text(label).font(LiquidType.cuerpoBanner).foregroundStyle(LiquidColor.tinta700)
+                CenitIcon.disclosure.image
+                    .font(LiquidType.iconSF(size: 12).weight(.semibold)).foregroundStyle(LiquidColor.tinta500)
+                    .accessibilityHidden(true)
+            }
+            .frame(minHeight: EntrenarMetrics.row, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(EntrenarPressStyle())
+        .accessibilityElement(children: .combine)
+    }
+
     /// Tres chips honestos (FER-251): cada uno abre `StarterTemplatesSheet` ACOTADA a su grupo.
-    /// Subtítulo = conteo real («3 rutinas» / «1 rutina» / «2 rutinas»). A tamaños AX se apilan.
+    /// Subtítulo = qué significa el split en lenguaje llano (FER-373 C1) — no un conteo (ya se ve
+    /// dentro de la hoja) ni una promesa de cuántos días toma. A tamaños AX se apilan.
     private var primerUsoChips: some View {
         let chips = Self.primerUsoGroups
         return ViewThatFits(in: .horizontal) {
             HStack(spacing: LiquidSpace.s200) {
                 ForEach(chips, id: \.name) { item in
-                    primerUsoChip(name: item.name, group: item.group)
+                    primerUsoChip(name: item.name, group: item.group, subtitle: item.subtitle)
                 }
             }
             VStack(alignment: .leading, spacing: LiquidSpace.s200) {
                 ForEach(chips, id: \.name) { item in
-                    primerUsoChip(name: item.name, group: item.group)
+                    primerUsoChip(name: item.name, group: item.group, subtitle: item.subtitle)
                 }
             }
         }
     }
 
-    private func primerUsoChip(name: String, group: StarterTemplate.Group) -> some View {
-        let count = StarterTemplates.inGroup(group).count
-        let countText = count == 1
-            ? String(localized: "1 routine")
-            : String(localized: "\(count) routines")
-        return Button {
+    private func primerUsoChip(name: String, group: StarterTemplate.Group, subtitle: LocalizedStringKey) -> some View {
+        Button {
             templatesGroup = group
             showTemplates = true
         } label: {
-            // 1 pt es el hairline entre nombre y conteo dentro del chip, más chico
+            // 1 pt es el hairline entre nombre y subtítulo dentro del chip, más chico
             // que `LiquidSpace.s100` (4). El archivo ya tiene otros gaps sin token.
             VStack(alignment: .leading, spacing: LiquidSpace.s025) {
                 Text(LocalizedStringKey(name)).font(LiquidType.tituloGemela).foregroundStyle(LiquidColor.tinta900)
-                Text(countText).font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
+                Text(subtitle).font(LiquidType.cuerpo).foregroundStyle(LiquidColor.tinta500)
             }
             .padding(.horizontal, LiquidSpace.s200)
             // EntrenarMetrics.row (44 pt) = mínimo HIG — no bajar.
@@ -1315,15 +1375,16 @@ private struct EntrenarLanding: View {
         }
         .buttonStyle(EntrenarPressStyle())
         .disabled(!loaded)
-        .accessibilityLabel(Text(LocalizedStringKey(name)) + Text(verbatim: ", ") + Text(verbatim: countText))
+        .accessibilityLabel(Text(LocalizedStringKey(name)) + Text(verbatim: ", ") + Text(subtitle))
         .accessibilityHint(Text("Show the plan"))
     }
 
     /// Los tres splits destacados del primer uso (mismo vocabulario que `StarterTemplatesSheet`).
-    private static let primerUsoGroups: [(name: String, group: StarterTemplate.Group)] = [
-        ("Push Pull Legs", .pushPullLegs),
-        ("Full body", .fullBody),
-        ("Upper / Lower", .upperLower),
+    /// `subtitle` traduce el jargon del split (FER-373 C1) — nunca promete un número de días.
+    private static let primerUsoGroups: [(name: String, group: StarterTemplate.Group, subtitle: LocalizedStringKey)] = [
+        ("Push Pull Legs", .pushPullLegs, "Push · pull · legs"),
+        ("Full body", .fullBody, "Your whole body, every session"),
+        ("Upper / Lower", .upperLower, "Torso one day, legs the next"),
     ]
 
     /// «Desde cero» del primer uso: misma materialización 3×8 que `CrearPlanScreen.createRoutine`.

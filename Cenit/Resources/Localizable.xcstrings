@@ -1,6 +1,244 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Almost ready" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Almost ready"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Casi listo"
+          }
+        }
+      }
+    },
+    "Assign day" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assign day"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asignar día"
+          }
+        }
+      }
+    },
+    "Build your own · pick exercises" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Build your own · pick exercises"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arma la tuya · elige ejercicios"
+          }
+        }
+      }
+    },
+    "Give your routine a day" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Give your routine a day"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ponle un día a tu rutina"
+          }
+        }
+      }
+    },
+    "Home workout, no equipment" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Home workout, no equipment"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entreno en casa, sin equipo"
+          }
+        }
+      }
+    },
+    "Once you hit your reps, Entrenar suggests raising the weight. Strength works offline and without a watch." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Once you hit your reps, Entrenar suggests raising the weight. Strength works offline and without a watch."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuando cumples tus reps, Entrenar te propone subir el peso. La fuerza funciona sin conexión y sin reloj."
+          }
+        }
+      }
+    },
+    "Once you train, your worked muscles and log show up here." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Once you train, your worked muscles and log show up here."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuando entrenes, aquí van a aparecer tus músculos trabajados y tu bitácora."
+          }
+        }
+      }
+    },
+    "Or start with a template" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Or start with a template"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O empieza con una plantilla"
+          }
+        }
+      }
+    },
+    "Prefer another way?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefer another way?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Prefieres otra forma?"
+          }
+        }
+      }
+    },
+    "Push · pull · legs" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Push · pull · legs"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empuja · jala · pierna"
+          }
+        }
+      }
+    },
+    "Torso one day, legs the next" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Torso one day, legs the next"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Torso un día, pierna otro"
+          }
+        }
+      }
+    },
+    "You already have your routine. Assign it a day and Entrenar serves it to you every week." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You already have your routine. Assign it a day and Entrenar serves it to you every week."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ya tienes tu rutina. Asígnale un día y Entrenar te la sirve cada semana."
+          }
+        }
+      }
+    },
+    "You already have your routines. Assign them days and Entrenar serves them to you every week." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You already have your routines. Assign them days and Entrenar serves them to you every week."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ya tienes tus rutinas. Asígnales días y Entrenar te las sirve cada semana."
+          }
+        }
+      }
+    },
+    "Your whole body, every session" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your whole body, every session"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todo el cuerpo en cada sesión"
+          }
+        }
+      }
+    },
     "settings.appearance" : {
       "localizations" : {
         "en" : {
@@ -9792,23 +10030,6 @@
         }
       }
     },
-    "Assign a day" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Assign a day"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Asigna un día"
-          }
-        }
-      }
-    },
     "At home" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -19514,23 +19735,6 @@
         }
       }
     },
-    "From scratch" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "From scratch"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Desde cero"
-          }
-        }
-      }
-    },
     "From your best set with the Epley (1985) formula. A progress signal, not a target to load." : {
       "localizations" : {
         "en" : {
@@ -24807,23 +25011,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Loaded muscles and Log appear after your first session. Until then, silence."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Músculos cargados e Historial aparecen después de tu primera sesión. Mientras, silencio."
-          }
-        }
-      }
-    },
-    "Loaded muscles and History appear after your first session. Until then, silence." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Loaded muscles and History appear after your first session. Until then, silence."
           }
         },
         "es" : {
