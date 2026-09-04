@@ -30,6 +30,10 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
   sesión por duplicado, ya no se cuenta dos veces — Cénit se queda con una sola.
 - Nuevo interruptor en Ajustes → Fuentes de datos: «Mostrar entrenamientos de fuerza de otras apps»
   (prendido por defecto).
+- El resumen de arriba de «Historial» («N sesiones · 90 días») cuenta lo mismo que la lista de abajo:
+  incluye esos entrenamientos de otras apps cuando el interruptor está prendido, no solo tus sesiones
+  de Cénit. (Las «marcas nuevas» siguen siendo solo de tus sesiones ricas: las otras apps no traen
+  serie por serie.)
 - Arreglo de bug: una fuente `"apple-health:Whoop"` (una app cuyo nombre contiene «whoop») se
   clasificaba como WHOOP en vez de Apple.
 
