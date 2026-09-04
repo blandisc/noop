@@ -850,33 +850,57 @@ final class HealthKitBridge: ObservableObject {
                               inBed: Double?)
         let days: [SleepDay] = await withCheckedContinuation { cont in
             let q = HKSampleQuery(sampleType: type, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, samples, _ in
-                var asleep: [String: Double] = [:], deep: [String: Double] = [:]
-                var rem: [String: Double] = [:], core: [String: Double] = [:]
-                // FER-1006: `inBed` used to fall into `default: break` and be thrown away. It is the
-                // ONLY denominator sleep efficiency has — asleep over time in bed — so discarding it
-                // is what left recovery sleep-perf nil (rows with `efficiency: nil`, and the sleep
-                // term is gated on `sleepPerf != nil`).
+                // H1 (auditoría de estrés): antes se sumaban las etapas de TODAS las fuentes de Apple
+                // Health. Con Apple Watch + otra app de sueño (o el Sleep Schedule del iPhone) la misma
+                // noche, el total y el profundo/REM se DOBLE-CONTABAN y la eficiencia se iba a un falso
+                // 100 %. Ahora las etapas se agrupan por (noche, fuente) y por noche nos quedamos con UNA
+                // sola fuente (prioridad Apple/Watch, luego la de más minutos → `SleepSourceSelection`);
+                // nunca se suma entre fuentes (mezclar etapas de dos fuentes no tiene sentido: ¿qué etapa
+                // sería ese minuto?).
                 //
-                // Kept SEPARATE from the stage totals, never added to `asleep`: in bed is an
-                // envelope, not a stage. Apple usually writes one contiguous inBed block per night,
-                // so summing spans matches the envelope; overlapping blocks would over-count, which
-                // only ever lowers efficiency — it cannot invent a flattering number.
-                var inBed: [String: Double] = [:]
+                // `inBed` (el denominador/envolvente de la eficiencia, FER-1006) se agrupa por fuente y por
+                // noche se toma el MÁXIMO entre fuentes, NO la suma (D2 del gate /qa): ahora que `asleep`
+                // es de una sola fuente, sumar el inBed de dos fuentes solaparía el denominador y
+                // subestimaría la eficiencia. El máximo es el envolvente más grande sin doble-contar — y
+                // el Apple Watch no escribe `inBed`, así que sale del iPhone. Dentro de UNA fuente sus
+                // bloques sí se suman (ese es su envolvente).
+                var byDaySource: [String: [String: (asleep: Double, deep: Double, rem: Double, core: Double)]] = [:]
+                var inBedBySource: [String: [String: Double]] = [:]
                 for case let s as HKCategorySample in samples ?? [] {
                     let mins = s.endDate.timeIntervalSince(s.startDate) / 60
                     let day = HealthKitBridge.dayString(s.endDate)
+                    let src = s.sourceRevision.source.bundleIdentifier
+                    if s.value == HKCategoryValueSleepAnalysis.inBed.rawValue {
+                        inBedBySource[day, default: [:]][src, default: 0] += mins
+                        continue
+                    }
+                    var acc = byDaySource[day]?[src] ?? (asleep: 0, deep: 0, rem: 0, core: 0)
                     switch s.value {
                     case HKCategoryValueSleepAnalysis.asleepDeep.rawValue:
-                        deep[day, default: 0] += mins; asleep[day, default: 0] += mins
+                        acc.deep += mins; acc.asleep += mins
                     case HKCategoryValueSleepAnalysis.asleepREM.rawValue:
-                        rem[day, default: 0] += mins; asleep[day, default: 0] += mins
+                        acc.rem += mins; acc.asleep += mins
                     case HKCategoryValueSleepAnalysis.asleepCore.rawValue, HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue:
-                        core[day, default: 0] += mins; asleep[day, default: 0] += mins
-                    case HKCategoryValueSleepAnalysis.inBed.rawValue:
-                        inBed[day, default: 0] += mins
+                        acc.core += mins; acc.asleep += mins
                     default:
                         break
                     }
+                    byDaySource[day, default: [:]][src] = acc
+                }
+                // inBed por noche = el mayor envolvente entre fuentes (no la suma; ver la nota de arriba).
+                var inBed: [String: Double] = [:]
+                for (day, srcs) in inBedBySource { inBed[day] = srcs.values.max() }
+                // Una sola fuente por noche para las etapas — la ganadora; las demás se descartan.
+                var asleep: [String: Double] = [:], deep: [String: Double] = [:]
+                var rem: [String: Double] = [:], core: [String: Double] = [:]
+                for (day, sources) in byDaySource {
+                    guard let winner = SleepSourceSelection.pick(
+                            asleepMinutesBySource: sources.mapValues { $0.asleep }),
+                          let acc = sources[winner], acc.asleep > 0 else { continue }
+                    asleep[day] = acc.asleep
+                    if acc.deep > 0 { deep[day] = acc.deep }
+                    if acc.rem > 0 { rem[day] = acc.rem }
+                    if acc.core > 0 { core[day] = acc.core }
                 }
                 let out: [SleepDay] = Set(asleep.keys).map {
                     (day: $0, asleep: asleep[$0], deep: deep[$0], rem: rem[$0], core: core[$0],
