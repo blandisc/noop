@@ -595,10 +595,16 @@ struct WorkoutHistoryScreen: View {
     /// «11 sesiones · 90 días · 3 marcas nuevas» — sin marcas nuevas en la ventana, la cláusula de
     /// marcas simplemente no aparece (copy.md «Historial»: «sin marcas: solo sesiones»). Singular/
     /// plural correcto en las dos partes.
+    ///
+    /// FER-370: el conteo de sesiones es el MISMO que rinde `sessionsSection` (ricas + terceros
+    /// admisibles, respetando el toggle) — nunca `recentSessions90` (solo ricas), que sub-contaba
+    /// respecto a la lista y a su propia cabecera «Sessions». Las marcas SIGUEN siendo solo de las
+    /// sesiones ricas (los terceros no traen sets/PRs): honesto, no una mentira del conteo.
     private var historialSubtitle: String {
-        let sessionsPart = recentSessions90.count == 1
+        let sessionCount = fuerzaHistoryEntries.count
+        let sessionsPart = sessionCount == 1
             ? String(localized: "1 session · 90 days")
-            : String(localized: "\(recentSessions90.count) sessions · 90 days")
+            : String(localized: "\(sessionCount) sessions · 90 days")
         guard marksTotal90 > 0 else { return sessionsPart }
         let marksPart = marksTotal90 == 1
             ? String(localized: "1 new mark")
