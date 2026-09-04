@@ -10,6 +10,14 @@ import CenitDesign
 struct WatchSummaryView: View {
     let summary: WatchSessionSummary
     @EnvironmentObject var manager: WatchWorkoutManager
+    /// C1 (FER-361) · B2: whether the iPhone was unreachable the moment this card appeared — the best
+    /// available proxy for "this session needs to reconcile" without a manager change. `cleanup()` already
+    /// resets `isStandalone` to false by the time `.summary` renders (`WatchWorkoutManager.endSession`'s
+    /// `defer`), so this view has no direct way to know if the just-ended session WAS standalone; a real
+    /// fix would add a `wasStandalone` bit to `WatchSessionSummary`, out of scope here (manager API, B1's).
+    /// Gated on this flag so an ordinary mirrored session (always reachable while the iPhone drives it)
+    /// never shows the line.
+    @State private var neededReconnect = false
 
     var body: some View {
         ScrollView {
@@ -31,6 +39,7 @@ struct WatchSummaryView: View {
                 }
 
                 saveLine
+                if neededReconnect { reconnectLine }
 
                 // FER-810 — handoff to the rich receipt on the phone (volume, PRs, diet). The wrist summary
                 // stays minimal; this opens the saved workout's history detail on the iPhone.
@@ -52,6 +61,25 @@ struct WatchSummaryView: View {
             }
             .padding(.horizontal, LiquidSpace.s300)
             .padding(.vertical, LiquidSpace.s200)
+        }
+        .onAppear { neededReconnect = !manager.iPhoneReachable }
+    }
+
+    /// C1 (FER-361) · B2 — handoff punto 5: «se guardó localmente» mientras sigue sin iPhone, «se
+    /// sincronizó» en cuanto `iPhoneReachable` vuelve a true (la reconciliación real viaja por
+    /// `transferUserInfo`, una cola durable que se vacía sola al reconectar — no hay ack que leer).
+    @ViewBuilder private var reconnectLine: some View {
+        if manager.iPhoneReachable {
+            HStack(spacing: LiquidSpace.s100) {
+                Image(systemName: "checkmark")
+                Text("Synced with your iPhone")
+            }
+            .font(LiquidType.pie)
+            .foregroundStyle(LiquidOLED.verde)
+        } else {
+            Text("No iPhone yet · syncs when reconnected")
+                .font(LiquidType.pie)
+                .foregroundStyle(LiquidOLED.tintaTerciaria)
         }
     }
 

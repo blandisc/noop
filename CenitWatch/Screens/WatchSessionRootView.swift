@@ -26,7 +26,11 @@ struct WatchSessionRootView: View {
         case .healthKitFailure:
             WatchHealthKitFailureView()
         case .running:
-            if manager.restEndedBanner { WatchRestEndedView() }
+            // C1 (FER-361) · B2: standalone runs its OWN face — it reads `sessionSnapshot` directly and
+            // owns its own local rest-ended transition, since `manager.rest`/`restEndedBanner` are driven
+            // only by iPhone mirror messages that never arrive for a standalone session.
+            if manager.isStandalone { WatchStandaloneLiveView() }
+            else if manager.restEndedBanner { WatchRestEndedView() }
             else { WatchLiveFaceView() }
         case .summary:
             if let summary = manager.summary { WatchSummaryView(summary: summary) }
@@ -78,7 +82,10 @@ struct WatchIdleView: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel(idleAccessibilityLabel)
 
-                if let routine = manager.idleContext.routineName { startButton(routine) }
+                if let routine = manager.idleContext.routineName {
+                    if canStartNow { startButton(routine) }
+                    else { startNeedsPhoneLine }
+                }
                 if couldNotConnect {
                     Text("Couldn't connect to the session. Keep going on your iPhone.")
                         .font(LiquidType.pie)
@@ -124,6 +131,23 @@ struct WatchIdleView: View {
         // token-exempt(sistema): control nativo watchOS
         .buttonStyle(.borderedProminent)
         .tint(LiquidOLED.tinta)
+    }
+
+    /// C1 (FER-361) · B2: predicts whether tapping «Empezar» would actually do something, mirroring
+    /// `startTodayFromWrist()`'s own branching — reachable always works (asks the iPhone); unreachable
+    /// needs a cached seed (`hasSeed`) to start locally. `startNeedsPhone` is the reactive fallback for the
+    /// rare race where a tap lands between those two reads; checked too so a stale button never lingers.
+    private var canStartNow: Bool {
+        !manager.startNeedsPhone && (manager.hasSeed || manager.iPhoneReachable)
+    }
+
+    /// «Sin botón muerto» (handoff punto 1): no seed and no iPhone to ask — tapping would do nothing, so
+    /// there's no button at all, only the honest next step.
+    private var startNeedsPhoneLine: some View {
+        Text("Start it on your iPhone")
+            .font(LiquidType.filaConteo)
+            .foregroundStyle(LiquidOLED.tintaSecundaria)
+            .multilineTextAlignment(.center)
     }
 }
 

@@ -388,6 +388,246 @@
         }
       }
     },
+    "Start it on your iPhone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start it on your iPhone"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empieza en tu iPhone"
+          }
+        }
+      }
+    },
+    "Synced with your iPhone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synced with your iPhone"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sincronizado con tu iPhone"
+          }
+        }
+      }
+    },
+    "No iPhone yet · syncs when reconnected" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No iPhone yet · syncs when reconnected"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aún sin iPhone · se sincroniza al reconectar"
+          }
+        }
+      }
+    },
+    "However many you can" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "However many you can"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las que puedas"
+          }
+        }
+      }
+    },
+    "Reps, however many you can" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reps, however many you can"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reps, las que puedas"
+          }
+        }
+      }
+    },
+    "Weight, %@ kilograms" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weight, %@ kilograms"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Peso, %@ kilogramos"
+          }
+        }
+      }
+    },
+    "Reps, %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reps, %lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reps, %lld"
+          }
+        }
+      }
+    },
+    "Complete set and drop" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complete set and drop"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registrar y bajar"
+          }
+        }
+      }
+    },
+    "No access to Health. Your sets still save. Saving to Health needs access." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No access to Health. Your sets still save. Saving to Health needs access."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin acceso a Salud. Tus series se guardan igual. Guardar en Salud necesita acceso."
+          }
+        }
+      }
+    },
+    "No iPhone · saves when reconnected" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No iPhone · saves when reconnected"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin iPhone · se guarda al reconectar"
+          }
+        }
+      }
+    },
+    "This exercise can't be logged from the watch yet. Log it on your iPhone." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This exercise can't be logged from the watch yet. Log it on your iPhone."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este ejercicio no se puede registrar desde el reloj todavía. Regístralo en tu iPhone."
+          }
+        }
+      }
+    },
+    "All sets logged" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All sets logged"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todas las series registradas"
+          }
+        }
+      }
+    },
+    "Swipe to finish your workout." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Swipe to finish your workout."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desliza para terminar tu entreno."
+          }
+        }
+      }
+    },
+    "Set %lld logged" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set %lld logged"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Serie %lld registrada"
+          }
+        }
+      }
+    },
+    "Set logged, drop added" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set logged, drop added"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Serie registrada, bajada agregada"
+          }
+        }
+      }
+    },
     "Next: set %@ · %@" : {
       "comment" : "A label that shows the next set and the exercise name.",
       "isCommentAutoGenerated" : true,

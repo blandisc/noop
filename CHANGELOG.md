@@ -21,6 +21,19 @@ Dates are approximate; Cénit is built from source — see the [README](README.m
 
 ## Unreleased
 
+### Registrar una sesión de fuerza desde el reloj sin el iPhone (FER-361, ola 2 · C1)
+- Si el iPhone no está a la mano al empezar tu rutina, el reloj arranca la sesión por su cuenta
+  («Empezar {rutina}» cuando hay un plan guardado; si no, un honesto «Empieza en tu iPhone», nunca un
+  botón muerto) y te deja registrar cada serie de peso × reps con la corona digital — la meta es el
+  héroe, el pulso queda secundario.
+- Series AMRAP («las que puedas») piden el número con la corona antes de dejarte registrar, nunca un
+  cero ni una cifra adivinada; «Registrar y bajar» abre un escalón de drop ya enfocado en el peso más
+  ligero, sin descanso de por medio.
+- Descanso con cuenta regresiva, ±30 s y Saltar, igual que en la sesión espejada; una línea calmada
+  «Sin iPhone · se guarda al reconectar» mientras sigas sin conexión — nunca deja de registrar.
+- Al terminar, un resumen mínimo confirma que se guardó en Salud y, en cuanto el iPhone reconecta,
+  que ya se sincronizó con tu teléfono.
+
 ### Fuerza de terceros honesta en «Fuerza» (FER-362, ola 2 · C4)
 - Si Strong, Hevy, Apple Fitness (o cualquier otra app) ya guardó un entrenamiento de fuerza en Apple
   Salud, ahora aparece en «Fuerza» — con su detalle honesto: sin serie por serie (Apple Salud solo
