@@ -63,6 +63,13 @@ private struct WatchStandaloneWorkingPage: View {
     private struct LocalRest: Equatable {
         var startedAt: Date
         var endsAt: Date
+        // FER-372: la serie recién completada, para que el descanso pueda re-registrarla con el RIR
+        // («en reserva») que la corona capture. El cursor ya avanzó a la siguiente al entrar aquí, así
+        // que la identidad de la serie hecha se guarda en el propio descanso.
+        var runId: String
+        var setId: String
+        var weightKg: Double
+        var reps: Int
     }
 
     @State private var draftWeightKg: Double = 0
@@ -78,6 +85,14 @@ private struct WatchStandaloneWorkingPage: View {
     @State private var restJustEnded = false
     @State private var crownAnnounceTask: Task<Void, Never>?
     @State private var restEndTask: Task<Void, Never>?
+    /// FER-372 · RIR («en reserva») OPCIONAL de la serie recién hecha, movido por la corona en el
+    /// descanso. `-1` = «sin marcar»: hasta el primer giro no se compromete nada y la serie queda sin
+    /// `rpe`, igual que antes (espejo del `repsEditingStarted` de arriba). `0…4` = la escala («4+» = 4).
+    @State private var restRIR: Double = -1
+    /// Una vez marcado, la corona ya no baja de 0 (el motor no borra un `rpe` puesto), así que no se
+    /// puede volver a «sin marcar»; sólo cambiar el valor.
+    @State private var rirCommitted = false
+    @State private var rirCommitTask: Task<Void, Never>?
 
     private var cursor: StandaloneCursor? { StandaloneCursor.locate(in: manager.sessionSnapshot) }
 
@@ -312,7 +327,10 @@ private struct WatchStandaloneWorkingPage: View {
         showLoggedCheck()
         AccessibilityNotification.Announcement(String(localized: "Set \(setNumber) logged")).post()
         let seconds = set.rest?.seconds ?? run.restSeconds
-        if seconds > 0 { startLocalRest(seconds: seconds) }
+        if seconds > 0 {
+            startLocalRest(seconds: seconds, runId: run.id, setId: set.id,
+                           weightKg: draftWeightKg, reps: reps)
+        }
     }
 
     /// «Bajar y seguir sin descanso» is the method (`SetVariants` doc) — never opens a rest window.
@@ -417,6 +435,7 @@ private struct WatchStandaloneWorkingPage: View {
                 pill("+30 s") { adjustLocalRest(by: 30) }
                 pill("Skip rest") { skipLocalRest() }
             }
+            reserveControl(rest)
             Spacer(minLength: LiquidSpace.s100)
             if let run = currentRun, let set = currentSet {
                 // `setNumber` goes through `String(_:)` so this extracts to the SAME "Next: set %@ · %@"
@@ -427,6 +446,84 @@ private struct WatchStandaloneWorkingPage: View {
                     .foregroundStyle(LiquidOLED.tintaSecundaria)
                     .lineLimit(2)
             }
+        }
+        // FER-372: la corona mueve el RIR en el descanso. workingView y restingView son ramas
+        // mutuamente excluyentes del `body`, así que solo un `digitalCrownRotation` vive a la vez.
+        // Rango fijo −1…4: −1 = «sin marcar»; una vez marcado, `onReserveCrownChange` impide volver a −1
+        // (lo fija en «al fallo»), porque el motor no borra un `rpe` ya puesto.
+        .focusable()
+        .digitalCrownRotation($restRIR, from: -1, through: 4, by: 1,
+                              sensitivity: .low, isContinuous: false, isHapticFeedbackEnabled: true)
+        .onChange(of: restRIR) { _, newValue in onReserveCrownChange(newValue, rest: rest) }
+    }
+
+    // MARK: Reserve / RIR capture (FER-372) — OPTIONAL «en reserva» dialed in during rest
+
+    /// The set just completed already went to the manager (weight×reps, no rpe). During its rest the
+    /// crown can OPTIONALLY dial reps-in-reserve; each settle re-logs the SAME set with `rir` so
+    /// `logStandaloneSet`'s upsert updates only its `rpe` (RPE = 10 − RIR). Untouched → nothing commits.
+    private func reserveControl(_ rest: LocalRest) -> some View {
+        HStack(spacing: LiquidSpace.s100) {
+            // token-exempt(sistema): geometría watchOS — punto guía de 7 pt (ámbar = por marcar,
+            // verde = ya registrado); no hay token de bullet a ese tamaño.
+            Circle().fill(restRIR < 0 ? LiquidOLED.ambar : LiquidOLED.verde)
+                .frame(width: 7, height: 7)
+            if restRIR < 0 {
+                Text("Effort · turn the crown")
+                    .font(LiquidType.pie).foregroundStyle(LiquidOLED.tintaTerciaria)
+                    .lineLimit(1).minimumScaleFactor(0.7)
+            } else {
+                Text(verbatim: reserveLabel(Int(restRIR)))
+                    .font(LiquidType.filaConteo).foregroundStyle(LiquidOLED.tinta)
+                    .lineLimit(1).minimumScaleFactor(0.6)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        // VoiceOver: un solo elemento AJUSTABLE (swipe arriba/abajo), independiente del foco de la corona.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Effort in reserve"))
+        .accessibilityValue(restRIR < 0 ? Text("Not set") : Text(verbatim: reserveLabel(Int(restRIR))))
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: restRIR = restRIR < 0 ? 0 : min(4, restRIR + 1)
+            case .decrement: if restRIR >= 1 { restRIR -= 1 }        // 1→0 «al fallo»; en 0 o «sin marcar» se queda
+            @unknown default: break
+            }
+        }
+    }
+
+    /// Reacts to the crown (or the VoiceOver adjustable, which mutates the same `restRIR`).
+    private func onReserveCrownChange(_ value: Double, rest: LocalRest) {
+        if value < 0 {
+            // Sólo posible antes del primer giro. Una vez marcado no se puede volver a «sin marcar»
+            // (el motor no borra un `rpe` ya puesto), así que se fija en «al fallo».
+            if rirCommitted { restRIR = 0 }
+            return
+        }
+        rirCommitted = true
+        scheduleReserveCommit(Int(value), for: rest)
+    }
+
+    /// Re-logs the set with the chosen RIR, DEBOUNCED (~0.45 s after the last tick) — same idiom as
+    /// `crownAnnounceTask` — so a burst of crown ticks yields ONE `.logSet` and one haptic, not a flood.
+    private func scheduleReserveCommit(_ rir: Int, for rest: LocalRest) {
+        rirCommitTask?.cancel()
+        rirCommitTask = Task {
+            try? await Task.sleep(nanoseconds: 450_000_000)
+            guard !Task.isCancelled else { return }
+            _ = manager.logStandaloneSet(runId: rest.runId, setId: rest.setId,
+                                         weightKg: rest.weightKg, reps: rest.reps, rir: rir)
+            AccessibilityNotification.Announcement(reserveLabel(rir)).post()
+        }
+    }
+
+    /// Localizes RIR (0…4) with the owner's vocabulary, mirroring `LiveStrengthSheet.qLabel` through the
+    /// same `RIRScale` oracle: 0 → «al fallo», 1–3 → «N en reserva», 4 → «4+ en reserva». Never «Q».
+    private func reserveLabel(_ rir: Int) -> String {
+        switch RIRScale.label(fromRPE: RIRScale.rpe(fromRIR: rir)) {
+        case .atFailure:        return String(localized: "at failure")
+        case .fourPlus:         return String(localized: "4+ in reserve")
+        case .inReserve(let n): return String(localized: "\(n) in reserve")
         }
     }
 
@@ -451,10 +548,15 @@ private struct WatchStandaloneWorkingPage: View {
 
     private func secondsLeft(_ rest: LocalRest) -> Int { max(0, Int(rest.endsAt.timeIntervalSinceNow.rounded())) }
 
-    private func startLocalRest(seconds: Int) {
+    private func startLocalRest(seconds: Int, runId: String, setId: String, weightKg: Double, reps: Int) {
         let now = Date()
         let endsAt = now.addingTimeInterval(TimeInterval(seconds))
-        localRest = LocalRest(startedAt: now, endsAt: endsAt)
+        localRest = LocalRest(startedAt: now, endsAt: endsAt,
+                              runId: runId, setId: setId, weightKg: weightKg, reps: reps)
+        // FER-372: cada descanso arranca «sin marcar». Un commit pendiente del descanso anterior no se
+        // cancela: apunta por id a la serie previa (correcto) y termina de aplicarse solo.
+        restRIR = -1
+        rirCommitted = false
         scheduleRestCompletion(endsAt: endsAt)
     }
 
