@@ -73,7 +73,6 @@ struct PersonalRecordsScreen: View {
                     .toolbarBackground(LiquidColor.fondoAlto, for: .navigationBar)
             }
             .environmentObject(repo)
-            .preferredColorScheme(.light)
         }
     }
 
